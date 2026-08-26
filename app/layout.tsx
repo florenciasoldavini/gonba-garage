@@ -13,7 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || 'https://gonba-garage.vercel.app',
+  ),
   title: 'Gonba Garage | Autos usados seleccionados',
   description:
     'Compra y venta de autos usados seleccionados. Inventario actualizado y atención personalizada.',
