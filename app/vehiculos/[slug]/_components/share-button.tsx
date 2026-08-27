@@ -3,13 +3,16 @@
 import { useState } from 'react';
 import { Share2 } from 'lucide-react';
 
+import { captureAnalyticsEvent } from '@/lib/analytics/client';
+
 type ShareButtonProps = {
   title: string;
   text: string;
   fallbackUrl: string;
+  vehicleSlug: string;
 };
 
-export function ShareButton({ title, text, fallbackUrl }: ShareButtonProps) {
+export function ShareButton({ title, text, fallbackUrl, vehicleSlug }: ShareButtonProps) {
   const [feedback, setFeedback] = useState('');
 
   const copyLink = async (url: string) => {
@@ -37,11 +40,13 @@ export function ShareButton({ title, text, fallbackUrl }: ShareButtonProps) {
     try {
       if (navigator.share) {
         await navigator.share({ title, text, url });
+        captureAnalyticsEvent('vehicle_shared', { method: 'native', vehicle_slug: vehicleSlug });
         setFeedback('Compartido');
         return;
       }
 
       await copyLink(url);
+      captureAnalyticsEvent('vehicle_shared', { method: 'clipboard', vehicle_slug: vehicleSlug });
       setFeedback('Enlace copiado');
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') return;

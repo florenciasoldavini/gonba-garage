@@ -4,6 +4,7 @@ import { useRef, useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowUpRight, Check } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { ValuationContactFields } from './valuation-contact-fields';
 import { ValuationStepper } from './valuation-stepper';
 import { ValuationSuccess } from './valuation-success';
@@ -16,6 +17,7 @@ export function ValuationForm() {
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState(1);
   const formRef = useRef<HTMLFormElement>(null);
+  const hasStartedRef = useRef(false);
 
   const moveToStep = (nextStep: number) => {
     setStep(nextStep);
@@ -39,11 +41,13 @@ export function ValuationForm() {
       }
     }
 
+    captureAnalyticsEvent('valuation_step_completed', { step });
     moveToStep(Math.min(step + 1, TOTAL_STEPS));
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    captureAnalyticsEvent('valuation_demo_completed', { total_steps: TOTAL_STEPS });
     setSubmitted(true);
     event.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -53,7 +57,17 @@ export function ValuationForm() {
   }
 
   return (
-    <form className="valuation-form glass-panel" ref={formRef} onSubmit={handleSubmit}>
+    <form
+      className="valuation-form glass-panel ph-no-capture"
+      data-private
+      ref={formRef}
+      onFocusCapture={() => {
+        if (hasStartedRef.current) return;
+        hasStartedRef.current = true;
+        captureAnalyticsEvent('valuation_started', {});
+      }}
+      onSubmit={handleSubmit}
+    >
       <div className="valuation-form-heading">
         <div>
           <span>Formulario de tasación · Paso {step} de {TOTAL_STEPS}</span>

@@ -48,4 +48,7 @@ regenerated after every schema change.
 - Make performance budgets part of acceptance criteria.
 
 See [architecture](docs/architecture.md), [design system](docs/design-system.md), and
-[performance budget](docs/performance-budget.md).
+[performance budget](docs/performance-budget.md). Analytics activation, event definitions, and
+Search Console setup are documented in [analytics](docs/analytics.md). Use the
+[custom-domain launch checklist](docs/custom-domain-launch-checklist.md) when replacing the temporary
+Vercel hostname.

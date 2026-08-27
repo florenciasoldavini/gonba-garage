@@ -1,8 +1,9 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
+import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { CatalogEmptyState } from './catalog-empty-state';
 import { CatalogVehicleCard } from './catalog-vehicle-card';
 import { InventoryFilters, type InventoryFiltersProps } from './inventory-filters';
@@ -47,6 +48,7 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
   });
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const lastAnalyticsPayloadRef = useRef('');
 
   const makes = useMemo(() => [...new Set(vehicles.map(({ make: value }) => value))].sort(), [vehicles]);
   const bodyTypes = useMemo(() => [...new Set(vehicles.map(({ body }) => body.split(' · ')[0]))].sort(), [vehicles]);
@@ -88,6 +90,46 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
     minMileage !== MIN_MILEAGE || maxMileage !== mileageCeiling,
   ].filter(Boolean).length;
 
+  useEffect(() => {
+    if (activeFilterCount === 0) return;
+
+    const properties = {
+      active_filter_count: activeFilterCount,
+      body_type: bodyType,
+      fuel,
+      make,
+      max_mileage: maxMileage,
+      max_price: maxPrice,
+      min_mileage: minMileage,
+      min_price: minPrice,
+      result_count: filteredVehicles.length,
+      search_length: query.trim().length,
+      search_used: query.trim().length > 0,
+      sort,
+      transmission,
+    };
+    const serializedPayload = JSON.stringify(properties);
+
+    if (serializedPayload === lastAnalyticsPayloadRef.current) return;
+
+    const timeout = window.setTimeout(() => {
+      captureAnalyticsEvent('inventory_filtered', properties);
+      if (properties.result_count === 0) {
+        captureAnalyticsEvent('inventory_zero_results', {
+          active_filter_count: activeFilterCount,
+          body_type: bodyType,
+          fuel,
+          make,
+          search_used: properties.search_used,
+          transmission,
+        });
+      }
+      lastAnalyticsPayloadRef.current = serializedPayload;
+    }, 500);
+
+    return () => window.clearTimeout(timeout);
+  }, [activeFilterCount, bodyType, filteredVehicles.length, fuel, make, maxMileage, maxPrice, minMileage, minPrice, query, sort, transmission]);
+
   const resetFilters = () => {
     setQuery('');
     setMake('all');
@@ -103,17 +145,40 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
   const selectedVehicleSlugs = useMemo(() => new Set(selectedVehicles.map(({ slug }) => slug)), [selectedVehicles]);
 
   const toggleVehicleComparison = (vehicle: Vehicle) => {
-    if (selectedVehicleSlugs.has(vehicle.slug) && selectedVehicles.length <= 2) setIsCompareOpen(false);
-    setSelectedVehicles((current) => {
-      if (current.some(({ slug }) => slug === vehicle.slug)) return current.filter(({ slug }) => slug !== vehicle.slug);
-      if (current.length >= MAX_COMPARE_VEHICLES) return current;
-      return [...current, vehicle];
+    if (selectedVehicleSlugs.has(vehicle.slug)) {
+      if (selectedVehicles.length <= 2) setIsCompareOpen(false);
+      captureAnalyticsEvent('comparison_vehicle_removed', {
+        vehicle_slug: vehicle.slug,
+        selection_count: selectedVehicles.length - 1,
+      });
+      setSelectedVehicles((current) => current.filter(({ slug }) => slug !== vehicle.slug));
+      return;
+    }
+
+    if (selectedVehicles.length >= MAX_COMPARE_VEHICLES) return;
+
+    captureAnalyticsEvent('comparison_vehicle_added', {
+      vehicle_slug: vehicle.slug,
+      selection_count: selectedVehicles.length + 1,
     });
+    setSelectedVehicles((current) => [...current, vehicle]);
   };
 
   const removeVehicleComparison = (slug: string) => {
     if (selectedVehicles.length <= 2) setIsCompareOpen(false);
+    captureAnalyticsEvent('comparison_vehicle_removed', {
+      vehicle_slug: slug,
+      selection_count: Math.max(0, selectedVehicles.length - 1),
+    });
     setSelectedVehicles((current) => current.filter((vehicle) => vehicle.slug !== slug));
+  };
+
+  const openVehicleComparison = () => {
+    captureAnalyticsEvent('comparison_opened', {
+      vehicle_count: selectedVehicles.length,
+      vehicle_slugs: selectedVehicles.map(({ slug }) => slug),
+    });
+    setIsCompareOpen(true);
   };
 
   const clearVehicleComparison = () => {
@@ -192,7 +257,7 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
       <VehicleCompareDock
         maximum={MAX_COMPARE_VEHICLES}
         onClear={clearVehicleComparison}
-        onCompare={() => setIsCompareOpen(true)}
+        onCompare={openVehicleComparison}
         onRemove={removeVehicleComparison}
         vehicles={selectedVehicles}
       />

@@ -1,0 +1,19 @@
+import posthog from 'posthog-js';
+
+const projectToken = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
+
+if (projectToken) {
+  posthog.init(projectToken, {
+    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
+    defaults: '2026-05-30',
+    person_profiles: 'identified_only',
+    capture_pageview: true,
+    capture_pageleave: true,
+    disable_session_recording:
+      process.env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY !== 'true',
+    session_recording: {
+      maskAllInputs: true,
+      maskTextSelector: '[data-private]',
+    },
+  });
+}
