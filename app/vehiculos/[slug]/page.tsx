@@ -68,6 +68,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const siteUrl = getSiteUrl();
   const vehicleUrl = new URL(`/vehiculos/${vehicle.slug}`, siteUrl).toString();
   const compareHref = `/vehiculos?comparar=${vehicle.slug}#inventario`;
+  const vehicleContactHref = getWhatsAppUrl(`Hola, quiero consultar por el ${vehicle.make} ${vehicle.model}.`);
   const vehicleSchema = {
     '@context': 'https://schema.org',
     '@type': 'Vehicle',
@@ -176,7 +177,9 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             formattedPrice={formatVehiclePrice(vehicle.price, vehicle.currency)}
           />
           <div className="detail-actions">
-            <ButtonAnchor href="#consulta">Consultar por este auto <Arrow /></ButtonAnchor>
+            <ButtonAnchor href={vehicleContactHref} rel="noreferrer" target="_blank">
+              Consultar por este auto <Arrow />
+            </ButtonAnchor>
             <ButtonAnchor href="#ficha" variant="glass">Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
           </div>
           <p className="detail-disclaimer">Precio y disponibilidad sujetos a confirmación. Esta página utiliza información de demostración.</p>
@@ -224,7 +227,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       </section>
 
       <ContactCallout
-        actionHref={getWhatsAppUrl(`Hola, quiero consultar por el ${vehicle.make} ${vehicle.model}.`)}
+        actionHref={vehicleContactHref}
         actionLabel="Consultar ahora"
         analytics={{ channel: 'whatsapp', placement: 'vehicle_detail', vehicleSlug: vehicle.slug }}
         className="detail-contact"
