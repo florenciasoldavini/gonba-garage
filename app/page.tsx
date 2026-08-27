@@ -156,6 +156,7 @@ export default function Home() {
       <ContactCallout
         actionHref="#inicio"
         actionLabel="Escribir por WhatsApp"
+        analytics={{ channel: 'whatsapp', placement: 'home_contact' }}
         eyebrow="Hablemos"
         id="contacto"
         note="Datos de contacto provisionales para esta demostración."

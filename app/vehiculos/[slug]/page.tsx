@@ -12,8 +12,10 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { findMockVehicle, mockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleSpecification, vehicleSpecificationLabels, type VehicleSpecificationKey } from '@/features/vehicles/presentation/specifications';
+import { getSiteUrl } from '@/lib/site-url';
 import { PriceAlert } from './_components/price-alert';
 import { ShareButton } from './_components/share-button';
+import { VehicleAnalytics } from './_components/vehicle-analytics';
 
 type VehicleDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -62,7 +64,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
   if (!vehicle) notFound();
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://gonba-garage.vercel.app';
+  const siteUrl = getSiteUrl();
   const vehicleUrl = new URL(`/vehiculos/${vehicle.slug}`, siteUrl).toString();
   const compareHref = `/vehiculos?comparar=${vehicle.slug}#inventario`;
   const vehicleSchema = {
@@ -100,6 +102,15 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
   return (
     <main className="vehicle-detail-page">
+      <VehicleAnalytics
+        bodyType={vehicle.body.split(' · ')[0]}
+        currency={vehicle.currency}
+        make={vehicle.make}
+        model={vehicle.model}
+        price={vehicle.price}
+        vehicleSlug={vehicle.slug}
+        year={vehicle.year}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(vehicleSchema) }}
@@ -151,6 +162,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
                 title={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
                 text={`Mirá este ${vehicle.make} ${vehicle.model} ${vehicle.version} publicado por Gonba Garage.`}
                 fallbackUrl={vehicleUrl}
+                vehicleSlug={vehicle.slug}
               />
             </div>
           </div>
@@ -213,6 +225,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       <ContactCallout
         actionHref={`mailto:ventas@gonbagarage.com.ar?subject=Consulta ${vehicle.make} ${vehicle.model}`}
         actionLabel="Consultar ahora"
+        analytics={{ channel: 'email', placement: 'vehicle_detail', vehicleSlug: vehicle.slug }}
         className="detail-contact"
         eyebrow="Coordiná una visita"
         id="consulta"

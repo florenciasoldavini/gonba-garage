@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
+
+import { getSiteUrl } from '@/lib/site-url';
 import './globals.css';
 
 const geistSans = localFont({
@@ -39,9 +41,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || 'https://gonba-garage.vercel.app',
-  ),
+  metadataBase: getSiteUrl(),
   title: 'Gonba Garage | Autos usados seleccionados',
   description:
     'Compra y venta de autos usados seleccionados. Inventario actualizado y atención personalizada.',
@@ -66,6 +66,9 @@ export const metadata: Metadata = {
     description: 'Compra y venta de autos usados seleccionados.',
     images: ['/gonba-garage-social-preview.png'],
   },
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
+    : {}),
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

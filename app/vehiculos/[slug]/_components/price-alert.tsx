@@ -5,6 +5,7 @@ import { ArrowRight, ArrowUpRight, BellRing, Check, TrendingDown, X } from 'luci
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { captureAnalyticsEvent } from '@/lib/analytics/client';
 
 type PriceAlertProps = {
   vehicleName: string;
@@ -23,6 +24,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
   const openDialog = () => {
     setState('idle');
     setMessage('');
+    captureAnalyticsEvent('price_alert_opened', { vehicle_slug: vehicleSlug });
     dialogRef.current?.showModal();
   };
 
@@ -51,9 +53,11 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
       if (!response.ok) throw new Error(result.message || 'No pudimos guardar la alerta.');
 
       setState('success');
+      captureAnalyticsEvent('price_alert_created', { vehicle_slug: vehicleSlug });
     } catch (error) {
       setState('error');
       setMessage(error instanceof Error ? error.message : 'No pudimos guardar la alerta.');
+      captureAnalyticsEvent('price_alert_failed', { vehicle_slug: vehicleSlug });
     }
   };
 
@@ -88,7 +92,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
               <Button type="button" onClick={closeDialog}>Seguir viendo el auto <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} /></Button>
             </div>
           ) : (
-            <form className="price-alert-form" onSubmit={handleSubmit}>
+            <form className="price-alert-form ph-no-capture" data-private onSubmit={handleSubmit}>
               <Eyebrow>Alerta de precio</Eyebrow>
               <h2 id="price-alert-title">¿Esperando una mejor oportunidad?</h2>
               <p>Dejanos tu email y te avisamos si el precio del {vehicleName} baja de {formattedPrice}.</p>
