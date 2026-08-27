@@ -161,9 +161,11 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
                 <span>Comparar</span>
               </Link>
               <ShareButton
-                title={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
-                text={`Mirá este ${vehicle.make} ${vehicle.model} ${vehicle.version} publicado por Gonba's Garage.`}
                 fallbackUrl={vehicleUrl}
+                imageSrc={vehicle.image}
+                text={`Mirá este ${vehicle.make} ${vehicle.model} ${vehicle.version} publicado por Gonba's Garage.`}
+                title={`${vehicle.make} ${vehicle.model}`}
+                vehicleMeta={`${vehicle.year} · ${vehicle.version}`}
                 vehicleSlug={vehicle.slug}
               />
             </div>
