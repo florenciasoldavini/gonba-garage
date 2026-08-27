@@ -67,4 +67,5 @@ See [architecture](docs/architecture.md), [design system](docs/design-system.md)
 [performance budget](docs/performance-budget.md). Analytics activation, event definitions, and
 Search Console setup are documented in [analytics](docs/analytics.md). Use the
 [custom-domain launch checklist](docs/custom-domain-launch-checklist.md) when replacing the temporary
-Vercel hostname.
+Vercel hostname. All public routes and inventory changes must follow the
+[SEO and social metadata guidelines](docs/seo-and-social-metadata.md).

@@ -64,6 +64,10 @@ The 3D scene must:
 - Sold vehicles remain useful when possible; removed URLs return an intentional status.
 - Spanish semantic HTML is rendered on the server before enhancement.
 
+The binding implementation rules, lifecycle policy, route checklist, and verification contract live
+in the [SEO and social metadata guidelines](seo-and-social-metadata.md). Update that document whenever
+an SEO or sharing decision changes.
+
 ## Ownership
 
 The client should own the domain, production hosting account, Mercado Libre application, analytics,
