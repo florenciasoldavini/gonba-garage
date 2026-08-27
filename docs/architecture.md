@@ -12,7 +12,7 @@ price, description, and contact action must remain usable without WebGL or clien
 - Cloudflare-compatible Vinext runtime for the current local and hosting foundation.
 - Mercado Libre is the planned source of truth for inventory.
 - Server-rendered vehicle detail routes will own metadata, canonical URLs, and structured data.
-- A repository boundary in `lib/vehicles.ts` keeps Mercado Libre transport details out of pages.
+- A repository boundary in `features/vehicles/domain` keeps Mercado Libre transport details out of pages.
 
 The experimental work should happen at the edge of the interface, not in the data or routing
 foundation. Do not introduce a motion or 3D dependency until a specific interaction justifies it.
@@ -24,7 +24,7 @@ foundation. Do not introduce a motion or 3D dependency until a specific interact
 | `/` | Brand story, featured stock, trust, primary conversion | Server-rendered |
 | `/vehiculos` | Filterable inventory | Server-rendered shell and URL-based filters |
 | `/vehiculos/[slug]` | Vehicle detail and conversion | Server-rendered with dynamic metadata |
-| `/vende-tu-auto` | Vehicle acquisition lead form | Server-rendered with progressive enhancement |
+| `/vender` | Vehicle acquisition lead form | Server-rendered with progressive enhancement |
 | `/api/mercado-libre/webhook` | Listing-change notifications | Server route handler |
 | `/api/mercado-libre/callback` | OAuth callback | Server route handler |
 

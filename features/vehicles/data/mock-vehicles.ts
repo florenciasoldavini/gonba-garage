@@ -1,0 +1,92 @@
+import type { Vehicle } from '@/features/vehicles/domain/vehicle';
+
+export const mockVehicles: Vehicle[] = [
+  {
+    slug: 'bmw-330i-m-sport-2021',
+    make: 'BMW',
+    model: '330i',
+    version: 'M Sport',
+    year: 2021,
+    price: 58900,
+    currency: 'USD',
+    mileageKm: 48000,
+    transmission: 'Automática, 8 marchas',
+    fuel: 'Nafta',
+    engine: '2.0 TwinPower Turbo · 258 cv',
+    color: 'Negro Zafiro',
+    body: 'Sedán · 4 puertas',
+    traction: 'Trasera',
+    location: 'Buenos Aires, Argentina',
+    stockCode: 'GG-021',
+    image: '/showroom-car.jpg',
+    imageAlt: 'BMW negro exhibido en un showroom',
+    description:
+      'Una configuración equilibrada entre confort diario y carácter deportivo. Esta unidad se presenta con historial de mantenimiento, documentación revisada y una selección de equipamiento pensada para disfrutar cada recorrido.',
+    highlights: [
+      'Documentación verificada',
+      'Service al día',
+      'Dos llaves originales',
+      'Cubiertas en buen estado',
+    ],
+  },
+  {
+    slug: 'mercedes-benz-190sl-1962',
+    make: 'Mercedes-Benz',
+    model: '190 SL',
+    version: 'Roadster',
+    year: 1962,
+    price: 148000,
+    currency: 'USD',
+    mileageKm: 72000,
+    transmission: 'Manual, 4 marchas',
+    fuel: 'Nafta',
+    engine: '1.9 · 105 cv',
+    color: 'Rojo',
+    body: 'Roadster · 2 puertas',
+    traction: 'Trasera',
+    location: 'Buenos Aires, Argentina',
+    stockCode: 'GG-019',
+    image: '/featured-classic.jpg',
+    imageAlt: 'Mercedes-Benz 190 SL rojo en un garage',
+    description:
+      'Un clásico de colección con presencia inconfundible. La unidad fue seleccionada por su nivel de conservación, coherencia histórica y el cuidado visible en cada detalle.',
+    highlights: [
+      'Restauración documentada',
+      'Interior de época',
+      'Mecánica revisada',
+      'Unidad de colección',
+    ],
+  },
+  {
+    slug: 'porsche-356-b-1961',
+    make: 'Porsche',
+    model: '356 B',
+    version: 'Coupé',
+    year: 1961,
+    price: 112000,
+    currency: 'USD',
+    mileageKm: 61500,
+    transmission: 'Manual, 4 marchas',
+    fuel: 'Nafta',
+    engine: '1.6 · 75 cv',
+    color: 'Gris plata',
+    body: 'Coupé · 2 puertas',
+    traction: 'Trasera',
+    location: 'Buenos Aires, Argentina',
+    stockCode: 'GG-017',
+    image: '/garage-classic.jpg',
+    imageAlt: 'Porsche clásico gris junto a un garage',
+    description:
+      'Una pieza de diseño atemporal, liviana y analógica. Seleccionada por su configuración elegante y una experiencia de manejo que mantiene intacto el espíritu de la época.',
+    highlights: [
+      'Numeración verificada',
+      'Mecánica revisada',
+      'Tapizados conservados',
+      'Carpeta histórica',
+    ],
+  },
+];
+
+export function findMockVehicle(slug: string) {
+  return mockVehicles.find((vehicle) => vehicle.slug === slug);
+}
