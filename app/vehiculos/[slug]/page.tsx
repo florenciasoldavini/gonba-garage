@@ -13,6 +13,7 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { findMockVehicle, mockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleSpecification, vehicleSpecificationLabels, type VehicleSpecificationKey } from '@/features/vehicles/presentation/specifications';
+import { createPageMetadata } from '@/lib/metadata';
 import { getSiteUrl } from '@/lib/site-url';
 import { PriceAlert } from './_components/price-alert';
 import { ShareButton } from './_components/share-button';
@@ -39,24 +40,13 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
   const title = `${vehicle.make} ${vehicle.model} ${vehicle.year} | Gonba's Garage`;
   const description = `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}, ${formatVehicleMileage(vehicle.mileageKm)}. Consultá disponibilidad en Gonba's Garage.`;
 
-  return {
+  return createPageMetadata({
     title,
     description,
-    alternates: { canonical: `/vehiculos/${vehicle.slug}` },
-    openGraph: {
-      title,
-      description,
-      type: 'website',
-      locale: 'es_AR',
-      images: [{ url: vehicle.image, alt: vehicle.imageAlt }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description,
-      images: [vehicle.image],
-    },
-  };
+    path: `/vehiculos/${vehicle.slug}`,
+    image: vehicle.image,
+    imageAlt: vehicle.imageAlt,
+  });
 }
 
 export default async function VehicleDetailPage({ params }: VehicleDetailPageProps) {

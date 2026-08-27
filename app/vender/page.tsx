@@ -5,13 +5,15 @@ import { Check, Clock3, ShieldCheck } from 'lucide-react';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { createPageMetadata } from '@/lib/metadata';
 import { ValuationForm } from './_components/valuation-form';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Vendé tu auto | Gonba's Garage",
-  description: "Compartí los datos de tu vehículo y solicitá una estimación de valor a Gonba's Garage.",
-  alternates: { canonical: '/vender' },
-};
+  description:
+    "Compartí los datos de tu vehículo y solicitá una estimación de valor a Gonba's Garage.",
+  path: '/vender',
+});
 
 export default function SellVehiclePage() {
   return (

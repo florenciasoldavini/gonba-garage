@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 
+import { SITE_NAME } from '@/lib/metadata';
 import { getSiteUrl } from '@/lib/site-url';
 import './globals.css';
 
@@ -40,32 +41,15 @@ const geistMono = localFont({
   fallback: ['monospace'],
 });
 
+const homeTitle = "Gonba's Garage | Autos usados seleccionados";
+const homeDescription =
+  'Compra y venta de autos usados seleccionados. Inventario actualizado y atención personalizada.';
+
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
-  title: "Gonba's Garage | Autos usados seleccionados",
-  description:
-    'Compra y venta de autos usados seleccionados. Inventario actualizado y atención personalizada.',
-  openGraph: {
-    title: "Gonba's Garage | Autos usados seleccionados",
-    description:
-      'Compra y venta de autos usados seleccionados. Inventario actualizado y atención personalizada.',
-    type: 'website',
-    locale: 'es_AR',
-    images: [
-      {
-        url: '/gonba-garage-social-preview.png',
-        width: 1200,
-        height: 630,
-        alt: "Gonba's Garage — Autos usados seleccionados",
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: "Gonba's Garage | Autos usados seleccionados",
-    description: 'Compra y venta de autos usados seleccionados.',
-    images: ['/gonba-garage-social-preview.png'],
-  },
+  applicationName: SITE_NAME,
+  title: homeTitle,
+  description: homeDescription,
   ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
     : {}),

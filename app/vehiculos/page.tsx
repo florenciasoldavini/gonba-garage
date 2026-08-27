@@ -6,13 +6,15 @@ import { SiteHeader } from '@/components/layout/site-header';
 import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { mockVehicles } from '@/features/vehicles/data/mock-vehicles';
+import { createPageMetadata } from '@/lib/metadata';
 import { InventoryCatalog } from './_components/inventory-catalog';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Vehículos disponibles | Gonba's Garage",
-  description: "Explorá el inventario de autos usados seleccionados de Gonba's Garage. Filtrá por marca, transmisión, tipo y precio.",
-  alternates: { canonical: '/vehiculos' },
-};
+  description:
+    "Explorá el inventario de autos usados seleccionados de Gonba's Garage. Filtrá por marca, transmisión, tipo y precio.",
+  path: '/vehiculos',
+});
 
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
