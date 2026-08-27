@@ -58,6 +58,7 @@
   --layout-max-width: 1380px;
   --layout-gutter: 24px;
   --layout-gutter-compact: 12px;
+  --page-content-top: clamp(46px, 6vw, 82px);
 
   /* Motion and elevation */
   --duration-fast: 120ms;
@@ -84,5 +85,6 @@
 @media (max-width: 700px) {
   :root {
     --layout-gutter: var(--layout-gutter-compact);
+    --page-content-top: 44px;
   }
 }

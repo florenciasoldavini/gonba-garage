@@ -72,7 +72,7 @@ export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onCl
         <div className="vehicle-compare-scroll">
           <div className="vehicle-compare-content" style={{ '--compare-count': vehicles.length } as CSSProperties}>
             <div className="vehicle-compare-cards">
-              <div className="vehicle-compare-corner"><Scale aria-hidden="true" size={18} /></div>
+              <div className="vehicle-compare-corner" aria-hidden="true" />
               {vehicles.map((vehicle) => (
                 <article className="vehicle-compare-card" key={vehicle.slug}>
                   <div className="vehicle-compare-card-image">

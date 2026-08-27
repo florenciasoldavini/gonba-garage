@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowUpRight, Check } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -16,10 +16,35 @@ const TOTAL_STEPS = 3;
 export function ValuationForm() {
   const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState(1);
+  const [isStepComplete, setIsStepComplete] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const hasStartedRef = useRef(false);
 
+  const updateStepCompleteness = useCallback(() => {
+    const currentSection = formRef.current?.querySelector<HTMLElement>('[data-step]:not([hidden])');
+    if (!currentSection) return;
+
+    const requiredControls = currentSection.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('[required]');
+    const requiredCustomSelects = currentSection.querySelectorAll<HTMLButtonElement>('[data-required-select="true"]');
+    const nativeFieldsAreComplete = Array.from(requiredControls).every((control) => control.checkValidity());
+    const customSelectsAreComplete = Array.from(requiredCustomSelects).every((control) => Boolean(control.dataset.value));
+    const consentControl = formRef.current?.elements.namedItem('consent');
+    const consentIsComplete = currentSection.dataset.step !== String(TOTAL_STEPS)
+      || consentControl instanceof HTMLInputElement && consentControl.checked;
+
+    setIsStepComplete(nativeFieldsAreComplete && customSelectsAreComplete && consentIsComplete);
+  }, []);
+
+  useEffect(() => {
+    updateStepCompleteness();
+  }, [updateStepCompleteness]);
+
+  const scheduleCompletenessUpdate = () => {
+    requestAnimationFrame(updateStepCompleteness);
+  };
+
   const moveToStep = (nextStep: number) => {
+    setIsStepComplete(false);
     setStep(nextStep);
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -47,6 +72,22 @@ export function ValuationForm() {
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    const contactSection = event.currentTarget.querySelector<HTMLElement>('[data-step="3"]');
+    const contactControls = contactSection?.querySelectorAll<HTMLInputElement>('input') ?? [];
+    const consentControl = event.currentTarget.elements.namedItem('consent');
+    const controls = [
+      ...contactControls,
+      ...(consentControl instanceof HTMLInputElement ? [consentControl] : []),
+    ];
+
+    for (const control of controls) {
+      if (!control.checkValidity()) {
+        control.reportValidity();
+        return;
+      }
+    }
+
     captureAnalyticsEvent('valuation_demo_completed', { total_steps: TOTAL_STEPS });
     setSubmitted(true);
     event.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -61,6 +102,10 @@ export function ValuationForm() {
       className="valuation-form glass-panel ph-no-capture"
       data-private
       ref={formRef}
+      noValidate
+      onChange={scheduleCompletenessUpdate}
+      onClick={scheduleCompletenessUpdate}
+      onInput={scheduleCompletenessUpdate}
       onFocusCapture={() => {
         if (hasStartedRef.current) return;
         hasStartedRef.current = true;
@@ -96,11 +141,11 @@ export function ValuationForm() {
             </button>
           ) : null}
           {step < TOTAL_STEPS ? (
-            <Button type="button" onClick={continueToNextStep}>
+            <Button type="button" disabled={!isStepComplete} onClick={continueToNextStep}>
               Continuar <ArrowUpRight aria-hidden="true" size={16} />
             </Button>
           ) : (
-            <Button type="submit">Solicitar estimación <ArrowUpRight aria-hidden="true" size={16} /></Button>
+            <Button type="submit" disabled={!isStepComplete}>Solicitar estimación <ArrowUpRight aria-hidden="true" size={16} /></Button>
           )}
         </div>
         <small>Esta versión es demostrativa y no envía información todavía.</small>

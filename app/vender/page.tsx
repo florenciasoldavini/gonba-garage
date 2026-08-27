@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default function SellVehiclePage() {
   return (
     <main className="valuation-page" id="valuation-top">
-      <SiteHeader active="sell" ctaHref="/vehiculos" ctaLabel="Ver vehículos" />
+      <SiteHeader active="sell" />
 
       <section className="section-shell valuation-layout" aria-labelledby="valuation-title">
         <aside className="valuation-intro">
