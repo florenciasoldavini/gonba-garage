@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { ArrowUpRight, Check, Scale, Search, SlidersHorizontal, X } from 'lucide-react';
 
+import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/custom-select';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { VehicleCompareDialog } from './vehicle-compare-dialog';
@@ -319,7 +320,7 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
             <span>0 resultados</span>
             <h2>No encontramos una unidad con esos criterios.</h2>
             <p>Probá ampliando el precio o quitando alguno de los filtros.</p>
-            <button className="button button-accent" type="button" onClick={resetFilters}>Ver todo el inventario <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} /></button>
+            <Button type="button" onClick={resetFilters}>Ver todo el inventario <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} /></Button>
           </div>
         )}
       </div>
@@ -344,9 +345,9 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
             </div>
             <div className="compare-dock-actions">
               <button className="compare-dock-clear" type="button" onClick={clearVehicleComparison}>Limpiar</button>
-              <button className="button button-accent" type="button" disabled={selectedVehicles.length < 2} onClick={() => setIsCompareOpen(true)}>
+              <Button type="button" disabled={selectedVehicles.length < 2} onClick={() => setIsCompareOpen(true)}>
                 Comparar {selectedVehicles.length > 1 ? selectedVehicles.length : ''} <Scale aria-hidden="true" size={15} strokeWidth={1.8} />
-              </button>
+              </Button>
             </div>
           </div>
         </div>

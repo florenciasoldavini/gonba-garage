@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowUp, ArrowUpRight } from 'lucide-react';
 
+import { ButtonLink } from '@/components/ui/button';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import { mockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { InventoryCatalog } from './_components/inventory-catalog';
 
@@ -39,7 +41,7 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
 
       <section className="section-shell catalog-hero" aria-labelledby="catalog-title">
         <div>
-          <p className="eyebrow"><span /> Inventario actual · Datos demostrativos</p>
+          <Eyebrow>Inventario actual · Datos demostrativos</Eyebrow>
           <h1 id="catalog-title">Autos con una razón para estar acá.</h1>
         </div>
         <div className="catalog-hero-copy">
@@ -52,10 +54,10 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
 
       <section className="section-shell catalog-contact glass-panel" aria-labelledby="catalog-contact-title">
         <div>
-          <p className="eyebrow"><span /> ¿No encontraste lo que buscabas?</p>
+          <Eyebrow>¿No encontraste lo que buscabas?</Eyebrow>
           <h2 id="catalog-contact-title">Contanos qué auto tenés en mente.</h2>
         </div>
-        <Link className="button button-accent" href="/#contacto">Hablar con Gonba Garage <Arrow /></Link>
+        <ButtonLink href="/#contacto">Hablar con Gonba Garage <Arrow /></ButtonLink>
       </section>
 
       <footer className="site-footer section-shell">

@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowDown, ArrowUp, ArrowUpRight, Scale } from 'lucide-react';
 
+import { ButtonAnchor } from '@/components/ui/button';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import { findMockVehicle, mockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { PriceAlert } from './_components/price-alert';
 import { ShareButton } from './_components/share-button';
@@ -133,7 +135,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
       <section className="section-shell detail-title" aria-labelledby="vehicle-title">
         <div>
-          <p className="eyebrow"><span /> Disponible · Datos demostrativos</p>
+          <Eyebrow>Disponible · Datos demostrativos</Eyebrow>
           <h1 id="vehicle-title">{vehicle.make} {vehicle.model}<em>{vehicle.version}</em></h1>
         </div>
         <div className="detail-title-meta">
@@ -181,8 +183,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             formattedPrice={formatPrice(vehicle.price)}
           />
           <div className="detail-actions">
-            <a className="button button-accent" href="#consulta">Consultar por este auto <Arrow /></a>
-            <a className="button button-glass" href="#ficha">Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></a>
+            <ButtonAnchor href="#consulta">Consultar por este auto <Arrow /></ButtonAnchor>
+            <ButtonAnchor href="#ficha" variant="glass">Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
           </div>
           <p className="detail-disclaimer">Precio y disponibilidad sujetos a confirmación. Esta página utiliza información de demostración.</p>
         </aside>
@@ -190,7 +192,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
       <section className="section-shell detail-overview" id="ficha" aria-labelledby="overview-title">
         <div className="detail-story">
-          <p className="eyebrow"><span /> La unidad</p>
+          <Eyebrow>La unidad</Eyebrow>
           <h2 id="overview-title">Elegido por cómo se siente. Revisado por todo lo demás.</h2>
           <p>{vehicle.description}</p>
           <ul className="detail-highlights" aria-label="Puntos destacados">
@@ -231,11 +233,11 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       <section className="section-shell contact-section detail-contact glass-panel" id="consulta" aria-labelledby="contact-title">
         <div className="contact-glow" aria-hidden="true" />
         <div className="contact-copy">
-          <p className="eyebrow"><span /> Coordiná una visita</p>
+          <Eyebrow>Coordiná una visita</Eyebrow>
           <h2 id="contact-title">Conocelo en persona. El resto se entiende manejando.</h2>
         </div>
         <div className="contact-actions">
-          <a className="button button-accent" href={`mailto:ventas@gonbagarage.com.ar?subject=Consulta ${vehicle.make} ${vehicle.model}`}>Consultar ahora <Arrow /></a>
+          <ButtonAnchor href={`mailto:ventas@gonbagarage.com.ar?subject=Consulta ${vehicle.make} ${vehicle.model}`}>Consultar ahora <Arrow /></ButtonAnchor>
           <p>Contacto provisional para esta demostración.</p>
         </div>
       </section>

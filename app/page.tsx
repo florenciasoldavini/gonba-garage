@@ -2,6 +2,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowDown, ArrowUp, ArrowUpRight, Plus } from 'lucide-react';
 
+import { ButtonAnchor, ButtonLink } from '@/components/ui/button';
+import { Eyebrow } from '@/components/ui/eyebrow';
+
 const vehicles = [
   {
     name: 'BMW 330i M Sport',
@@ -54,15 +57,15 @@ export default function Home() {
         </div>
         <div className="hero-overlay" />
         <div className="hero-content">
-          <p className="eyebrow"><span /> Autos usados seleccionados</p>
+          <Eyebrow>Autos usados seleccionados</Eyebrow>
           <h1 id="hero-title">Encontrá un auto que valga la pena manejar.</h1>
           <p className="hero-intro">
             Seleccionamos, revisamos y presentamos cada vehículo con la información que necesitás
             para elegir con confianza.
           </p>
           <div className="hero-actions">
-            <a className="button button-accent" href="#vehiculos">Ver vehículos <Arrow /></a>
-            <Link className="button button-glass" href="/vender">Quiero vender mi auto</Link>
+            <ButtonAnchor href="#vehiculos">Ver vehículos <Arrow /></ButtonAnchor>
+            <ButtonLink href="/vender" variant="glass">Quiero vender mi auto</ButtonLink>
           </div>
         </div>
         <aside className="hero-facts glass-panel" aria-label="Información destacada">
@@ -76,7 +79,7 @@ export default function Home() {
       <section className="section-shell inventory-section" id="vehiculos" aria-labelledby="inventory-title">
         <div className="section-heading">
           <div>
-            <p className="eyebrow"><span /> Inventario</p>
+            <Eyebrow>Inventario</Eyebrow>
             <h2 id="inventory-title">Elegidos por una razón.</h2>
           </div>
           <div className="section-heading-copy">
@@ -109,7 +112,7 @@ export default function Home() {
           <Image src="/garage-classic.jpg" alt="Auto estacionado frente a un garage" fill sizes="(max-width: 900px) 100vw, 50vw" className="cover-image" />
         </div>
         <div className="sell-content glass-panel">
-          <p className="eyebrow"><span /> Vendé tu auto</p>
+          <Eyebrow>Vendé tu auto</Eyebrow>
           <h2 id="sell-title">Una operación simple, clara y sin vueltas.</h2>
           <p>Contanos qué auto tenés. Lo evaluamos, coordinamos una revisión y te presentamos una propuesta transparente.</p>
           <ol className="process-list">
@@ -117,13 +120,13 @@ export default function Home() {
             <li><span>02</span> Coordinamos la evaluación</li>
             <li><span>03</span> Recibís una propuesta</li>
           </ol>
-          <Link className="button button-accent" href="/vender">Solicitar una tasación <Arrow /></Link>
+          <ButtonLink href="/vender">Solicitar una tasación <Arrow /></ButtonLink>
         </div>
       </section>
 
       <section className="section-shell services-section" id="servicios" aria-labelledby="services-title">
         <div className="section-heading compact-heading">
-          <div><p className="eyebrow"><span /> Otros servicios</p><h2 id="services-title">Todo lo importante, en un solo lugar.</h2></div>
+          <div><Eyebrow>Otros servicios</Eyebrow><h2 id="services-title">Todo lo importante, en un solo lugar.</h2></div>
         </div>
         <div className="services-grid">
           <article className="service-card glass-panel"><span className="service-number">01</span><div><h3>Financiación</h3><p>Alternativas para que la operación se adapte a tus posibilidades.</p></div><Arrow /></article>
@@ -134,7 +137,7 @@ export default function Home() {
 
       <section className="section-shell trust-section" id="nosotros" aria-labelledby="trust-title">
         <div className="trust-copy">
-          <p className="eyebrow"><span /> La diferencia Gonba</p>
+          <Eyebrow>La diferencia Gonba</Eyebrow>
           <h2 id="trust-title">No se trata de vender cualquier auto.</h2>
           <p>Se trata de conocerlo, presentarlo con honestidad y acompañarte hasta que estés seguro de tu decisión.</p>
         </div>
@@ -147,7 +150,7 @@ export default function Home() {
 
       <section className="section-shell faq-section" id="preguntas" aria-labelledby="faq-title">
         <div className="faq-intro">
-          <p className="eyebrow"><span /> Preguntas frecuentes</p>
+          <Eyebrow>Preguntas frecuentes</Eyebrow>
           <h2 id="faq-title">Lo que conviene saber antes de empezar.</h2>
           <p>Si tu pregunta no está acá, escribinos y la resolvemos juntos.</p>
         </div>
@@ -161,9 +164,9 @@ export default function Home() {
 
       <section className="section-shell contact-section glass-panel" id="contacto" aria-labelledby="contact-title">
         <div className="contact-glow" aria-hidden="true" />
-        <div className="contact-copy"><p className="eyebrow"><span /> Hablemos</p><h2 id="contact-title">El próximo paso puede empezar con un mensaje.</h2></div>
+        <div className="contact-copy"><Eyebrow>Hablemos</Eyebrow><h2 id="contact-title">El próximo paso puede empezar con un mensaje.</h2></div>
         <div className="contact-actions">
-          <a className="button button-accent" href="#inicio">Escribir por WhatsApp <Arrow /></a>
+          <ButtonAnchor href="#inicio">Escribir por WhatsApp <Arrow /></ButtonAnchor>
           <p>Datos de contacto provisionales para esta demostración.</p>
         </div>
       </section>

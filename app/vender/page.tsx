@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, ArrowUp, ArrowUpRight, Check, Clock3, ShieldCheck } from 'lucide-react';
 
+import { Eyebrow } from '@/components/ui/eyebrow';
 import { ValuationForm } from './_components/valuation-form';
 
 export const metadata: Metadata = {
@@ -34,7 +35,7 @@ export default function SellVehiclePage() {
 
       <section className="section-shell valuation-layout" aria-labelledby="valuation-title">
         <aside className="valuation-intro">
-          <p className="eyebrow"><span /> Tasación inicial</p>
+          <Eyebrow>Tasación inicial</Eyebrow>
           <h1 id="valuation-title">Contanos qué auto tenés.</h1>
           <p className="valuation-lead">Con algunos datos podemos preparar una primera estimación y decirte si la unidad encaja con nuestra selección.</p>
 

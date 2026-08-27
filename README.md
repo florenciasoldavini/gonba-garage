@@ -47,4 +47,5 @@ regenerated after every schema change.
 - Keep Mercado Libre behind the repository boundary in `features/vehicles/domain`.
 - Make performance budgets part of acceptance criteria.
 
-See [architecture](docs/architecture.md) and [performance budget](docs/performance-budget.md).
+See [architecture](docs/architecture.md), [design system](docs/design-system.md), and
+[performance budget](docs/performance-budget.md).

@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { ArrowLeft, ArrowUpRight, CarFront, Check, ClipboardCheck, Gauge, Upload } from 'lucide-react';
 
+import { Button } from '@/components/ui/button';
 import { CustomSelect } from '@/components/ui/custom-select';
+import { Eyebrow } from '@/components/ui/eyebrow';
 
 type CatalogOption = {
   id: string;
@@ -174,7 +176,7 @@ export function ValuationForm() {
     return (
       <section className="valuation-success glass-panel" aria-live="polite">
         <span className="valuation-success-icon"><Check aria-hidden="true" size={24} strokeWidth={2} /></span>
-        <p className="eyebrow"><span /> Solicitud preparada</p>
+        <Eyebrow>Solicitud preparada</Eyebrow>
         <h2>Ya tenemos una primera foto de tu auto.</h2>
         <p>En la versión final, Gonba Garage recibirá estos datos para revisar la unidad y contactarte con una estimación preliminar.</p>
         <div className="valuation-success-next">
@@ -185,7 +187,7 @@ export function ValuationForm() {
             <li><span>03</span> Coordinamos una inspección si la unidad encaja.</li>
           </ol>
         </div>
-        <button className="button button-accent" type="button" onClick={() => { setSubmitted(false); setStep(1); }}>Cargar otro vehículo <ArrowUpRight aria-hidden="true" size={16} /></button>
+        <Button type="button" onClick={() => { setSubmitted(false); setStep(1); }}>Cargar otro vehículo <ArrowUpRight aria-hidden="true" size={16} /></Button>
         <small>Demostración: todavía no se enviaron datos.</small>
       </section>
     );
@@ -343,9 +345,9 @@ export function ValuationForm() {
         <div className="valuation-step-actions">
           {step > 1 && <button className="valuation-back-button" type="button" onClick={() => moveToStep(step - 1)}><ArrowLeft aria-hidden="true" size={15} /> Volver</button>}
           {step < 3 ? (
-            <button className="button button-accent" type="button" onClick={continueToNextStep}>Continuar <ArrowUpRight aria-hidden="true" size={16} /></button>
+            <Button type="button" onClick={continueToNextStep}>Continuar <ArrowUpRight aria-hidden="true" size={16} /></Button>
           ) : (
-            <button className="button button-accent" type="submit">Solicitar estimación <ArrowUpRight aria-hidden="true" size={16} /></button>
+            <Button type="submit">Solicitar estimación <ArrowUpRight aria-hidden="true" size={16} /></Button>
           )}
         </div>
         <small>Esta versión es demostrativa y no envía información todavía.</small>
