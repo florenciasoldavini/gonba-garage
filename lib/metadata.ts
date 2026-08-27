@@ -18,8 +18,6 @@ export function createPageMetadata({
   image = DEFAULT_SOCIAL_IMAGE,
   imageAlt = `${SITE_NAME} — Autos usados seleccionados`,
 }: PageMetadataOptions): Metadata {
-  const isDefaultSocialImage = image === DEFAULT_SOCIAL_IMAGE;
-
   return {
     title,
     description,
@@ -35,7 +33,8 @@ export function createPageMetadata({
         {
           url: image,
           alt: imageAlt,
-          ...(isDefaultSocialImage ? { width: 1200, height: 630 } : {}),
+          width: 1200,
+          height: 630,
         },
       ],
     },

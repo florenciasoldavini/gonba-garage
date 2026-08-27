@@ -37,6 +37,22 @@ Copy `.env.example` to `.env.local` and fill in the environment values that are 
 has separate clients for browser components, request-scoped server code, and trusted server-only sync
 jobs in `lib/supabase`. Never expose `SUPABASE_SECRET_KEY` to browser code.
 
+### Demo indexing safety
+
+The site defaults to `SITE_INDEXING_ENABLED=false`. Demo deployments emit `noindex, nofollow` and
+an empty sitemap while preserving Open Graph and social sharing.
+
+When the permanent URL is connected and the real inventory, forms, and business details are ready,
+the production launch must include both environment changes below, followed by a redeploy:
+
+```bash
+NEXT_PUBLIC_SITE_URL=https://<permanent-domain>
+SITE_INDEXING_ENABLED=true
+```
+
+Do not submit the sitemap to Search Console until the production deployment has been verified with
+those values. Follow the [custom-domain launch checklist](docs/custom-domain-launch-checklist.md).
+
 Generated database types live in `lib/supabase/generated/database.types.ts` and should be
 regenerated after every schema change.
 

@@ -6,6 +6,7 @@ import { ArrowUpRight, Check, Scale } from 'lucide-react';
 
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
+import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 
 type CatalogVehicleCardProps = {
   compareDisabled: boolean;
@@ -24,6 +25,7 @@ export function CatalogVehicleCard({
 }: CatalogVehicleCardProps) {
   const vehicleName = `${vehicle.make} ${vehicle.model}`;
   const href = `/vehiculos/${vehicle.slug}`;
+  const status = getVehicleStatusPresentation(vehicle.status);
 
   return (
     <article className={`catalog-card glass-panel${isSelected ? ' catalog-card-selected' : ''}`}>
@@ -38,7 +40,7 @@ export function CatalogVehicleCard({
           />
         </Link>
         <span className="catalog-card-index">{String(index + 1).padStart(2, '0')}</span>
-        <span className="catalog-card-status">Disponible</span>
+        <span className="catalog-card-status">{status.label}</span>
         <button
           className="catalog-card-compare"
           type="button"

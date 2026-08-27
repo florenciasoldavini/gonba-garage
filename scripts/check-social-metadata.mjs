@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 const targetOrigin = new URL(process.argv[2] || 'http://localhost:3100');
+const indexingEnabled = process.env.SITE_INDEXING_ENABLED === 'true';
 
 const routes = [
   { path: '/', title: "Gonba's Garage | Autos usados seleccionados" },
@@ -47,6 +48,11 @@ function getMetadata(html) {
     title,
     description: find('name', 'description')?.content,
     canonical: find('rel', 'canonical')?.href,
+    icon: find('rel', 'icon')?.href,
+    appleIcon: find('rel', 'apple-touch-icon')?.href,
+    manifest: find('rel', 'manifest')?.href,
+    robots: find('name', 'robots')?.content,
+    googleBot: find('name', 'googlebot')?.content,
     openGraph: {
       title: find('property', 'og:title')?.content,
       description: find('property', 'og:description')?.content,
@@ -67,6 +73,12 @@ function getMetadata(html) {
   };
 }
 
+function getJsonLd(html) {
+  return [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map(
+    ([, json]) => JSON.parse(json),
+  );
+}
+
 function normalizeUrl(value) {
   const url = new URL(value);
   return url.pathname === '/' ? url.toString().replace(/\/$/, '') : url.toString();
@@ -80,11 +92,39 @@ for (const route of routes) {
   assert.equal(response.status, 200, `${route.path} should return 200`);
   assert.match(response.headers.get('content-type') || '', /^text\/html/, `${route.path} should return HTML`);
 
-  const metadata = getMetadata(await response.text());
+  const html = await response.text();
+  const metadata = getMetadata(html);
+  const jsonLd = getJsonLd(html);
 
   if (route.path === '/') {
     assert.ok(metadata.canonical, 'Home should define a canonical URL');
     canonicalOrigin = new URL(metadata.canonical).origin;
+
+    const siteGraph = jsonLd.flatMap((entry) => entry['@graph'] || []);
+    assert.ok(siteGraph.some((entry) => entry['@type'] === 'WebSite'), 'Home should describe the website');
+    assert.ok(siteGraph.some((entry) => entry['@type'] === 'AutoDealer'), 'Home should describe the business');
+    assert.ok(metadata.icon, 'Home should link the branded favicon');
+    assert.ok(metadata.appleIcon, 'Home should link the Apple touch icon');
+    assert.ok(metadata.manifest, 'Home should link the web manifest');
+  }
+
+  if (route.path === '/vehiculos') {
+    assert.doesNotMatch(
+      response.headers.get('cache-control') || '',
+      /no-store|private/,
+      'Inventory should remain statically cacheable',
+    );
+  }
+
+  if (route.path.startsWith('/vehiculos/')) {
+    const vehicleGraph = jsonLd.flatMap((entry) => entry['@graph'] || []);
+    const product = vehicleGraph.find((entry) => Array.isArray(entry['@type']) && entry['@type'].includes('Product'));
+    const breadcrumb = vehicleGraph.find((entry) => entry['@type'] === 'BreadcrumbList');
+
+    assert.ok(product, `${route.path} should describe a Product and Vehicle`);
+    assert.equal(product.offers?.itemCondition, 'https://schema.org/UsedCondition', `${route.path} should identify a used vehicle`);
+    assert.ok(product.offers?.availability, `${route.path} should expose lifecycle availability`);
+    assert.equal(breadcrumb?.itemListElement?.length, 3, `${route.path} should expose three breadcrumb levels`);
   }
 
   const expectedCanonical = normalizeUrl(new URL(route.path, canonicalOrigin));
@@ -104,6 +144,15 @@ for (const route of routes) {
   assert.equal(metadata.twitter.image, metadata.openGraph.image, `${route.path} should use the same social image`);
   assert.equal(metadata.twitter.imageAlt, metadata.openGraph.imageAlt, `${route.path} social image alt text should match`);
 
+  if (indexingEnabled) {
+    assert.match(metadata.robots || '', /index/, `${route.path} should be indexable`);
+    assert.doesNotMatch(metadata.robots || '', /noindex/, `${route.path} should not emit noindex`);
+  } else {
+    assert.match(metadata.robots || '', /noindex/, `${route.path} should emit noindex in demo mode`);
+    assert.match(metadata.robots || '', /nofollow/, `${route.path} should emit nofollow in demo mode`);
+    assert.match(metadata.googleBot || '', /noindex/, `${route.path} should give Googlebot noindex`);
+  }
+
   const imagePath = new URL(metadata.openGraph.image).pathname;
   const imageResponse = await fetch(new URL(imagePath, targetOrigin));
   assert.equal(imageResponse.status, 200, `${route.path} social image should return 200`);
@@ -112,6 +161,14 @@ for (const route of routes) {
     /^image\//,
     `${route.path} social image should return an image content type`,
   );
+
+  const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
+
+  if (route.path.startsWith('/vehiculos/')) {
+    assert.equal(imageResponse.headers.get('content-type'), 'image/png', `${route.path} generated social card should be PNG`);
+    assert.equal(imageBytes.readUInt32BE(16), 1200, `${route.path} social card should be 1200px wide`);
+    assert.equal(imageBytes.readUInt32BE(20), 630, `${route.path} social card should be 630px tall`);
+  }
 
   results.push({
     route: route.path,
@@ -127,6 +184,42 @@ assert.equal(
   'Each vehicle should have a distinct social image',
 );
 
+const robotsResponse = await fetch(new URL('/robots.txt', targetOrigin));
+assert.equal(robotsResponse.status, 200, 'robots.txt should return 200');
+const robotsText = await robotsResponse.text();
+assert.match(robotsText, /Allow: \/(?:\n|\r)/, 'robots.txt should allow crawlers to read noindex pages');
+assert.match(robotsText, /Disallow: \/api\//, 'robots.txt should keep API routes out of crawl paths');
+
+const sitemapResponse = await fetch(new URL('/sitemap.xml', targetOrigin));
+assert.equal(sitemapResponse.status, 200, 'sitemap.xml should return 200');
+const sitemapText = await sitemapResponse.text();
+
+const manifestResponse = await fetch(new URL('/manifest.webmanifest', targetOrigin));
+assert.equal(manifestResponse.status, 200, 'Web manifest should return 200');
+assert.match(manifestResponse.headers.get('content-type') || '', /application\/manifest\+json/, 'Manifest should have its expected content type');
+const manifest = await manifestResponse.json();
+assert.equal(manifest.name, "Gonba's Garage", 'Manifest should use the brand name');
+assert.ok(manifest.icons?.some((icon) => icon.src === '/favicon.svg'), 'Manifest should include the branded icon');
+
+const faviconResponse = await fetch(new URL('/favicon.svg', targetOrigin));
+assert.equal(faviconResponse.status, 200, 'Branded favicon should return 200');
+assert.equal(faviconResponse.headers.get('content-type'), 'image/svg+xml', 'Favicon should be SVG');
+
+const homeResponse = await fetch(targetOrigin);
+const linkedAppleIcon = new URL(getMetadata(await homeResponse.text()).appleIcon, targetOrigin);
+const localAppleIcon = new URL(`${linkedAppleIcon.pathname}${linkedAppleIcon.search}`, targetOrigin);
+const appleIconResponse = await fetch(localAppleIcon);
+assert.equal(appleIconResponse.status, 200, 'Apple touch icon should return 200');
+assert.equal(appleIconResponse.headers.get('content-type'), 'image/png', 'Apple touch icon should be PNG');
+
+if (indexingEnabled) {
+  assert.match(robotsText, /Sitemap:/, 'Indexable mode should advertise the sitemap');
+  assert.match(sitemapText, /<url>/, 'Indexable mode should publish sitemap URLs');
+} else {
+  assert.doesNotMatch(robotsText, /Sitemap:/, 'Demo mode should not advertise the sitemap');
+  assert.doesNotMatch(sitemapText, /<url>/, 'Demo mode should serve an empty sitemap');
+}
+
 const missingResponse = await fetch(new URL('/this-page-does-not-exist', targetOrigin));
 assert.equal(missingResponse.status, 404, 'Unknown pages should return 404');
 assert.equal(
@@ -136,4 +229,6 @@ assert.equal(
 );
 
 console.table(results);
-console.log(`\nSocial metadata verification passed for ${routes.length} public routes.`);
+console.log(
+  `\nSocial metadata and ${indexingEnabled ? 'production' : 'demo'} indexing verification passed for ${routes.length} public routes.`,
+);

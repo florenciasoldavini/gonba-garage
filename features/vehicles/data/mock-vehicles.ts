@@ -18,6 +18,8 @@ export const mockVehicles: Vehicle[] = [
     traction: 'Trasera',
     location: 'Buenos Aires, Argentina',
     stockCode: 'GG-021',
+    status: 'active',
+    updatedAt: '2026-08-27T00:00:00-03:00',
     image: '/showroom-car.jpg',
     imageAlt: 'BMW negro exhibido en un showroom',
     description:
@@ -46,6 +48,8 @@ export const mockVehicles: Vehicle[] = [
     traction: 'Trasera',
     location: 'Buenos Aires, Argentina',
     stockCode: 'GG-019',
+    status: 'active',
+    updatedAt: '2026-08-27T00:00:00-03:00',
     image: '/featured-classic.jpg',
     imageAlt: 'Mercedes-Benz 190 SL rojo en un garage',
     description:
@@ -74,6 +78,8 @@ export const mockVehicles: Vehicle[] = [
     traction: 'Trasera',
     location: 'Buenos Aires, Argentina',
     stockCode: 'GG-017',
+    status: 'active',
+    updatedAt: '2026-08-27T00:00:00-03:00',
     image: '/garage-classic.jpg',
     imageAlt: 'Porsche clásico gris junto a un garage',
     description:
@@ -86,6 +92,8 @@ export const mockVehicles: Vehicle[] = [
     ],
   },
 ];
+
+export const activeMockVehicles = mockVehicles.filter(({ status }) => status === 'active');
 
 export function findMockVehicle(slug: string) {
   return mockVehicles.find((vehicle) => vehicle.slug === slug);

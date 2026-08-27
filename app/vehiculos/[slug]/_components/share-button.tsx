@@ -14,9 +14,10 @@ type ShareButtonProps = {
   title: string;
   vehicleMeta: string;
   vehicleSlug: string;
+  statusLabel: string;
 };
 
-export function ShareButton({ fallbackUrl, imageSrc, text, title, vehicleMeta, vehicleSlug }: ShareButtonProps) {
+export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, vehicleMeta, vehicleSlug }: ShareButtonProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [shareUrl, setShareUrl] = useState(fallbackUrl);
   const [feedback, setFeedback] = useState('');
@@ -88,7 +89,7 @@ export function ShareButton({ fallbackUrl, imageSrc, text, title, vehicleMeta, v
           <div className="share-dialog-preview">
             <Image src={imageSrc} alt="" fill sizes="(max-width: 700px) 100vw, 360px" className="cover-image" />
             <div className="share-dialog-preview-overlay" />
-            <span className="share-dialog-status"><i /> Disponible</span>
+            <span className="share-dialog-status"><i /> {statusLabel}</span>
             <div className="share-dialog-vehicle">
               <p>{vehicleMeta}</p>
               <h2>{title}</h2>

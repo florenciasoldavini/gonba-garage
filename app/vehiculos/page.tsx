@@ -1,13 +1,15 @@
 import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { mockVehicles } from '@/features/vehicles/data/mock-vehicles';
+import { activeMockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { createPageMetadata } from '@/lib/metadata';
 import { InventoryCatalog } from './_components/inventory-catalog';
+import { InventoryCatalogFromSearchParams } from './_components/inventory-catalog-from-search-params';
 
 export const metadata: Metadata = createPageMetadata({
   title: "Vehículos disponibles | Gonba's Garage",
@@ -18,14 +20,7 @@ export const metadata: Metadata = createPageMetadata({
 
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
-type VehiclesPageProps = {
-  searchParams: Promise<{ comparar?: string | string[] }>;
-};
-
-export default async function VehiclesPage({ searchParams }: VehiclesPageProps) {
-  const params = await searchParams;
-  const initialCompareSlug = typeof params.comparar === 'string' ? params.comparar : undefined;
-
+export default function VehiclesPage() {
   return (
     <main className="catalog-page" id="catalog-top">
       <SiteHeader active="vehicles" />
@@ -37,11 +32,13 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
         </div>
         <div className="catalog-hero-copy">
           <p>Una selección breve, revisada y presentada con claridad. Compará las unidades y encontrá la que mejor encaja con vos.</p>
-          <span>{String(mockVehicles.length).padStart(2, '0')} unidades publicadas</span>
+          <span>{String(activeMockVehicles.length).padStart(2, '0')} unidades publicadas</span>
         </div>
       </section>
 
-      <InventoryCatalog vehicles={mockVehicles} initialCompareSlug={initialCompareSlug} />
+      <Suspense fallback={<InventoryCatalog vehicles={activeMockVehicles} />}>
+        <InventoryCatalogFromSearchParams vehicles={activeMockVehicles} />
+      </Suspense>
 
       <section className="section-shell catalog-contact glass-panel" aria-labelledby="catalog-contact-title">
         <div>

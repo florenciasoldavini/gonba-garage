@@ -51,13 +51,16 @@ system that owns those facts rather than from browser clicks.
 ## Google Search Console setup
 
 The application exposes `/sitemap.xml` and `/robots.txt`. Both use `NEXT_PUBLIC_SITE_URL`, so replace
-the local value with the canonical production origin before launch.
+the local value with the canonical production origin before launch. While the site is a demo,
+`SITE_INDEXING_ENABLED=false` keeps every page out of search results and serves an empty sitemap.
 
 After the final domain is connected:
 
-1. Add a Domain property in Google Search Console and verify it with the DNS record supplied by Google.
-2. Submit `https://<production-domain>/sitemap.xml`.
-3. Confirm that the homepage, inventory page, and several vehicle detail pages are indexed.
+1. Replace demonstrative inventory and connect all production forms.
+2. Set `SITE_INDEXING_ENABLED=true` and redeploy.
+3. Add a Domain property in Google Search Console and verify it with the DNS record supplied by Google.
+4. Submit `https://<production-domain>/sitemap.xml`.
+5. Confirm that the homepage, inventory page, and several vehicle detail pages are indexed.
 
 The complete Vercel, DNS, callback, SEO, analytics, and public-link migration sequence is in the
 [custom-domain launch checklist](custom-domain-launch-checklist.md).

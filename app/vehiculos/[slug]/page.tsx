@@ -7,14 +7,18 @@ import { ArrowDown, ArrowUpRight, Scale } from 'lucide-react';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { ContactCallout } from '@/components/marketing/contact-callout';
+import { JsonLd } from '@/components/seo/json-ld';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { findMockVehicle, mockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleSpecification, vehicleSpecificationLabels, type VehicleSpecificationKey } from '@/features/vehicles/presentation/specifications';
+import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 import { createPageMetadata } from '@/lib/metadata';
+import { isSiteIndexingEnabled } from '@/lib/site-indexing';
 import { getSiteUrl } from '@/lib/site-url';
+import { ORGANIZATION_SCHEMA_ID } from '@/lib/structured-data';
 import { PriceAlert } from './_components/price-alert';
 import { ShareButton } from './_components/share-button';
 import { VehicleAnalytics } from './_components/vehicle-analytics';
@@ -40,13 +44,17 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
   const title = `${vehicle.make} ${vehicle.model} ${vehicle.year} | Gonba's Garage`;
   const description = `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}, ${formatVehicleMileage(vehicle.mileageKm)}. Consultá disponibilidad en Gonba's Garage.`;
 
-  return createPageMetadata({
+  const metadata = createPageMetadata({
     title,
     description,
     path: `/vehiculos/${vehicle.slug}`,
-    image: vehicle.image,
-    imageAlt: vehicle.imageAlt,
+    image: `/og/vehiculos/${vehicle.slug}`,
+    imageAlt: `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}`,
   });
+
+  return vehicle.status === 'paused' && isSiteIndexingEnabled()
+    ? { ...metadata, robots: { index: false, follow: true } }
+    : metadata;
 }
 
 export default async function VehicleDetailPage({ params }: VehicleDetailPageProps) {
@@ -59,29 +67,68 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const vehicleUrl = new URL(`/vehiculos/${vehicle.slug}`, siteUrl).toString();
   const compareHref = `/vehiculos?comparar=${vehicle.slug}#inventario`;
   const vehicleContactHref = getWhatsAppUrl(`Hola, quiero consultar por el ${vehicle.make} ${vehicle.model}.`);
-  const vehicleSchema = {
+  const status = getVehicleStatusPresentation(vehicle.status);
+  const organizationId = new URL(ORGANIZATION_SCHEMA_ID, siteUrl).toString();
+  const vehicleSchemaId = `${vehicleUrl}#vehicle`;
+  const vehicleStructuredData = {
     '@context': 'https://schema.org',
-    '@type': 'Vehicle',
-    name: `${vehicle.make} ${vehicle.model} ${vehicle.version}`,
-    image: [new URL(vehicle.image, siteUrl).toString()],
-    description: vehicle.description,
-    url: vehicleUrl,
-    sku: vehicle.stockCode,
-    brand: { '@type': 'Brand', name: vehicle.make },
-    model: vehicle.model,
-    vehicleModelDate: String(vehicle.year),
-    mileageFromOdometer: {
-      '@type': 'QuantitativeValue',
-      value: vehicle.mileageKm,
-      unitCode: 'KMT',
-    },
-    offers: {
-      '@type': 'Offer',
-      price: vehicle.price,
-      priceCurrency: vehicle.currency,
-      availability: 'https://schema.org/InStock',
-      url: vehicleUrl,
-    },
+    '@graph': [
+      {
+        '@type': ['Product', 'Vehicle'],
+        '@id': vehicleSchemaId,
+        mainEntityOfPage: vehicleUrl,
+        name: `${vehicle.make} ${vehicle.model} ${vehicle.version}`,
+        image: [new URL(vehicle.image, siteUrl).toString()],
+        description: vehicle.description,
+        url: vehicleUrl,
+        sku: vehicle.stockCode,
+        brand: { '@type': 'Brand', name: vehicle.make },
+        model: vehicle.model,
+        color: vehicle.color,
+        fuelType: vehicle.fuel,
+        vehicleConfiguration: vehicle.version,
+        vehicleModelDate: String(vehicle.year),
+        vehicleTransmission: vehicle.transmission,
+        mileageFromOdometer: {
+          '@type': 'QuantitativeValue',
+          value: vehicle.mileageKm,
+          unitCode: 'KMT',
+        },
+        offers: {
+          '@type': 'Offer',
+          price: vehicle.price,
+          priceCurrency: vehicle.currency,
+          availability: status.schemaAvailability,
+          itemCondition: 'https://schema.org/UsedCondition',
+          seller: { '@id': organizationId },
+          url: vehicleUrl,
+        },
+      },
+      {
+        '@type': 'BreadcrumbList',
+        '@id': `${vehicleUrl}#breadcrumb`,
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Inicio',
+            item: new URL('/', siteUrl).toString(),
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Vehículos',
+            item: new URL('/vehiculos', siteUrl).toString(),
+          },
+          {
+            '@type': 'ListItem',
+            position: 3,
+            name: `${vehicle.make} ${vehicle.model}`,
+            item: vehicleUrl,
+          },
+        ],
+      },
+    ],
   };
 
   const detailSpecificationKeys: VehicleSpecificationKey[] = [
@@ -103,10 +150,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         vehicleSlug={vehicle.slug}
         year={vehicle.year}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(vehicleSchema) }}
-      />
+      <JsonLd data={vehicleStructuredData} />
 
       <SiteHeader ctaHref="#consulta" ctaLabel="Consultar" />
 
@@ -118,7 +162,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
       <section className="section-shell detail-title" aria-labelledby="vehicle-title">
         <div>
-          <Eyebrow>Disponible · Datos demostrativos</Eyebrow>
+          <Eyebrow>{status.label} · Datos demostrativos</Eyebrow>
           <h1 id="vehicle-title">{vehicle.make} {vehicle.model}<em>{vehicle.version}</em></h1>
         </div>
         <div className="detail-title-meta">
@@ -144,7 +188,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
         <aside className="detail-purchase-card glass-panel" aria-label="Precio y consulta">
           <div className="detail-purchase-top">
-            <div className="detail-availability"><span /> Disponible</div>
+            <div className="detail-availability"><span /> {status.label}</div>
             <div className="detail-utility-actions">
               <Link className="detail-compare-button" href={compareHref}>
                 <Scale aria-hidden="true" size={14} strokeWidth={1.8} />
@@ -157,17 +201,20 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
                 title={`${vehicle.make} ${vehicle.model}`}
                 vehicleMeta={`${vehicle.year} · ${vehicle.version}`}
                 vehicleSlug={vehicle.slug}
+                statusLabel={status.label}
               />
             </div>
           </div>
           <p className="detail-price-label">Precio publicado</p>
           <p className="detail-price">{formatVehiclePrice(vehicle.price, vehicle.currency)}</p>
           <p className="detail-location">{vehicle.location}</p>
-          <PriceAlert
-            vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
-            vehicleSlug={vehicle.slug}
-            formattedPrice={formatVehiclePrice(vehicle.price, vehicle.currency)}
-          />
+          {status.isAvailable ? (
+            <PriceAlert
+              vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
+              vehicleSlug={vehicle.slug}
+              formattedPrice={formatVehiclePrice(vehicle.price, vehicle.currency)}
+            />
+          ) : null}
           <div className="detail-actions">
             <ButtonAnchor href={vehicleContactHref} rel="noreferrer" target="_blank">
               Consultar por este auto <Arrow />
