@@ -1,6 +1,6 @@
 # Custom-domain launch checklist
 
-Use this checklist when Gonba Garage receives its final production domain. Replace
+Use this checklist when Gonba's Garage receives its final production domain. Replace
 `https://<custom-domain>` below with the chosen canonical origin, including `www` if that is the
 preferred public hostname.
 
@@ -10,7 +10,7 @@ preferred public hostname.
 - Hosting: Vercel
 - Canonical URL source: `NEXT_PUBLIC_SITE_URL`
 - Search Console: temporary URL-prefix property for the Vercel URL
-- Analytics: the existing PostHog project named **Gonba Garage**
+- Analytics: the existing PostHog project named **Gonba's Garage**
 
 Before making changes, record the exact final domain, who controls its DNS, and which hostname is
 canonical. Vercel recommends using `www` as the primary hostname and redirecting the apex domain to
@@ -18,7 +18,7 @@ it, but either direction is supported. Use one convention consistently.
 
 ## 1. Connect the domain to Vercel
 
-- [ ] Add both `<custom-domain>` and `www.<custom-domain>` to the Gonba Garage Vercel project.
+- [ ] Add both `<custom-domain>` and `www.<custom-domain>` to the Gonba's Garage Vercel project.
 - [ ] Choose the canonical hostname: `https://<custom-domain>` or
   `https://www.<custom-domain>`.
 - [ ] Configure the non-canonical hostname as a permanent redirect to the canonical hostname.
@@ -115,7 +115,7 @@ and [Google's site-move guidance](https://developers.google.com/search/docs/craw
 The existing PostHog project and `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` can stay unchanged. A custom
 domain does not require new analytics credentials.
 
-- [ ] Open the custom-domain site and confirm `$pageview` and Gonba Garage custom events arrive in
+- [ ] Open the custom-domain site and confirm `$pageview` and Gonba's Garage custom events arrive in
   the same PostHog project.
 - [ ] Update any PostHog dashboard filters, saved insights, toolbar URLs, allowed origins, or internal
   traffic rules that explicitly mention `gonba-garage.vercel.app`.

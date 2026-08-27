@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUpRight, Scale } from 'lucide-react';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { ContactCallout } from '@/components/marketing/contact-callout';
+import { getWhatsAppUrl } from '@/lib/contact';
 import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { findMockVehicle, mockVehicles } from '@/features/vehicles/data/mock-vehicles';
@@ -32,11 +33,11 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
   const vehicle = findMockVehicle(slug);
 
   if (!vehicle) {
-    return { title: 'Vehículo no encontrado | Gonba Garage' };
+    return { title: "Vehículo no encontrado | Gonba's Garage" };
   }
 
-  const title = `${vehicle.make} ${vehicle.model} ${vehicle.year} | Gonba Garage`;
-  const description = `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}, ${formatVehicleMileage(vehicle.mileageKm)}. Consultá disponibilidad en Gonba Garage.`;
+  const title = `${vehicle.make} ${vehicle.model} ${vehicle.year} | Gonba's Garage`;
+  const description = `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}, ${formatVehicleMileage(vehicle.mileageKm)}. Consultá disponibilidad en Gonba's Garage.`;
 
   return {
     title,
@@ -67,6 +68,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const siteUrl = getSiteUrl();
   const vehicleUrl = new URL(`/vehiculos/${vehicle.slug}`, siteUrl).toString();
   const compareHref = `/vehiculos?comparar=${vehicle.slug}#inventario`;
+  const vehicleContactHref = getWhatsAppUrl(`Hola, quiero consultar por el ${vehicle.make} ${vehicle.model}.`);
   const vehicleSchema = {
     '@context': 'https://schema.org',
     '@type': 'Vehicle',
@@ -159,9 +161,11 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
                 <span>Comparar</span>
               </Link>
               <ShareButton
-                title={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
-                text={`Mirá este ${vehicle.make} ${vehicle.model} ${vehicle.version} publicado por Gonba Garage.`}
                 fallbackUrl={vehicleUrl}
+                imageSrc={vehicle.image}
+                text={`Mirá este ${vehicle.make} ${vehicle.model} ${vehicle.version} publicado por Gonba's Garage.`}
+                title={`${vehicle.make} ${vehicle.model}`}
+                vehicleMeta={`${vehicle.year} · ${vehicle.version}`}
                 vehicleSlug={vehicle.slug}
               />
             </div>
@@ -175,7 +179,9 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             formattedPrice={formatVehiclePrice(vehicle.price, vehicle.currency)}
           />
           <div className="detail-actions">
-            <ButtonAnchor href="#consulta">Consultar por este auto <Arrow /></ButtonAnchor>
+            <ButtonAnchor href={vehicleContactHref} rel="noreferrer" target="_blank">
+              Consultar por este auto <Arrow />
+            </ButtonAnchor>
             <ButtonAnchor href="#ficha" variant="glass">Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
           </div>
           <p className="detail-disclaimer">Precio y disponibilidad sujetos a confirmación. Esta página utiliza información de demostración.</p>
@@ -216,20 +222,19 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         </div>
       </section>
 
-      <section className="section-shell detail-confidence" aria-label="Proceso Gonba Garage">
+      <section className="section-shell detail-confidence" aria-label="Proceso Gonba's Garage">
         <div><span>01</span><strong>Selección</strong><p>Elegimos unidades con identidad y una historia clara.</p></div>
         <div><span>02</span><strong>Revisión</strong><p>Chequeamos información, estado general y documentación.</p></div>
         <div><span>03</span><strong>Acompañamiento</strong><p>Coordinamos la visita y te acompañamos hasta la entrega.</p></div>
       </section>
 
       <ContactCallout
-        actionHref={`mailto:ventas@gonbagarage.com.ar?subject=Consulta ${vehicle.make} ${vehicle.model}`}
+        actionHref={vehicleContactHref}
         actionLabel="Consultar ahora"
-        analytics={{ channel: 'email', placement: 'vehicle_detail', vehicleSlug: vehicle.slug }}
+        analytics={{ channel: 'whatsapp', placement: 'vehicle_detail', vehicleSlug: vehicle.slug }}
         className="detail-contact"
         eyebrow="Coordiná una visita"
         id="consulta"
-        note="Contacto provisional para esta demostración."
         title="Conocelo en persona. El resto se entiende manejando."
         titleId="contact-title"
       />

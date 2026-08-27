@@ -5,7 +5,9 @@ import { ArrowDown, ArrowUpRight, Plus } from 'lucide-react';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { ContactCallout } from '@/components/marketing/contact-callout';
-import { ButtonAnchor, ButtonLink } from '@/components/ui/button';
+import { WHATSAPP_GENERAL_MESSAGE } from '@/constants/contact';
+import { getWhatsAppUrl } from '@/lib/contact';
+import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 
 const vehicles = [
@@ -55,7 +57,7 @@ export default function Home() {
             para elegir con confianza.
           </p>
           <div className="hero-actions">
-            <ButtonAnchor href="#vehiculos">Ver vehículos <Arrow /></ButtonAnchor>
+            <ButtonLink href="/vehiculos">Ver vehículos <Arrow /></ButtonLink>
             <ButtonLink href="/vender" variant="glass">Quiero vender mi auto</ButtonLink>
           </div>
         </div>
@@ -128,7 +130,7 @@ export default function Home() {
 
       <section className="section-shell trust-section" id="nosotros" aria-labelledby="trust-title">
         <div className="trust-copy">
-          <Eyebrow>La diferencia Gonba</Eyebrow>
+          <Eyebrow>La diferencia Gonba&apos;s Garage</Eyebrow>
           <h2 id="trust-title">No se trata de vender cualquier auto.</h2>
           <p>Se trata de conocerlo, presentarlo con honestidad y acompañarte hasta que estés seguro de tu decisión.</p>
         </div>
@@ -154,12 +156,11 @@ export default function Home() {
       </section>
 
       <ContactCallout
-        actionHref="#inicio"
+        actionHref={getWhatsAppUrl(WHATSAPP_GENERAL_MESSAGE)}
         actionLabel="Escribir por WhatsApp"
         analytics={{ channel: 'whatsapp', placement: 'home_contact' }}
         eyebrow="Hablemos"
         id="contacto"
-        note="Datos de contacto provisionales para esta demostración."
         title="El próximo paso puede empezar con un mensaje."
         titleId="contact-title"
       />

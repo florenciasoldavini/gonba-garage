@@ -11,7 +11,7 @@ type ContactCalloutProps = {
   actionLabel: string;
   eyebrow: string;
   id: string;
-  note: string;
+  note?: string;
   title: string;
   titleId: string;
   analytics?: {
@@ -59,7 +59,7 @@ export function ContactCallout({
         >
           {actionLabel} <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
         </ButtonAnchor>
-        <p>{note}</p>
+        {note ? <p>{note}</p> : null}
       </div>
     </section>
   );

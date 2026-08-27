@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
-import { Check, ChevronDown, Search } from 'lucide-react';
+import { Check, ChevronDown, Search, X } from 'lucide-react';
 
 type CustomSelectOption = {
   value: string;
@@ -140,10 +140,11 @@ export function CustomSelect({
       {menuIsOpen && (
         <div className="custom-select-menu glass-panel" onKeyDown={handleMenuKeyDown}>
           {searchable && (
-            <label className="custom-select-search">
+            <div className="custom-select-search">
               <Search aria-hidden="true" size={14} />
-              <span className="sr-only">Buscar opción</span>
+              <label className="sr-only" htmlFor={`${menuId}-search`}>Buscar opción</label>
               <input
+                id={`${menuId}-search`}
                 ref={searchRef}
                 type="search"
                 value={query}
@@ -151,7 +152,20 @@ export function CustomSelect({
                 placeholder={searchPlaceholder}
                 autoComplete="off"
               />
-            </label>
+              {query ? (
+                <button
+                  className="search-clear-button"
+                  type="button"
+                  aria-label="Limpiar búsqueda de opciones"
+                  onClick={() => {
+                    setQuery('');
+                    searchRef.current?.focus();
+                  }}
+                >
+                  <X aria-hidden="true" size={13} strokeWidth={1.8} />
+                </button>
+              ) : null}
+            </div>
           )}
           <div className="custom-select-options" id={menuId} role="listbox" aria-label={ariaLabel}>
             {filteredOptions.map((option) => (

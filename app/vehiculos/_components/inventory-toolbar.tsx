@@ -1,6 +1,7 @@
 'use client';
 
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { useRef } from 'react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 
 import { CustomSelect } from '@/components/ui/custom-select';
 
@@ -25,18 +26,35 @@ type InventoryToolbarProps = {
 };
 
 export function InventoryToolbar({ activeFilterCount, count, onOpenFilters, onQueryChange, onSortChange, query, sort }: InventoryToolbarProps) {
+  const searchRef = useRef<HTMLInputElement>(null);
+
   return (
     <div className="catalog-toolbar">
-      <label className="catalog-toolbar-search">
-        <span className="sr-only">Buscar vehículos</span>
+      <div className="catalog-toolbar-search">
+        <label className="sr-only" htmlFor="inventory-search">Buscar vehículos</label>
         <Search aria-hidden="true" size={16} />
         <input
+          id="inventory-search"
+          ref={searchRef}
           type="search"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
           placeholder="Marca, modelo o año"
         />
-      </label>
+        {query ? (
+          <button
+            className="search-clear-button"
+            type="button"
+            aria-label="Limpiar búsqueda"
+            onClick={() => {
+              onQueryChange('');
+              searchRef.current?.focus();
+            }}
+          >
+            <X aria-hidden="true" size={14} strokeWidth={1.8} />
+          </button>
+        ) : null}
+      </div>
       <div className="catalog-toolbar-controls">
         <button className="catalog-mobile-filter-trigger" type="button" onClick={onOpenFilters}>
           <SlidersHorizontal aria-hidden="true" size={15} />
