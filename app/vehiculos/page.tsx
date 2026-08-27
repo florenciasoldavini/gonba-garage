@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { ArrowUp, ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 
+import { SiteFooter } from '@/components/layout/site-footer';
+import { SiteHeader } from '@/components/layout/site-header';
 import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { mockVehicles } from '@/features/vehicles/data/mock-vehicles';
@@ -25,19 +26,7 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
 
   return (
     <main className="catalog-page" id="catalog-top">
-      <header className="site-header detail-header">
-        <Link className="wordmark" href="/" aria-label="Gonba Garage, inicio">
-          GONBA <span>GARAGE</span>
-        </Link>
-        <nav className="main-nav" aria-label="Navegación principal">
-          <Link className="nav-current" href="/vehiculos" aria-current="page">Vehículos</Link>
-          <Link href="/vender">Vendé tu auto</Link>
-          <Link href="/#servicios">Servicios</Link>
-          <Link href="/#nosotros">Nosotros</Link>
-          <Link href="/#preguntas">Preguntas</Link>
-        </nav>
-        <Link className="header-cta" href="/#contacto">Contactar <Arrow /></Link>
-      </header>
+      <SiteHeader active="vehicles" />
 
       <section className="section-shell catalog-hero" aria-labelledby="catalog-title">
         <div>
@@ -60,17 +49,7 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
         <ButtonLink href="/#contacto">Hablar con Gonba Garage <Arrow /></ButtonLink>
       </section>
 
-      <footer className="site-footer section-shell">
-        <Link className="wordmark footer-wordmark" href="/">GONBA <span>GARAGE</span></Link>
-        <p>Autos usados seleccionados · Buenos Aires, Argentina</p>
-        <nav aria-label="Navegación del pie de página">
-          <Link href="/vehiculos">Vehículos</Link>
-          <Link href="/#servicios">Servicios</Link>
-          <Link href="/#preguntas">FAQ</Link>
-          <a href="#catalog-top">Volver arriba <ArrowUp aria-hidden="true" size={13} /></a>
-        </nav>
-        <small>Demo visual · Contenido e información comercial a confirmar</small>
-      </footer>
+      <SiteFooter topHref="#catalog-top" />
     </main>
   );
 }

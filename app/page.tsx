@@ -1,7 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowDown, ArrowUp, ArrowUpRight, Plus } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, Plus } from 'lucide-react';
 
+import { SiteFooter } from '@/components/layout/site-footer';
+import { SiteHeader } from '@/components/layout/site-header';
+import { ContactCallout } from '@/components/marketing/contact-callout';
 import { ButtonAnchor, ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 
@@ -37,19 +40,7 @@ const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8}
 export default function Home() {
   return (
     <main id="inicio">
-      <header className="site-header">
-        <a className="wordmark" href="#inicio" aria-label="Gonba Garage, inicio">
-          GONBA <span>GARAGE</span>
-        </a>
-        <nav className="main-nav" aria-label="Navegación principal">
-          <Link href="/vehiculos">Vehículos</Link>
-          <Link href="/vender">Vendé tu auto</Link>
-          <a href="#servicios">Servicios</a>
-          <a href="#nosotros">Nosotros</a>
-          <a href="#preguntas">Preguntas</a>
-        </nav>
-        <a className="header-cta" href="#contacto">Contactar <Arrow /></a>
-      </header>
+      <SiteHeader home />
 
       <section className="hero section-shell" aria-labelledby="hero-title">
         <div className="hero-media" aria-hidden="true">
@@ -162,23 +153,17 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section-shell contact-section glass-panel" id="contacto" aria-labelledby="contact-title">
-        <div className="contact-glow" aria-hidden="true" />
-        <div className="contact-copy"><Eyebrow>Hablemos</Eyebrow><h2 id="contact-title">El próximo paso puede empezar con un mensaje.</h2></div>
-        <div className="contact-actions">
-          <ButtonAnchor href="#inicio">Escribir por WhatsApp <Arrow /></ButtonAnchor>
-          <p>Datos de contacto provisionales para esta demostración.</p>
-        </div>
-      </section>
+      <ContactCallout
+        actionHref="#inicio"
+        actionLabel="Escribir por WhatsApp"
+        eyebrow="Hablemos"
+        id="contacto"
+        note="Datos de contacto provisionales para esta demostración."
+        title="El próximo paso puede empezar con un mensaje."
+        titleId="contact-title"
+      />
 
-      <footer className="site-footer section-shell">
-        <a className="wordmark footer-wordmark" href="#inicio">GONBA <span>GARAGE</span></a>
-        <p>Autos usados seleccionados · Buenos Aires, Argentina</p>
-        <nav aria-label="Navegación del pie de página">
-          <a href="#vehiculos">Vehículos</a><a href="#servicios">Servicios</a><a href="#preguntas">FAQ</a><a href="#inicio">Volver arriba <ArrowUp aria-hidden="true" size={13} /></a>
-        </nav>
-        <small>Demo visual · Contenido e información comercial a confirmar</small>
-      </footer>
+      <SiteFooter home topHref="#inicio" />
     </main>
   );
 }

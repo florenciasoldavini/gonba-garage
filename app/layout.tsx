@@ -1,15 +1,41 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
 
-const geistSans = Geist({
+const geistSans = localFont({
+  src: [
+    {
+      path: './fonts/geist-sans-variable.ttf',
+      weight: '100 900',
+      style: 'normal',
+    },
+    {
+      path: './fonts/geist-sans-variable-italic.ttf',
+      weight: '100 900',
+      style: 'italic',
+    },
+  ],
   variable: '--font-geist-sans',
-  subsets: ['latin'],
+  display: 'swap',
+  fallback: ['Arial', 'Helvetica', 'sans-serif'],
 });
 
-const geistMono = Geist_Mono({
+const geistMono = localFont({
+  src: [
+    {
+      path: './fonts/geist-mono-variable.ttf',
+      weight: '100 900',
+      style: 'normal',
+    },
+    {
+      path: './fonts/geist-mono-variable-italic.ttf',
+      weight: '100 900',
+      style: 'italic',
+    },
+  ],
   variable: '--font-geist-mono',
-  subsets: ['latin'],
+  display: 'swap',
+  fallback: ['monospace'],
 });
 
 export const metadata: Metadata = {
@@ -44,8 +70,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="es" data-scroll-behavior="smooth">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>{children}</body>
+    <html
+      lang="es"
+      data-scroll-behavior="smooth"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+    >
+      <body>{children}</body>
     </html>
   );
 }

@@ -5,7 +5,6 @@
 html { scroll-behavior: smooth; }
 
 body {
-  --font-mono: var(--font-geist-mono), monospace;
   margin: 0;
   color: var(--text);
   background:

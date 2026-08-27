@@ -18,8 +18,8 @@
   --color-danger-soft: rgba(255, 121, 111, 0.1);
 
   /* Typography */
-  --font-sans: Arial, Helvetica, sans-serif;
-  --font-mono: monospace;
+  --font-sans: var(--font-geist-sans, Arial, Helvetica, sans-serif);
+  --font-mono: var(--font-geist-mono, monospace);
   --text-display-xl: clamp(3.4rem, 7.4vw, 7.6rem);
   --text-display-lg: clamp(3.7rem, 6.2vw, 6.4rem);
   --text-display-md: clamp(2.4rem, 5vw, 5.3rem);

@@ -6,6 +6,11 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { ArrowUpRight, Check, Scale, X } from 'lucide-react';
 
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
+import {
+  getVehicleSpecification,
+  vehicleSpecificationLabels,
+  type VehicleSpecificationKey,
+} from '@/features/vehicles/presentation/specifications';
 
 type VehicleCompareDialogProps = {
   vehicles: Vehicle[];
@@ -15,15 +20,9 @@ type VehicleCompareDialogProps = {
   onClear: () => void;
 };
 
-const formatPrice = (amount: number) =>
-  new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(amount);
-
-const formatMileage = (amount: number) =>
-  `${new Intl.NumberFormat('es-AR').format(amount)} km`;
+const comparisonKeys: VehicleSpecificationKey[] = [
+  'price', 'year', 'mileage', 'transmission', 'engine', 'fuel', 'traction', 'body', 'color', 'location',
+];
 
 export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onClear }: VehicleCompareDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -37,18 +36,10 @@ export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onCl
   }, [isOpen]);
 
   const rows = useMemo(() => {
-    const allRows = [
-      ['Precio', ...vehicles.map((vehicle) => formatPrice(vehicle.price))],
-      ['Año', ...vehicles.map((vehicle) => String(vehicle.year))],
-      ['Kilometraje', ...vehicles.map((vehicle) => formatMileage(vehicle.mileageKm))],
-      ['Transmisión', ...vehicles.map((vehicle) => vehicle.transmission)],
-      ['Motor', ...vehicles.map((vehicle) => vehicle.engine)],
-      ['Combustible', ...vehicles.map((vehicle) => vehicle.fuel)],
-      ['Tracción', ...vehicles.map((vehicle) => vehicle.traction)],
-      ['Carrocería', ...vehicles.map((vehicle) => vehicle.body)],
-      ['Color', ...vehicles.map((vehicle) => vehicle.color)],
-      ['Ubicación', ...vehicles.map((vehicle) => vehicle.location)],
-    ];
+    const allRows = comparisonKeys.map((key) => [
+      vehicleSpecificationLabels[key],
+      ...vehicles.map((vehicle) => getVehicleSpecification(vehicle, key)),
+    ]);
 
     return differencesOnly
       ? allRows.filter(([, ...values]) => new Set(values).size > 1)

@@ -30,8 +30,9 @@ Meaning must never depend on color alone. Pair status colors with text or an ico
 
 ### Typography
 
-- The original Arial/Helvetica stack is the primary interface and editorial family.
+- Geist Sans is the primary interface and editorial family, with Arial and Helvetica as fallbacks.
 - Geist Mono is reserved for metadata and technical values.
+- Both families are self-hosted as variable fonts with normal and italic styles.
 - Display tokens are fluid; body and control text remain stable and readable.
 - Avoid meaningful text below `--text-micro`.
 - Sentence case is the default. Uppercase is limited to short metadata labels.
@@ -46,7 +47,16 @@ Meaning must never depend on color alone. Pair status colors with text or an ico
 
 ## Shared components
 
-Reusable primitives live in `components/ui`.
+Reusable primitives live in `components/ui`, brand elements in `components/brand`, shared page
+chrome in `components/layout`, and cross-page promotional compositions in `components/marketing`.
+Vehicle-specific presentation helpers live in `features/vehicles/presentation`; route-only components
+stay beside their route in `_components`.
+
+### Site chrome
+
+Use `SiteHeader` and `SiteFooter` on public pages so navigation, active states, wordmark treatment,
+and footer information remain consistent. `Wordmark` owns the brand lockup, while
+`ContactCallout` owns the standard contact panel composition.
 
 ### Button
 
