@@ -1,8 +1,11 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, ArrowUp, ArrowUpRight, Check, Clock3, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Check, Clock3, ShieldCheck } from 'lucide-react';
 
+import { SiteFooter } from '@/components/layout/site-footer';
+import { SiteHeader } from '@/components/layout/site-header';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import { ValuationForm } from './_components/valuation-form';
 
 export const metadata: Metadata = {
@@ -11,22 +14,10 @@ export const metadata: Metadata = {
   alternates: { canonical: '/vender' },
 };
 
-const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
-
 export default function SellVehiclePage() {
   return (
     <main className="valuation-page" id="valuation-top">
-      <header className="site-header detail-header">
-        <Link className="wordmark" href="/" aria-label="Gonba Garage, inicio">GONBA <span>GARAGE</span></Link>
-        <nav className="main-nav" aria-label="Navegación principal">
-          <Link href="/vehiculos">Vehículos</Link>
-          <Link className="nav-current" href="/vender" aria-current="page">Vendé tu auto</Link>
-          <Link href="/#servicios">Servicios</Link>
-          <Link href="/#nosotros">Nosotros</Link>
-          <Link href="/#preguntas">Preguntas</Link>
-        </nav>
-        <Link className="header-cta" href="/vehiculos">Ver vehículos <Arrow /></Link>
-      </header>
+      <SiteHeader active="sell" ctaHref="/vehiculos" ctaLabel="Ver vehículos" />
 
       <div className="section-shell valuation-breadcrumbs">
         <Link href="/"><ArrowLeft aria-hidden="true" size={14} /> Volver al inicio</Link>
@@ -34,7 +25,7 @@ export default function SellVehiclePage() {
 
       <section className="section-shell valuation-layout" aria-labelledby="valuation-title">
         <aside className="valuation-intro">
-          <p className="eyebrow"><span /> Tasación inicial</p>
+          <Eyebrow>Tasación inicial</Eyebrow>
           <h1 id="valuation-title">Contanos qué auto tenés.</h1>
           <p className="valuation-lead">Con algunos datos podemos preparar una primera estimación y decirte si la unidad encaja con nuestra selección.</p>
 
@@ -53,17 +44,10 @@ export default function SellVehiclePage() {
         <ValuationForm />
       </section>
 
-      <footer className="site-footer section-shell">
-        <Link className="wordmark footer-wordmark" href="/">GONBA <span>GARAGE</span></Link>
-        <p>Autos usados seleccionados · Buenos Aires, Argentina</p>
-        <nav aria-label="Navegación del pie de página">
-          <Link href="/vehiculos">Vehículos</Link>
-          <Link href="/#servicios">Servicios</Link>
-          <Link href="/#preguntas">FAQ</Link>
-          <a href="#valuation-top">Volver arriba <ArrowUp aria-hidden="true" size={13} /></a>
-        </nav>
-        <small>Demo visual · El envío de la solicitud se conectará en una próxima etapa</small>
-      </footer>
+      <SiteFooter
+        topHref="#valuation-top"
+        note="Demo visual · El envío de la solicitud se conectará en una próxima etapa"
+      />
     </main>
   );
 }

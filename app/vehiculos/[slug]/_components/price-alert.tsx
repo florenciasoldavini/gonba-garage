@@ -3,6 +3,9 @@
 import { FormEvent, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, BellRing, Check, TrendingDown, X } from 'lucide-react';
 
+import { Button } from '@/components/ui/button';
+import { Eyebrow } from '@/components/ui/eyebrow';
+
 type PriceAlertProps = {
   vehicleName: string;
   vehicleSlug: string;
@@ -82,11 +85,11 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
               <p>Alerta activada</p>
               <h2>Te avisaremos si baja.</h2>
               <p>Guardamos tu alerta para el {vehicleName}. El precio actual es {formattedPrice}.</p>
-              <button className="button button-accent" type="button" onClick={closeDialog}>Seguir viendo el auto <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} /></button>
+              <Button type="button" onClick={closeDialog}>Seguir viendo el auto <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} /></Button>
             </div>
           ) : (
             <form className="price-alert-form" onSubmit={handleSubmit}>
-              <p className="eyebrow"><span /> Alerta de precio</p>
+              <Eyebrow>Alerta de precio</Eyebrow>
               <h2 id="price-alert-title">¿Esperando una mejor oportunidad?</h2>
               <p>Dejanos tu email y te avisamos si el precio del {vehicleName} baja de {formattedPrice}.</p>
 
@@ -109,10 +112,10 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
                 <input name="website" type="text" tabIndex={-1} autoComplete="off" />
               </label>
 
-              <button className="button button-accent" type="submit" disabled={state === 'submitting'}>
+              <Button type="submit" disabled={state === 'submitting'}>
                 <span>{state === 'submitting' ? 'Activando…' : 'Crear alerta'}</span>
                 <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
-              </button>
+              </Button>
               <p className="price-alert-privacy">Usaremos tu email únicamente para avisarte sobre esta unidad.</p>
               {state === 'error' && <p className="price-alert-error" role="alert">{message}</p>}
             </form>

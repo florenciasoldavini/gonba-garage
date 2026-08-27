@@ -2,9 +2,16 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowDown, ArrowUp, ArrowUpRight, Scale } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, Scale } from 'lucide-react';
 
+import { SiteFooter } from '@/components/layout/site-footer';
+import { SiteHeader } from '@/components/layout/site-header';
+import { ContactCallout } from '@/components/marketing/contact-callout';
+import { ButtonAnchor } from '@/components/ui/button';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import { findMockVehicle, mockVehicles } from '@/features/vehicles/data/mock-vehicles';
+import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
+import { getVehicleSpecification, vehicleSpecificationLabels, type VehicleSpecificationKey } from '@/features/vehicles/presentation/specifications';
 import { PriceAlert } from './_components/price-alert';
 import { ShareButton } from './_components/share-button';
 
@@ -13,16 +20,6 @@ type VehicleDetailPageProps = {
 };
 
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
-
-const formatPrice = (amount: number) =>
-  new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0,
-  }).format(amount);
-
-const formatMileage = (mileageKm: number) =>
-  `${new Intl.NumberFormat('es-AR').format(mileageKm)} km`;
 
 export function generateStaticParams() {
   return mockVehicles.map(({ slug }) => ({ slug }));
@@ -37,7 +34,7 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
   }
 
   const title = `${vehicle.make} ${vehicle.model} ${vehicle.year} | Gonba Garage`;
-  const description = `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}, ${formatMileage(vehicle.mileageKm)}. Consultá disponibilidad en Gonba Garage.`;
+  const description = `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}, ${formatVehicleMileage(vehicle.mileageKm)}. Consultá disponibilidad en Gonba Garage.`;
 
   return {
     title,
@@ -93,16 +90,13 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
     },
   };
 
-  const specs = [
-    ['Año', String(vehicle.year)],
-    ['Kilometraje', formatMileage(vehicle.mileageKm)],
-    ['Motor', vehicle.engine],
-    ['Transmisión', vehicle.transmission],
-    ['Combustible', vehicle.fuel],
-    ['Tracción', vehicle.traction],
-    ['Carrocería', vehicle.body],
-    ['Color', vehicle.color],
+  const detailSpecificationKeys: VehicleSpecificationKey[] = [
+    'year', 'mileage', 'engine', 'transmission', 'fuel', 'traction', 'body', 'color',
   ];
+  const specs = detailSpecificationKeys.map((key) => [
+    vehicleSpecificationLabels[key],
+    getVehicleSpecification(vehicle, key),
+  ]);
 
   return (
     <main className="vehicle-detail-page">
@@ -111,19 +105,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         dangerouslySetInnerHTML={{ __html: JSON.stringify(vehicleSchema) }}
       />
 
-      <header className="site-header detail-header">
-        <Link className="wordmark" href="/" aria-label="Gonba Garage, inicio">
-          GONBA <span>GARAGE</span>
-        </Link>
-        <nav className="main-nav" aria-label="Navegación principal">
-          <Link href="/vehiculos">Vehículos</Link>
-          <Link href="/vender">Vendé tu auto</Link>
-          <Link href="/#servicios">Servicios</Link>
-          <Link href="/#nosotros">Nosotros</Link>
-          <Link href="/#preguntas">Preguntas</Link>
-        </nav>
-        <a className="header-cta" href="#consulta">Consultar <Arrow /></a>
-      </header>
+      <SiteHeader ctaHref="#consulta" ctaLabel="Consultar" />
 
       <div className="section-shell detail-breadcrumbs" aria-label="Ruta de navegación">
         <Link href="/">Inicio</Link><span>/</span>
@@ -133,12 +115,12 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
       <section className="section-shell detail-title" aria-labelledby="vehicle-title">
         <div>
-          <p className="eyebrow"><span /> Disponible · Datos demostrativos</p>
+          <Eyebrow>Disponible · Datos demostrativos</Eyebrow>
           <h1 id="vehicle-title">{vehicle.make} {vehicle.model}<em>{vehicle.version}</em></h1>
         </div>
         <div className="detail-title-meta">
           <span>{vehicle.year}</span>
-          <span>{formatMileage(vehicle.mileageKm)}</span>
+          <span>{formatVehicleMileage(vehicle.mileageKm)}</span>
           <span>{vehicle.transmission.split(',')[0]}</span>
         </div>
       </section>
@@ -173,16 +155,16 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             </div>
           </div>
           <p className="detail-price-label">Precio publicado</p>
-          <p className="detail-price">{formatPrice(vehicle.price)}</p>
+          <p className="detail-price">{formatVehiclePrice(vehicle.price, vehicle.currency)}</p>
           <p className="detail-location">{vehicle.location}</p>
           <PriceAlert
             vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
             vehicleSlug={vehicle.slug}
-            formattedPrice={formatPrice(vehicle.price)}
+            formattedPrice={formatVehiclePrice(vehicle.price, vehicle.currency)}
           />
           <div className="detail-actions">
-            <a className="button button-accent" href="#consulta">Consultar por este auto <Arrow /></a>
-            <a className="button button-glass" href="#ficha">Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></a>
+            <ButtonAnchor href="#consulta">Consultar por este auto <Arrow /></ButtonAnchor>
+            <ButtonAnchor href="#ficha" variant="glass">Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
           </div>
           <p className="detail-disclaimer">Precio y disponibilidad sujetos a confirmación. Esta página utiliza información de demostración.</p>
         </aside>
@@ -190,7 +172,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
       <section className="section-shell detail-overview" id="ficha" aria-labelledby="overview-title">
         <div className="detail-story">
-          <p className="eyebrow"><span /> La unidad</p>
+          <Eyebrow>La unidad</Eyebrow>
           <h2 id="overview-title">Elegido por cómo se siente. Revisado por todo lo demás.</h2>
           <p>{vehicle.description}</p>
           <ul className="detail-highlights" aria-label="Puntos destacados">
@@ -228,29 +210,18 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         <div><span>03</span><strong>Acompañamiento</strong><p>Coordinamos la visita y te acompañamos hasta la entrega.</p></div>
       </section>
 
-      <section className="section-shell contact-section detail-contact glass-panel" id="consulta" aria-labelledby="contact-title">
-        <div className="contact-glow" aria-hidden="true" />
-        <div className="contact-copy">
-          <p className="eyebrow"><span /> Coordiná una visita</p>
-          <h2 id="contact-title">Conocelo en persona. El resto se entiende manejando.</h2>
-        </div>
-        <div className="contact-actions">
-          <a className="button button-accent" href={`mailto:ventas@gonbagarage.com.ar?subject=Consulta ${vehicle.make} ${vehicle.model}`}>Consultar ahora <Arrow /></a>
-          <p>Contacto provisional para esta demostración.</p>
-        </div>
-      </section>
+      <ContactCallout
+        actionHref={`mailto:ventas@gonbagarage.com.ar?subject=Consulta ${vehicle.make} ${vehicle.model}`}
+        actionLabel="Consultar ahora"
+        className="detail-contact"
+        eyebrow="Coordiná una visita"
+        id="consulta"
+        note="Contacto provisional para esta demostración."
+        title="Conocelo en persona. El resto se entiende manejando."
+        titleId="contact-title"
+      />
 
-      <footer className="site-footer section-shell">
-        <Link className="wordmark footer-wordmark" href="/">GONBA <span>GARAGE</span></Link>
-        <p>Autos usados seleccionados · Buenos Aires, Argentina</p>
-        <nav aria-label="Navegación del pie de página">
-          <Link href="/vehiculos">Vehículos</Link>
-          <Link href="/#servicios">Servicios</Link>
-          <Link href="/#preguntas">FAQ</Link>
-          <a href="#vehicle-title">Volver arriba <ArrowUp aria-hidden="true" size={13} /></a>
-        </nav>
-        <small>Demo visual · Contenido e información comercial a confirmar</small>
-      </footer>
+      <SiteFooter topHref="#vehicle-title" />
     </main>
   );
 }
