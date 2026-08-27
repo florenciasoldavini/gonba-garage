@@ -1,6 +1,6 @@
 # Analytics and search measurement
 
-Gonba Garage uses PostHog for on-site behavior and conversion funnels. Google Search Console owns
+Gonba's Garage uses PostHog for on-site behavior and conversion funnels. Google Search Console owns
 organic search visibility and indexing data. Supabase remains the source of truth for persisted
 leads and business outcomes.
 

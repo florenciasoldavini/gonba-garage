@@ -10,9 +10,9 @@ export function Wordmark({ href = '/', className = '' }: WordmarkProps) {
     <Link
       className={`wordmark${className ? ` ${className}` : ''}`}
       href={href}
-      aria-label="Gonba Garage, inicio"
+      aria-label="Gonba's Garage, inicio"
     >
-      GONBA <span>GARAGE</span>
+      GONBA&apos;S <span>GARAGE</span>
     </Link>
   );
 }

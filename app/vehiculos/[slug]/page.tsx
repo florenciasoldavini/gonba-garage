@@ -33,11 +33,11 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
   const vehicle = findMockVehicle(slug);
 
   if (!vehicle) {
-    return { title: 'Vehículo no encontrado | Gonba Garage' };
+    return { title: "Vehículo no encontrado | Gonba's Garage" };
   }
 
-  const title = `${vehicle.make} ${vehicle.model} ${vehicle.year} | Gonba Garage`;
-  const description = `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}, ${formatVehicleMileage(vehicle.mileageKm)}. Consultá disponibilidad en Gonba Garage.`;
+  const title = `${vehicle.make} ${vehicle.model} ${vehicle.year} | Gonba's Garage`;
+  const description = `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}, ${formatVehicleMileage(vehicle.mileageKm)}. Consultá disponibilidad en Gonba's Garage.`;
 
   return {
     title,
@@ -161,7 +161,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
               </Link>
               <ShareButton
                 title={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
-                text={`Mirá este ${vehicle.make} ${vehicle.model} ${vehicle.version} publicado por Gonba Garage.`}
+                text={`Mirá este ${vehicle.make} ${vehicle.model} ${vehicle.version} publicado por Gonba's Garage.`}
                 fallbackUrl={vehicleUrl}
                 vehicleSlug={vehicle.slug}
               />
@@ -217,7 +217,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         </div>
       </section>
 
-      <section className="section-shell detail-confidence" aria-label="Proceso Gonba Garage">
+      <section className="section-shell detail-confidence" aria-label="Proceso Gonba's Garage">
         <div><span>01</span><strong>Selección</strong><p>Elegimos unidades con identidad y una historia clara.</p></div>
         <div><span>02</span><strong>Revisión</strong><p>Chequeamos información, estado general y documentación.</p></div>
         <div><span>03</span><strong>Acompañamiento</strong><p>Coordinamos la visita y te acompañamos hasta la entrega.</p></div>

@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 
 import { Wordmark } from '@/components/brand/wordmark';
+import { WHATSAPP_GENERAL_MESSAGE } from '@/constants/contact';
+import { getWhatsAppUrl } from '@/lib/contact';
 
 type NavigationKey = 'vehicles' | 'sell';
 
@@ -26,7 +28,8 @@ export function SiteHeader({
   ctaLabel = 'Contactar',
   home = false,
 }: SiteHeaderProps) {
-  const resolvedCtaHref = ctaHref ?? (home ? '#contacto' : '/#contacto');
+  const resolvedCtaHref = ctaHref ?? getWhatsAppUrl(WHATSAPP_GENERAL_MESSAGE);
+  const opensExternally = resolvedCtaHref.startsWith('http');
 
   return (
     <header className={`site-header${home ? '' : ' detail-header'}`}>
@@ -48,7 +51,12 @@ export function SiteHeader({
           );
         })}
       </nav>
-      <Link className="header-cta" href={resolvedCtaHref}>
+      <Link
+        className="header-cta"
+        href={resolvedCtaHref}
+        rel={opensExternally ? 'noreferrer' : undefined}
+        target={opensExternally ? '_blank' : undefined}
+      >
         {ctaLabel}
         <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
       </Link>

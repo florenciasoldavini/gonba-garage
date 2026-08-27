@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
-import Link from 'next/link';
-import { ArrowLeft, Check, Clock3, ShieldCheck } from 'lucide-react';
+import { Check, Clock3, ShieldCheck } from 'lucide-react';
 
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
@@ -9,8 +8,8 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { ValuationForm } from './_components/valuation-form';
 
 export const metadata: Metadata = {
-  title: 'Vendé tu auto | Gonba Garage',
-  description: 'Compartí los datos de tu vehículo y solicitá una estimación de valor a Gonba Garage.',
+  title: "Vendé tu auto | Gonba's Garage",
+  description: "Compartí los datos de tu vehículo y solicitá una estimación de valor a Gonba's Garage.",
   alternates: { canonical: '/vender' },
 };
 
@@ -18,10 +17,6 @@ export default function SellVehiclePage() {
   return (
     <main className="valuation-page" id="valuation-top">
       <SiteHeader active="sell" ctaHref="/vehiculos" ctaLabel="Ver vehículos" />
-
-      <div className="section-shell valuation-breadcrumbs">
-        <Link href="/"><ArrowLeft aria-hidden="true" size={14} /> Volver al inicio</Link>
-      </div>
 
       <section className="section-shell valuation-layout" aria-labelledby="valuation-title">
         <aside className="valuation-intro">

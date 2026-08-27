@@ -1,7 +1,5 @@
-import { WHATSAPP_NUMBER } from '@/constants/contact';
+import { WHATSAPP_URL } from '@/constants/contact';
 
 export function getWhatsAppUrl(message?: string) {
-  const baseUrl = `https://wa.me/${WHATSAPP_NUMBER}`;
-
-  return message ? `${baseUrl}?text=${encodeURIComponent(message)}` : baseUrl;
+  return message ? `${WHATSAPP_URL}?text=${encodeURIComponent(message)}` : WHATSAPP_URL;
 }

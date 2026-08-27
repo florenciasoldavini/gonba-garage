@@ -1,6 +1,6 @@
 # Gonba Precision design system
 
-Gonba Garage uses a premium automotive editorial language: dark showroom surfaces, precise
+Gonba's Garage uses a premium automotive editorial language: dark showroom surfaces, precise
 metadata, oversized typography, restrained glass, and a single high-energy acid accent.
 
 ## Principles

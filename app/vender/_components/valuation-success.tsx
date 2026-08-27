@@ -11,7 +11,7 @@ export function ValuationSuccess({ onReset }: { onReset: () => void }) {
       <span className="valuation-success-icon"><Check aria-hidden="true" size={24} strokeWidth={2} /></span>
       <Eyebrow>Solicitud preparada</Eyebrow>
       <h2>Ya tenemos una primera foto de tu auto.</h2>
-      <p>En la versión final, Gonba Garage recibirá estos datos para revisar la unidad y contactarte con una estimación preliminar.</p>
+      <p>En la versión final, Gonba&apos;s Garage recibirá estos datos para revisar la unidad y contactarte con una estimación preliminar.</p>
       <div className="valuation-success-next">
         <strong>¿Qué sigue?</strong>
         <ol>

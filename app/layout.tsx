@@ -42,11 +42,11 @@ const geistMono = localFont({
 
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
-  title: 'Gonba Garage | Autos usados seleccionados',
+  title: "Gonba's Garage | Autos usados seleccionados",
   description:
     'Compra y venta de autos usados seleccionados. Inventario actualizado y atención personalizada.',
   openGraph: {
-    title: 'Gonba Garage | Autos usados seleccionados',
+    title: "Gonba's Garage | Autos usados seleccionados",
     description:
       'Compra y venta de autos usados seleccionados. Inventario actualizado y atención personalizada.',
     type: 'website',
@@ -56,13 +56,13 @@ export const metadata: Metadata = {
         url: '/gonba-garage-social-preview.png',
         width: 1200,
         height: 630,
-        alt: 'Gonba Garage — Autos usados seleccionados',
+        alt: "Gonba's Garage — Autos usados seleccionados",
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Gonba Garage | Autos usados seleccionados',
+    title: "Gonba's Garage | Autos usados seleccionados",
     description: 'Compra y venta de autos usados seleccionados.',
     images: ['/gonba-garage-social-preview.png'],
   },

@@ -9,8 +9,8 @@ import { mockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { InventoryCatalog } from './_components/inventory-catalog';
 
 export const metadata: Metadata = {
-  title: 'Vehículos disponibles | Gonba Garage',
-  description: 'Explorá el inventario de autos usados seleccionados de Gonba Garage. Filtrá por marca, transmisión, tipo y precio.',
+  title: "Vehículos disponibles | Gonba's Garage",
+  description: "Explorá el inventario de autos usados seleccionados de Gonba's Garage. Filtrá por marca, transmisión, tipo y precio.",
   alternates: { canonical: '/vehiculos' },
 };
 
@@ -46,7 +46,7 @@ export default async function VehiclesPage({ searchParams }: VehiclesPageProps) 
           <Eyebrow>¿No encontraste lo que buscabas?</Eyebrow>
           <h2 id="catalog-contact-title">Contanos qué auto tenés en mente.</h2>
         </div>
-        <ButtonLink href="/#contacto">Hablar con Gonba Garage <Arrow /></ButtonLink>
+        <ButtonLink href="/#contacto">Hablar con Gonba&apos;s Garage <Arrow /></ButtonLink>
       </section>
 
       <SiteFooter topHref="#catalog-top" />
