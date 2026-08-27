@@ -25,8 +25,8 @@ export type Vehicle = {
   imageAlt: string;
   description: string;
   highlights: string[];
-  status?: VehicleStatus;
+  status: VehicleStatus;
   mercadoLibreId?: string;
   mercadoLibreUrl?: string;
-  updatedAt?: string;
+  updatedAt: string;
 };

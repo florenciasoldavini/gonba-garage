@@ -1,7 +1,11 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 
+import { JsonLd } from '@/components/seo/json-ld';
+import { SITE_NAME } from '@/lib/metadata';
+import { isSiteIndexingEnabled } from '@/lib/site-indexing';
 import { getSiteUrl } from '@/lib/site-url';
+import { getSiteStructuredData } from '@/lib/structured-data';
 import './globals.css';
 
 const geistSans = localFont({
@@ -40,31 +44,31 @@ const geistMono = localFont({
   fallback: ['monospace'],
 });
 
+const homeTitle = "Gonba's Garage | Autos usados seleccionados";
+const homeDescription =
+  'Compra y venta de autos usados seleccionados. Inventario actualizado y atención personalizada.';
+const indexingEnabled = isSiteIndexingEnabled();
+
 export const metadata: Metadata = {
   metadataBase: getSiteUrl(),
-  title: "Gonba's Garage | Autos usados seleccionados",
-  description:
-    'Compra y venta de autos usados seleccionados. Inventario actualizado y atención personalizada.',
-  openGraph: {
-    title: "Gonba's Garage | Autos usados seleccionados",
-    description:
-      'Compra y venta de autos usados seleccionados. Inventario actualizado y atención personalizada.',
-    type: 'website',
-    locale: 'es_AR',
-    images: [
-      {
-        url: '/gonba-garage-social-preview.png',
-        width: 1200,
-        height: 630,
-        alt: "Gonba's Garage — Autos usados seleccionados",
-      },
-    ],
+  applicationName: SITE_NAME,
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/apple-icon', sizes: '180x180', type: 'image/png' }],
   },
-  twitter: {
-    card: 'summary_large_image',
-    title: "Gonba's Garage | Autos usados seleccionados",
-    description: 'Compra y venta de autos usados seleccionados.',
-    images: ['/gonba-garage-social-preview.png'],
+  title: homeTitle,
+  description: homeDescription,
+  robots: {
+    index: indexingEnabled,
+    follow: indexingEnabled,
+    googleBot: {
+      index: indexingEnabled,
+      follow: indexingEnabled,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
   },
   ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
@@ -78,7 +82,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       data-scroll-behavior="smooth"
       className={`${geistSans.variable} ${geistMono.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        <JsonLd data={getSiteStructuredData()} />
+        {children}
+      </body>
     </html>
   );
 }

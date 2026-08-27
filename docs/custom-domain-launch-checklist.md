@@ -4,6 +4,11 @@ Use this checklist when Gonba's Garage receives its final production domain. Rep
 `https://<custom-domain>` below with the chosen canonical origin, including `www` if that is the
 preferred public hostname.
 
+> **Indexing release gate:** the demo intentionally defaults to `SITE_INDEXING_ENABLED=false`.
+> Connecting the permanent URL is not enough by itself. Set the final `NEXT_PUBLIC_SITE_URL`, change
+> `SITE_INDEXING_ENABLED=true` in Production, then redeploy and verify both values before submitting
+> the sitemap.
+
 ## Current temporary setup
 
 - Public URL: `https://gonba-garage.vercel.app`
@@ -37,6 +42,8 @@ Reference: [Vercel custom-domain setup](https://vercel.com/docs/domains/set-up-c
 ## 2. Update the repository and Vercel environment
 
 - [ ] Set `NEXT_PUBLIC_SITE_URL=https://<custom-domain>` in the Vercel **Production** environment.
+- [ ] Set `SITE_INDEXING_ENABLED=true` in **Production** only after the real inventory, forms, domain,
+  and business details are ready to be indexed. Keep it `false` for demos and previews.
 - [ ] Set the same value for **Preview** only if previews should deliberately publish canonical and
   share URLs pointing to production. Otherwise, keep previews protected from indexing.
 - [ ] Redeploy after changing the variable; existing deployments do not receive a new value
@@ -61,6 +68,9 @@ Changing `NEXT_PUBLIC_SITE_URL` updates all URL-generating code already wired to
 - vehicle structured data and offer URLs;
 - `/sitemap.xml`;
 - `/robots.txt` and its sitemap reference.
+
+`SITE_INDEXING_ENABLED=false` emits `noindex, nofollow`, omits the sitemap reference from
+`robots.txt`, and serves an empty sitemap without affecting social-share metadata.
 
 Do not replace references to Vercel that describe the hosting provider, package authors, or font
 licenses. Only replace the temporary public hostname.
@@ -174,6 +184,8 @@ Fill this in during launch:
 | Domain owner/contact | |
 | Launch date | |
 | Vercel domain verified | |
+| `NEXT_PUBLIC_SITE_URL` verified | |
+| `SITE_INDEXING_ENABLED=true` verified | |
 | Search Console property verified | |
 | Sitemap submitted | |
 | Old hostname redirects verified | |

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowDown, ArrowUpRight, Plus } from 'lucide-react';
@@ -7,8 +8,16 @@ import { SiteHeader } from '@/components/layout/site-header';
 import { ContactCallout } from '@/components/marketing/contact-callout';
 import { WHATSAPP_GENERAL_MESSAGE } from '@/constants/contact';
 import { getWhatsAppUrl } from '@/lib/contact';
+import { createPageMetadata } from '@/lib/metadata';
 import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Gonba's Garage | Autos usados seleccionados",
+  description:
+    'Compra y venta de autos usados seleccionados. Inventario actualizado y atención personalizada.',
+  path: '/',
+});
 
 const vehicles = [
   {
