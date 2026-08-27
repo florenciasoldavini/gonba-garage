@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Gauge, Upload } from 'lucide-react';
+import { Gauge } from 'lucide-react';
 
 import { CustomSelect } from '@/components/ui/custom-select';
 import { ValuationStepHeading } from './valuation-step-heading';
+import { VehiclePhotoUpload } from './vehicle-photo-upload';
 
 const conditionOptions = [
   { value: 'Excelente', label: 'Excelente' },
@@ -31,11 +32,7 @@ export function VehicleConditionFields({ hidden }: { hidden: boolean }) {
           <CustomSelect name="condition" ariaLabel="Estado general" required value={condition} onChange={setCondition} options={conditionOptions} />
         </div>
         <label className="valuation-field-wide"><span>Comentarios sobre el estado</span><textarea name="notes" rows={4} placeholder="Service, detalles de pintura, cubiertas, equipamiento o cualquier información relevante." /></label>
-        <label className="valuation-file-field valuation-field-wide">
-          <Upload aria-hidden="true" size={20} />
-          <span><strong>Agregar fotos del vehículo</strong><small>Exterior, interior y tablero · Opcional</small></span>
-          <input name="photos" type="file" accept="image/*" multiple />
-        </label>
+        <VehiclePhotoUpload />
       </div>
     </section>
   );

@@ -1,12 +1,12 @@
 'use client';
 
-import { Search, SlidersHorizontal } from 'lucide-react';
+import { SlidersHorizontal } from 'lucide-react';
 
 import { CustomSelect } from '@/components/ui/custom-select';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { DualRangeFilter } from './dual-range-filter';
 
-type InventoryFiltersProps = {
+export type InventoryFiltersProps = {
   activeFilterCount: number;
   bodyType: string;
   bodyTypes: string[];
@@ -27,13 +27,12 @@ type InventoryFiltersProps = {
   onMaxPriceChange: (value: number) => void;
   onMinMileageChange: (value: number) => void;
   onMinPriceChange: (value: number) => void;
-  onQueryChange: (value: string) => void;
   onReset: () => void;
   onTransmissionChange: (value: string) => void;
   priceCeiling: number;
   priceStep: number;
-  query: string;
   transmission: string;
+  className?: string;
 };
 
 export function InventoryFilters({
@@ -57,16 +56,15 @@ export function InventoryFilters({
   onMaxPriceChange,
   onMinMileageChange,
   onMinPriceChange,
-  onQueryChange,
   onReset,
   onTransmissionChange,
   priceCeiling,
   priceStep,
-  query,
   transmission,
+  className = '',
 }: InventoryFiltersProps) {
   return (
-    <aside className="catalog-filters glass-panel" aria-label="Filtros del inventario">
+    <aside className={`catalog-filters glass-panel${className ? ` ${className}` : ''}`} aria-label="Filtros del inventario">
       <div className="catalog-filter-heading">
         <div>
           <span className="catalog-kicker"><SlidersHorizontal aria-hidden="true" size={13} /> Filtrar</span>
@@ -76,19 +74,6 @@ export function InventoryFilters({
           <button type="button" onClick={onReset}>Limpiar ({activeFilterCount})</button>
         ) : null}
       </div>
-
-      <label className="catalog-field catalog-search">
-        <span>Buscar</span>
-        <span className="catalog-search-control">
-          <Search aria-hidden="true" size={16} />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Marca, modelo o año"
-          />
-        </span>
-      </label>
 
       <div className="catalog-field">
         <span>Marca</span>

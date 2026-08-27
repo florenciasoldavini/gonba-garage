@@ -5,8 +5,9 @@ import { useMemo, useState } from 'react';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { CatalogEmptyState } from './catalog-empty-state';
 import { CatalogVehicleCard } from './catalog-vehicle-card';
-import { InventoryFilters } from './inventory-filters';
+import { InventoryFilters, type InventoryFiltersProps } from './inventory-filters';
 import { InventoryToolbar, type InventorySort } from './inventory-toolbar';
+import { MobileInventoryFilters } from './mobile-inventory-filters';
 import { VehicleCompareDialog } from './vehicle-compare-dialog';
 import { VehicleCompareDock } from './vehicle-compare-dock';
 
@@ -45,6 +46,7 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
     return initialVehicle ? [initialVehicle] : [];
   });
   const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   const makes = useMemo(() => [...new Set(vehicles.map(({ make: value }) => value))].sort(), [vehicles]);
   const bodyTypes = useMemo(() => [...new Set(vehicles.map(({ body }) => body.split(' · ')[0]))].sort(), [vehicles]);
@@ -119,40 +121,48 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
     setIsCompareOpen(false);
   };
 
+  const filterProps: InventoryFiltersProps = {
+    activeFilterCount,
+    bodyType,
+    bodyTypes,
+    fuel,
+    fuelTypes,
+    make,
+    makes,
+    maxMileage,
+    maxPrice,
+    mileageCeiling,
+    mileageStep: MILEAGE_STEP,
+    minMileage,
+    minPrice,
+    onBodyTypeChange: setBodyType,
+    onFuelChange: setFuel,
+    onMakeChange: setMake,
+    onMaxMileageChange: setMaxMileage,
+    onMaxPriceChange: setMaxPrice,
+    onMinMileageChange: setMinMileage,
+    onMinPriceChange: setMinPrice,
+    onReset: resetFilters,
+    onTransmissionChange: setTransmission,
+    priceCeiling,
+    priceStep: PRICE_STEP,
+    transmission,
+  };
+
   return (
     <section className="section-shell catalog-layout" id="inventario" aria-label="Catálogo de vehículos">
-      <InventoryFilters
-        activeFilterCount={activeFilterCount}
-        bodyType={bodyType}
-        bodyTypes={bodyTypes}
-        fuel={fuel}
-        fuelTypes={fuelTypes}
-        make={make}
-        makes={makes}
-        maxMileage={maxMileage}
-        maxPrice={maxPrice}
-        mileageCeiling={mileageCeiling}
-        mileageStep={MILEAGE_STEP}
-        minMileage={minMileage}
-        minPrice={minPrice}
-        onBodyTypeChange={setBodyType}
-        onFuelChange={setFuel}
-        onMakeChange={setMake}
-        onMaxMileageChange={setMaxMileage}
-        onMaxPriceChange={setMaxPrice}
-        onMinMileageChange={setMinMileage}
-        onMinPriceChange={setMinPrice}
-        onQueryChange={setQuery}
-        onReset={resetFilters}
-        onTransmissionChange={setTransmission}
-        priceCeiling={priceCeiling}
-        priceStep={PRICE_STEP}
-        query={query}
-        transmission={transmission}
-      />
+      <InventoryFilters {...filterProps} className="catalog-filters-desktop" />
 
       <div className="catalog-results">
-        <InventoryToolbar count={filteredVehicles.length} onSortChange={setSort} sort={sort} />
+        <InventoryToolbar
+          activeFilterCount={activeFilterCount}
+          count={filteredVehicles.length}
+          onOpenFilters={() => setIsMobileFiltersOpen(true)}
+          onQueryChange={setQuery}
+          onSortChange={setSort}
+          query={query}
+          sort={sort}
+        />
         {filteredVehicles.length > 0 ? (
           <div className="catalog-grid">
             {filteredVehicles.map((vehicle, index) => {
@@ -171,6 +181,13 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
           </div>
         ) : <CatalogEmptyState onReset={resetFilters} />}
       </div>
+
+      <MobileInventoryFilters
+        filters={filterProps}
+        isOpen={isMobileFiltersOpen}
+        onClose={() => setIsMobileFiltersOpen(false)}
+        resultCount={filteredVehicles.length}
+      />
 
       <VehicleCompareDock
         maximum={MAX_COMPARE_VEHICLES}
