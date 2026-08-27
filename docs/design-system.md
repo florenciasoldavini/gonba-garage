@@ -30,7 +30,7 @@ Meaning must never depend on color alone. Pair status colors with text or an ico
 
 ### Typography
 
-- Geist Sans is the primary interface and editorial family.
+- The original Arial/Helvetica stack is the primary interface and editorial family.
 - Geist Mono is reserved for metadata and technical values.
 - Display tokens are fluid; body and control text remain stable and readable.
 - Avoid meaningful text below `--text-micro`.
