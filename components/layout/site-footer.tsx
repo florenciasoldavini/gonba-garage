@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { ArrowUp } from 'lucide-react';
+import { ArrowUp, ArrowUpRight } from 'lucide-react';
 
 import { Wordmark } from '@/components/brand/wordmark';
+import { INSTAGRAM_URL } from '@/constants/contact';
 
 type SiteFooterProps = {
   topHref: string;
@@ -22,6 +23,9 @@ export function SiteFooter({
         <Link href={home ? '#vehiculos' : '/vehiculos'}>Vehículos</Link>
         <Link href={home ? '#servicios' : '/#servicios'}>Servicios</Link>
         <Link href={home ? '#preguntas' : '/#preguntas'}>FAQ</Link>
+        <a href={INSTAGRAM_URL} target="_blank" rel="noreferrer">
+          Instagram <ArrowUpRight aria-hidden="true" size={13} />
+        </a>
         <Link href={topHref}>
           Volver arriba <ArrowUp aria-hidden="true" size={13} />
         </Link>

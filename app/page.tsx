@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUpRight, Plus } from 'lucide-react';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { ContactCallout } from '@/components/marketing/contact-callout';
+import { getWhatsAppUrl } from '@/lib/contact';
 import { ButtonAnchor, ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 
@@ -154,12 +155,11 @@ export default function Home() {
       </section>
 
       <ContactCallout
-        actionHref="#inicio"
+        actionHref={getWhatsAppUrl('Hola, quiero hacer una consulta a Gonba Garage.')}
         actionLabel="Escribir por WhatsApp"
         analytics={{ channel: 'whatsapp', placement: 'home_contact' }}
         eyebrow="Hablemos"
         id="contacto"
-        note="Datos de contacto provisionales para esta demostración."
         title="El próximo paso puede empezar con un mensaje."
         titleId="contact-title"
       />

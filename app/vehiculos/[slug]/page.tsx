@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUpRight, Scale } from 'lucide-react';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { ContactCallout } from '@/components/marketing/contact-callout';
+import { getWhatsAppUrl } from '@/lib/contact';
 import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { findMockVehicle, mockVehicles } from '@/features/vehicles/data/mock-vehicles';
@@ -223,13 +224,12 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       </section>
 
       <ContactCallout
-        actionHref={`mailto:ventas@gonbagarage.com.ar?subject=Consulta ${vehicle.make} ${vehicle.model}`}
+        actionHref={getWhatsAppUrl(`Hola, quiero consultar por el ${vehicle.make} ${vehicle.model}.`)}
         actionLabel="Consultar ahora"
-        analytics={{ channel: 'email', placement: 'vehicle_detail', vehicleSlug: vehicle.slug }}
+        analytics={{ channel: 'whatsapp', placement: 'vehicle_detail', vehicleSlug: vehicle.slug }}
         className="detail-contact"
         eyebrow="Coordiná una visita"
         id="consulta"
-        note="Contacto provisional para esta demostración."
         title="Conocelo en persona. El resto se entiende manejando."
         titleId="contact-title"
       />
