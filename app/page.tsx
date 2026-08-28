@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowDown, ArrowUpRight, Plus } from 'lucide-react';
+import { ArrowDown, ArrowUpRight } from 'lucide-react';
 
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
@@ -12,6 +12,7 @@ import { createPageMetadata } from '@/lib/metadata';
 import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { HomeGsapMotion } from '@/app/_components/home-gsap-motion';
+import { FaqAccordion } from '@/app/_components/faq-accordion';
 
 export const metadata: Metadata = createPageMetadata({
   title: "Gonba's Garage | Autos usados seleccionados",
@@ -158,12 +159,7 @@ export default function Home() {
           <h2 id="faq-title">Lo que conviene saber antes de empezar.</h2>
           <p>Si tu pregunta no está acá, escribinos y la resolvemos juntos.</p>
         </div>
-        <div className="faq-list">
-          <details className="glass-panel" open><summary>¿Los vehículos están revisados?<Plus aria-hidden="true" size={20} strokeWidth={1.8} /></summary><p>Cada unidad se presenta con la información disponible sobre su estado, historial y documentación.</p></details>
-          <details className="glass-panel"><summary>¿Puedo entregar mi auto como parte de pago?<Plus aria-hidden="true" size={20} strokeWidth={1.8} /></summary><p>Sí. Primero coordinamos una evaluación para determinar su estado y valor de mercado.</p></details>
-          <details className="glass-panel"><summary>¿Trabajan con financiación?<Plus aria-hidden="true" size={20} strokeWidth={1.8} /></summary><p>Podemos analizar distintas alternativas según el vehículo y las condiciones de la operación.</p></details>
-          <details className="glass-panel"><summary>¿Cómo coordino una visita?<Plus aria-hidden="true" size={20} strokeWidth={1.8} /></summary><p>Contactanos por WhatsApp para confirmar disponibilidad y reservar un horario de atención.</p></details>
-        </div>
+        <FaqAccordion />
       </section>
 
       <ContactCallout

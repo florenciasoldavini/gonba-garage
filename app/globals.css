@@ -18,6 +18,13 @@ a { color: inherit; text-decoration: none; }
 
 button, a, summary { -webkit-tap-highlight-color: transparent; }
 
+dialog::backdrop { opacity: 0; transition: opacity 280ms ease; }
+dialog[open]::backdrop { opacity: 1; }
+
+@starting-style {
+  dialog[open]::backdrop { opacity: 0; }
+}
+
 input[type='search'] { appearance: none; -webkit-appearance: none; }
 input[type='search']::-webkit-search-cancel-button, input[type='search']::-webkit-search-decoration { display: none; -webkit-appearance: none; }
 
@@ -400,7 +407,7 @@ h3 { letter-spacing: -0.04em; }
 .inventory-alert-criteria span { padding: 8px 10px; color: #dfe3db; border: 1px solid rgba(220, 255, 0, .2); border-radius: 999px; background: rgba(220, 255, 0, .055); font: 600 .62rem var(--font-sans); }
 .mobile-filter-dialog { width: min(520px, calc(100% - 20px)); max-width: none; height: calc(100dvh - 20px); max-height: none; margin: 10px auto; padding: 0; overflow: hidden; color: var(--text); border: 1px solid var(--line); border-radius: 22px; background: rgba(12, 15, 13, .99); box-shadow: 0 30px 100px rgba(0, 0, 0, .6); }
 .mobile-filter-dialog::backdrop { background: rgba(2, 4, 3, .82); backdrop-filter: blur(10px); }
-.mobile-filter-sheet { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.mobile-filter-sheet { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; will-change: transform, opacity; }
 .mobile-filter-header { min-height: 76px; padding: 14px 16px 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); }
 .mobile-filter-header > div:first-child { display: flex; align-items: center; gap: 11px; }
 .mobile-filter-header > div:first-child > span { width: 34px; height: 34px; display: grid; place-items: center; color: var(--accent-dark); border-radius: 9px; background: var(--accent); }
@@ -636,6 +643,7 @@ h3 { letter-spacing: -0.04em; }
 }
 .share-dialog::backdrop { background: rgba(2, 4, 3, 0.82); backdrop-filter: blur(12px); }
 .share-dialog-panel { min-height: 530px; display: grid; grid-template-columns: minmax(300px, .88fr) minmax(390px, 1.12fr); overflow: hidden; border-radius: 24px; background: #0d100e; }
+.share-dialog-panel, .price-alert-panel, .vehicle-compare-modal { will-change: transform, opacity; }
 .share-dialog-preview { position: relative; min-height: 530px; overflow: hidden; }
 .share-dialog-preview .cover-image { transform: scale(1.05); }
 .share-dialog-preview-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4, 6, 5, 0.18), rgba(4, 6, 5, 0.04) 35%, rgba(4, 6, 5, 0.94)); }
@@ -836,15 +844,16 @@ h3 { letter-spacing: -0.04em; }
 .faq-list details { padding: 0 22px; border-radius: 13px; transition: transform var(--duration-default) var(--ease-standard), border-color var(--duration-default) ease, background var(--duration-default) ease, box-shadow var(--duration-default) ease; }
 .faq-list summary { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: 20px; cursor: pointer; list-style: none; font-size: 0.96rem; font-weight: 700; transition: color var(--duration-default) ease; }
 .faq-list summary::-webkit-details-marker { display: none; }
-.faq-list summary svg { flex: 0 0 auto; color: var(--accent); transition: transform var(--duration-default) var(--ease-standard); }
-.faq-list details[open] summary svg { transform: rotate(45deg); }
+.faq-icon-shell { flex: 0 0 auto; display: grid; place-items: center; color: var(--accent); transition: transform var(--duration-default) var(--ease-standard); }
+.faq-icon { display: grid; place-items: center; }
+.faq-icon svg { display: block; }
+.faq-answer { overflow: hidden; }
 .faq-list details p { max-width: 610px; padding: 0 42px 22px 0; margin: 0; color: var(--muted); line-height: 1.65; font-size: 0.86rem; }
 
 @media (hover: hover) {
   .faq-list details:hover { transform: translateX(4px); border-color: rgba(220, 255, 0, 0.32); background: linear-gradient(90deg, rgba(220, 255, 0, 0.055), transparent 45%), var(--surface); box-shadow: inset 3px 0 0 rgba(220, 255, 0, 0.72), var(--shadow-panel); }
   .faq-list details:hover summary { color: #fff; }
-  .faq-list details:hover summary svg { transform: scale(1.14); }
-  .faq-list details[open]:hover summary svg { transform: rotate(45deg) scale(1.14); }
+  .faq-list details:hover .faq-icon-shell { transform: scale(1.14); }
 }
 
 .contact-section {
@@ -949,6 +958,9 @@ h3 { letter-spacing: -0.04em; }
 .valuation-fields > label > textarea:focus,
 .valuation-select-field > input:not([type='hidden']):focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(220, 255, 0, .11); }
 .valuation-select-field .custom-select-trigger { min-height: 49px; }
+.valuation-form-step { position: relative; }
+.valuation-form-step:has(.custom-select-trigger[aria-expanded='true']) { z-index: 2; }
+.valuation-select-field .custom-select-menu { background: #0d100e; }
 .valuation-catalog-status { color: #d5a79f; font-size: .62rem; line-height: 1.45; }
 .valuation-catalog-status button { padding: 0; color: var(--accent); border: 0; background: none; font: inherit; text-decoration: underline; cursor: pointer; }
 .valuation-catalog-credit { color: #73786f; font-size: .6rem; }
@@ -973,7 +985,7 @@ h3 { letter-spacing: -0.04em; }
 .valuation-photo-meta small { color: var(--muted); font-size: .55rem; }
 .valuation-photo-preview > button { position: absolute; top: 4px; right: 4px; width: 23px; height: 23px; display: grid; place-items: center; color: #aeb3aa; border: 1px solid var(--line); border-radius: 50%; background: rgba(8, 10, 9, .82); cursor: pointer; transition: color 180ms ease, border-color 180ms ease, background 180ms ease; }
 .valuation-photo-preview > button:hover { color: var(--text); border-color: rgba(220, 255, 0, .42); background: rgba(20, 22, 20, .96); }
-.valuation-form-submit { padding: clamp(25px, 4vw, 38px) clamp(20px, 3vw, 32px); display: grid; gap: 17px; }
+.valuation-form-submit { position: relative; z-index: 1; padding: clamp(25px, 4vw, 38px) clamp(20px, 3vw, 32px); display: grid; gap: 17px; }
 .valuation-consent { position: relative; display: flex; align-items: center; gap: 10px; cursor: pointer; line-height: 1.45; text-transform: none; }
 .valuation-consent input { position: absolute; opacity: 0; pointer-events: none; }
 .valuation-consent > span { width: 18px; height: 18px; flex: 0 0 auto; display: grid; place-items: center; color: transparent; border: 1px solid #555b53; border-radius: 5px; }
@@ -1010,6 +1022,7 @@ h3 { letter-spacing: -0.04em; }
 
 /* In-catalog vehicle comparison */
 .compare-dock-shell { position: fixed; z-index: 60; inset-inline: 0; bottom: 18px; padding-inline: 18px; pointer-events: none; }
+.compare-dock-shell[data-visible='false'] { visibility: hidden; }
 .compare-dock {
   width: min(900px, 100%);
   min-height: 82px;
@@ -1053,12 +1066,12 @@ h3 { letter-spacing: -0.04em; }
 .vehicle-compare-controls { min-height: 62px; padding: 11px clamp(18px, 3vw, 36px); display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); }
 .vehicle-compare-controls label { display: inline-flex; align-items: center; gap: 9px; color: #bec3ba; cursor: pointer; font-size: 0.7rem; font-weight: 700; }
 .vehicle-compare-controls label input { position: absolute; opacity: 0; pointer-events: none; }
-.vehicle-compare-controls label span { width: 18px; height: 18px; display: grid; place-items: center; color: transparent; border: 1px solid #555b53; border-radius: 5px; }
-.vehicle-compare-controls label input:checked + span { color: var(--accent-dark); border-color: var(--accent); background: var(--accent); }
+.vehicle-compare-controls label span { width: 18px; height: 18px; display: grid; place-items: center; color: transparent; border: 1px solid #555b53; border-radius: 5px; transition: color 180ms ease, border-color 180ms ease, background 180ms ease, transform 180ms var(--ease-standard); }
+.vehicle-compare-controls label input:checked + span { color: var(--accent-dark); border-color: var(--accent); background: var(--accent); transform: scale(1.05); }
 .vehicle-compare-controls label input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 3px; }
 .vehicle-compare-controls > button { padding: 8px 10px; color: #9ca198; border: 0; border-radius: 8px; background: none; cursor: pointer; font: 700 0.66rem var(--font-sans); transition: color var(--duration-default) ease, background var(--duration-default) ease; }
 .catalog-filter-heading button:hover, .mobile-filter-clear:hover, .compare-dock-clear:hover, .vehicle-compare-controls > button:hover { color: var(--accent); background: rgba(220, 255, 0, .07); }
-.vehicle-compare-scroll { min-height: 0; flex: 1; overflow: auto; scrollbar-color: var(--accent) rgba(255,255,255,.05); }
+.vehicle-compare-scroll { min-height: 0; flex: 1; overflow: auto; scrollbar-color: #4b514b rgba(255,255,255,.05); }
 .vehicle-compare-content { min-width: calc(190px + (var(--compare-count) * 270px)); padding: 20px clamp(18px, 3vw, 36px) 38px; }
 .vehicle-compare-cards, .vehicle-compare-row { display: grid; grid-template-columns: 190px repeat(var(--compare-count), minmax(240px, 1fr)); }
 .vehicle-compare-cards { align-items: stretch; }

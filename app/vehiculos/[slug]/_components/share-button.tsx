@@ -1,10 +1,11 @@
 'use client';
 
 import Image from 'next/image';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { ArrowUpRight, Check, Copy, Mail, MessageCircle, Share2, X } from 'lucide-react';
 
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 
 type ShareButtonProps = {
@@ -18,9 +19,12 @@ type ShareButtonProps = {
 };
 
 export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, vehicleMeta, vehicleSlug }: ShareButtonProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const [shareUrl, setShareUrl] = useState(fallbackUrl);
   const [feedback, setFeedback] = useState('');
+  const { closeDialog, dialogRef, openDialog: animateDialogOpen } = useDialogMotion({
+    itemSelector: '.share-dialog-content > :not(.share-dialog-close), .share-dialog-vehicle > *',
+    panelSelector: '.share-dialog-panel',
+  });
 
   const copyLink = async (url: string) => {
     if (navigator.clipboard?.writeText) {
@@ -45,10 +49,8 @@ export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, v
     const url = window.location.href || fallbackUrl;
     setShareUrl(url);
     setFeedback('');
-    dialogRef.current?.showModal();
+    animateDialogOpen();
   };
-
-  const closeDialog = () => dialogRef.current?.close();
 
   const handleCopy = async () => {
     try {
@@ -81,6 +83,7 @@ export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, v
         ref={dialogRef}
         aria-labelledby="share-dialog-title"
         aria-describedby="share-dialog-description"
+        onCancel={(event) => { event.preventDefault(); closeDialog(); }}
         onClick={(event) => {
           if (event.target === event.currentTarget) closeDialog();
         }}

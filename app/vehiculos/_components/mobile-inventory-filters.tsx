@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { SlidersHorizontal, X } from 'lucide-react';
 
+import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { Button } from '@/components/ui/button';
 import { InventoryFilters, type InventoryFiltersProps } from './inventory-filters';
 
@@ -14,14 +14,12 @@ type MobileInventoryFiltersProps = {
 };
 
 export function MobileInventoryFilters({ filters, isOpen, onClose, resultCount }: MobileInventoryFiltersProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    if (isOpen && !dialog.open) dialog.showModal();
-    if (!isOpen && dialog.open) dialog.close();
-  }, [isOpen]);
+  const { closeDialog, dialogRef } = useDialogMotion({
+    isOpen,
+    itemSelector: '.mobile-filter-header, .catalog-filter-group, .mobile-filter-footer',
+    panelSelector: '.mobile-filter-sheet',
+    variant: 'sheet',
+  });
 
   return (
     <dialog
@@ -29,7 +27,8 @@ export function MobileInventoryFilters({ filters, isOpen, onClose, resultCount }
       ref={dialogRef}
       aria-labelledby="mobile-filter-title"
       onClose={onClose}
-      onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}
+      onCancel={(event) => { event.preventDefault(); closeDialog(); }}
+      onClick={(event) => { if (event.target === event.currentTarget) closeDialog(); }}
     >
       <div className="mobile-filter-sheet">
         <header className="mobile-filter-header">
@@ -41,7 +40,7 @@ export function MobileInventoryFilters({ filters, isOpen, onClose, resultCount }
             {filters.activeFilterCount > 0 ? (
               <button className="mobile-filter-clear" type="button" onClick={filters.onReset}>Limpiar</button>
             ) : null}
-            <button type="button" aria-label="Cerrar filtros" onClick={onClose}>
+            <button type="button" aria-label="Cerrar filtros" onClick={closeDialog}>
               <X aria-hidden="true" size={18} />
             </button>
           </div>
@@ -50,7 +49,7 @@ export function MobileInventoryFilters({ filters, isOpen, onClose, resultCount }
           <InventoryFilters {...filters} className="catalog-filters-mobile" />
         </div>
         <footer className="mobile-filter-footer">
-          <Button type="button" onClick={onClose}>
+          <Button type="button" onClick={closeDialog}>
             Ver {resultCount} {resultCount === 1 ? 'vehículo' : 'vehículos'}
           </Button>
         </footer>

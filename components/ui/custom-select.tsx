@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
 import { Check, ChevronDown, Search, X } from 'lucide-react';
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(useGSAP);
+}
 
 type CustomSelectOption = {
   value: string;
@@ -72,6 +78,24 @@ export function CustomSelect({
       document.removeEventListener('keydown', closeOnEscape);
     };
   }, [menuIsOpen]);
+
+  useGSAP(
+    () => {
+      if (!menuIsOpen || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      gsap.fromTo(
+        '.custom-select-menu',
+        { y: -8, scaleY: 0.94, autoAlpha: 0, transformOrigin: '50% 0%' },
+        { y: 0, scaleY: 1, autoAlpha: 1, duration: 0.3, ease: 'power3.out' },
+      );
+      gsap.fromTo(
+        '.custom-select-options > *',
+        { x: -8, autoAlpha: 0 },
+        { x: 0, autoAlpha: 1, stagger: 0.025, duration: 0.24, ease: 'power2.out' },
+      );
+    },
+    { scope: rootRef, dependencies: [menuIsOpen], revertOnUpdate: true },
+  );
 
   const focusOption = (position: 'first' | 'last' | 'selected') => {
     requestAnimationFrame(() => {

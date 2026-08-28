@@ -1,10 +1,11 @@
 'use client';
 
-import { FormEvent, useRef, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { ArrowRight, ArrowUpRight, BellRing, Check, TrendingDown, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 
 type PriceAlertProps = {
@@ -16,19 +17,21 @@ type PriceAlertProps = {
 type SubmissionState = 'idle' | 'submitting' | 'success' | 'error';
 
 export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAlertProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const [email, setEmail] = useState('');
   const [state, setState] = useState<SubmissionState>('idle');
   const [message, setMessage] = useState('');
+  const { closeDialog, dialogRef, openDialog: animateDialogOpen } = useDialogMotion({
+    contentKey: state === 'success' ? 'success' : undefined,
+    itemSelector: '.price-alert-form > :not(.price-alert-honeypot)',
+    panelSelector: '.price-alert-panel',
+  });
 
   const openDialog = () => {
     setState('idle');
     setMessage('');
     captureAnalyticsEvent('price_alert_opened', { vehicle_slug: vehicleSlug });
-    dialogRef.current?.showModal();
+    requestAnimationFrame(animateDialogOpen);
   };
-
-  const closeDialog = () => dialogRef.current?.close();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -76,6 +79,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
         className="price-alert-dialog"
         ref={dialogRef}
         aria-labelledby="price-alert-title"
+        onCancel={(event) => { event.preventDefault(); closeDialog(); }}
         onClick={(event) => {
           if (event.target === event.currentTarget) closeDialog();
         }}
@@ -84,7 +88,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
           <button className="price-alert-close" type="button" onClick={closeDialog} aria-label="Cerrar alerta de precio"><X aria-hidden="true" size={18} strokeWidth={1.8} /></button>
 
           {state === 'success' ? (
-            <div className="price-alert-success" aria-live="polite">
+            <div className="price-alert-success" data-dialog-view aria-live="polite">
               <span aria-hidden="true"><Check size={22} strokeWidth={2.2} /></span>
               <p>Alerta activada</p>
               <h2>Te avisaremos si baja.</h2>
@@ -92,7 +96,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
               <Button type="button" onClick={closeDialog}>Seguir viendo el auto <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} /></Button>
             </div>
           ) : (
-            <form className="price-alert-form ph-no-capture" data-private onSubmit={handleSubmit}>
+            <form className="price-alert-form ph-no-capture" data-dialog-view data-private onSubmit={handleSubmit}>
               <Eyebrow>Alerta de precio</Eyebrow>
               <h2 id="price-alert-title">¿Esperando una mejor oportunidad?</h2>
               <p>Dejanos tu email y te avisamos si el precio del {vehicleName} baja de {formattedPrice}.</p>
