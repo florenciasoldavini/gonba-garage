@@ -961,6 +961,10 @@ h3 { letter-spacing: -0.04em; }
 .valuation-form-step { position: relative; }
 .valuation-form-step:has(.custom-select-trigger[aria-expanded='true']) { z-index: 2; }
 .valuation-select-field .custom-select-menu { background: #0d100e; }
+.valuation-manual-field { position: relative; }
+.valuation-manual-return { position: absolute; top: -3px; right: 0; padding: 0; color: #858a82; border: 0; background: none; cursor: pointer; font: 600 .58rem var(--font-sans); transition: color 180ms ease; }
+.valuation-manual-return:hover { color: var(--accent); }
+.valuation-manual-return:focus-visible { color: var(--accent); outline: 1px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 .valuation-catalog-status { color: #d5a79f; font-size: .62rem; line-height: 1.45; }
 .valuation-catalog-status button { padding: 0; color: var(--accent); border: 0; background: none; font: inherit; text-decoration: underline; cursor: pointer; }
 .valuation-catalog-credit { color: #73786f; font-size: .6rem; }
