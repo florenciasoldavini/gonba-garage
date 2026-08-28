@@ -12,6 +12,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      vehicle_inventory_alerts: {
+        Row: {
+          body_type: string
+          created_at: string
+          email: string
+          fuel: string
+          id: string
+          last_notified_at: string | null
+          make: string
+          max_mileage: number
+          max_price: number
+          min_mileage: number
+          min_price: number
+          search_query: string
+          source: string
+          status: string
+          transmission: string
+          updated_at: string
+        }
+        Insert: {
+          body_type?: string
+          created_at?: string
+          email: string
+          fuel?: string
+          id?: string
+          last_notified_at?: string | null
+          make?: string
+          max_mileage?: number
+          max_price?: number
+          min_mileage?: number
+          min_price?: number
+          search_query?: string
+          source?: string
+          status?: string
+          transmission?: string
+          updated_at?: string
+        }
+        Update: {
+          body_type?: string
+          created_at?: string
+          email?: string
+          fuel?: string
+          id?: string
+          last_notified_at?: string | null
+          make?: string
+          max_mileage?: number
+          max_price?: number
+          min_mileage?: number
+          min_price?: number
+          search_query?: string
+          source?: string
+          status?: string
+          transmission?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       vehicle_price_alerts: {
         Row: {
           created_at: string

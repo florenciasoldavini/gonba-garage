@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { ArrowUpRight } from 'lucide-react';
-
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
-import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { activeMockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { createPageMetadata } from '@/lib/metadata';
@@ -17,8 +14,6 @@ export const metadata: Metadata = createPageMetadata({
     "Explorá el inventario de autos usados seleccionados de Gonba's Garage. Filtrá por marca, transmisión, tipo y precio.",
   path: '/vehiculos',
 });
-
-const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
 export default function VehiclesPage() {
   return (
@@ -39,14 +34,6 @@ export default function VehiclesPage() {
       <Suspense fallback={<InventoryCatalog vehicles={activeMockVehicles} />}>
         <InventoryCatalogFromSearchParams vehicles={activeMockVehicles} />
       </Suspense>
-
-      <section className="section-shell catalog-contact glass-panel" aria-labelledby="catalog-contact-title">
-        <div>
-          <Eyebrow>¿No encontraste lo que buscabas?</Eyebrow>
-          <h2 id="catalog-contact-title">Contanos qué auto tenés en mente.</h2>
-        </div>
-        <ButtonLink href="/#contacto">Hablar con Gonba&apos;s Garage <Arrow /></ButtonLink>
-      </section>
 
       <SiteFooter topHref="#catalog-top" />
     </main>

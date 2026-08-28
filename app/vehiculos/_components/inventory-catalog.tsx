@@ -1,11 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowUpRight } from 'lucide-react';
 
+import { ButtonLink } from '@/components/ui/button';
+import { Eyebrow } from '@/components/ui/eyebrow';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { CatalogEmptyState } from './catalog-empty-state';
 import { CatalogVehicleCard } from './catalog-vehicle-card';
+import { InventoryAlert, type InventoryAlertCriteria } from './inventory-alert';
 import { InventoryFilters, type InventoryFiltersProps } from './inventory-filters';
 import { InventoryToolbar, type InventorySort } from './inventory-toolbar';
 import { MobileInventoryFilters } from './mobile-inventory-filters';
@@ -214,60 +218,106 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
     transmission,
   };
 
+  const alertCriteria: InventoryAlertCriteria = {
+    query: query.trim(),
+    make: make === 'all' ? '' : make,
+    transmission: transmission === 'all' ? '' : transmission,
+    bodyType: bodyType === 'all' ? '' : bodyType,
+    fuel: fuel === 'all' ? '' : fuel,
+    minPrice: minPrice === MIN_PRICE ? null : minPrice,
+    maxPrice: maxPrice === priceCeiling ? null : maxPrice,
+    minMileage: minMileage === MIN_MILEAGE ? null : minMileage,
+    maxMileage: maxMileage === mileageCeiling ? null : maxMileage,
+  };
+
+  const toolbarAlert = (
+    <InventoryAlert
+      activeFilterCount={activeFilterCount}
+      criteria={alertCriteria}
+      placement="toolbar"
+      resultCount={filteredVehicles.length}
+    />
+  );
+
   return (
-    <section className="section-shell catalog-layout" id="inventario" aria-label="Catálogo de vehículos">
-      <InventoryFilters {...filterProps} className="catalog-filters-desktop" />
+    <>
+      <section className="section-shell catalog-layout" id="inventario" aria-label="Catálogo de vehículos">
+        <InventoryFilters {...filterProps} className="catalog-filters-desktop" />
 
-      <div className="catalog-results">
-        <InventoryToolbar
-          activeFilterCount={activeFilterCount}
-          count={filteredVehicles.length}
-          onOpenFilters={() => setIsMobileFiltersOpen(true)}
-          onQueryChange={setQuery}
-          onSortChange={setSort}
-          query={query}
-          sort={sort}
-        />
-        {filteredVehicles.length > 0 ? (
-          <div className="catalog-grid">
-            {filteredVehicles.map((vehicle, index) => {
-              const isSelected = selectedVehicleSlugs.has(vehicle.slug);
-              return (
-                <CatalogVehicleCard
-                  compareDisabled={selectedVehicles.length >= MAX_COMPARE_VEHICLES && !isSelected}
-                  index={index}
-                  isSelected={isSelected}
-                  key={vehicle.slug}
-                  onToggleComparison={toggleVehicleComparison}
-                  vehicle={vehicle}
+        <div className="catalog-results">
+          <InventoryToolbar
+            activeFilterCount={activeFilterCount}
+            alertAction={toolbarAlert}
+            count={filteredVehicles.length}
+            onOpenFilters={() => setIsMobileFiltersOpen(true)}
+            onQueryChange={setQuery}
+            onSortChange={setSort}
+            query={query}
+            sort={sort}
+          />
+          {filteredVehicles.length > 0 ? (
+            <div className="catalog-grid">
+              {filteredVehicles.map((vehicle, index) => {
+                const isSelected = selectedVehicleSlugs.has(vehicle.slug);
+                return (
+                  <CatalogVehicleCard
+                    compareDisabled={selectedVehicles.length >= MAX_COMPARE_VEHICLES && !isSelected}
+                    index={index}
+                    isSelected={isSelected}
+                    key={vehicle.slug}
+                    onToggleComparison={toggleVehicleComparison}
+                    vehicle={vehicle}
+                  />
+                );
+              })}
+            </div>
+          ) : (
+            <CatalogEmptyState
+              alertAction={(
+                <InventoryAlert
+                  activeFilterCount={activeFilterCount}
+                  criteria={alertCriteria}
+                  placement="empty"
+                  resultCount={0}
                 />
-              );
-            })}
-          </div>
-        ) : <CatalogEmptyState onReset={resetFilters} />}
-      </div>
+              )}
+              onReset={resetFilters}
+            />
+          )}
+        </div>
 
-      <MobileInventoryFilters
-        filters={filterProps}
-        isOpen={isMobileFiltersOpen}
-        onClose={() => setIsMobileFiltersOpen(false)}
-        resultCount={filteredVehicles.length}
-      />
+        <MobileInventoryFilters
+          filters={filterProps}
+          isOpen={isMobileFiltersOpen}
+          onClose={() => setIsMobileFiltersOpen(false)}
+          resultCount={filteredVehicles.length}
+        />
 
-      <VehicleCompareDock
-        maximum={MAX_COMPARE_VEHICLES}
-        onClear={clearVehicleComparison}
-        onCompare={openVehicleComparison}
-        onRemove={removeVehicleComparison}
-        vehicles={selectedVehicles}
-      />
-      <VehicleCompareDialog
-        vehicles={selectedVehicles}
-        isOpen={isCompareOpen}
-        onClose={() => setIsCompareOpen(false)}
-        onRemove={removeVehicleComparison}
-        onClear={clearVehicleComparison}
-      />
-    </section>
+        <VehicleCompareDock
+          maximum={MAX_COMPARE_VEHICLES}
+          onClear={clearVehicleComparison}
+          onCompare={openVehicleComparison}
+          onRemove={removeVehicleComparison}
+          vehicles={selectedVehicles}
+        />
+        <VehicleCompareDialog
+          vehicles={selectedVehicles}
+          isOpen={isCompareOpen}
+          onClose={() => setIsCompareOpen(false)}
+          onRemove={removeVehicleComparison}
+          onClear={clearVehicleComparison}
+        />
+      </section>
+
+      <section className="section-shell catalog-contact glass-panel" aria-labelledby="catalog-contact-title">
+        <div>
+          <Eyebrow>¿No encontraste lo que buscabas?</Eyebrow>
+          <h2 id="catalog-contact-title">Contanos qué auto tenés en mente.</h2>
+        </div>
+        <ButtonLink href="/#contacto" variant="accent">
+          Hablar con Gonba&apos;s Garage <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
+        </ButtonLink>
+      </section>
+    </>
   );
 }

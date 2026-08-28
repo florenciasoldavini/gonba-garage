@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, type ReactNode } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 
 import { CustomSelect } from '@/components/ui/custom-select';
@@ -17,6 +17,7 @@ const sortOptions: Array<{ value: InventorySort; label: string }> = [
 
 type InventoryToolbarProps = {
   activeFilterCount: number;
+  alertAction: ReactNode;
   count: number;
   onOpenFilters: () => void;
   onQueryChange: (query: string) => void;
@@ -25,7 +26,7 @@ type InventoryToolbarProps = {
   sort: InventorySort;
 };
 
-export function InventoryToolbar({ activeFilterCount, count, onOpenFilters, onQueryChange, onSortChange, query, sort }: InventoryToolbarProps) {
+export function InventoryToolbar({ activeFilterCount, alertAction, count, onOpenFilters, onQueryChange, onSortChange, query, sort }: InventoryToolbarProps) {
   const searchRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -71,6 +72,7 @@ export function InventoryToolbar({ activeFilterCount, count, onOpenFilters, onQu
             options={sortOptions}
           />
         </div>
+        {alertAction}
       </div>
     </div>
   );
