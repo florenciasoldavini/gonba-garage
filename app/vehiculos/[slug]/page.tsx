@@ -7,6 +7,7 @@ import { ArrowDown, ArrowUpRight, Scale } from 'lucide-react';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { ContactCallout } from '@/components/marketing/contact-callout';
+import { InnerPageMotion } from '@/components/motion/inner-page-motion';
 import { JsonLd } from '@/components/seo/json-ld';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { ButtonAnchor } from '@/components/ui/button';
@@ -140,7 +141,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   ]);
 
   return (
-    <main className="vehicle-detail-page">
+    <InnerPageMotion className="vehicle-detail-page" variant="detail">
       <VehicleAnalytics
         bodyType={vehicle.body.split(' · ')[0]}
         currency={vehicle.currency}
@@ -152,7 +153,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       />
       <JsonLd data={vehicleStructuredData} />
 
-      <SiteHeader ctaHref="#consulta" ctaLabel="Consultar" />
+      <SiteHeader active="vehicles" />
 
       <div className="section-shell detail-breadcrumbs" aria-label="Ruta de navegación">
         <Link href="/">Inicio</Link><span>/</span>
@@ -191,8 +192,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             <div className="detail-availability"><span /> {status.label}</div>
             <div className="detail-utility-actions">
               <Link className="detail-compare-button" href={compareHref}>
-                <Scale aria-hidden="true" size={14} strokeWidth={1.8} />
                 <span>Comparar</span>
+                <Scale aria-hidden="true" size={14} strokeWidth={1.8} />
               </Link>
               <ShareButton
                 fallbackUrl={vehicleUrl}
@@ -277,6 +278,6 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       />
 
       <SiteFooter topHref="#vehicle-title" />
-    </main>
+    </InnerPageMotion>
   );
 }

@@ -2,11 +2,18 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
 import { ArrowUpRight, Check, Scale } from 'lucide-react';
 
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(useGSAP);
+}
 
 type CatalogVehicleCardProps = {
   compareDisabled: boolean;
@@ -23,12 +30,29 @@ export function CatalogVehicleCard({
   onToggleComparison,
   vehicle,
 }: CatalogVehicleCardProps) {
+  const cardRef = useRef<HTMLElement>(null);
   const vehicleName = `${vehicle.make} ${vehicle.model}`;
   const href = `/vehiculos/${vehicle.slug}`;
   const status = getVehicleStatusPresentation(vehicle.status);
 
+  useGSAP(
+    () => {
+      if (!isSelected || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      const icon = cardRef.current?.querySelector('.catalog-card-compare svg');
+      if (!icon) return;
+
+      gsap.fromTo(
+        icon,
+        { scale: 0.35, rotation: -80 },
+        { scale: 1, rotation: 0, duration: 0.45, ease: 'back.out(1.8)' },
+      );
+    },
+    { scope: cardRef, dependencies: [isSelected], revertOnUpdate: true },
+  );
+
   return (
-    <article className={`catalog-card glass-panel${isSelected ? ' catalog-card-selected' : ''}`}>
+    <article className={`catalog-card glass-panel${isSelected ? ' catalog-card-selected' : ''}`} ref={cardRef}>
       <div className="catalog-card-image">
         <Link className="catalog-card-image-link" href={href} aria-label={`Ver ${vehicleName}`}>
           <Image

@@ -62,7 +62,6 @@ export function InventoryToolbar({ activeFilterCount, alertAction, count, onOpen
           Filtros
           {activeFilterCount > 0 ? <span>{activeFilterCount}</span> : null}
         </button>
-        <p aria-live="polite"><strong>{count}</strong> {count === 1 ? 'vehículo' : 'vehículos'}</p>
         <div className="catalog-sort">
           <span className="catalog-sort-label">Ordenar por</span>
           <CustomSelect
@@ -74,6 +73,9 @@ export function InventoryToolbar({ activeFilterCount, alertAction, count, onOpen
         </div>
         {alertAction}
       </div>
+      <p className="sr-only" aria-live="polite">
+        <strong>{count}</strong> {count === 1 ? 'resultado' : 'resultados'}
+      </p>
     </div>
   );
 }

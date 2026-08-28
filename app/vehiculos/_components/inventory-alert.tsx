@@ -1,10 +1,11 @@
 'use client';
 
-import { FormEvent, useId, useRef, useState } from 'react';
+import { FormEvent, useId, useState } from 'react';
 import { ArrowRight, ArrowUpRight, BellRing, Check, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 
@@ -30,12 +31,16 @@ type InventoryAlertProps = {
 type SubmissionState = 'idle' | 'submitting' | 'success' | 'error';
 
 export function InventoryAlert({ activeFilterCount, criteria, placement, resultCount }: InventoryAlertProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const successTitleId = useId();
   const [email, setEmail] = useState('');
   const [state, setState] = useState<SubmissionState>('idle');
   const [message, setMessage] = useState('');
+  const { closeDialog, dialogRef, openDialog: animateDialogOpen } = useDialogMotion({
+    contentKey: state === 'success' ? 'success' : undefined,
+    itemSelector: '.price-alert-form > :not(.price-alert-honeypot)',
+    panelSelector: '.price-alert-panel',
+  });
 
   const criteriaLabels: string[] = [];
   if (criteria.query) criteriaLabels.push(`“${criteria.query}”`);
@@ -55,10 +60,8 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
       active_filter_count: activeFilterCount,
       result_count: resultCount,
     });
-    dialogRef.current?.showModal();
+    requestAnimationFrame(animateDialogOpen);
   };
-
-  const closeDialog = () => dialogRef.current?.close();
 
   const triggerCopy = placement === 'empty' ? 'Avisarme si ingresa uno' : 'Crear alerta';
 
@@ -105,6 +108,7 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
         className="price-alert-dialog inventory-alert-dialog"
         ref={dialogRef}
         aria-labelledby={state === 'success' ? successTitleId : titleId}
+        onCancel={(event) => { event.preventDefault(); closeDialog(); }}
         onClick={(event) => {
           if (event.target === event.currentTarget) closeDialog();
         }}
@@ -115,7 +119,7 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
           </button>
 
           {state === 'success' ? (
-            <div className="price-alert-success" aria-live="polite">
+            <div className="price-alert-success" data-dialog-view aria-live="polite">
               <span aria-hidden="true"><Check size={22} strokeWidth={2.2} /></span>
               <p>Alerta activada</p>
               <h2 id={successTitleId}>La búsqueda queda en nuestras manos.</h2>
@@ -123,7 +127,7 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
               <Button type="button" onClick={closeDialog}>Seguir viendo vehículos <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} /></Button>
             </div>
           ) : (
-            <form className="price-alert-form ph-no-capture" data-private onSubmit={handleSubmit}>
+            <form className="price-alert-form ph-no-capture" data-dialog-view data-private onSubmit={handleSubmit}>
               <Eyebrow>Alerta de inventario</Eyebrow>
               <h2 id={titleId}>Avisame cuando aparezca.</h2>
               <p>Guardamos tu búsqueda y te avisamos por email cuando ingrese una unidad compatible.</p>

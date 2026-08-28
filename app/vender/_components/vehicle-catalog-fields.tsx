@@ -20,6 +20,53 @@ const manualModelOption = { value: MANUAL_OPTION, label: 'Otro / No lo encuentro
 const manualVersionOption = { value: MANUAL_OPTION, label: 'Otra / No la encuentro' };
 const manualYearOption = { value: MANUAL_OPTION, label: 'Otro / No aparece' };
 
+type ManualCatalogFieldProps = {
+  label: string;
+  name: string;
+  placeholder: string;
+  required?: boolean;
+  type?: 'text' | 'number';
+  inputMode?: 'numeric';
+  min?: number;
+  max?: number;
+  onReturn?: () => void;
+};
+
+function ManualCatalogField({
+  inputMode,
+  label,
+  max,
+  min,
+  name,
+  onReturn,
+  placeholder,
+  required = false,
+  type = 'text',
+}: ManualCatalogFieldProps) {
+  return (
+    <label className="valuation-manual-field">
+      <span>{label}</span>
+      {onReturn ? (
+        <button className="valuation-manual-return" type="button" onClick={onReturn}>
+          Volver a opciones
+        </button>
+      ) : null}
+      <input
+        autoComplete="off"
+        autoFocus={Boolean(onReturn)}
+        aria-label={`Ingresar ${label.replace(' *', '').toLocaleLowerCase('es')}`}
+        inputMode={inputMode}
+        max={max}
+        min={min}
+        name={name}
+        placeholder={placeholder}
+        required={required}
+        type={type}
+      />
+    </label>
+  );
+}
+
 async function getCatalogOptions(url: string, signal: AbortSignal): Promise<CatalogOption[]> {
   const response = await fetch(url, { signal });
   if (!response.ok) throw new Error('Catalog request failed');
@@ -126,50 +173,79 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
         title="El vehículo"
       />
       <div className="valuation-fields">
-        <div className="valuation-select-field">
-          <span>Marca *</span>
-          <CustomSelect ariaLabel="Marca" required searchable value={makeId} onChange={handleMakeChange} options={makeOptions} disabled={makeStatus === 'loading'} placeholder={makeStatus === 'loading' ? 'Cargando marcas…' : 'Seleccionar marca'} searchPlaceholder="Buscar marca…" />
-          {makeId === MANUAL_OPTION
-            ? <input name="make" required autoComplete="off" placeholder="Escribí la marca" aria-label="Ingresar marca" />
-            : <input name="make" type="hidden" value={makeName} />}
-          {makeStatus === 'error' ? <small className="valuation-catalog-status">No pudimos cargar las marcas. <button type="button" onClick={() => { setMakeStatus('loading'); setMakeRetry((value) => value + 1); }}>Reintentar</button> o elegí “Otra”.</small> : null}
-        </div>
+        {makeId === MANUAL_OPTION ? (
+          <ManualCatalogField
+            label="Marca *"
+            name="make"
+            onReturn={() => handleMakeChange('')}
+            placeholder="Escribí la marca"
+            required
+          />
+        ) : (
+          <div className="valuation-select-field">
+            <span>Marca *</span>
+            <CustomSelect ariaLabel="Marca" required searchable value={makeId} onChange={handleMakeChange} options={makeOptions} disabled={makeStatus === 'loading'} placeholder={makeStatus === 'loading' ? 'Cargando marcas…' : 'Seleccionar marca'} searchPlaceholder="Buscar marca…" />
+            <input name="make" type="hidden" value={makeName} />
+            {makeStatus === 'error' ? <small className="valuation-catalog-status">No pudimos cargar las marcas. <button type="button" onClick={() => { setMakeStatus('loading'); setMakeRetry((value) => value + 1); }}>Reintentar</button> o elegí “Otra”.</small> : null}
+          </div>
+        )}
 
         {makeId === MANUAL_OPTION ? (
-          <label><span>Modelo *</span><input name="model" required autoComplete="off" placeholder="Ej. 330i" /></label>
+          <ManualCatalogField label="Modelo *" name="model" placeholder="Ej. 330i" required />
+        ) : modelId === MANUAL_OPTION ? (
+          <ManualCatalogField
+            label="Modelo *"
+            name="model"
+            onReturn={() => handleModelChange('')}
+            placeholder="Escribí el modelo"
+            required
+          />
         ) : (
           <div className="valuation-select-field">
             <span>Modelo *</span>
             <CustomSelect ariaLabel="Modelo" required searchable key={makeId} value={modelId} onChange={handleModelChange} options={modelOptions} disabled={!makeId || modelStatus === 'loading'} placeholder={modelStatus === 'loading' ? 'Cargando modelos…' : !makeId ? 'Primero elegí una marca' : 'Seleccionar modelo'} searchPlaceholder="Buscar modelo…" />
-            {modelId === MANUAL_OPTION
-              ? <input name="model" required autoComplete="off" placeholder="Escribí el modelo" aria-label="Ingresar modelo" />
-              : <input name="model" type="hidden" value={modelName} />}
+            <input name="model" type="hidden" value={modelName} />
             {modelStatus === 'error' ? <small className="valuation-catalog-status">No pudimos cargar los modelos. <button type="button" onClick={() => { setModelStatus('loading'); setModelRetry((value) => value + 1); }}>Reintentar</button> o elegí “Otro”.</small> : null}
           </div>
         )}
 
         {makeId === MANUAL_OPTION || modelId === MANUAL_OPTION ? (
-          <label><span>Año *</span><input name="year" required inputMode="numeric" type="number" min="1950" max="2027" placeholder="2021" /></label>
+          <ManualCatalogField label="Año *" name="year" inputMode="numeric" type="number" min={1950} max={2027} placeholder="2021" required />
+        ) : year === MANUAL_OPTION ? (
+          <ManualCatalogField
+            label="Año *"
+            name="year"
+            inputMode="numeric"
+            type="number"
+            min={1950}
+            max={2027}
+            onReturn={() => handleYearChange('')}
+            placeholder="Escribí el año"
+            required
+          />
         ) : (
           <div className="valuation-select-field">
             <span>Año *</span>
             <CustomSelect ariaLabel="Año" required key={modelId} value={year} onChange={handleYearChange} options={yearOptions} disabled={!modelId || versionStatus === 'loading'} placeholder={versionStatus === 'loading' ? 'Cargando años…' : !modelId ? 'Primero elegí un modelo' : 'Seleccionar año'} />
-            {year === MANUAL_OPTION
-              ? <input name="year" required inputMode="numeric" type="number" min="1950" max="2027" placeholder="Escribí el año" aria-label="Ingresar año" />
-              : <input name="year" type="hidden" value={year} />}
+            <input name="year" type="hidden" value={year} />
             {versionStatus === 'error' ? <small className="valuation-catalog-status">No pudimos cargar los años. <button type="button" onClick={() => { setVersionStatus('loading'); setVersionRetry((value) => value + 1); }}>Reintentar</button> o elegí “Otro”.</small> : null}
           </div>
         )}
 
         {makeId === MANUAL_OPTION || modelId === MANUAL_OPTION || year === MANUAL_OPTION ? (
-          <label><span>Versión</span><input name="version" autoComplete="off" placeholder="Ej. M Sport" /></label>
+          <ManualCatalogField label="Versión" name="version" placeholder="Ej. M Sport" />
+        ) : versionId === MANUAL_OPTION ? (
+          <ManualCatalogField
+            label="Versión"
+            name="version"
+            onReturn={() => setVersionId('')}
+            placeholder="Escribí la versión"
+          />
         ) : (
           <div className="valuation-select-field">
             <span>Versión</span>
             <CustomSelect ariaLabel="Versión" searchable key={`${modelId}-${year}`} value={versionId} onChange={setVersionId} options={versionOptions} disabled={!year || versionStatus === 'loading'} placeholder={versionStatus === 'loading' ? 'Cargando versiones…' : !year ? 'Primero elegí un año' : 'Seleccionar versión'} searchPlaceholder="Buscar versión…" />
-            {versionId === MANUAL_OPTION
-              ? <input name="version" autoComplete="off" placeholder="Escribí la versión" aria-label="Ingresar versión" />
-              : <input name="version" type="hidden" value={versionName} />}
+            <input name="version" type="hidden" value={versionName} />
           </div>
         )}
         <label><span>Color</span><input name="color" autoComplete="off" placeholder="Ej. Negro" /></label>
