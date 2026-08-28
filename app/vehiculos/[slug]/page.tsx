@@ -192,8 +192,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             <div className="detail-availability"><span /> {status.label}</div>
             <div className="detail-utility-actions">
               <Link className="detail-compare-button" href={compareHref}>
-                <Scale aria-hidden="true" size={14} strokeWidth={1.8} />
                 <span>Comparar</span>
+                <Scale aria-hidden="true" size={14} strokeWidth={1.8} />
               </Link>
               <ShareButton
                 fallbackUrl={vehicleUrl}
