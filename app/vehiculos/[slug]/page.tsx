@@ -153,7 +153,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       />
       <JsonLd data={vehicleStructuredData} />
 
-      <SiteHeader ctaHref="#consulta" ctaLabel="Consultar" />
+      <SiteHeader active="vehicles" />
 
       <div className="section-shell detail-breadcrumbs" aria-label="Ruta de navegación">
         <Link href="/">Inicio</Link><span>/</span>

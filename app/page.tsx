@@ -52,7 +52,7 @@ const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8}
 export default function Home() {
   return (
     <HomeGsapMotion>
-      <SiteHeader home />
+      <SiteHeader />
 
       <section className="hero section-shell" aria-labelledby="hero-title">
         <div className="hero-media" aria-hidden="true">
