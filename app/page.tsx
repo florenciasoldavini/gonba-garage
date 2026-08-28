@@ -11,6 +11,7 @@ import { getWhatsAppUrl } from '@/lib/contact';
 import { createPageMetadata } from '@/lib/metadata';
 import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { HomeGsapMotion } from '@/app/_components/home-gsap-motion';
 
 export const metadata: Metadata = createPageMetadata({
   title: "Gonba's Garage | Autos usados seleccionados",
@@ -50,7 +51,7 @@ const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8}
 
 export default function Home() {
   return (
-    <main id="inicio">
+    <HomeGsapMotion>
       <SiteHeader home />
 
       <section className="hero section-shell" aria-labelledby="hero-title">
@@ -58,6 +59,7 @@ export default function Home() {
           <Image src="/showroom-car.jpg" alt="" fill loading="eager" sizes="100vw" className="cover-image" />
         </div>
         <div className="hero-overlay" />
+        <div className="hero-ignition-light" aria-hidden="true" />
         <div className="hero-content">
           <Eyebrow>Autos usados seleccionados</Eyebrow>
           <h1 id="hero-title">Encontrá un auto que valga la pena manejar.</h1>
@@ -175,6 +177,6 @@ export default function Home() {
       />
 
       <SiteFooter home topHref="#inicio" />
-    </main>
+    </HomeGsapMotion>
   );
 }

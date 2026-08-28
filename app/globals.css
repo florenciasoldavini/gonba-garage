@@ -102,6 +102,29 @@ a:focus-visible, button:focus-visible, summary:focus-visible {
 
 .hero-media, .hero-overlay, .contact-glow { position: absolute; inset: 0; }
 
+.home-gsap .hero-media,
+.home-gsap .hero-content,
+.home-gsap .hero-facts,
+.home-gsap .vehicle-card-link,
+.home-gsap .service-card { will-change: transform; }
+
+.home-gsap .hero { isolation: isolate; }
+.home-gsap .hero:hover .cover-image { transform: none; }
+
+.hero-ignition-light {
+  position: absolute;
+  z-index: 1;
+  top: 46%;
+  left: -25%;
+  width: 150%;
+  height: 2px;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent 8%, rgba(255,255,255,.16) 39%, var(--accent) 50%, rgba(255,255,255,.16) 61%, transparent 92%);
+  box-shadow: 0 0 22px rgba(220,255,0,.24);
+  transform: rotate(-3deg);
+}
+
 .cover-image { object-fit: cover; transition: transform var(--duration-image) var(--ease-standard); }
 
 .hero:hover .cover-image { transform: scale(1.015); }
