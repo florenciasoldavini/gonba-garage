@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
 import { ArrowUpRight } from 'lucide-react';
 
 import { ButtonLink } from '@/components/ui/button';
@@ -16,6 +18,10 @@ import { MobileInventoryFilters } from './mobile-inventory-filters';
 import { VehicleCompareDialog } from './vehicle-compare-dialog';
 import { VehicleCompareDock } from './vehicle-compare-dock';
 
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(useGSAP);
+}
+
 type InventoryCatalogProps = {
   vehicles: Vehicle[];
   initialCompareSlug?: string;
@@ -28,6 +34,7 @@ const MIN_MILEAGE = 0;
 const MILEAGE_STEP = 5000;
 
 export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCatalogProps) {
+  const resultsRef = useRef<HTMLDivElement>(null);
   const priceCeiling = useMemo(
     () => Math.ceil(Math.max(...vehicles.map(({ price }) => price), PRICE_STEP) / PRICE_STEP) * PRICE_STEP,
     [vehicles],
@@ -83,6 +90,54 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
       return vehicles.indexOf(a) - vehicles.indexOf(b);
     });
   }, [bodyType, fuel, make, maxMileage, maxPrice, minMileage, minPrice, query, sort, transmission, vehicles]);
+  const filteredVehicleKey = filteredVehicles.map(({ slug }) => slug).join('|');
+
+  useGSAP(
+    () => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      const cards = gsap.utils.toArray<HTMLElement>('.catalog-card');
+
+      cards.forEach((card, index) => {
+        const image = card.querySelector('.catalog-card-image');
+        const copy = card.querySelector('.catalog-card-copy');
+        const facts = card.querySelector('.catalog-card-facts');
+
+        if (image) {
+          gsap.fromTo(
+            image,
+            { clipPath: 'inset(0 100% 0 0)', autoAlpha: 0.55 },
+            {
+              clipPath: 'inset(0 0% 0 0)',
+              autoAlpha: 1,
+              delay: index * 0.07,
+              duration: 0.72,
+              ease: 'power3.inOut',
+            },
+          );
+        }
+
+        const content = [copy, facts].filter((element): element is Element => element !== null);
+        if (content.length > 0) {
+          gsap.fromTo(
+            content,
+            { x: 24, autoAlpha: 0 },
+            { x: 0, autoAlpha: 1, delay: 0.18 + index * 0.07, stagger: 0.07, duration: 0.48, ease: 'power3.out' },
+          );
+        }
+      });
+
+      const emptyState = resultsRef.current?.querySelector('.catalog-empty');
+      if (emptyState) {
+        gsap.fromTo(
+          emptyState,
+          { y: 24, autoAlpha: 0 },
+          { y: 0, autoAlpha: 1, duration: 0.55, ease: 'power3.out' },
+        );
+      }
+    },
+    { scope: resultsRef, dependencies: [filteredVehicleKey], revertOnUpdate: true },
+  );
 
   const activeFilterCount = [
     query,
@@ -244,7 +299,7 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
       <section className="section-shell catalog-layout" id="inventario" aria-label="Catálogo de vehículos">
         <InventoryFilters {...filterProps} className="catalog-filters-desktop" />
 
-        <div className="catalog-results">
+        <div className="catalog-results" ref={resultsRef}>
           <InventoryToolbar
             activeFilterCount={activeFilterCount}
             alertAction={toolbarAlert}

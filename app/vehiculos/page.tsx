@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
+import { InnerPageMotion } from '@/components/motion/inner-page-motion';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { activeMockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { createPageMetadata } from '@/lib/metadata';
@@ -17,10 +18,11 @@ export const metadata: Metadata = createPageMetadata({
 
 export default function VehiclesPage() {
   return (
-    <main className="catalog-page" id="catalog-top">
+    <InnerPageMotion className="catalog-page" id="catalog-top" variant="catalog">
       <SiteHeader active="vehicles" />
 
       <section className="section-shell catalog-hero" aria-labelledby="catalog-title">
+        <span className="catalog-scan-line" aria-hidden="true" />
         <div>
           <Eyebrow>Inventario actual · Datos demostrativos</Eyebrow>
           <h1 id="catalog-title">Autos con una razón para estar acá.</h1>
@@ -36,6 +38,6 @@ export default function VehiclesPage() {
       </Suspense>
 
       <SiteFooter topHref="#catalog-top" />
-    </main>
+    </InnerPageMotion>
   );
 }

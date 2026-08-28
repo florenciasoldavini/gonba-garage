@@ -1,13 +1,34 @@
 'use client';
 
+import { useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
 import { ArrowUpRight, Check } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(useGSAP);
+}
+
 export function ValuationSuccess({ onReset }: { onReset: () => void }) {
+  const root = useRef<HTMLElement>(null);
+
+  useGSAP(
+    () => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      gsap.timeline({ defaults: { ease: 'power3.out' } })
+        .from('.valuation-success-icon', { scale: 0.35, rotation: -12, autoAlpha: 0, duration: 0.6, ease: 'back.out(1.8)' })
+        .from('.valuation-success > :not(.valuation-success-icon)', { y: 24, autoAlpha: 0, stagger: 0.08, duration: 0.52 }, '<0.14')
+        .from('.valuation-success-next li', { x: 20, autoAlpha: 0, stagger: 0.08, duration: 0.42 }, '<0.1');
+    },
+    { scope: root },
+  );
+
   return (
-    <section className="valuation-success glass-panel" aria-live="polite">
+    <section className="valuation-success glass-panel" aria-live="polite" ref={root}>
       <span className="valuation-success-icon"><Check aria-hidden="true" size={24} strokeWidth={2} /></span>
       <Eyebrow>Solicitud preparada</Eyebrow>
       <h2>Ya tenemos una primera foto de tu auto.</h2>

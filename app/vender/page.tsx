@@ -4,6 +4,7 @@ import { Check, Clock3, ShieldCheck } from 'lucide-react';
 
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
+import { InnerPageMotion } from '@/components/motion/inner-page-motion';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { createPageMetadata } from '@/lib/metadata';
 import { ValuationForm } from './_components/valuation-form';
@@ -17,7 +18,7 @@ export const metadata: Metadata = createPageMetadata({
 
 export default function SellVehiclePage() {
   return (
-    <main className="valuation-page" id="valuation-top">
+    <InnerPageMotion className="valuation-page" id="valuation-top" variant="valuation">
       <SiteHeader active="sell" />
 
       <section className="section-shell valuation-layout" aria-labelledby="valuation-title">
@@ -45,6 +46,6 @@ export default function SellVehiclePage() {
         topHref="#valuation-top"
         note="Demo visual · El envío de la solicitud se conectará en una próxima etapa"
       />
-    </main>
+    </InnerPageMotion>
   );
 }

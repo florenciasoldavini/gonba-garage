@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
 import { ArrowLeft, ArrowUpRight, Check } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -10,6 +12,10 @@ import { ValuationStepper } from './valuation-stepper';
 import { ValuationSuccess } from './valuation-success';
 import { VehicleCatalogFields } from './vehicle-catalog-fields';
 import { VehicleConditionFields } from './vehicle-condition-fields';
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(useGSAP);
+}
 
 const TOTAL_STEPS = 3;
 
@@ -38,6 +44,27 @@ export function ValuationForm() {
   useEffect(() => {
     updateStepCompleteness();
   }, [updateStepCompleteness]);
+
+  useGSAP(
+    () => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+      const activeStep = formRef.current?.querySelector<HTMLElement>('[data-step]:not([hidden])');
+      if (!activeStep) return;
+
+      gsap.fromTo(
+        activeStep,
+        { x: step === 1 ? 0 : 28, autoAlpha: 0 },
+        { x: 0, autoAlpha: 1, duration: 0.48, ease: 'power3.out' },
+      );
+      gsap.fromTo(
+        '.valuation-stepper li.is-active > span',
+        { scale: 0.72 },
+        { scale: 1, duration: 0.42, ease: 'back.out(1.8)' },
+      );
+    },
+    { scope: formRef, dependencies: [step], revertOnUpdate: true },
+  );
 
   const scheduleCompletenessUpdate = () => {
     requestAnimationFrame(updateStepCompleteness);

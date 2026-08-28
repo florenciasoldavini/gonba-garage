@@ -506,6 +506,25 @@ h3 { letter-spacing: -0.04em; }
 }
 .catalog-contact h2 { max-width: 820px; margin-bottom: 0; }
 .catalog-contact .button { margin-bottom: 8px; white-space: nowrap; }
+.catalog-hero { position: relative; overflow: hidden; }
+.catalog-scan-line {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: min(22vw, 280px);
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(220, 255, 0, .08), rgba(220, 255, 0, .2), transparent);
+  filter: blur(12px);
+  transform: skewX(-12deg);
+}
+
+.inner-page-motion .detail-primary-image,
+.inner-page-motion .detail-gallery-image,
+.inner-page-motion .valuation-image,
+.inner-page-motion .catalog-card-image { will-change: clip-path; }
 /* Vehicle detail */
 .vehicle-detail-page { overflow: clip; }
 .detail-header { position: relative; top: auto; }
