@@ -1,5 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 import { Wordmark } from '@/components/brand/wordmark';
 import { WHATSAPP_GENERAL_MESSAGE } from '@/constants/contact';
@@ -21,9 +24,29 @@ const navigation = [
 
 export function SiteHeader({ active }: SiteHeaderProps) {
   const contactHref = getWhatsAppUrl(WHATSAPP_GENERAL_MESSAGE);
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    let wasScrolled: boolean | undefined;
+    const updateScrolledState = () => {
+      const isScrolled = window.scrollY > 24;
+      if (isScrolled === wasScrolled) return;
+
+      wasScrolled = isScrolled;
+      header.toggleAttribute('data-scrolled', isScrolled);
+    };
+
+    updateScrolledState();
+    window.addEventListener('scroll', updateScrolledState, { passive: true });
+
+    return () => window.removeEventListener('scroll', updateScrolledState);
+  }, []);
 
   return (
-    <header className="site-header">
+    <header className="site-header" ref={headerRef}>
       <Wordmark href="/" />
       <nav className="main-nav" aria-label="Navegación principal">
         {navigation.map((item) => {
