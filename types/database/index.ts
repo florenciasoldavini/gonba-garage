@@ -9,6 +9,7 @@ export type * from './shared';
 export type * from './valuation-lead-photo';
 export type * from './valuation-lead';
 export type * from './vehicle-image';
+export type * from './vehicle-inventory-alert';
 export type * from './vehicle-price-alert';
 export type * from './vehicle-price-history';
 export type * from './vehicle';

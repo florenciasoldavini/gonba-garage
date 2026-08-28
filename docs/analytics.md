@@ -33,6 +33,9 @@ or full search query. Vehicle slugs and catalog attributes are permitted.
 | `vehicle_shared` | A vehicle was shared or its link was copied successfully. |
 | `inventory_filtered` | An inventory filter or search changed after a short debounce. |
 | `inventory_zero_results` | The selected inventory criteria returned no vehicles. |
+| `inventory_alert_opened` | The saved-search alert dialog opened. |
+| `inventory_alert_created` | The inventory-alert API confirmed a successful database write. |
+| `inventory_alert_failed` | The inventory-alert request failed. |
 | `comparison_vehicle_added` | A vehicle was added to the comparison selection. |
 | `comparison_vehicle_removed` | A vehicle was removed from the comparison selection. |
 | `comparison_opened` | The comparison dialog opened with two or more vehicles. |
