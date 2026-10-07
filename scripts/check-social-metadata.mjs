@@ -164,7 +164,11 @@ for (const route of routes) {
 
   const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
 
-  if (route.path.startsWith('/vehiculos/')) {
+  if (!route.path.startsWith('/vehiculos/')) {
+    assert.equal(imagePath, '/gonba-garage-social-preview.png', `${route.path} should use the branded default card`);
+  }
+
+  {
     assert.equal(imageResponse.headers.get('content-type'), 'image/png', `${route.path} generated social card should be PNG`);
     assert.equal(imageBytes.readUInt32BE(16), 1200, `${route.path} social card should be 1200px wide`);
     assert.equal(imageBytes.readUInt32BE(20), 630, `${route.path} social card should be 630px tall`);
