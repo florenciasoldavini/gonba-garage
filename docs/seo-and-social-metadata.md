@@ -117,6 +117,10 @@ content or availability update, not the build time.
 
 ## Demo and permanent-domain policy
 
+The temporary `VEHICLE_DATA_SOURCE=mercado-libre` local preview always marks catalog and vehicle
+detail pages `noindex, nofollow` and returns an empty sitemap. The social image route reads the same
+vehicle source as the detail page. This in-memory authorization mode is not a permanent-domain launch.
+
 The safe default is:
 
 ```bash

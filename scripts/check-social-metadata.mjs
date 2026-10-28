@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 
 const targetOrigin = new URL(process.argv[2] || 'http://localhost:3100');
 const indexingEnabled = process.env.SITE_INDEXING_ENABLED === 'true';
+assert.notEqual(process.env.VEHICLE_DATA_SOURCE, 'mercado-libre',
+  'Run the permanent/demo metadata contract without the temporary local session. Live preview must remain noindex with an empty sitemap.');
 
 const routes = [
   { path: '/', title: "Gonba's Garage | Autos usados seleccionados" },

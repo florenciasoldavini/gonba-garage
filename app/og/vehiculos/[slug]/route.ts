@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import { ImageResponse } from 'next/og';
 
-import { findMockVehicle } from '@/features/vehicles/data/mock-vehicles';
+import { findCatalogVehicle } from '@/lib/integrations/mercado-libre/catalog';
 import { formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 
@@ -11,7 +11,7 @@ type VehicleSocialImageRouteProps = {
 
 export async function GET(request: Request, { params }: VehicleSocialImageRouteProps) {
   const { slug } = await params;
-  const vehicle = findMockVehicle(slug);
+  const vehicle = await findCatalogVehicle(slug);
 
   if (!vehicle) return new Response('Vehicle not found', { status: 404 });
 

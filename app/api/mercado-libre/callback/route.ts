@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { isLiveCatalog, setLocalCatalogSession } from '@/lib/integrations/mercado-libre/catalog';
 
 import {
   exchangeMercadoLibreAuthorizationCode,
@@ -58,6 +59,14 @@ export async function GET(request: Request) {
 
   try {
     const token = await exchangeMercadoLibreAuthorizationCode(code, verifier);
+    if (process.env.NODE_ENV === 'development' && isLiveCatalog()) {
+      setLocalCatalogSession(token.access_token, token.expires_in);
+      const response = NextResponse.redirect(new URL('/vehiculos', request.url));
+      response.cookies.delete('meli_oauth_state');
+      response.cookies.delete('meli_pkce_verifier');
+      response.headers.set('Cache-Control', 'no-store');
+      return response;
+    }
     const result = await readMercadoLibrePublications(token.access_token);
 
     return diagnosticResponse(

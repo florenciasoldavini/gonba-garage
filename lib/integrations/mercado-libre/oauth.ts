@@ -142,6 +142,9 @@ async function readItems(itemIds: string[], accessToken: string) {
     ),
   );
 
+  if (batches.flat().some(({ status_code }) => status_code !== 200)) {
+    throw new Error('Mercado Libre returned an incomplete batch of publications.');
+  }
   return batches
     .flat()
     .filter(({ status_code }) => status_code === 200)
