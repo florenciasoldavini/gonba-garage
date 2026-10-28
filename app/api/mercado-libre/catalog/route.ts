@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { authorized, required } from '@/lib/integrations/mercado-libre/credentials';
 import { catalogAccessToken } from '@/lib/integrations/mercado-libre/access-token';
 import { readMercadoLibrePublications, readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/oauth';
+import { reportIntegrationFailure } from '@/lib/integrations/mercado-libre/failures';
 
 export const runtime = 'nodejs';
 const headers = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow' };
@@ -27,7 +28,8 @@ export async function GET(request: Request) {
       } };
     })();
     return NextResponse.json(result, { status: result ? 200 : 404, headers });
-  } catch {
-    return NextResponse.json({ message: 'Catálogo temporalmente no disponible. Revisá la conexión del servidor.' }, { status: 503, headers });
+  } catch (error) {
+    const incident = reportIntegrationFailure(error, 'catalog_query');
+    return NextResponse.json({ message: 'Catálogo temporalmente no disponible. Revisá la conexión del servidor.', incidentId: incident.incidentId }, { status: 503, headers });
   }
 }
