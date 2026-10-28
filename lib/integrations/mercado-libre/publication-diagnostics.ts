@@ -31,7 +31,10 @@ export async function readPublicationDiagnostics(sellerId: string, getJson: GetJ
   // Bound concurrency and keep provider errors explicit rather than inventing states.
   for (let offset = 0; offset < requested.length; offset += 20) {
     const batch = requested.slice(offset, offset + 20);
-    const response = await getJson<BulkEntry[]>(`/items/bulk?ids=${batch.map(encodeURIComponent).join(',')}&attributes=body.id,body.seller_id,body.title,body.status,body.sub_status,body.attributes`);
+    // Use the same bulk request as the working catalog. A projected response can
+    // omit the envelope IDs/statuses required to match and validate each item.
+    // Only the explicit public diagnostic fields below are returned to the caller.
+    const response = await getJson<BulkEntry[]>(`/items/bulk?ids=${batch.map(encodeURIComponent).join(',')}&include_internal_attributes=true`);
     const byId = new Map(response.map(entry => [entry.body?.id ?? entry.id, entry]));
     for (const id of batch) {
       const entry = byId.get(id);

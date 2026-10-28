@@ -26,10 +26,11 @@ const full = await read(seller, async path => {
     return {paging:{total:ids.length}, results:ids.slice(page*100, ++page*100), scroll_id:'cursor'};
   }
   bulkCalls++;
-  assert.ok(url.searchParams.get('attributes').split(',').includes('body.attributes'), 'Bulk must request the complete attribute array');
+  assert.equal(url.searchParams.has('attributes'), false, 'Do not project away the bulk response envelope');
+  assert.equal(url.searchParams.get('include_internal_attributes'), 'true', 'Use the same complete attribute source as the catalog');
   const batch=url.searchParams.get('ids').split(',');
   assert.ok(batch.length<=20);
-  return batch.toReversed().map(id=>({id,status_code:200,body:{id,seller_id:123,title:id,status:states[(Number(id.slice(3))-1)%states.length],sub_status:['example'],attributes}}));
+  return batch.toReversed().map(id=>({id,status_code:200,body:{id,seller_id:123,title:id,status:states[(Number(id.slice(3))-1)%states.length],sub_status:['example'],attributes,seller_address:{address_line:'Must not be returned'},seller_contact:{email:'private@example.test'}}}));
 });
 assert.equal(page,11);
 assert.equal(bulkCalls,51);
@@ -41,6 +42,9 @@ assert.equal(full.countsByStatus.closed,201);
 assert.equal(full.countsByStatus.future_state,200);
 assert.deepEqual(full.items[0].subStatuses,['example']);
 assert.deepEqual(full.missingAttributes, []);
+assert.equal(JSON.stringify(full).includes('Must not be returned'), false);
+assert.equal(JSON.stringify(full).includes('private@example.test'), false);
+assert.deepEqual(Object.keys(full.items[0]).sort(), ['attributes','id','status','subStatuses','title']);
 for (const state of states) {
   const item = full.items.find(item => item.status === state);
   assert.deepEqual(item.attributes, attributes, `Raw attributes must be kept for ${state}`);
