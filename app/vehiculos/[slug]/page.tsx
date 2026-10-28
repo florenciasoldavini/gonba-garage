@@ -14,6 +14,7 @@ import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { mockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { findCatalogPublication, findCatalogVehicle, isLiveCatalog } from '@/lib/integrations/mercado-libre/catalog';
+import { fullSizeMercadoLibreImageUrl } from '@/lib/integrations/mercado-libre/pictures';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleSpecification, vehicleSpecificationLabels, type VehicleSpecificationKey } from '@/features/vehicles/presentation/specifications';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
@@ -260,7 +261,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
       <section className="section-shell detail-gallery" aria-label="Galería del vehículo">
         {publication ? pictures.map((picture, index) => {
-          const src = (picture.secure_url || picture.url)?.replace(/^http:/, 'https:');
+          const src = fullSizeMercadoLibreImageUrl(picture.secure_url || picture.url);
           return src ? <a key={picture.id ?? index} href={src} target="_blank" rel="noreferrer" className="detail-gallery-image"><Image src={src} alt={`${vehicle.imageAlt} · Foto ${index + 1}`} fill sizes="(max-width: 760px) 100vw, 50vw" className="cover-image" /></a> : null;
         }) : <>
         <div className="detail-gallery-image detail-gallery-wide">

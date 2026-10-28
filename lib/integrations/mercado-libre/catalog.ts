@@ -3,6 +3,7 @@ import { cache } from 'react';
 import { activeMockVehicles, findMockVehicle } from '@/features/vehicles/data/mock-vehicles';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import type { MercadoLibrePublication } from './types';
+import { fullSizeMercadoLibreImageUrl } from './pictures';
 
 export function isLiveCatalog() {
   return process.env.VEHICLE_DATA_SOURCE === 'mercado-libre';
@@ -28,7 +29,10 @@ export const listCatalogVehicles = cache(async () => {
   if (!isLiveCatalog()) return activeMockVehicles;
   const result = await remoteCatalog<{ vehicles: Vehicle[] }>();
   if (!result) throw new Error('Missing catalog');
-  return result.vehicles;
+  return result.vehicles.map((vehicle) => ({
+    ...vehicle,
+    image: fullSizeMercadoLibreImageUrl(vehicle.image) ?? vehicle.image,
+  }));
 });
 
 export const findCatalogPublication = cache(async (slug: string): Promise<MercadoLibrePublication | null> => {
@@ -36,7 +40,14 @@ export const findCatalogPublication = cache(async (slug: string): Promise<Mercad
   const id = slug.match(/-(mla\d+)$/i)?.[1]?.toUpperCase();
   if (!id) return null;
   const result = await remoteCatalog<MercadoLibrePublication>(id);
-  return result?.vehicle.slug === slug ? result : null;
+  if (result?.vehicle.slug !== slug) return null;
+  return {
+    ...result,
+    vehicle: {
+      ...result.vehicle,
+      image: fullSizeMercadoLibreImageUrl(result.vehicle.image) ?? result.vehicle.image,
+    },
+  };
 });
 
 export const findCatalogVehicle = cache(async (slug: string) => {
