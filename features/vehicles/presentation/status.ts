@@ -11,6 +11,11 @@ const vehicleStatusPresentation = {
     schemaAvailability: 'https://schema.org/OutOfStock',
     isAvailable: false,
   },
+  closed: {
+    label: 'No disponible',
+    schemaAvailability: 'https://schema.org/OutOfStock',
+    isAvailable: false,
+  },
   sold: {
     label: 'Vendido',
     schemaAvailability: 'https://schema.org/SoldOut',

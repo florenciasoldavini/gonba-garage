@@ -1,4 +1,4 @@
-export type VehicleStatus = 'active' | 'paused' | 'sold';
+export type VehicleStatus = 'active' | 'paused' | 'closed' | 'sold';
 
 /**
  * Canonical vehicle shape used by pages and data-source adapters.
