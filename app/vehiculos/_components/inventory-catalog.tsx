@@ -8,6 +8,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
+import { comparableUsdPrice, type MepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { CatalogEmptyState } from './catalog-empty-state';
 import { CatalogVehicleCard } from './catalog-vehicle-card';
@@ -24,6 +25,7 @@ if (typeof window !== 'undefined') {
 
 type InventoryCatalogProps = {
   vehicles: Vehicle[];
+  quote: MepQuote | null;
   initialCompareSlug?: string;
 };
 
@@ -33,11 +35,13 @@ const PRICE_STEP = 5000;
 const MIN_MILEAGE = 0;
 const MILEAGE_STEP = 5000;
 
-export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCatalogProps) {
+export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: InventoryCatalogProps) {
   const resultsRef = useRef<HTMLDivElement>(null);
+  const priceEnabled = quote !== null || vehicles.every(v => v.currency === 'USD');
+  const comparisonPrices = useMemo(() => new Map(vehicles.map(v => [v.slug, comparableUsdPrice(v, quote)])), [vehicles, quote]);
   const priceCeiling = useMemo(
-    () => Math.ceil(Math.max(...vehicles.map(({ price }) => price), PRICE_STEP) / PRICE_STEP) * PRICE_STEP,
-    [vehicles],
+    () => Math.ceil(Math.max(...Array.from(comparisonPrices.values()).map(v => v ?? 0), PRICE_STEP) / PRICE_STEP) * PRICE_STEP,
+    [comparisonPrices],
   );
   const mileageCeiling = useMemo(
     () => Math.ceil(Math.max(...vehicles.map(({ mileageKm }) => mileageKm), MILEAGE_STEP) / MILEAGE_STEP) * MILEAGE_STEP,
@@ -77,19 +81,19 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
         (transmission === 'all' || transmissionType === transmission) &&
         (bodyType === 'all' || vehicle.body.split(' · ')[0] === bodyType) &&
         (fuel === 'all' || vehicle.fuel === fuel) &&
-        vehicle.price >= minPrice && vehicle.price <= maxPrice &&
+        (!priceEnabled || ((comparisonPrices.get(vehicle.slug) ?? 0) >= minPrice && (comparisonPrices.get(vehicle.slug) ?? 0) <= maxPrice)) &&
         vehicle.mileageKm >= minMileage && vehicle.mileageKm <= maxMileage
       );
     });
 
     return result.toSorted((a, b) => {
       if (sort === 'newest') return b.year - a.year;
-      if (sort === 'price-asc') return a.price - b.price;
-      if (sort === 'price-desc') return b.price - a.price;
+      if (priceEnabled && sort === 'price-asc') return (comparisonPrices.get(a.slug) ?? 0) - (comparisonPrices.get(b.slug) ?? 0);
+      if (priceEnabled && sort === 'price-desc') return (comparisonPrices.get(b.slug) ?? 0) - (comparisonPrices.get(a.slug) ?? 0);
       if (sort === 'mileage') return a.mileageKm - b.mileageKm;
       return vehicles.indexOf(a) - vehicles.indexOf(b);
     });
-  }, [bodyType, fuel, make, maxMileage, maxPrice, minMileage, minPrice, query, sort, transmission, vehicles]);
+  }, [bodyType, fuel, make, maxMileage, maxPrice, minMileage, minPrice, query, sort, transmission, vehicles, priceEnabled, comparisonPrices]);
   const filteredVehicleKey = filteredVehicles.map(({ slug }) => slug).join('|');
 
   useGSAP(
@@ -270,6 +274,8 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
     onTransmissionChange: setTransmission,
     priceCeiling,
     priceStep: PRICE_STEP,
+    priceEnabled,
+    quote,
     transmission,
   };
 
@@ -309,6 +315,7 @@ export function InventoryCatalog({ vehicles, initialCompareSlug }: InventoryCata
             onSortChange={setSort}
             query={query}
             sort={sort}
+            priceEnabled={priceEnabled}
           />
           {filteredVehicles.length > 0 ? (
             <div className="catalog-grid">

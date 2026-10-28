@@ -6,6 +6,7 @@ import { InnerPageMotion } from '@/components/motion/inner-page-motion';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { isLiveCatalog, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { createPageMetadata } from '@/lib/metadata';
+import { getMepQuote } from '@/lib/integrations/mep-quote';
 import { InventoryCatalog } from './_components/inventory-catalog';
 import { InventoryCatalogFromSearchParams } from './_components/inventory-catalog-from-search-params';
 
@@ -18,11 +19,13 @@ export const metadata: Metadata = { ...createPageMetadata({
 
 export default async function VehiclesPage() {
   let vehicles;
+  const quotePromise = getMepQuote();
   try {
     vehicles = await listCatalogVehicles();
   } catch {
     return <main className="section-shell"><SiteHeader active="vehicles" /><h1>Catálogo no disponible</h1><p>No pudimos consultar las publicaciones. Revisá la conexión del backend y volvé a intentar.</p></main>;
   }
+  const quote = await quotePromise;
   return (
     <InnerPageMotion className="catalog-page" id="catalog-top" variant="catalog">
       <SiteHeader active="vehicles" />
@@ -39,8 +42,8 @@ export default async function VehiclesPage() {
         </div>
       </section>
 
-      <Suspense fallback={<InventoryCatalog vehicles={vehicles} />}>
-        <InventoryCatalogFromSearchParams vehicles={vehicles} />
+      <Suspense fallback={<InventoryCatalog vehicles={vehicles} quote={quote} />}>
+        <InventoryCatalogFromSearchParams vehicles={vehicles} quote={quote} />
       </Suspense>
 
       <SiteFooter topHref="#catalog-top" />

@@ -5,6 +5,7 @@ import { SlidersHorizontal } from 'lucide-react';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { DualRangeFilter } from './dual-range-filter';
+import type { MepQuote } from '@/features/vehicles/domain/catalog-pricing';
 
 export type InventoryFiltersProps = {
   activeFilterCount: number;
@@ -31,6 +32,8 @@ export type InventoryFiltersProps = {
   onTransmissionChange: (value: string) => void;
   priceCeiling: number;
   priceStep: number;
+  priceEnabled: boolean;
+  quote: MepQuote | null;
   transmission: string;
   className?: string;
 };
@@ -60,6 +63,8 @@ export function InventoryFilters({
   onTransmissionChange,
   priceCeiling,
   priceStep,
+  priceEnabled,
+  quote,
   transmission,
   className = '',
 }: InventoryFiltersProps) {
@@ -92,9 +97,9 @@ export function InventoryFilters({
         <CustomSelect ariaLabel="Filtrar por combustible" value={fuel} onChange={onFuelChange} options={[{ value: 'all', label: 'Todos los combustibles' }, ...fuelTypes.map((value) => ({ value, label: value }))]} />
       </div>
 
-      <DualRangeFilter
+      {priceEnabled ? <DualRangeFilter
         formatValue={formatVehiclePrice}
-        label="Rango de precio"
+        label="Precio equivalente en USD"
         maximum={priceCeiling}
         maximumAriaLabel="Precio máximo"
         maximumValue={maxPrice}
@@ -104,7 +109,8 @@ export function InventoryFilters({
         onMaximumChange={onMaxPriceChange}
         onMinimumChange={onMinPriceChange}
         step={priceStep}
-      />
+      /> : <p className="catalog-filter-note" role="status">Cotización MEP no disponible. El filtro y el orden por precio están temporalmente deshabilitados.</p>}
+      {quote ? <p className="catalog-filter-note">Referencia: dólar MEP venta, $ {new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 }).format(quote.arsPerUsd)} por USD. Fuente: <a href="https://dolarapi.com" target="_blank" rel="noreferrer">DolarAPI</a>. Actualización: {new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', dateStyle: 'short', timeStyle: 'short' }).format(new Date(quote.updatedAt))} (Argentina). Conversión orientativa para filtrar y ordenar; cotización de pago a confirmar con la agencia.</p> : null}
       <DualRangeFilter
         formatValue={formatVehicleMileage}
         label="Rango de kilometraje"

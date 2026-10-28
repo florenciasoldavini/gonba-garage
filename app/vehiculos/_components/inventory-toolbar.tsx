@@ -24,9 +24,10 @@ type InventoryToolbarProps = {
   onSortChange: (sort: InventorySort) => void;
   query: string;
   sort: InventorySort;
+  priceEnabled: boolean;
 };
 
-export function InventoryToolbar({ activeFilterCount, alertAction, count, onOpenFilters, onQueryChange, onSortChange, query, sort }: InventoryToolbarProps) {
+export function InventoryToolbar({ activeFilterCount, alertAction, count, onOpenFilters, onQueryChange, onSortChange, query, sort, priceEnabled }: InventoryToolbarProps) {
   const searchRef = useRef<HTMLInputElement>(null);
 
   return (
@@ -68,7 +69,7 @@ export function InventoryToolbar({ activeFilterCount, alertAction, count, onOpen
             ariaLabel="Ordenar vehículos"
             value={sort}
             onChange={(value) => onSortChange(value as InventorySort)}
-            options={sortOptions}
+            options={sortOptions.filter(option => priceEnabled || !option.value.startsWith('price-'))}
           />
         </div>
         {alertAction}
