@@ -34,3 +34,9 @@ No cambiar la clave de cifrado sin migrar el ciphertext o reautorizar. No expone
 Pruebas locales: `node scripts/check-refresh-token-store.mjs`, typecheck, lint, build y `test:metadata` en modo demo y producción. El test de almacenamiento simula escrituras condicionales e incluye dos renovaciones concurrentes, rotación, timeout ambiguo, recuperación y rechazo de escrituras obsoletas. La prueba real del store privado y de la cuenta requiere crearlo, configurar secretos, desplegar y autorizar después de revisar el PR. Probar también acceso denegado al blob sin credenciales, acceso desde localhost tras reiniciarlo y recuperación tras una revocación.
 
 No hay migraciones de Supabase que aplicar para Mercado Libre.
+
+## Diagnóstico de todos los estados
+
+`GET /api/mercado-libre/diagnostics` usa la misma clave Bearer privada que el catálogo. Consulta únicamente el seller configurado, recorre el buscador con `search_type=scan` sin filtro de estado y lee lotes de hasta 20 publicaciones. Devuelve `totalReported`, `totalFound`, `totalRead`, `countsByStatus`, `items` (ID, título, estado y subestados) y `failures` para publicaciones fallidas u omitidas por el proveedor. Los estados desconocidos se conservan; `closed` no se interpreta como venta.
+
+Una respuesta completa devuelve 200 y `complete: true`. Una lectura parcial devuelve 206 y `complete: false`; no usar ese conteo como definitivo. Un error de proveedor o timeout devuelve 503. Es una lectura actual, no un snapshot transaccional: el inventario puede cambiar durante la consulta. El límite defensivo es 100 páginas de 100 IDs y el presupuesto de lectura es de 50 segundos; alcanzar un límite no se informa como resultado completo. La respuesta usa `private, no-store` y `noindex`, no expone tokens ni datos de contacto del vendedor y no se consume desde el catálogo público. Las publicaciones visibles del sitio siguen siendo solo las activas.

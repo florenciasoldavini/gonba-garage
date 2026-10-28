@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 const targetOrigin = new URL(process.argv[2] || 'http://localhost:3100');
 const indexingEnabled = process.env.SITE_INDEXING_ENABLED === 'true';
-for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect']) {
+for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect', '/api/mercado-libre/diagnostics']) {
   const response = await fetch(new URL(path, targetOrigin));
   assert.equal(response.status, 401, `${path} must reject unauthenticated requests`);
   assert.match(response.headers.get('cache-control') ?? '', /no-store/);
