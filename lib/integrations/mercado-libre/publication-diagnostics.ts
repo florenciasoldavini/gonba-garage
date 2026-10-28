@@ -1,5 +1,6 @@
 type ScanPage = { paging: { total: number }; results: string[] | null; scroll_id?: string };
-type StatusItem = { id: string; seller_id: number; title: string; status: string; sub_status?: string[] };
+type PublicationAttribute = Record<string, unknown>;
+type StatusItem = { id: string; seller_id: number; title: string; status: string; sub_status?: string[]; attributes?: PublicationAttribute[] | null };
 type BulkEntry = { id?: string; status_code: number; body?: StatusItem };
 type GetJson = <T>(path: string) => Promise<T>;
 
@@ -24,12 +25,13 @@ export async function readPublicationDiagnostics(sellerId: string, getJson: GetJ
   }
 
   const requested = [...ids];
-  const items: Array<{ id: string; title: string; status: string; subStatuses: string[] }> = [];
+  const items: Array<{ id: string; title: string; status: string; subStatuses: string[]; attributes: PublicationAttribute[] | null }> = [];
+  const missingAttributes: string[] = [];
   const failures: Array<{ id: string; code: number | null }> = [];
   // Bound concurrency and keep provider errors explicit rather than inventing states.
   for (let offset = 0; offset < requested.length; offset += 20) {
     const batch = requested.slice(offset, offset + 20);
-    const response = await getJson<BulkEntry[]>(`/items/bulk?ids=${batch.map(encodeURIComponent).join(',')}&attributes=body.id,body.seller_id,body.title,body.status,body.sub_status`);
+    const response = await getJson<BulkEntry[]>(`/items/bulk?ids=${batch.map(encodeURIComponent).join(',')}&attributes=body.id,body.seller_id,body.title,body.status,body.sub_status,body.attributes`);
     const byId = new Map(response.map(entry => [entry.body?.id ?? entry.id, entry]));
     for (const id of batch) {
       const entry = byId.get(id);
@@ -38,7 +40,11 @@ export async function readPublicationDiagnostics(sellerId: string, getJson: GetJ
         failures.push({ id, code: entry?.status_code ?? null });
         continue;
       }
-      items.push({ id, title: item.title, status: item.status, subStatuses: item.sub_status ?? [] });
+      // Keep the provider's full attribute objects, including unknown IDs, values and units.
+      // An omitted array is not the same as an explicitly empty one.
+      const attributes = Array.isArray(item.attributes) ? item.attributes : null;
+      if (attributes === null) missingAttributes.push(id);
+      items.push({ id, title: item.title, status: item.status, subStatuses: item.sub_status ?? [], attributes });
     }
   }
   const counts = new Map<string, number>();
@@ -49,9 +55,10 @@ export async function readPublicationDiagnostics(sellerId: string, getJson: GetJ
     totalReported,
     totalFound: requested.length,
     totalRead: items.length,
-    complete: scanComplete && failures.length === 0 && items.length === totalReported,
+    complete: scanComplete && failures.length === 0 && missingAttributes.length === 0 && items.length === totalReported,
     countsByStatus: Object.fromEntries([...counts].sort(([a], [b]) => a.localeCompare(b))),
     items,
     failures,
+    missingAttributes,
   };
 }

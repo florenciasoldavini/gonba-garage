@@ -21,6 +21,6 @@ export async function GET(request: Request) {
     });
     return NextResponse.json(result, { status: result.complete ? 200 : 206, headers });
   } catch {
-    return NextResponse.json({ message: 'No se pudo completar la consulta de estados. Volvé a intentar.' }, { status: 503, headers });
+    return NextResponse.json({ message: 'No se pudo completar la consulta de publicaciones. Volvé a intentar.' }, { status: 503, headers });
   }
 }
