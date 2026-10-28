@@ -1,0 +1,45 @@
+import { NextResponse } from 'next/server';
+
+import {
+  buildMercadoLibreAuthorizationUrl,
+  createMercadoLibreOAuthAttempt,
+} from '@/lib/integrations/mercado-libre/oauth';
+
+const OAUTH_COOKIE_MAX_AGE_SECONDS = 10 * 60;
+
+export async function GET() {
+  try {
+    const attempt = createMercadoLibreOAuthAttempt();
+    const authorizationUrl = buildMercadoLibreAuthorizationUrl(attempt.state, attempt.challenge);
+    const response = NextResponse.redirect(authorizationUrl);
+    const cookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax' as const,
+      path: '/',
+      maxAge: OAUTH_COOKIE_MAX_AGE_SECONDS,
+    };
+
+    response.cookies.set('meli_oauth_state', attempt.state, cookieOptions);
+    response.cookies.set('meli_pkce_verifier', attempt.verifier, cookieOptions);
+    response.headers.set('Cache-Control', 'no-store');
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+
+    return response;
+  } catch (error) {
+    console.error(
+      'Unable to start Mercado Libre read test',
+      error instanceof Error ? error.message : error,
+    );
+    return NextResponse.json(
+      { message: 'Faltan credenciales de Mercado Libre en el servidor.' },
+      {
+        status: 503,
+        headers: {
+          'Cache-Control': 'no-store',
+          'X-Robots-Tag': 'noindex, nofollow',
+        },
+      },
+    );
+  }
+}
