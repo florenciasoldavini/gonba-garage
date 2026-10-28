@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowDown, ArrowUpRight, Scale } from 'lucide-react';
@@ -25,6 +24,7 @@ import { ORGANIZATION_SCHEMA_ID } from '@/lib/structured-data';
 import { PriceAlert } from './_components/price-alert';
 import { ShareButton } from './_components/share-button';
 import { VehicleAnalytics } from './_components/vehicle-analytics';
+import { VehiclePhotoViewer } from './_components/vehicle-photo-viewer';
 
 type VehicleDetailPageProps = {
   params: Promise<{ slug: string }>;
@@ -69,6 +69,9 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
   if (!vehicle) notFound();
   const pictures = publication?.source.pictures ?? [];
+  const photos = pictures.map(picture => fullSizeMercadoLibreImageUrl(picture.secure_url || picture.url))
+    .filter((src): src is string => Boolean(src));
+  if (!photos.length) photos.push(vehicle.image);
   const attributes = publication?.source.attributes ?? [];
 
   const siteUrl = getSiteUrl();
@@ -181,18 +184,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       </section>
 
       <section className="section-shell detail-showcase" aria-label="Presentación del vehículo">
-        <div className="detail-primary-image">
-          <Image
-            src={vehicle.image}
-            alt={vehicle.imageAlt}
-            fill
-            loading="eager"
-            sizes="(max-width: 980px) 100vw, 72vw"
-            className="cover-image"
-          />
-          <span className="detail-image-count">01 / {String(pictures.length || 1).padStart(2, '0')}</span>
-          <span className="detail-stock">Stock {vehicle.stockCode}</span>
-        </div>
+        <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} stockCode={vehicle.stockCode} />
 
         <aside className="detail-purchase-card glass-panel" aria-label="Precio y consulta">
           <div className="detail-purchase-top">
@@ -259,19 +251,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         </div>
       </section>
 
-      <section className="section-shell detail-gallery" aria-label="Galería del vehículo">
-        {publication ? pictures.map((picture, index) => {
-          const src = fullSizeMercadoLibreImageUrl(picture.secure_url || picture.url);
-          return src ? <a key={picture.id ?? index} href={src} target="_blank" rel="noreferrer" className="detail-gallery-image"><Image src={src} alt={`${vehicle.imageAlt} · Foto ${index + 1}`} fill sizes="(max-width: 760px) 100vw, 50vw" className="cover-image" /></a> : null;
-        }) : <>
-        <div className="detail-gallery-image detail-gallery-wide">
-          <Image src={vehicle.image} alt={`Vista lateral de ${vehicle.make} ${vehicle.model}`} fill sizes="(max-width: 760px) 100vw, 66vw" className="cover-image detail-crop-left" />
-        </div>
-        <div className="detail-gallery-image">
-          <Image src={vehicle.image} alt={`Detalle de ${vehicle.make} ${vehicle.model}`} fill sizes="(max-width: 760px) 100vw, 34vw" className="cover-image detail-crop-right" />
-        </div>
-        </>}
-      </section>
+      <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} layout="grid" />
 
       <section className="section-shell detail-confidence" aria-label="Proceso Gonba's Garage">
         <div><span>01</span><strong>Selección</strong><p>Elegimos unidades con identidad y una historia clara.</p></div>
