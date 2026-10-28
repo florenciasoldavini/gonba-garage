@@ -21,7 +21,7 @@ export default async function VehiclesPage() {
   try {
     vehicles = await listCatalogVehicles();
   } catch {
-    return <main className="section-shell"><SiteHeader active="vehicles" /><h1>Conectá el catálogo</h1><p>La sesión local de Mercado Libre falta o venció. Volvé a autorizar para consultar las publicaciones.</p><a href="/api/mercado-libre/connect">Conectar Mercado Libre</a></main>;
+    return <main className="section-shell"><SiteHeader active="vehicles" /><h1>Catálogo no disponible</h1><p>No pudimos consultar las publicaciones. Revisá la conexión del backend y volvé a intentar.</p></main>;
   }
   return (
     <InnerPageMotion className="catalog-page" id="catalog-top" variant="catalog">

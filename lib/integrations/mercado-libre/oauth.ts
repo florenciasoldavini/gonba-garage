@@ -232,6 +232,21 @@ export async function readMercadoLibrePublications(accessToken: string) {
   } satisfies MercadoLibreReadTest;
 }
 
+export async function refreshMercadoLibreToken(refreshToken: string) {
+  const response = await fetch(TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: requiredEnvironmentVariable('MERCADO_LIBRE_CLIENT_ID'),
+      client_secret: requiredEnvironmentVariable('MERCADO_LIBRE_CLIENT_SECRET'),
+      refresh_token: refreshToken,
+    }),
+    cache: 'no-store', signal: AbortSignal.timeout(20_000),
+  });
+  return parseMercadoLibreResponse<MercadoLibreTokenResponse>(response, 'Mercado Libre token refresh');
+}
+
 export async function readMercadoLibrePublication(
   itemId: string,
   accessToken: string,

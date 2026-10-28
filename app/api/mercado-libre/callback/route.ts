@@ -1,10 +1,9 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
-import { isLiveCatalog, setLocalCatalogSession } from '@/lib/integrations/mercado-libre/catalog';
+import { saveAuthorization } from '@/lib/integrations/mercado-libre/credentials';
 
 import {
   exchangeMercadoLibreAuthorizationCode,
-  readMercadoLibrePublications,
   securelyMatches,
 } from '@/lib/integrations/mercado-libre/oauth';
 
@@ -59,33 +58,22 @@ export async function GET(request: Request) {
 
   try {
     const token = await exchangeMercadoLibreAuthorizationCode(code, verifier);
-    if (process.env.NODE_ENV === 'development' && isLiveCatalog()) {
-      setLocalCatalogSession(token.access_token, token.expires_in);
-      const response = NextResponse.redirect(new URL('/vehiculos', request.url));
-      response.cookies.delete('meli_oauth_state');
-      response.cookies.delete('meli_pkce_verifier');
-      response.headers.set('Cache-Control', 'no-store');
-      return response;
-    }
-    const result = await readMercadoLibrePublications(token.access_token);
+    if (!token.refresh_token) throw new Error('Missing refresh token');
+    await saveAuthorization(token.user_id, token.refresh_token);
 
     return diagnosticResponse(
       {
         ok: true,
-        message: 'Mercado Libre permitió leer las publicaciones correctamente.',
-        ...result,
+        message: 'Conexión guardada. Ya podés probar el catálogo desde localhost.',
         security: {
-          tokensStored: false,
+          refreshTokenEncrypted: true,
           tokensReturned: false,
         },
       },
       200,
     );
-  } catch (error) {
-    console.error(
-      'Mercado Libre read test failed',
-      error instanceof Error ? error.message : error,
-    );
+  } catch {
+    console.error('Mercado Libre connection could not be saved');
     return diagnosticResponse(
       {
         ok: false,
