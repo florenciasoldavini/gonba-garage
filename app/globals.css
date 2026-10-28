@@ -801,6 +801,14 @@ h3 { letter-spacing: -0.04em; }
 .detail-specs dt { color: var(--muted); font-size: 0.72rem; }
 .detail-specs dd { margin: 0; color: #e0e3dd; font-size: 0.76rem; text-align: right; }
 
+.detail-specs-groups details { border-top: 1px solid var(--line); }
+.detail-specs-groups summary { min-height: 60px; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--text); font-size: 0.8rem; font-weight: 600; list-style: none; cursor: pointer; }
+.detail-specs-groups summary::-webkit-details-marker { display: none; }
+.detail-specs-groups summary:hover { color: var(--accent); }
+.detail-specs-groups summary svg { flex-shrink: 0; color: var(--muted); }
+.detail-specs-groups details[open] summary svg { transform: rotate(180deg); color: var(--accent); }
+.detail-specs-panel { overflow: hidden; }
+
 .detail-gallery { display: grid; grid-template-columns: 1.5fr 0.5fr; gap: 14px; }
 .detail-gallery-image { position: relative; min-height: clamp(480px, 55vw, 760px); overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: #111411; }
 .detail-gallery .cover-image { transform: scale(1.3); }

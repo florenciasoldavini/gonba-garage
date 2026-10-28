@@ -5,7 +5,13 @@ import ts from 'typescript';
 const source = readFileSync(new URL('../lib/integrations/mercado-libre/publication-diagnostics.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const exports = {};
-new Function('exports', compiled)(exports);
+const policy = {};
+const policySource = readFileSync(new URL('../features/vehicles/presentation/mercado-libre-attribute-policy.ts', import.meta.url), 'utf8');
+new Function('exports', ts.transpileModule(policySource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText)(policy);
+new Function('exports', 'require', compiled)(exports, id => {
+  assert.equal(id, '@/features/vehicles/presentation/mercado-libre-attribute-policy');
+  return policy;
+});
 const { readPublicationDiagnostics: read } = exports;
 const seller = '123';
 const ids = Array.from({length: 1003}, (_,i) => `MLA${i+1}`);
@@ -42,6 +48,10 @@ assert.equal(full.countsByStatus.closed,201);
 assert.equal(full.countsByStatus.future_state,200);
 assert.deepEqual(full.items[0].subStatuses,['example']);
 assert.deepEqual(full.missingAttributes, []);
+assert.equal(full.unmappedAttributes.length, 1);
+assert.equal(full.unmappedAttributes[0].id, 'UNKNOWN_ATTRIBUTE');
+assert.equal(full.unmappedAttributes[0].name, 'Atributo nuevo');
+assert.deepEqual(full.unmappedAttributes[0].publicationIds, ids);
 assert.equal(JSON.stringify(full).includes('Must not be returned'), false);
 assert.equal(JSON.stringify(full).includes('private@example.test'), false);
 assert.deepEqual(Object.keys(full.items[0]).sort(), ['attributes','id','status','subStatuses','title']);
@@ -63,6 +73,7 @@ assert.equal(truncated.complete,false);
 const empty = await read(seller, async () => ({paging:{total:0},results:null}));
 assert.equal(empty.complete,true);
 assert.equal(empty.totalRead,0);
+assert.deepEqual(empty.unmappedAttributes,[]);
 const incompleteAttributes = await read(seller, async path => path.includes('/search')
   ? {paging:{total:3},results:['MLA1','MLA2','MLA3']}
   : [
