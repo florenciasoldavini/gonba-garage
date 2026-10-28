@@ -2,6 +2,14 @@ import assert from 'node:assert/strict';
 
 const targetOrigin = new URL(process.argv[2] || 'http://localhost:3100');
 const indexingEnabled = process.env.SITE_INDEXING_ENABLED === 'true';
+for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect']) {
+  const response = await fetch(new URL(path, targetOrigin));
+  assert.equal(response.status, 401, `${path} must reject unauthenticated requests`);
+  assert.match(response.headers.get('cache-control') ?? '', /no-store/);
+  assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
+}
+assert.notEqual(process.env.VEHICLE_DATA_SOURCE, 'mercado-libre',
+  'Run the permanent/demo metadata contract without the temporary local session. Live preview must remain noindex with an empty sitemap.');
 
 const routes = [
   { path: '/', title: "Gonba's Garage | Autos usados seleccionados" },

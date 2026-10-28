@@ -12,7 +12,8 @@ import { JsonLd } from '@/components/seo/json-ld';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { findMockVehicle, mockVehicles } from '@/features/vehicles/data/mock-vehicles';
+import { mockVehicles } from '@/features/vehicles/data/mock-vehicles';
+import { findCatalogPublication, findCatalogVehicle, isLiveCatalog } from '@/lib/integrations/mercado-libre/catalog';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleSpecification, vehicleSpecificationLabels, type VehicleSpecificationKey } from '@/features/vehicles/presentation/specifications';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
@@ -31,12 +32,13 @@ type VehicleDetailPageProps = {
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
 export function generateStaticParams() {
+  if (isLiveCatalog()) return [];
   return mockVehicles.map(({ slug }) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: VehicleDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const vehicle = findMockVehicle(slug);
+  const vehicle = await findCatalogVehicle(slug);
 
   if (!vehicle) {
     return { title: "Vehículo no encontrado | Gonba's Garage" };
@@ -53,6 +55,7 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
     imageAlt: `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}`,
   });
 
+  if (isLiveCatalog()) return { ...metadata, robots: { index: false, follow: false } };
   return vehicle.status === 'paused' && isSiteIndexingEnabled()
     ? { ...metadata, robots: { index: false, follow: true } }
     : metadata;
@@ -60,9 +63,12 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
 
 export default async function VehicleDetailPage({ params }: VehicleDetailPageProps) {
   const { slug } = await params;
-  const vehicle = findMockVehicle(slug);
+  const vehicle = await findCatalogVehicle(slug);
+  const publication = await findCatalogPublication(slug);
 
   if (!vehicle) notFound();
+  const pictures = publication?.source.pictures ?? [];
+  const attributes = publication?.source.attributes ?? [];
 
   const siteUrl = getSiteUrl();
   const vehicleUrl = new URL(`/vehiculos/${vehicle.slug}`, siteUrl).toString();
@@ -163,7 +169,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
       <section className="section-shell detail-title" aria-labelledby="vehicle-title">
         <div>
-          <Eyebrow>{status.label} · Datos demostrativos</Eyebrow>
+          <Eyebrow>{status.label} · {publication ? 'Mercado Libre' : 'Datos demostrativos'}</Eyebrow>
           <h1 id="vehicle-title">{vehicle.make} {vehicle.model}<em>{vehicle.version}</em></h1>
         </div>
         <div className="detail-title-meta">
@@ -183,7 +189,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             sizes="(max-width: 980px) 100vw, 72vw"
             className="cover-image"
           />
-          <span className="detail-image-count">01 / 03</span>
+          <span className="detail-image-count">01 / {String(pictures.length || 1).padStart(2, '0')}</span>
           <span className="detail-stock">Stock {vehicle.stockCode}</span>
         </div>
 
@@ -209,7 +215,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
           <p className="detail-price-label">Precio publicado</p>
           <p className="detail-price">{formatVehiclePrice(vehicle.price, vehicle.currency)}</p>
           <p className="detail-location">{vehicle.location}</p>
-          {status.isAvailable ? (
+          {status.isAvailable && !publication ? (
             <PriceAlert
               vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
               vehicleSlug={vehicle.slug}
@@ -222,7 +228,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             </ButtonAnchor>
             <ButtonAnchor href="#ficha" variant="glass">Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
           </div>
-          <p className="detail-disclaimer">Precio y disponibilidad sujetos a confirmación. Esta página utiliza información de demostración.</p>
+          <p className="detail-disclaimer">Precio y disponibilidad sujetos a confirmación.{!publication && ' Esta página utiliza información de demostración.'}</p>
         </aside>
       </section>
 
@@ -230,7 +236,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         <div className="detail-story">
           <Eyebrow>La unidad</Eyebrow>
           <h2 id="overview-title">Elegido por cómo se siente. Revisado por todo lo demás.</h2>
-          <p>{vehicle.description}</p>
+          <p style={{ whiteSpace: 'pre-wrap' }}>{vehicle.description || 'Esta publicación no incluye descripción.'}</p>
+          {publication?.source.permalink && <a href={publication.source.permalink} target="_blank" rel="noreferrer">Ver publicación en Mercado Libre</a>}
           <ul className="detail-highlights" aria-label="Puntos destacados">
             {vehicle.highlights.map((highlight, index) => (
               <li key={highlight}><span>0{index + 1}</span>{highlight}</li>
@@ -244,20 +251,25 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             <span>{vehicle.stockCode}</span>
           </div>
           <dl>
-            {specs.map(([label, value]) => (
-              <div key={label}><dt>{label}</dt><dd>{value}</dd></div>
+            {(publication ? attributes.map((attribute) => [attribute.name, attribute.value_name ?? attribute.values?.map((value) => value.name).filter(Boolean).join(', ') ?? 'No especificado']) : specs).map(([label, value], index) => (
+              <div key={`${label}-${index}`}><dt>{label}</dt><dd>{value || 'No especificado'}</dd></div>
             ))}
           </dl>
         </div>
       </section>
 
       <section className="section-shell detail-gallery" aria-label="Galería del vehículo">
+        {publication ? pictures.map((picture, index) => {
+          const src = (picture.secure_url || picture.url)?.replace(/^http:/, 'https:');
+          return src ? <a key={picture.id ?? index} href={src} target="_blank" rel="noreferrer" className="detail-gallery-image"><Image src={src} alt={`${vehicle.imageAlt} · Foto ${index + 1}`} fill sizes="(max-width: 760px) 100vw, 50vw" className="cover-image" /></a> : null;
+        }) : <>
         <div className="detail-gallery-image detail-gallery-wide">
           <Image src={vehicle.image} alt={`Vista lateral de ${vehicle.make} ${vehicle.model}`} fill sizes="(max-width: 760px) 100vw, 66vw" className="cover-image detail-crop-left" />
         </div>
         <div className="detail-gallery-image">
           <Image src={vehicle.image} alt={`Detalle de ${vehicle.make} ${vehicle.model}`} fill sizes="(max-width: 760px) 100vw, 34vw" className="cover-image detail-crop-right" />
         </div>
+        </>}
       </section>
 
       <section className="section-shell detail-confidence" aria-label="Proceso Gonba's Garage">

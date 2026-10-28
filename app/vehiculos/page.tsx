@@ -4,19 +4,25 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { InnerPageMotion } from '@/components/motion/inner-page-motion';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { activeMockVehicles } from '@/features/vehicles/data/mock-vehicles';
+import { isLiveCatalog, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { createPageMetadata } from '@/lib/metadata';
 import { InventoryCatalog } from './_components/inventory-catalog';
 import { InventoryCatalogFromSearchParams } from './_components/inventory-catalog-from-search-params';
 
-export const metadata: Metadata = createPageMetadata({
+export const metadata: Metadata = { ...createPageMetadata({
   title: "Vehículos disponibles | Gonba's Garage",
   description:
     "Explorá el inventario de autos usados seleccionados de Gonba's Garage. Filtrá por marca, transmisión, tipo y precio.",
   path: '/vehiculos',
-});
+}), ...(isLiveCatalog() ? { robots: { index: false, follow: false } } : {}) };
 
-export default function VehiclesPage() {
+export default async function VehiclesPage() {
+  let vehicles;
+  try {
+    vehicles = await listCatalogVehicles();
+  } catch {
+    return <main className="section-shell"><SiteHeader active="vehicles" /><h1>Catálogo no disponible</h1><p>No pudimos consultar las publicaciones. Revisá la conexión del backend y volvé a intentar.</p></main>;
+  }
   return (
     <InnerPageMotion className="catalog-page" id="catalog-top" variant="catalog">
       <SiteHeader active="vehicles" />
@@ -24,17 +30,17 @@ export default function VehiclesPage() {
       <section className="section-shell catalog-hero" aria-labelledby="catalog-title">
         <span className="catalog-scan-line" aria-hidden="true" />
         <div>
-          <Eyebrow>Inventario actual · Datos demostrativos</Eyebrow>
+          <Eyebrow>Inventario actual · {isLiveCatalog() ? 'Mercado Libre' : 'Datos demostrativos'}</Eyebrow>
           <h1 id="catalog-title">Autos con una razón para estar acá.</h1>
         </div>
         <div className="catalog-hero-copy">
           <p>Una selección breve, revisada y presentada con claridad. Compará las unidades y encontrá la que mejor encaja con vos.</p>
-          <span>{String(activeMockVehicles.length).padStart(2, '0')} unidades publicadas</span>
+          <span>{String(vehicles.length).padStart(2, '0')} unidades publicadas</span>
         </div>
       </section>
 
-      <Suspense fallback={<InventoryCatalog vehicles={activeMockVehicles} />}>
-        <InventoryCatalogFromSearchParams vehicles={activeMockVehicles} />
+      <Suspense fallback={<InventoryCatalog vehicles={vehicles} />}>
+        <InventoryCatalogFromSearchParams vehicles={vehicles} />
       </Suspense>
 
       <SiteFooter topHref="#catalog-top" />

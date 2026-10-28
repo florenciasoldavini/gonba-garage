@@ -3,8 +3,10 @@ import type { MetadataRoute } from 'next';
 import { activeMockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { isSiteIndexingEnabled } from '@/lib/site-indexing';
 import { getSiteUrl } from '@/lib/site-url';
+import { isLiveCatalog } from '@/lib/integrations/mercado-libre/catalog';
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  if (isLiveCatalog()) return [];
   if (!isSiteIndexingEnabled()) return [];
 
   const siteUrl = getSiteUrl();

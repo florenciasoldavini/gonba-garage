@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { authorized } from '@/lib/integrations/mercado-libre/credentials';
 
 import {
   buildMercadoLibreAuthorizationUrl,
@@ -7,7 +8,20 @@ import {
 
 const OAUTH_COOKIE_MAX_AGE_SECONDS = 10 * 60;
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = request.headers.get('authorization') ?? '';
+  let password = '';
+  if (auth.startsWith('Basic ')) {
+    const decoded = Buffer.from(auth.slice(6), 'base64').toString('utf8');
+    password = decoded.slice(decoded.indexOf(':') + 1);
+  }
+  const basicRequest = new Request(request.url, { headers: { Authorization: `Bearer ${password}` } });
+  if (!authorized(request) && !authorized(basicRequest)) {
+    return NextResponse.json({ message: 'Acceso privado' }, { status: 401, headers: {
+      'WWW-Authenticate': 'Basic realm="Gonba Garage", charset="UTF-8"',
+      'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow',
+    } });
+  }
   try {
     const attempt = createMercadoLibreOAuthAttempt();
     const authorizationUrl = buildMercadoLibreAuthorizationUrl(attempt.state, attempt.challenge);

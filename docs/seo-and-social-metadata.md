@@ -117,6 +117,11 @@ content or availability update, not the build time.
 
 ## Demo and permanent-domain policy
 
+The `VEHICLE_DATA_SOURCE=mercado-libre` local preview always marks catalog and vehicle
+detail pages `noindex, nofollow` and returns an empty sitemap. The social image route reads the same
+vehicle source as the detail page. The protected Vercel API uses `no-store` and `noindex`, requires
+server-side credentials and is excluded from the sitemap. This preview is not a permanent-domain launch.
+
 The safe default is:
 
 ```bash

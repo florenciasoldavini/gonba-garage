@@ -1,6 +1,13 @@
 import 'server-only';
 
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { mapMercadoLibreItemToVehicle } from '@/features/vehicles/data/mercado-libre-vehicle-mapper';
+import type {
+  MercadoLibreBulkItem,
+  MercadoLibreDescription,
+  MercadoLibreItem,
+  MercadoLibrePublication,
+} from './types';
 
 const AUTHORIZATION_URL = 'https://auth.mercadolibre.com.ar/authorization';
 const TOKEN_URL = 'https://api.mercadolibre.com/oauth/token';
@@ -32,28 +39,6 @@ type MercadoLibreItemSearch = {
   results: string[];
 };
 
-type MercadoLibreItem = {
-  id: string;
-  title: string;
-  category_id?: string;
-  price?: number;
-  currency_id?: string;
-  available_quantity?: number;
-  status?: string;
-  permalink?: string;
-  thumbnail?: string;
-  attributes?: Array<{
-    id: string;
-    name: string;
-    value_name?: string | null;
-  }>;
-};
-
-type MercadoLibreMultiGetItem = {
-  code: number;
-  body: MercadoLibreItem;
-};
-
 export type MercadoLibreReadTest = {
   seller: {
     id: number;
@@ -64,24 +49,12 @@ export type MercadoLibreReadTest = {
   publications: {
     total: number;
     sampled: number;
-    items: Array<{
-      id: string;
-      title: string;
-      categoryId: string | null;
-      price: number | null;
-      currencyId: string | null;
-      availableQuantity: number | null;
-      status: string | null;
-      permalink: string | null;
-      thumbnail: string | null;
-      attributes: Array<{
-        id: string;
-        name: string;
-        value: string | null;
-      }>;
-    }>;
+    items: MercadoLibrePublication[];
   };
 };
+
+const ITEMS_SEARCH_LIMIT = 100;
+const ITEMS_BULK_LIMIT = 20;
 
 function requiredEnvironmentVariable(name: string) {
   const value = process.env[name]?.trim();
@@ -117,6 +90,65 @@ async function fetchMercadoLibre<T>(path: string, accessToken: string) {
   });
 
   return parseMercadoLibreResponse<T>(response, `Mercado Libre GET ${path}`);
+}
+
+async function fetchOptionalMercadoLibre<T>(path: string, accessToken: string) {
+  const response = await fetch(`${API_URL}${path}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+    cache: 'no-store',
+  });
+
+  if (response.status === 404) return null;
+
+  return parseMercadoLibreResponse<T>(response, `Mercado Libre GET ${path}`);
+}
+
+function chunks<T>(values: T[], size: number) {
+  return Array.from(
+    { length: Math.ceil(values.length / size) },
+    (_, index) => values.slice(index * size, (index + 1) * size),
+  );
+}
+
+async function readAllActiveItemIds(userId: number, accessToken: string) {
+  const itemIds: string[] = [];
+  let total = 0;
+  let offset = 0;
+
+  do {
+    const search = await fetchMercadoLibre<MercadoLibreItemSearch>(
+      `/users/${encodeURIComponent(userId)}/items/search?status=active&orders=start_time_desc&limit=${ITEMS_SEARCH_LIMIT}&offset=${offset}`,
+      accessToken,
+    );
+
+    total = search.paging.total;
+    itemIds.push(...search.results);
+    if (search.results.length === 0) break;
+    offset += search.results.length;
+  } while (itemIds.length < total);
+
+  return { itemIds, total };
+}
+
+async function readItems(itemIds: string[], accessToken: string) {
+  const batches = await Promise.all(
+    chunks(itemIds, ITEMS_BULK_LIMIT).map((batch) =>
+      fetchMercadoLibre<MercadoLibreBulkItem[]>(
+        `/items/bulk?ids=${batch.map(encodeURIComponent).join(',')}&include_internal_attributes=true`,
+        accessToken,
+      ),
+    ),
+  );
+
+  if (batches.flat().some(({ status_code }) => status_code !== 200)) {
+    throw new Error('Mercado Libre returned an incomplete batch of publications.');
+  }
+  return batches
+    .flat()
+    .filter(({ status_code }) => status_code === 200)
+    .map(({ body }) => body);
 }
 
 export function createMercadoLibreOAuthAttempt() {
@@ -181,36 +213,9 @@ export async function exchangeMercadoLibreAuthorizationCode(code: string, verifi
 
 export async function readMercadoLibrePublications(accessToken: string) {
   const user = await fetchMercadoLibre<MercadoLibreUser>('/users/me', accessToken);
-  const search = await fetchMercadoLibre<MercadoLibreItemSearch>(
-    `/users/${encodeURIComponent(user.id)}/items/search?limit=10&offset=0`,
-    accessToken,
-  );
-  const itemIds = search.results.slice(0, 10);
-  const multiGet = itemIds.length > 0
-    ? await fetchMercadoLibre<MercadoLibreMultiGetItem[]>(
-        `/items?ids=${itemIds.map(encodeURIComponent).join(',')}`,
-        accessToken,
-      )
-    : [];
-
-  const items = multiGet
-    .filter(({ code }) => code === 200)
-    .map(({ body }) => ({
-      id: body.id,
-      title: body.title,
-      categoryId: body.category_id ?? null,
-      price: body.price ?? null,
-      currencyId: body.currency_id ?? null,
-      availableQuantity: body.available_quantity ?? null,
-      status: body.status ?? null,
-      permalink: body.permalink ?? null,
-      thumbnail: body.thumbnail ?? null,
-      attributes: (body.attributes ?? []).map((attribute) => ({
-        id: attribute.id,
-        name: attribute.name,
-        value: attribute.value_name ?? null,
-      })),
-    }));
+  const { itemIds, total } = await readAllActiveItemIds(user.id, accessToken);
+  const items = await readItems(itemIds, accessToken);
+  const publications = items.map((item) => mapMercadoLibreItemToVehicle(item));
 
   return {
     seller: {
@@ -220,9 +225,42 @@ export async function readMercadoLibrePublications(accessToken: string) {
       userType: user.user_type ?? null,
     },
     publications: {
-      total: search.paging.total,
-      sampled: items.length,
-      items,
+      total,
+      sampled: publications.length,
+      items: publications,
     },
   } satisfies MercadoLibreReadTest;
+}
+
+export async function refreshMercadoLibreToken(refreshToken: string) {
+  const response = await fetch(TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: requiredEnvironmentVariable('MERCADO_LIBRE_CLIENT_ID'),
+      client_secret: requiredEnvironmentVariable('MERCADO_LIBRE_CLIENT_SECRET'),
+      refresh_token: refreshToken,
+    }),
+    cache: 'no-store', signal: AbortSignal.timeout(20_000),
+  });
+  return parseMercadoLibreResponse<MercadoLibreTokenResponse>(response, 'Mercado Libre token refresh');
+}
+
+export async function readMercadoLibrePublication(
+  itemId: string,
+  accessToken: string,
+): Promise<MercadoLibrePublication> {
+  const [item, description] = await Promise.all([
+    fetchMercadoLibre<MercadoLibreItem>(
+      `/items/${encodeURIComponent(itemId)}?include_internal_attributes=true`,
+      accessToken,
+    ),
+    fetchOptionalMercadoLibre<MercadoLibreDescription>(
+      `/items/${encodeURIComponent(itemId)}/description`,
+      accessToken,
+    ),
+  ]);
+
+  return mapMercadoLibreItemToVehicle(item, description);
 }
