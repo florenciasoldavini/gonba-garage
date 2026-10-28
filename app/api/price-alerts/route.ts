@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 
-import { findMockVehicle } from '@/features/vehicles/data/mock-vehicles';
-import { createAdminClient } from '@/lib/supabase/admin';
+import { findCatalogVehicle } from '@/lib/integrations/mercado-libre/catalog';
+import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
+import { savePriceSubscription } from '@/lib/alerts/subscriptions';
 
 type PriceAlertRequest = {
   email?: unknown;
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
 
   try {
     body = await request.json() as PriceAlertRequest;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Invalid body');
   } catch {
     return NextResponse.json({ message: 'La solicitud no es válida.' }, { status: 400 });
   }
@@ -26,33 +28,27 @@ export async function POST(request: Request) {
 
   const email = typeof body.email === 'string' ? body.email.trim().toLocaleLowerCase('es') : '';
   const vehicleSlug = typeof body.vehicleSlug === 'string' ? body.vehicleSlug.trim() : '';
-  const vehicle = findMockVehicle(vehicleSlug);
 
-  if (!vehicle || !emailPattern.test(email) || email.length > 320) {
+  if (!vehicleSlug || vehicleSlug.length > 160 || !emailPattern.test(email) || email.length > 320) {
     return NextResponse.json(
       { message: 'Revisá el email e intentá nuevamente.' },
       { status: 400 },
     );
   }
 
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from('vehicle_price_alerts')
-    .upsert(
-      {
-        vehicle_slug: vehicle.slug,
-        email,
-        current_price: vehicle.price,
-        currency: vehicle.currency,
-        status: 'active',
-        source: 'website',
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'vehicle_slug,email' },
-    );
+  if (!isAlertsDatabaseConfigured()) {
+    return NextResponse.json({ message: 'Las alertas no están disponibles por el momento.' }, { status: 503 });
+  }
 
-  if (error) {
-    console.error('Unable to create price alert', { code: error.code });
+  try {
+    // Price/currency come from our catalog, never from client-supplied amounts.
+    const vehicle = await findCatalogVehicle(vehicleSlug);
+    if (!vehicle || vehicle.status !== 'active') {
+      return NextResponse.json({ message: 'El vehículo ya no está disponible.' }, { status: 400 });
+    }
+    await savePriceSubscription({ email, vehicleSlug: vehicle.slug, price: vehicle.price, currency: vehicle.currency });
+  } catch {
+    console.error('Unable to create price alert');
     return NextResponse.json(
       { message: 'No pudimos guardar la alerta. Probá otra vez.' },
       { status: 500 },

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { createAdminClient } from '@/lib/supabase/admin';
+import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
+import { saveInventorySubscription } from '@/lib/alerts/subscriptions';
 
 type InventoryAlertRequest = {
   email?: unknown;
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
 
   try {
     body = await request.json() as InventoryAlertRequest;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Invalid body');
   } catch {
     return NextResponse.json({ message: 'La solicitud no es válida.' }, { status: 400 });
   }
@@ -83,32 +85,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from('vehicle_inventory_alerts')
-    .upsert(
-      {
-        email,
-        search_query: query,
-        make,
-        transmission,
-        body_type: bodyType,
-        fuel,
-        min_price: minPrice,
-        max_price: maxPrice,
-        min_mileage: minMileage,
-        max_mileage: maxMileage,
-        status: 'active',
-        source: 'website',
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: 'email,search_query,make,transmission,body_type,fuel,min_price,max_price,min_mileage,max_mileage',
-      },
-    );
+  if (!isAlertsDatabaseConfigured()) {
+    return NextResponse.json({ message: 'Las alertas no están disponibles por el momento.' }, { status: 503 });
+  }
 
-  if (error) {
-    console.error('Unable to create inventory alert', { code: error.code });
+  try {
+    await saveInventorySubscription({ email, query, make, transmission, bodyType, fuel,
+      minPrice, maxPrice, minMileage, maxMileage });
+  } catch {
+    console.error('Unable to create inventory alert');
     return NextResponse.json(
       { message: 'No pudimos guardar la alerta. Probá otra vez.' },
       { status: 500 },
