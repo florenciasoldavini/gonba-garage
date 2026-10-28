@@ -15,6 +15,16 @@ export function SpecificationAccordionMotion({ children, contentKey }: { childre
     let active = disclosures.find(detail => detail.open) ?? null;
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+    const keepHeadingVisible = (summary: HTMLElement) => {
+      const bounds = summary.getBoundingClientRect();
+      const headerBottom = document.querySelector('.site-header')?.getBoundingClientRect().bottom ?? 0;
+      const top = Math.max(16, headerBottom + 16);
+      // Leave room below the heading to see the beginning of the opened content.
+      const bottom = window.innerHeight - Math.min(160, window.innerHeight * 0.25);
+      if (bounds.top >= top && bounds.bottom <= bottom) return;
+      window.scrollBy({ top: bounds.top - top, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
+    };
+
     const animate = contextSafe!((detail: HTMLDetailsElement, opening: boolean) => {
       const summary = detail.querySelector('summary');
       const panel = detail.querySelector<HTMLElement>('.detail-specs-panel');
@@ -31,6 +41,7 @@ export function SpecificationAccordionMotion({ children, contentKey }: { childre
         detail.open = opening;
         gsap.set(panel, { clearProps: 'height,opacity,visibility' });
         if (arrow) gsap.set(arrow, { clearProps: 'transform' });
+        if (opening) keepHeadingVisible(summary);
         return;
       }
 
@@ -49,7 +60,12 @@ export function SpecificationAccordionMotion({ children, contentKey }: { childre
         duration: opening ? 0.36 : 0.28,
         ease: 'power2.inOut',
         onComplete: contextSafe!(() => {
-          if (opening && active === detail) gsap.set(panel, { height: 'auto' });
+          if (opening && active === detail) {
+            gsap.set(panel, { height: 'auto' });
+            // Measure the final layout after the outgoing section has collapsed,
+            // so the scroll target does not move underneath the animation.
+            keepHeadingVisible(summary);
+          }
           else if (!opening && active !== detail) {
             detail.open = false;
             gsap.set(panel, { clearProps: 'height,opacity,visibility' });
