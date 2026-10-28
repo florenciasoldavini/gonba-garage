@@ -3,7 +3,10 @@ import { neon } from '@neondatabase/serverless';
 
 if (existsSync('.env.local')) process.loadEnvFile('.env.local');
 if (!process.env.DATABASE_URL) throw new Error('Set the server-only DATABASE_URL before migrating.');
-const sql = neon(process.env.DATABASE_URL);
+// Use the same branch credentials with a direct endpoint for schema work.
+const migrationUrl = new URL(process.env.DATABASE_URL);
+migrationUrl.hostname = migrationUrl.hostname.replace('-pooler.', '.');
+const sql = neon(migrationUrl.toString());
 // This migration deliberately contains plain DDL only, without functions or embedded semicolons.
 const migration = readFileSync(new URL('../database/migrations/20261028_alert_subscriptions.sql', import.meta.url), 'utf8');
 const statements = migration.split(';').map(statement => statement.trim()).filter(Boolean);
