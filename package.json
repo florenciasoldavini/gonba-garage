@@ -12,7 +12,8 @@
     "lint": "eslint . --ignore-pattern .next --ignore-pattern dist --ignore-pattern .vinext",
     "test:metadata": "node scripts/check-social-metadata.mjs",
     "typecheck": "tsc --noEmit",
-    "test:attributes": "node scripts/check-vehicle-attributes.mjs"
+    "test:attributes": "node scripts/check-vehicle-attributes.mjs",
+    "test:integration": "node scripts/check-refresh-token-store.mjs && node scripts/check-integration-diagnostics.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

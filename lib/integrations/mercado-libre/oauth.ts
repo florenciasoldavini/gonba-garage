@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { failure, providerFailure, safeFailure } from './failures';
 import { mapMercadoLibreItemToVehicle } from '@/features/vehicles/data/mercado-libre-vehicle-mapper';
 import type {
   MercadoLibreBulkItem,
@@ -60,7 +61,7 @@ function requiredEnvironmentVariable(name: string) {
   const value = process.env[name]?.trim();
 
   if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+    throw failure('configuration', 'missing_configuration');
   }
 
   return value;
@@ -71,14 +72,13 @@ function toBase64Url(value: Buffer) {
 }
 
 async function parseMercadoLibreResponse<T>(response: Response, operation: string) {
+  const stage = operation === 'Mercado Libre token refresh' ? 'token_refresh'
+    : operation === 'Mercado Libre authorization-code exchange' ? 'authorization_exchange' : 'catalog_query';
   if (!response.ok) {
-    const requestId = response.headers.get('x-request-id');
-    throw new Error(
-      `${operation} failed with status ${response.status}${requestId ? ` (request ${requestId})` : ''}`,
-    );
+    throw await providerFailure(response, stage);
   }
 
-  return response.json() as Promise<T>;
+  return response.json().catch(() => { throw failure(stage === 'token_refresh' ? 'token_response' : stage, 'invalid_response'); }) as Promise<T>;
 }
 
 async function fetchMercadoLibre<T>(path: string, accessToken: string) {
@@ -87,7 +87,7 @@ async function fetchMercadoLibre<T>(path: string, accessToken: string) {
       Authorization: `Bearer ${accessToken}`,
     },
     cache: 'no-store',
-  });
+  }).catch(error => { throw safeFailure(error, 'catalog_query'); });
 
   return parseMercadoLibreResponse<T>(response, `Mercado Libre GET ${path}`);
 }
@@ -98,7 +98,7 @@ async function fetchOptionalMercadoLibre<T>(path: string, accessToken: string) {
       Authorization: `Bearer ${accessToken}`,
     },
     cache: 'no-store',
-  });
+  }).catch(error => { throw safeFailure(error, 'catalog_query'); });
 
   if (response.status === 404) return null;
 
@@ -203,7 +203,7 @@ export async function exchangeMercadoLibreAuthorizationCode(code: string, verifi
       code_verifier: verifier,
     }),
     cache: 'no-store',
-  });
+  }).catch(error => { throw safeFailure(error, 'authorization_exchange'); });
 
   return parseMercadoLibreResponse<MercadoLibreTokenResponse>(
     response,
@@ -243,7 +243,7 @@ export async function refreshMercadoLibreToken(refreshToken: string) {
       refresh_token: refreshToken,
     }),
     cache: 'no-store', signal: AbortSignal.timeout(20_000),
-  });
+  }).catch(error => { throw safeFailure(error, 'token_refresh'); });
   return parseMercadoLibreResponse<MercadoLibreTokenResponse>(response, 'Mercado Libre token refresh');
 }
 
