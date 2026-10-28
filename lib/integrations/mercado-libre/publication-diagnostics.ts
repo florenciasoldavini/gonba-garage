@@ -1,3 +1,5 @@
+import { getVehicleAttributeRule } from '@/features/vehicles/presentation/mercado-libre-attribute-policy';
+
 type ScanPage = { paging: { total: number }; results: string[] | null; scroll_id?: string };
 type PublicationAttribute = Record<string, unknown>;
 type StatusItem = { id: string; seller_id: number; title: string; status: string; sub_status?: string[]; attributes?: PublicationAttribute[] | null };
@@ -52,6 +54,19 @@ export async function readPublicationDiagnostics(sellerId: string, getJson: GetJ
   }
   const counts = new Map<string, number>();
   for (const item of items) counts.set(item.status, (counts.get(item.status) ?? 0) + 1);
+  const unmapped = new Map<string, { id: string; name: string | null; publicationIds: string[] }>();
+  for (const item of items) {
+    for (const attribute of item.attributes ?? []) {
+      if (typeof attribute.id !== 'string' || getVehicleAttributeRule(attribute.id)) continue;
+      const entry = unmapped.get(attribute.id) ?? {
+        id: attribute.id,
+        name: typeof attribute.name === 'string' ? attribute.name : null,
+        publicationIds: [],
+      };
+      if (!entry.publicationIds.includes(item.id)) entry.publicationIds.push(item.id);
+      unmapped.set(attribute.id, entry);
+    }
+  }
   return {
     sellerId,
     checkedAt: new Date().toISOString(),
@@ -63,5 +78,7 @@ export async function readPublicationDiagnostics(sellerId: string, getJson: GetJ
     items,
     failures,
     missingAttributes,
+    // Computed on request, not persisted or emailed. Raw values remain in items[].attributes.
+    unmappedAttributes: [...unmapped.values()],
   };
 }

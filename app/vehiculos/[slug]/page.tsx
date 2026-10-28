@@ -16,6 +16,8 @@ import { mockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { findCatalogPublication, findCatalogVehicle, isLiveCatalog } from '@/lib/integrations/mercado-libre/catalog';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleSpecification, vehicleSpecificationLabels, type VehicleSpecificationKey } from '@/features/vehicles/presentation/specifications';
+import { publicVehicleAttributes } from '@/features/vehicles/presentation/public-attributes';
+import { VehicleSpecificationGroups } from './_components/vehicle-specification-groups';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 import { createPageMetadata } from '@/lib/metadata';
 import { isSiteIndexingEnabled } from '@/lib/site-indexing';
@@ -68,7 +70,10 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
   if (!vehicle) notFound();
   const pictures = publication?.source.pictures ?? [];
-  const attributes = publication?.source.attributes ?? [];
+  const attributes = publicVehicleAttributes(
+    publication?.source.attributes ?? [],
+    `${vehicle.make} ${vehicle.model} ${vehicle.version}`,
+  );
 
   const siteUrl = getSiteUrl();
   const vehicleUrl = new URL(`/vehiculos/${vehicle.slug}`, siteUrl).toString();
@@ -250,11 +255,11 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             <p>Ficha técnica</p>
             <span>{vehicle.stockCode}</span>
           </div>
-          <dl>
-            {(publication ? attributes.map((attribute) => [attribute.name, attribute.value_name ?? attribute.values?.map((value) => value.name).filter(Boolean).join(', ') ?? 'No especificado']) : specs).map(([label, value], index) => (
+          {publication ? <VehicleSpecificationGroups attributes={attributes} /> : <dl>
+            {specs.map(([label, value], index) => (
               <div key={`${label}-${index}`}><dt>{label}</dt><dd>{value || 'No especificado'}</dd></div>
             ))}
-          </dl>
+          </dl>}
         </div>
       </section>
 

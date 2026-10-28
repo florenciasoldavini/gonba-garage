@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "eslint . --ignore-pattern .next --ignore-pattern dist --ignore-pattern .vinext",
     "test:metadata": "node scripts/check-social-metadata.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:attributes": "node scripts/check-vehicle-attributes.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
