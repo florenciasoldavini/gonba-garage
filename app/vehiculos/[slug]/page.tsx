@@ -12,7 +12,6 @@ import { JsonLd } from '@/components/seo/json-ld';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { mockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { findCatalogPublication, findCatalogVehicle, isLiveCatalog } from '@/lib/integrations/mercado-libre/catalog';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleSpecification, vehicleSpecificationLabels, type VehicleSpecificationKey } from '@/features/vehicles/presentation/specifications';
@@ -34,10 +33,8 @@ type VehicleDetailPageProps = {
 
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
-export function generateStaticParams() {
-  if (isLiveCatalog()) return [];
-  return mockVehicles.map(({ slug }) => ({ slug }));
-}
+// Live publications use uncached API data and must render at request time.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: VehicleDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
