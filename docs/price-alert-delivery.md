@@ -1,0 +1,111 @@
+# Recurring price-drop emails
+
+## Scope and behavior
+
+This flow sends **price-drop alerts only**. Inventory-search alerts still have storage only,
+and their email delivery remains separate work. No catalog, photos or vehicle history are stored.
+The subscription stores the stable Mercado Libre publication ID, display slug/title, original
+price/currency and the last price accepted for delivery. Existing live slugs are backfilled to IDs.
+
+Creating an alert activates it immediately and queues an activation email with a cancellation
+link. There is no confirmation step. Repeated active signups preserve the baseline and do not
+send a second activation email. Cancellation followed by a new signup gets a new generation,
+price reference and email. A cancellation link from an old generation cannot cancel a new alert.
+The live price-alert UI is shown only when `PRICE_ALERT_DELIVERY_ENABLED=true` on the frontend.
+
+Drops are compared in the **same original currency**, in nominal amounts, with the last notified
+price (or the initial price before any drop). USD 20,000 → 19,000 → 18,500 produces two emails.
+A rebound to 19,500 followed by 19,000 produces none. A currency switch is not treated as a drop
+and needs review rather than silently applying an exchange rate. Inactive publications send no
+new price email. Reopened publications with the same ID can be followed again. A new listing ID
+is a different alert even if it represents the same car.
+
+## Notification processing
+
+Subscribe the Mercado Libre app to `items` and, when available for the account, `items_prices`.
+Keep the existing HTTPS callback `/api/mercado-libre/webhook`. Confirm a real change to one of
+Gonba's subscribed publications is delivered after deploying. No seller listing is edited by tests.
+
+The callback validates the seller, application, topic and resource shape, then coalesces work in
+`price_alert_item_jobs` **before** acknowledging it. Only subscribed IDs create jobs. Persistence
+failure returns 503 so Mercado Libre can retry. It aims for the provider's <500 ms acknowledgment
+requirement, but database cold starts can exceed that and must be measured during activation.
+The notification is not trusted as proof of price or ownership. The worker reads the actual API
+resource, verifies seller ownership, and reads its price, currency and active state.
+
+`after()` starts bounded background processing without waiting to send emails in the HTTP response.
+The database job survives an interrupted function. Revisions preserve notifications arriving during
+processing. Expiring leases allow another worker to recover after interruption. Transient retries within the function budget use bounded waits. Remaining pending work is
+retried by subsequent notifications, signups, or the daily invocation. This is best-effort prompt
+processing, not a guaranteed instantaneous or sub-minute retry service.
+
+`vercel.json` schedules `/api/alerts/daily` daily at 12:00 UTC (09:00 Argentina). Vercel may run it
+within the schedule window on Hobby. It requires `Authorization: Bearer <CRON_SECRET>`, queues
+all active subscribed IDs and drains pending jobs/emails. The worker is bounded to 200 seconds,
+50 item jobs and up to 150 deliveries per invocation. Monitor backlog before increasing volume.
+No fake sold/cancelled status is inferred from a network or API failure.
+
+## Reliable sending and cancellation
+
+`price_alert_deliveries` is a durable outbox. Unique keys, one pending drop per alert generation,
+and leased claims prevent duplicate parallel processing. Each provider request is frozen before
+sending and uses a stable Resend idempotency key. Transient provider/network failures retain work
+with exponential eligibility delay. Permanent HTTP failures are marked `failed`, without logging
+addresses, tokens, raw responses or payloads. Provider acceptance plus price-reference update are
+recorded atomically in PostgreSQL. Acceptance is not proof of inbox delivery.
+
+If acceptance was ambiguous, the same request can be retried within 23 hours. After that it becomes
+`blocked` for manual reconciliation against the provider, because Resend's idempotency lasts 24h.
+Do not reset that state or create a fresh key without checking whether the original mail was sent.
+A blocked drop blocks later drops for that subscription until reviewed. No exactly-once guarantee
+is claimed across an unbounded provider outage. Already accepted emails are never automatically resent.
+An unsent drop is rechecked against the current listing before first sending to avoid mailing an
+inactive or no-longer-available price. Once a request might have been accepted, retry bytes remain fixed.
+
+Cancellation URLs contain signed subscription/generation IDs, never an email. GET is read-only and
+shows a confirmation form so scanners cannot unsubscribe users. POST performs cancellation; this
+also supports the RFC 8058 one-click headers. It needs no account. A send already in progress may
+finish during cancellation. Price signup requests have shared per-address (5/hour) and total
+(100/hour) limits; addresses are hashed in the rate-limit table. Existing honeypot stays in place.
+Resend applies provider-level suppression of hard bounces/complaints. A full local delivery-events
+history or operator email alerts are not included in this PR.
+
+## Activation after PR review
+
+1. Apply `npm run db:migrate` to the development branch, test, and then production. It applies both
+   migrations and is rerunnable. The new tables and columns are not applied to production by this PR.
+2. Verify a Gonba sending domain in Resend, including its sending DNS records. Do not use a domain
+   belonging to a different project. Create a sending-only API key for the verified domain.
+3. Set server-only variables on the backend:
+   - `RESEND_API_KEY`
+   - `ALERTS_EMAIL_FROM` (e.g. `Gonba's Garage <avisos@your-verified-domain>`)
+   - `ALERTS_PUBLIC_URL` (fixed HTTPS origin serving the vehicle pages and cancellation endpoint)
+   - `ALERTS_SIGNING_SECRET` (at least 32 random characters, keep stable)
+   - `CRON_SECRET` (at least 32 random characters)
+   - existing database and Mercado Libre credentials, seller ID and client ID
+   - `PRICE_ALERT_DELIVERY_ENABLED=true` only after configuration and migration
+4. Use `ALERTS_TEST_RECIPIENT` in preview/local runs to permit only an explicit test address.
+   Other recipients are **blocked**, never redirected to that address. Leave it empty for real sending.
+   Keep previews disabled by default and never point a preview worker at production subscriptions.
+5. Configure the same enable flag on the public frontend. It uses its local database for signup
+   storage, so the worker and signup route must use the same intended database/environment. A frontend
+   in live mode can use the deployed catalog backend as before. Alert activation on the backend
+   resolves the real publication directly, even if that deployment's public frontend is in demo mode.
+6. Test a signup, activation mail, cancellation, repeated price reductions with synthetic observations
+   against development, provider acceptance, then an authenticated daily invocation. Do not edit
+   Mercado Libre prices or expose the cron secret in a URL. Inspect the pending/failed/blocked counts.
+7. Verify actual `items` notification delivery and acknowledgment latency on the production callback.
+
+The connected Resend account had no Gonba domain when this was prepared. Two explicitly labeled
+sample emails were sent with the Resend test sender to the user-authorized test address. They use
+illustrative prices and non-functional preview cancellation links, not real subscriptions.
+
+## Verification
+
+`npm run test:price-alert-delivery` applies the schema twice to real local PostgreSQL (PGlite),
+exercises recurring price baselines, parallel claims, immutable retries, provider acceptance followed
+by DB failure, expired idempotency windows, signed cancellation generations, HTML escaping, notification
+persistence and cron authorization. It never calls real Mercado Libre or sends email.
+
+`npm run test:alerts`, `npm run test:integration`, lint, type checking and the metadata contract remain
+part of the regression checks. Private alert endpoints are no-store/noindex in both indexing modes.

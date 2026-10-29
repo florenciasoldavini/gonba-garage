@@ -124,7 +124,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
                 <span>{state === 'submitting' ? 'Activando…' : 'Crear alerta'}</span>
                 <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
               </Button>
-              <p className="price-alert-privacy">Usaremos tu email únicamente para avisarte sobre esta unidad.</p>
+              <p className="price-alert-privacy">Te avisaremos de cada nueva baja de esta unidad. Podés cancelar la alerta desde cualquier correo.</p>
               {state === 'error' && <p className="price-alert-error" role="alert">{message}</p>}
             </form>
           )}

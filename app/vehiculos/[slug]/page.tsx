@@ -24,6 +24,7 @@ import { isSiteIndexingEnabled } from '@/lib/site-indexing';
 import { getSiteUrl } from '@/lib/site-url';
 import { ORGANIZATION_SCHEMA_ID } from '@/lib/structured-data';
 import { PriceAlert } from './_components/price-alert';
+import { alertDeliveryEnabled } from '@/lib/alerts/config';
 import { ShareButton } from './_components/share-button';
 import { VehicleAnalytics } from './_components/vehicle-analytics';
 
@@ -220,7 +221,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
           <p className="detail-price-label">Precio publicado</p>
           <p className="detail-price">{formatVehiclePrice(vehicle.price, vehicle.currency)}</p>
           <p className="detail-location">{vehicle.location}</p>
-          {status.isAvailable && !publication ? (
+          {status.isAvailable && (!publication || alertDeliveryEnabled()) ? (
             <PriceAlert
               vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
               vehicleSlug={vehicle.slug}
