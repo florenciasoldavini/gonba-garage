@@ -44,7 +44,7 @@ export default function SellVehiclePage() {
 
       <SiteFooter
         topHref="#valuation-top"
-        note="Demo visual · El envío de la solicitud se conectará en una próxima etapa"
+        note="La consulta se envía desde tu WhatsApp · Sin compromiso"
       />
     </InnerPageMotion>
   );
