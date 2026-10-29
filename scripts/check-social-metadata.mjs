@@ -132,6 +132,8 @@ for (const route of routes) {
   }
 
   if (route.path.startsWith('/vehiculos/')) {
+    assert.match(response.headers.get('cache-control') || '', /no-store/,
+      'Vehicle details must render at request time, including live slugs absent during build');
     const vehicleGraph = jsonLd.flatMap((entry) => entry['@graph'] || []);
     const product = vehicleGraph.find((entry) => Array.isArray(entry['@type']) && entry['@type'].includes('Product'));
     const breadcrumb = vehicleGraph.find((entry) => entry['@type'] === 'BreadcrumbList');

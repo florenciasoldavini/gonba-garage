@@ -178,6 +178,14 @@ Then rebuild and repeat the metadata test with `SITE_INDEXING_ENABLED=true`. Con
 uses `noindex` and an empty sitemap, while production mode exposes indexable routes and advertises the
 sitemap. The custom-domain checklist contains the separate live-launch verification.
 
+## Catalog rendering
+
+Vehicle details render at request time, including publication slugs that were unknown during the
+build. Do not generate a static-parameter list for these pages: live publication requests use
+uncached backend data. The live catalog opts into request-time rendering before its API error
+handler; the demo catalog remains statically cacheable. Canonical URLs, structured data and the
+indexing gate are unchanged.
+
 ## Private alert management
 
 `/api/alerts/daily` requires the cron secret. `/api/price-alerts/cancel` validates a signed,
