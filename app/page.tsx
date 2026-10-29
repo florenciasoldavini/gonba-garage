@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import { connection } from 'next/server';
 import { ArrowDown, ArrowUpRight } from 'lucide-react';
 
 import { SiteFooter } from '@/components/layout/site-footer';
@@ -13,6 +14,9 @@ import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { HomeGsapMotion } from '@/app/_components/home-gsap-motion';
 import { FaqAccordion } from '@/app/_components/faq-accordion';
+import { isLiveCatalog, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
+import type { Vehicle } from '@/features/vehicles/domain/vehicle';
+import { formatVehicleMileage } from '@/features/vehicles/presentation/formatters';
 
 export const metadata: Metadata = createPageMetadata({
   title: "Gonba's Garage | Autos usados seleccionados",
@@ -21,36 +25,18 @@ export const metadata: Metadata = createPageMetadata({
   path: '/',
 });
 
-const vehicles = [
-  {
-    name: 'BMW 330i M Sport',
-    year: '2021',
-    detail: 'Automático · Nafta · 48.000 km',
-    slug: 'bmw-330i-m-sport-2021',
-    image: '/showroom-car.jpg',
-    alt: 'Auto deportivo negro exhibido en un showroom',
-  },
-  {
-    name: 'Mercedes-Benz 190 SL',
-    year: '1962',
-    detail: 'Restaurado · Colección · Consultar',
-    slug: 'mercedes-benz-190sl-1962',
-    image: '/featured-classic.jpg',
-    alt: 'Auto clásico rojo en un garage',
-  },
-  {
-    name: 'Porsche 356 B',
-    year: '1961',
-    detail: 'Revisado · Documentación verificada',
-    slug: 'porsche-356-b-1961',
-    image: '/garage-classic.jpg',
-    alt: 'Auto clásico junto a un garage',
-  },
-];
-
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
-export default function Home() {
+export default async function Home() {
+  // Live inventory must be read at request time, outside the provider error handler.
+  if (isLiveCatalog()) await connection();
+  let vehicles: Vehicle[] = [];
+  let inventoryUnavailable = false;
+  try {
+    vehicles = (await listCatalogVehicles()).filter(({ status }) => status === 'active').slice(0, 3);
+  } catch {
+    inventoryUnavailable = true;
+  }
   return (
     <HomeGsapMotion>
       <SiteHeader />
@@ -92,24 +78,28 @@ export default function Home() {
             <Link className="text-link" href="/vehiculos">Ver inventario completo <Arrow /></Link>
           </div>
         </div>
-        <div className="vehicle-grid">
+        {vehicles.length > 0 ? <div className="vehicle-grid">
           {vehicles.map((vehicle, index) => (
-            <Link className="vehicle-card-link" href={`/vehiculos/${vehicle.slug}`} key={vehicle.name}>
+            <Link className="vehicle-card-link" href={`/vehiculos/${vehicle.slug}`} key={vehicle.slug}>
               <article className="vehicle-card glass-panel">
                 <div className="vehicle-image">
-                  <Image src={vehicle.image} alt={vehicle.alt} fill sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw" className="cover-image" />
+                  <Image src={vehicle.image} alt={vehicle.imageAlt} fill sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw" className="cover-image" />
                   <span className="vehicle-index">0{index + 1}</span>
                   {index === 0 && <span className="vehicle-status">Disponible</span>}
                 </div>
                 <div className="vehicle-copy">
-                  <div><p>{vehicle.year}</p><h3>{vehicle.name}</h3></div>
+                  <div><p>{vehicle.year}</p><h3>{vehicle.make} {vehicle.model}</h3></div>
                   <span className="vehicle-arrow"><Arrow /></span>
                 </div>
-                <p className="vehicle-detail">{vehicle.detail}</p>
+                <p className="vehicle-detail">{[vehicle.version, vehicle.transmission, vehicle.fuel, formatVehicleMileage(vehicle.mileageKm)].filter(Boolean).join(' · ')}</p>
               </article>
             </Link>
           ))}
-        </div>
+        </div> : (
+          <p role="status">{inventoryUnavailable
+            ? 'No pudimos cargar las unidades en este momento. Consultá el inventario completo o escribinos por WhatsApp.'
+            : 'No hay unidades disponibles en este momento. Escribinos y contanos qué auto buscás.'}</p>
+        )}
       </section>
 
       <section className="section-shell sell-section" id="vender" aria-labelledby="sell-title">
