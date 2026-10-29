@@ -121,6 +121,17 @@ for (const route of routes) {
     assert.ok(metadata.icon, 'Home should link the branded favicon');
     assert.ok(metadata.appleIcon, 'Home should link the Apple touch icon');
     assert.ok(metadata.manifest, 'Home should link the web manifest');
+    assert.ok(!html.includes('Demo visual · Contenido e información comercial a confirmar'), 'Home footer must omit the obsolete demo note');
+
+    const featuredLinks = [...html.matchAll(/<a\b[^>]*class="[^"]*vehicle-card-link[^"]*"[^>]*>/g)]
+      .map(([tag]) => getAttributes(tag).href);
+    assert.ok(featuredLinks.length > 0 && featuredLinks.length <= 3, 'Home must show up to three available catalog vehicles');
+    assert.equal(new Set(featuredLinks).size, featuredLinks.length, 'Home vehicle links must be unique');
+    for (const href of featuredLinks) {
+      assert.match(href, /^\/vehiculos\/[^/?#]+$/);
+      const detail = await fetch(new URL(href, targetOrigin));
+      assert.equal(detail.status, 200, `Home vehicle link ${href} must resolve`);
+    }
   }
 
   if (route.path === '/vehiculos') {

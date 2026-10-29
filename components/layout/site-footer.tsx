@@ -12,7 +12,7 @@ type SiteFooterProps = {
 
 export function SiteFooter({
   topHref,
-  note = 'Demo visual · Contenido e información comercial a confirmar',
+  note,
   home = false,
 }: SiteFooterProps) {
   return (
@@ -67,7 +67,7 @@ export function SiteFooter({
       <Link className="footer-back-to-top" href={topHref}>
         Volver arriba <ArrowUp aria-hidden="true" size={13} />
       </Link>
-      <small className="footer-note">{note}</small>
+      {note && <small className="footer-note">{note}</small>}
     </footer>
   );
 }

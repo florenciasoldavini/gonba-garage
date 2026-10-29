@@ -194,3 +194,11 @@ generation-scoped capability and serves a minimal cancellation confirmation. Bot
 sitemap. Cancellation GET does not mutate data, so email scanners cannot cancel subscriptions.
 POST performs the cancellation, including RFC 8058 one-click requests. No email address is
 embedded in either URL. Email links use the explicit fixed `ALERTS_PUBLIC_URL` origin.
+
+## Homepage inventory
+
+The homepage selection uses up to three active vehicles from the same catalog source as
+`/vehiculos`, including their photos, slugs and specifications. In live mode it renders at
+request time. An unavailable or empty catalog shows an explicit message and never falls
+back to example vehicle links. Decorative photography and shared homepage metadata are
+unchanged.
