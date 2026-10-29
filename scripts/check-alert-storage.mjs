@@ -24,6 +24,11 @@ let vehicle = { slug: 'toyota-sw4-mla123', price: 49900, currency: 'USD', status
 const dependencies = {
   'next/server': { NextResponse: { json: (body, options) => Response.json(body, options) } },
   '@/lib/alerts/database': { isAlertsDatabaseConfigured: () => configured },
+  '@/lib/alerts/config': { alertDeliveryEnabled: () => false },
+  '@/lib/alerts/price-delivery': {},
+  '@/lib/alerts/signup-limit': {},
+  '@/lib/integrations/mercado-libre/access-token': {},
+  '@/lib/integrations/mercado-libre/oauth': {},
   '@/lib/alerts/subscriptions': {
     saveInventorySubscription: async input => { if (failStorage) throw new Error('Private DB error'); calls.push(input); },
     savePriceSubscription: async input => { if (failStorage) throw new Error('Private DB error'); calls.push(input); },

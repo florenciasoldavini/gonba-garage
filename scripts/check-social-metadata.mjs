@@ -8,6 +8,13 @@ for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect', 
   assert.match(response.headers.get('cache-control') ?? '', /no-store/);
   assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
 }
+// Alert management is never indexable, even when production indexing is enabled.
+for (const [path, status] of [['/api/alerts/daily', 401], ['/api/price-alerts/cancel', 400]]) {
+  const response = await fetch(new URL(path, targetOrigin));
+  assert.equal(response.status, status);
+  assert.match(response.headers.get('cache-control') ?? '', /no-store/);
+  assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
+}
 assert.notEqual(process.env.VEHICLE_DATA_SOURCE, 'mercado-libre',
   'Run the permanent/demo metadata contract without the temporary local session. Live preview must remain noindex with an empty sitemap.');
 

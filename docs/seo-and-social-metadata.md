@@ -177,3 +177,12 @@ npm run test:metadata -- http://localhost:3100
 Then rebuild and repeat the metadata test with `SITE_INDEXING_ENABLED=true`. Confirm that demo mode
 uses `noindex` and an empty sitemap, while production mode exposes indexable routes and advertises the
 sitemap. The custom-domain checklist contains the separate live-launch verification.
+
+## Private alert management
+
+`/api/alerts/daily` requires the cron secret. `/api/price-alerts/cancel` validates a signed,
+generation-scoped capability and serves a minimal cancellation confirmation. Both are
+`private, no-store` and `noindex, nofollow` in every indexing mode and excluded from the
+sitemap. Cancellation GET does not mutate data, so email scanners cannot cancel subscriptions.
+POST performs the cancellation, including RFC 8058 one-click requests. No email address is
+embedded in either URL. Email links use the explicit fixed `ALERTS_PUBLIC_URL` origin.
