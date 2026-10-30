@@ -46,6 +46,19 @@ the refresh token and shared by every server instance until it expires, so the o
 token rotates about once per token lifetime rather than once per instance. The seller should own the Mercado Libre app and
 production credentials.
 
+## Response headers
+
+`next.config.ts` sends `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff` and a
+`Permissions-Policy` that turns off unused device features on every route. Every route outside `/api`
+also gets `Content-Security-Policy: frame-ancestors 'none'; base-uri 'self'; object-src 'none';
+form-action 'self'` and `Referrer-Policy: strict-origin-when-cross-origin`. With `next start`, config
+headers are written before a route handler's own headers, and Next drops a handler header whose name
+is already set. The CSP and Referrer-Policy rules therefore skip `/api`, so the emailed alert pages
+keep their stricter `default-src 'none'` CSP and `no-referrer` (`lib/alerts/page.ts`,
+`privateHeaders`). The site-wide CSP has no `script-src`: Next's inline bootstrap, the JSON-LD blocks
+and PostHog would need per-request nonces. Framing the site, including in PostHog's in-app heatmap
+view, is blocked.
+
 ## Motion and 3D strategy
 
 Start with CSS transforms, opacity, and native browser capabilities. Add `motion` only when a
