@@ -164,7 +164,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible {
   display: flex;
   align-items: center;
   gap: 11px;
-  margin: 0 0 20px;
+  margin: 0 0 var(--space-eyebrow);
   color: #d7dad2;
   font-size: 0.72rem;
   font-weight: 700;
@@ -777,7 +777,7 @@ h3 { letter-spacing: -0.04em; }
 .price-alert-error { margin: 12px 0 0; color: var(--color-danger); font-size: 0.72rem; }
 .price-alert-success { min-height: 410px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
 .price-alert-success > span { width: 48px; height: 48px; display: grid; place-items: center; color: var(--accent-dark); border-radius: 50%; background: var(--accent); font-size: 1.2rem; font-weight: 900; }
-.price-alert-success > p:first-of-type { margin: 24px 0 0; color: var(--accent); font: 600 0.67rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
+.price-alert-success > p:first-of-type { margin: 24px 0 var(--space-eyebrow); color: var(--accent); font: 600 0.67rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
 .price-alert-success .button { margin-top: 28px; }
 
 .detail-overview {
