@@ -7,20 +7,12 @@ import { useEffect, useRef } from 'react';
 import { Wordmark } from '@/components/brand/wordmark';
 import { WHATSAPP_GENERAL_MESSAGE } from '@/constants/contact';
 import { getWhatsAppUrl } from '@/lib/contact';
-
-type NavigationKey = 'vehicles' | 'sell';
+import { siteNavigation, type NavigationKey } from './navigation';
+import { SiteMenu } from './site-menu';
 
 type SiteHeaderProps = {
   active?: NavigationKey;
 };
-
-const navigation = [
-  { key: 'vehicles', label: 'Vehículos', path: '/vehiculos' },
-  { key: 'sell', label: 'Vendé tu auto', path: '/vender' },
-  { label: 'Servicios', path: '/#servicios' },
-  { label: 'Nosotros', path: '/#nosotros' },
-  { label: 'Preguntas', path: '/#preguntas' },
-] as const;
 
 export function SiteHeader({ active }: SiteHeaderProps) {
   const contactHref = getWhatsAppUrl(WHATSAPP_GENERAL_MESSAGE);
@@ -49,8 +41,8 @@ export function SiteHeader({ active }: SiteHeaderProps) {
     <header className="site-header" ref={headerRef}>
       <Wordmark href="/" />
       <nav className="main-nav" aria-label="Navegación principal">
-        {navigation.map((item) => {
-          const isCurrent = 'key' in item && item.key === active;
+        {siteNavigation.map((item) => {
+          const isCurrent = item.key !== undefined && item.key === active;
 
           return (
             <Link
@@ -64,15 +56,18 @@ export function SiteHeader({ active }: SiteHeaderProps) {
           );
         })}
       </nav>
-      <Link
-        className="header-cta"
-        href={contactHref}
-        rel="noreferrer"
-        target="_blank"
-      >
-        Contactar
-        <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
-      </Link>
+      <div className="header-actions">
+        <SiteMenu active={active} contactHref={contactHref} />
+        <Link
+          className="header-cta"
+          href={contactHref}
+          rel="noreferrer"
+          target="_blank"
+        >
+          Contactar
+          <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
+        </Link>
+      </div>
     </header>
   );
 }

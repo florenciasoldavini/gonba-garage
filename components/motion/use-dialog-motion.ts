@@ -8,7 +8,7 @@ if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP);
 }
 
-type DialogMotionVariant = 'center' | 'compare' | 'sheet';
+type DialogMotionVariant = 'center' | 'compare' | 'overlay' | 'sheet';
 
 type UseDialogMotionOptions = {
   contentKey?: string;
@@ -21,6 +21,7 @@ type UseDialogMotionOptions = {
 const getPanelStart = (variant: DialogMotionVariant) => {
   if (variant === 'sheet') return { xPercent: 12, y: 0, scale: 1 };
   if (variant === 'compare') return { xPercent: 0, y: 42, scale: 0.985 };
+  if (variant === 'overlay') return { xPercent: 0, y: -16, scale: 1 };
   return { xPercent: 0, y: 28, scale: 0.97 };
 };
 
