@@ -13,27 +13,47 @@ type Delivery = {
   email: string; attempts: number; first_attempt_at: string; request_payload: ReturnType<typeof buildAlertEmail> | null;
 };
 
-export async function activatePriceAlert(email: string, vehicle: Vehicle) {
+/**
+ * Signup stores a pending subscription; nothing is delivered until `confirmPriceAlert`. Active
+ * alerts stay active and keep their low watermark. A pending alert keeps its generation, so an
+ * earlier confirmation link still works, while a cancelled one restarts with a new generation.
+ */
+export async function requestPriceAlert(email: string, vehicle: Vehicle) {
   requireAlertConfig();
   if (!vehicle.mercadoLibreId || !/^MLA\d+$/.test(vehicle.mercadoLibreId)) throw new Error('Missing publication ID');
   if (!Number.isFinite(vehicle.price) || vehicle.price <= 0 || !['ARS', 'USD'].includes(vehicle.currency)) throw new Error('Invalid publication price');
   const sql = getAlertsSql();
   const title = [vehicle.make, vehicle.model, vehicle.version, vehicle.year].filter(Boolean).join(' ');
-  // Queue creation and activation are atomic. Repeated subscriptions keep the low watermark.
-  await sql`WITH subscription AS (
-    INSERT INTO public.vehicle_price_alerts (email, vehicle_slug, publication_id, vehicle_title, current_price, currency, source)
-    VALUES (${email}, ${vehicle.slug}, ${vehicle.mercadoLibreId}, ${title}, ${vehicle.price}, ${vehicle.currency}, 'mercado_libre')
+  const rows = await sql`INSERT INTO public.vehicle_price_alerts (email, vehicle_slug, publication_id, vehicle_title, current_price, currency, source, status)
+    VALUES (${email}, ${vehicle.slug}, ${vehicle.mercadoLibreId}, ${title}, ${vehicle.price}, ${vehicle.currency}, 'mercado_libre', 'pending')
     ON CONFLICT (publication_id, email) WHERE publication_id IS NOT NULL DO UPDATE SET
       vehicle_slug = EXCLUDED.vehicle_slug, vehicle_title = EXCLUDED.vehicle_title,
       current_price = CASE WHEN vehicle_price_alerts.status = 'active' THEN vehicle_price_alerts.current_price ELSE EXCLUDED.current_price END,
       currency = CASE WHEN vehicle_price_alerts.status = 'active' THEN vehicle_price_alerts.currency ELSE EXCLUDED.currency END,
       last_notified_price = CASE WHEN vehicle_price_alerts.status = 'active' THEN vehicle_price_alerts.last_notified_price ELSE NULL END,
-      generation = CASE WHEN vehicle_price_alerts.status = 'active' THEN vehicle_price_alerts.generation ELSE gen_random_uuid() END,
-      status = 'active', updated_at = now()
+      generation = CASE WHEN vehicle_price_alerts.status IN ('active', 'pending') THEN vehicle_price_alerts.generation ELSE gen_random_uuid() END,
+      status = CASE WHEN vehicle_price_alerts.status = 'active' THEN 'active' ELSE 'pending' END,
+      updated_at = now()
+    RETURNING id, generation, status, vehicle_title`;
+  return rows[0] as { id: string; generation: string; status: 'pending' | 'active'; vehicle_title: string };
+}
+
+/**
+ * Activation and the welcome email are queued atomically, as signup did before confirmation existed.
+ * Idempotent: repeated or concurrent confirmations update and queue at most once.
+ * Returns the vehicle slug when that generation is active now, otherwise null.
+ */
+export async function confirmPriceAlert(id: string, generation: string) {
+  const sql = getAlertsSql();
+  await sql`WITH confirmed AS (
+    UPDATE public.vehicle_price_alerts SET status = 'active', confirmed_at = now(), updated_at = now()
+    WHERE id = ${id} AND generation = ${generation} AND status = 'pending'
     RETURNING *
   ) INSERT INTO public.price_alert_deliveries (alert_id, generation, kind, price, previous_price, currency, title, vehicle_slug)
-    SELECT id, generation, 'welcome', current_price, current_price, currency, vehicle_title, vehicle_slug FROM subscription
+    SELECT id, generation, 'welcome', current_price, current_price, currency, vehicle_title, vehicle_slug FROM confirmed
     ON CONFLICT DO NOTHING`;
+  const rows = await sql`SELECT vehicle_slug FROM public.vehicle_price_alerts WHERE id = ${id} AND generation = ${generation} AND status = 'active'`;
+  return rows.length ? String(rows[0].vehicle_slug) : null;
 }
 
 export async function enqueuePriceItem(id: string) {

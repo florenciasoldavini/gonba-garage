@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { resolve, dirname } from 'node:path';
 import ts from 'typescript';
@@ -15,10 +16,10 @@ process.env.DATABASE_URL = 'test';
 process.env.MERCADO_LIBRE_SELLER_ID = '123';
 process.env.MERCADO_LIBRE_CLIENT_ID = '456';
 process.env.CRON_SECRET = 'test-cron-secret-never-used-outside-tests';
-const db = new PGlite();
-for (let i = 0; i < 2; i++) for (const file of ['20261028_alert_subscriptions.sql','20261029_price_alert_delivery.sql']) {
-  await db.exec(readFileSync(`database/migrations/${file}`, 'utf8'));
-}
+const migrations = ['20261028_alert_subscriptions.sql', '20261029_price_alert_delivery.sql', '20261030_alert_signup_confirmation.sql']
+  .map(file => readFileSync(`database/migrations/${file}`, 'utf8'));
+let db = new PGlite();
+for (let i = 0; i < 2; i++) for (const migration of migrations) await db.exec(migration);
 let failCommit = false;
 function sql(strings, ...values) {
   const text = strings.reduce((result, part, i) => result + part + (i < values.length ? `$${i + 1}` : ''), '');
@@ -32,6 +33,7 @@ sql.transaction = async queries => {
     return results;
   });
 };
+let legacyVehicle = { mercadoLibreId: 'MLA777', slug: 'ford-ka-mla777', make: 'Ford', model: 'Ka', year: 2019, price: 10000, currency: 'USD', status: 'active' };
 let vehicle = { mercadoLibreId: 'MLA123', slug: 'toyota-corolla-mla123', make: 'Toyota', model: 'Corolla', year: 2021,
   version: 'XEi', price: 20000, currency: 'USD', status: 'active' };
 const providerCalls = [], accepted = new Map();
@@ -40,7 +42,7 @@ const overrides = {
   '@/lib/alerts/database': { getAlertsSql: () => sql, isAlertsDatabaseConfigured: () => true },
   './database': { getAlertsSql: () => sql },
   '@/lib/integrations/mercado-libre/access-token': { catalogAccessToken: async () => 'fake' },
-  '@/lib/integrations/mercado-libre/oauth': { readMercadoLibrePublication: async () => ({ vehicle, source: { id: 'MLA123', seller_id: 123 } }) },
+  '@/lib/integrations/mercado-libre/oauth': { readMercadoLibrePublication: async id => ({ vehicle: id === 'MLA777' ? legacyVehicle : vehicle, source: { id, seller_id: 123 } }) },
   'next/server': { NextResponse: { json: (value, options) => Response.json(value, options) }, after: fn => deferred.push(fn) },
 };
 const cache = new Map();
@@ -74,9 +76,16 @@ globalThis.fetch = async (url, options) => {
 };
 const engine = load('lib/alerts/price-delivery.ts');
 const cancel = load('lib/alerts/cancellation.ts');
+// Signup followed by the owner's confirmation, which is what activation used to do in one step.
+async function activate(address, listing) {
+  const alert = await engine.requestPriceAlert(address, listing);
+  assert.equal(await engine.confirmPriceAlert(alert.id, alert.generation), listing.slug);
+}
+const sentTo = (address, prefix) => providerCalls.map(call => JSON.parse(call.body))
+  .filter(body => body.to.includes(address) && body.subject.startsWith(prefix));
 try {
-  await engine.activatePriceAlert('person@example.invalid', vehicle);
-  await engine.activatePriceAlert('person@example.invalid', { ...vehicle, slug: 'new-title-mla123', price: 19900 });
+  await activate('person@example.invalid', vehicle);
+  await activate('person@example.invalid', { ...vehicle, slug: 'new-title-mla123', price: 19900 });
   let alerts = (await db.query('SELECT * FROM vehicle_price_alerts')).rows;
   assert.equal(alerts.length, 1);
   assert.equal(Number(alerts[0].current_price), 20000);
@@ -138,7 +147,7 @@ try {
   assert.equal((await db.query('SELECT status FROM vehicle_price_alerts')).rows[0].status, 'active', 'GET scanners cannot unsubscribe');
   assert.equal((await cancelRoute.POST(new Request(cancelUrl, { method: 'POST' }))).status, 200);
   assert.equal((await db.query('SELECT status FROM vehicle_price_alerts')).rows[0].status, 'cancelled');
-  await engine.activatePriceAlert('person@example.invalid', vehicle);
+  await activate('person@example.invalid', vehicle);
   assert.notEqual((await db.query('SELECT generation FROM vehicle_price_alerts')).rows[0].generation, generation);
   await cancelRoute.POST(new Request(cancelUrl, { method: 'POST' }));
   assert.equal((await db.query('SELECT status FROM vehicle_price_alerts')).rows[0].status, 'active', 'Old link cannot cancel new subscription');
@@ -158,8 +167,11 @@ try {
   await engine.runPriceAlertWork();
   assert.equal(accepted.size, acceptedAfterDaily, 'Repeated daily review sends no duplicates');
   const limiter = load('lib/alerts/signup-limit.ts');
-  for (let i = 0; i < 5; i++) assert.equal(await limiter.reservePriceSignup('limited@example.invalid'), true);
-  assert.equal(await limiter.reservePriceSignup('limited@example.invalid'), false);
+  const from = ip => new Request('https://example.test/api/price-alerts', { method: 'POST', headers: { 'X-Forwarded-For': ip } });
+  for (let i = 0; i < 5; i++) assert.equal(await limiter.reserveAlertSignup('price', 'limited@example.invalid', from(`192.0.2.${i}`)), true);
+  assert.equal(await limiter.reserveAlertSignup('price', 'limited@example.invalid', from('192.0.2.99')), false, 'Per-email limit with delivery enabled');
+  assert.equal(await limiter.reserveAlertSignup('inventory', 'limited@example.invalid', from('192.0.2.99')), true, 'Inventory has its own buckets');
+  await db.exec('DELETE FROM price_alert_signup_windows');
   assert.equal(cancel.parseCancellationToken(token + '.'), null);
   overrides['@/lib/integrations/mercado-libre/catalog'] = { findCatalogVehicle: async () => { throw Error('Must not use demo catalog'); } };
   const priceRoute = load('app/api/price-alerts/route.ts');
@@ -169,6 +181,130 @@ try {
   const subscribed = (await db.query("SELECT * FROM vehicle_price_alerts WHERE email='route@example.invalid'")).rows[0];
   assert.equal(Number(subscribed.current_price), vehicle.price);
   assert.equal(subscribed.publication_id, 'MLA123');
+
+  // Double opt-in: a signup is pending, gets one capped confirmation email and nothing else.
+  assert.equal(subscribed.status, 'pending');
+  const deliveriesFor = async alertId => (await db.query('SELECT * FROM price_alert_deliveries WHERE alert_id = $1', [alertId])).rows;
+  assert.equal((await deliveriesFor(subscribed.id)).length, 0, 'No welcome email before confirmation');
+  assert.equal(deferred.length, 1, 'The confirmation email is sent after the response');
+  for (const task of deferred.splice(0)) await task();
+  assert.equal(sentTo('route@example.invalid', 'Confirmá').length, 1);
+  const [confirmationEmail] = sentTo('route@example.invalid', 'Confirmá');
+  assert.ok(confirmationEmail.text.includes('Toyota Corolla XEi 2021'));
+  const confirmUrl = confirmationEmail.text.match(/https:\/\/example\.test\/api\/alerts\/confirm\?token=\S+/)[0];
+  const signupAgain = () => priceRoute.POST(new Request('https://example.test/api/price-alerts', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'route@example.invalid', vehicleSlug: vehicle.slug }) }));
+  assert.equal((await signupAgain()).status, 201);
+  for (const task of deferred.splice(0)) await task();
+  assert.equal(sentTo('route@example.invalid', 'Confirmá').length, 1, 'Resubmitting within 10 minutes sends no second email');
+  await db.exec("UPDATE price_alert_signup_windows SET started_at = now() - interval '11 minutes' WHERE key LIKE 'confirm:price:%'");
+  assert.equal((await signupAgain()).status, 201);
+  for (const task of deferred.splice(0)) await task();
+  assert.equal(sentTo('route@example.invalid', 'Confirmá').length, 2, 'A pending signup can be resent after the cooldown');
+  assert.equal((await db.query("SELECT generation FROM vehicle_price_alerts WHERE email='route@example.invalid'")).rows[0].generation, subscribed.generation,
+    'Resending keeps earlier links valid');
+
+  const confirmation = load('lib/alerts/confirmation.ts');
+  for (let i = 0; i < 6; i++) {
+    const sent = await confirmation.sendSignupConfirmation({ scope: i % 2 ? 'inventory' : 'price', id: randomUUID(), generation: randomUUID(), email: 'capped@example.invalid' });
+    assert.equal(sent, i < 5, 'At most 5 confirmation emails per recipient per day, across both endpoints');
+  }
+  assert.equal(sentTo('capped@example.invalid', 'Confirmá').length, 5);
+
+  // Pending subscriptions never receive price work or emails.
+  await engine.requestPriceAlert('only-pending@example.invalid', { ...vehicle, mercadoLibreId: 'MLA555', slug: 'only-pending-mla555' });
+  await engine.enqueuePriceItem('MLA555');
+  await engine.enqueueDailyPriceReview();
+  assert.equal((await db.query("SELECT * FROM price_alert_item_jobs WHERE publication_id='MLA555'")).rows.length, 0, 'Pending-only publications are not watched');
+  await engine.recordPriceObservation('MLA123', { ...vehicle, price: vehicle.price - 1000 });
+  assert.equal((await deliveriesFor(subscribed.id)).length, 0, 'Pending alerts never receive price drops');
+  while (await engine.processPriceDelivery());
+  assert.equal(sentTo('route@example.invalid', 'Bajó').length, 0);
+
+  const confirmRoute = load('app/api/alerts/confirm/route.ts');
+  const confirmRequest = (url, method = 'GET') => confirmRoute[method](new Request(url, { method }));
+  // Every outcome redirects to the site's result page, privately and without the token.
+  const outcome = async (url, method = 'POST') => {
+    const response = await confirmRequest(url, method);
+    assert.equal(response.status, 303);
+    assert.match(response.headers.get('cache-control'), /no-store/);
+    const location = response.headers.get('location');
+    assert.ok(location.startsWith('/alertas/confirmacion?') && !location.includes('token'), location);
+    return Object.fromEntries(new URL(location, 'https://example.test').searchParams);
+  };
+  const statusOf = async () => (await db.query('SELECT status, confirmed_at FROM vehicle_price_alerts WHERE id = $1', [subscribed.id])).rows[0];
+  const confirmToken = new URL(confirmUrl).searchParams.get('token');
+  assert.deepEqual(confirmation.parseConfirmationToken(confirmToken), { scope: 'price', id: subscribed.id, generation: subscribed.generation, expired: false });
+  const page = await confirmRequest(confirmUrl);
+  assert.equal(page.status, 200);
+  assert.match(page.headers.get('cache-control'), /no-store/);
+  assert.match(page.headers.get('x-robots-tag'), /noindex/);
+  assert.match(page.headers.get('content-security-policy'), /default-src 'none'/);
+  assert.equal((await statusOf()).status, 'pending', 'GET scanners cannot confirm');
+  // Browsers post the form on load; only that exact inline script is allowed by the CSP.
+  const html = await page.text();
+  assert.match(html, /<form method="post">/);
+  const script = html.match(/<script>(.*?)<\/script>/)[1];
+  assert.equal(script, 'document.forms[0].submit()');
+  const scriptHash = (await import('node:crypto')).createHash('sha256').update(script).digest('base64');
+  assert.ok(page.headers.get('content-security-policy').includes(`script-src 'sha256-${scriptHash}'`));
+  assert.doesNotMatch(page.headers.get('content-security-policy'), /unsafe-inline'[^;]*script|script-src[^;]*unsafe/);
+  const base = 'https://example.test/api/alerts/confirm?token=';
+  const expiredToken = confirmation.confirmationToken('price', subscribed.id, subscribed.generation, Date.now() - 73 * 3600 * 1000);
+  assert.equal(confirmation.parseConfirmationToken(expiredToken).expired, true);
+  assert.deepEqual(await outcome(base + expiredToken), { estado: 'vencido' }, 'Expired links cannot confirm');
+  assert.deepEqual(await outcome(base + expiredToken, 'GET'), { estado: 'vencido' });
+  const signature = confirmToken.slice(confirmToken.lastIndexOf('.') + 1);
+  for (const forged of [
+    cancel.cancellationToken(subscribed.id, subscribed.generation), // cancel scope
+    confirmToken.replace(/^price\./, 'inventory.'), // other alert type
+    confirmToken.slice(0, -1) + (signature.endsWith('A') ? 'B' : 'A'), // tampered signature
+    confirmToken.replace(subscribed.generation, randomUUID()), // other generation
+    confirmToken.replace(/\.(\d{10})\./, (_, expires) => `.${Number(expires) + 3600}.`), // extended expiry
+    '', 'bad',
+  ]) {
+    assert.equal(confirmation.parseConfirmationToken(forged), null);
+    assert.deepEqual(await outcome(base + forged), { estado: 'no-valido' });
+    assert.deepEqual(await outcome(base + forged, 'GET'), { estado: 'no-valido' });
+  }
+  assert.equal((await cancelRoute.POST(new Request(`https://example.test/api/price-alerts/cancel?token=${confirmToken}`, { method: 'POST' }))).status, 400,
+    'A confirmation token cannot cancel');
+  assert.equal((await statusOf()).status, 'pending');
+  deferred = [];
+  const [confirmed, again] = await Promise.all([outcome(confirmUrl), outcome(confirmUrl)]);
+  const confirmedPrice = { estado: 'confirmada', tipo: 'precio', vehiculo: vehicle.slug };
+  assert.deepEqual(confirmed, confirmedPrice);
+  assert.deepEqual(again, confirmedPrice, 'Confirmation is idempotent');
+  assert.equal((await statusOf()).status, 'active');
+  assert.ok((await statusOf()).confirmed_at);
+  assert.deepEqual(await outcome(confirmUrl), confirmedPrice);
+  assert.deepEqual((await deliveriesFor(subscribed.id)).map(row => row.kind), ['welcome'], 'Exactly one welcome after repeated confirmation');
+  assert.ok(deferred.length >= 1, 'Confirmation starts delivery work');
+  deferred = [];
+  while (await engine.processPriceDelivery());
+  assert.equal(sentTo('route@example.invalid', 'Tu alerta de precio está activa').length, 1);
+  assert.equal((await signupAgain()).status, 201);
+  assert.equal(deferred.length, 0, 'An active alert sends no new confirmation');
+
+  // Inventory alerts use the same route, with their own scope.
+  const inventoryRoute = load('app/api/inventory-alerts/route.ts');
+  const inventoryResponse = await inventoryRoute.POST(new Request('https://example.test/api/inventory-alerts', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'search@example.invalid', query: 'Llamá al 0800 PREMIO <b>ya</b>', maxPrice: 30000 }) }));
+  assert.equal(inventoryResponse.status, 201);
+  const search = (await db.query("SELECT * FROM vehicle_inventory_alerts WHERE email='search@example.invalid'")).rows[0];
+  assert.equal(search.status, 'pending');
+  for (const task of deferred.splice(0)) await task();
+  const [searchEmail] = sentTo('search@example.invalid', 'Confirmá tu alerta de búsqueda');
+  assert.ok(searchEmail, 'Inventory signups get a confirmation email');
+  assert.equal(`${searchEmail.text}${searchEmail.html}`.includes('PREMIO'), false, 'Submitted search text is never echoed to the recipient');
+  const searchUrl = searchEmail.text.match(/https:\/\/example\.test\/api\/alerts\/confirm\?token=\S+/)[0];
+  const crossScope = confirmation.confirmationToken('price', search.id, search.generation);
+  assert.deepEqual(await outcome(base + crossScope), { estado: 'no-valido' }, 'A price-scoped token cannot confirm an inventory alert');
+  assert.deepEqual(await outcome(searchUrl), { estado: 'confirmada', tipo: 'busqueda' });
+  assert.equal((await db.query("SELECT status FROM vehicle_inventory_alerts WHERE email='search@example.invalid'")).rows[0].status, 'active');
+  assert.deepEqual(await outcome(searchUrl), { estado: 'confirmada', tipo: 'busqueda' });
+  await db.exec("UPDATE vehicle_inventory_alerts SET status='cancelled' WHERE email='search@example.invalid'");
+  assert.deepEqual(await outcome(searchUrl), { estado: 'no-valido' }, 'A cancelled alert is not reactivated by an old link');
   deferred = [];
   overrides['@/lib/alerts/price-delivery'] = { enqueuePriceItem: async id => { if (enqueueFail) throw Error(); queued.push(id); }, runPriceAlertWorkSafely: async () => {} };
   const webhook = load('app/api/mercado-libre/webhook/route.ts');
@@ -188,5 +324,20 @@ try {
   const malicious = email.buildAlertEmail({ id, generation, email: 'person@example.invalid', kind: 'drop', title: '<script>bad</script>', vehicle_slug: 'a', price: 100, previous_price: 200, currency: 'USD' });
   assert.equal(malicious.html.includes('<script>'), false);
   assert.ok(malicious.text.includes('Cancelar alerta'));
-  console.log('Price alert delivery: real PostgreSQL migration, stable publication IDs, recurring drops, concurrent deduplication, frozen idempotent retries, ambiguous send recovery, cancellation generations, webhook persistence and cron auth passed.');
+
+  // Subscriptions created before double opt-in keep receiving alerts after the migration.
+  await db.close();
+  db = new PGlite();
+  for (const migration of migrations.slice(0, 2)) await db.exec(migration);
+  await db.exec(`INSERT INTO vehicle_price_alerts (email, vehicle_slug, publication_id, vehicle_title, current_price, currency, source)
+    VALUES ('legacy@example.invalid', 'ford-ka-mla777', 'MLA777', 'Ford Ka 2019', 10000, 'USD', 'mercado_libre')`);
+  for (let i = 0; i < 2; i++) for (const migration of migrations) await db.exec(migration);
+  assert.equal((await db.query('SELECT status FROM vehicle_price_alerts')).rows[0].status, 'active', 'Existing alerts are grandfathered as confirmed');
+  await engine.enqueueDailyPriceReview();
+  assert.deepEqual((await db.query('SELECT publication_id FROM price_alert_item_jobs')).rows, [{ publication_id: 'MLA777' }]);
+  legacyVehicle = { ...legacyVehicle, price: 9000 };
+  await engine.recordPriceObservation('MLA777', legacyVehicle);
+  assert.equal(await engine.processPriceDelivery(), true);
+  assert.equal(sentTo('legacy@example.invalid', 'Bajó de precio').length, 1, 'Grandfathered alerts still deliver price drops');
+  console.log('Price alert delivery: real PostgreSQL migration, stable publication IDs, recurring drops, concurrent deduplication, frozen idempotent retries, ambiguous send recovery, cancellation generations, double opt-in (pending, capped confirmation emails, scoped expiring tokens, idempotent confirmation), grandfathered alerts, webhook persistence and cron auth passed.');
 } finally { globalThis.fetch = realFetch; await db.close(); }

@@ -81,6 +81,28 @@ The existing `glass-panel` class is the shared surface primitive until a polymor
 provides a concrete benefit. Glass must not be required for content legibility and should degrade to
 an opaque dark surface when backdrop filtering is unavailable.
 
+### Status feedback
+
+Success, failure and empty states share one composition: `Eyebrow`, title, supporting copy,
+optional `StatusSteps` ("¿Qué sigue?"), and a `status-actions` row. In-page panels use
+`.status-panel` with `glass-panel`, `--radius-card` and `--text-display-md` titles, and animate
+with `useStatusMotion`. Current uses: the alert dialogs' success view, the `/vender` success view,
+`/alertas/confirmacion` and the catalog's empty results.
+
+- **No status icons.** The eyebrow and title state the outcome in words ("Alerta confirmada",
+  "Enlace vencido", "0 resultados"), as in every other editorial section. An acid icon tile would
+  also compete with the primary action, the only acid block in the panel.
+- **Label.** Always `Eyebrow`; never a hand-made acid or mono label.
+- **Rhythm.** Eyebrow to title `--space-eyebrow`, title to copy `--space-5`, copy to steps or
+  actions `--space-8`.
+
+Deliberate differences:
+
+- Inside a dialog, the success view replaces the form in the same panel, so it keeps the dialog's
+  padding and title size instead of `.status-panel`, and the dialog doesn't jump when it switches.
+- The `/vender` success view replaces the valuation form in place, so it keeps that form's
+  `--radius-feature` and background.
+
 ## Domain patterns
 
 - Vehicle cards always present media, year, make/model, concise facts, price or status, and a clear

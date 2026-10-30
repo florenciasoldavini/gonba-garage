@@ -27,4 +27,7 @@ export function cronAuthorized(request: Request) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+/** Signup confirmation links stop working after this many hours. */
+export const confirmationLifetimeHours = 72;
+
 export const privateHeaders = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' };

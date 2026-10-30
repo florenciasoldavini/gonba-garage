@@ -164,7 +164,7 @@ a:focus-visible, button:focus-visible, summary:focus-visible {
   display: flex;
   align-items: center;
   gap: 11px;
-  margin: 0 0 20px;
+  margin: 0 0 var(--space-eyebrow);
   color: #d7dad2;
   font-size: 0.72rem;
   font-weight: 700;
@@ -510,12 +510,7 @@ h3 { letter-spacing: -0.04em; }
 .catalog-card-facts { min-height: 60px; padding: 16px 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 13px; border-top: 1px solid var(--line); }
 .catalog-card-facts span { color: var(--muted); font-size: 0.66rem; }
 .catalog-card-facts strong { margin-left: auto; font-size: 0.86rem; }
-.catalog-empty { min-height: 510px; padding: clamp(36px, 7vw, 90px); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; border-radius: var(--radius); }
-.catalog-empty > span { color: var(--accent); font: 600 0.68rem var(--font-mono); text-transform: uppercase; }
-.catalog-empty h2 { max-width: 720px; margin-bottom: 14px; }
-.catalog-empty > p { max-width: 500px; margin: 0; color: var(--muted); line-height: 1.6; }
-.catalog-empty-actions { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 10px; }
-.catalog-empty-actions .button { margin-top: 0; cursor: pointer; }
+.catalog-empty { min-height: 510px; justify-content: center; }
 .catalog-contact {
   min-height: 340px;
   margin-bottom: clamp(80px, 10vw, 140px);
@@ -753,8 +748,8 @@ h3 { letter-spacing: -0.04em; }
   cursor: pointer;
   font-size: 1.25rem;
 }
-.price-alert-form h2, .price-alert-success h2 { margin-bottom: 18px; font-size: clamp(2.25rem, 6vw, 4rem); }
-.price-alert-form > p:not(.eyebrow, .price-alert-privacy, .price-alert-error), .price-alert-success > p:last-of-type { color: var(--muted); line-height: 1.65; }
+.price-alert-form h2, .price-alert-success h2 { margin-bottom: var(--space-5); font-size: clamp(2.25rem, 6vw, 4rem); }
+.price-alert-form > p:not(.eyebrow, .price-alert-privacy, .price-alert-error) { color: var(--muted); line-height: 1.65; }
 .price-alert-form label { margin-top: 30px; display: grid; gap: 9px; }
 .price-alert-form label > span { color: #a7aba3; font: 500 0.65rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
 .price-alert-form input {
@@ -776,9 +771,6 @@ h3 { letter-spacing: -0.04em; }
 .price-alert-privacy { margin: 12px 0 0; color: #73786f; font-size: 0.65rem; line-height: 1.5; }
 .price-alert-error { margin: 12px 0 0; color: var(--color-danger); font-size: 0.72rem; }
 .price-alert-success { min-height: 410px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
-.price-alert-success > span { width: 48px; height: 48px; display: grid; place-items: center; color: var(--accent-dark); border-radius: 50%; background: var(--accent); font-size: 1.2rem; font-weight: 900; }
-.price-alert-success > p:first-of-type { margin: 24px 0 0; color: var(--accent); font: 600 0.67rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
-.price-alert-success .button { margin-top: 28px; }
 
 .detail-overview {
   padding-block: clamp(100px, 13vw, 190px);
@@ -930,6 +922,19 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 .contact-actions .button { width: 100%; }
 .contact-actions p { margin: 15px 0 0; color: var(--muted); font-size: 0.68rem; line-height: 1.5; }
 
+/* Status panels (docs/design-system.md, "Status feedback"). Dialogs reuse the eyebrow, copy and
+   actions, not the panel. */
+.status-panel { padding: clamp(34px, 6vw, 72px); display: flex; flex-direction: column; align-items: flex-start; border-radius: var(--radius-card); }
+.status-panel > h1, .status-panel > h2 { max-width: 720px; margin-bottom: var(--space-5); font-size: var(--text-display-md); line-height: var(--leading-tight); letter-spacing: var(--tracking-display); }
+.status-panel > p:not(.eyebrow), .price-alert-success > p:not(.eyebrow) { max-width: 560px; margin: 0; color: var(--muted); line-height: 1.65; }
+.status-steps { width: 100%; margin-top: var(--space-8); padding: var(--space-6); border: 1px solid var(--line); border-radius: var(--radius-button); background: rgba(255, 255, 255, .025); }
+.status-steps > strong { display: block; margin-bottom: var(--space-3); font-size: .75rem; }
+.status-steps ol { margin: 0; padding: 0; display: grid; gap: var(--space-3); list-style: none; color: var(--muted); font-size: .72rem; }
+.status-steps li { display: flex; gap: 10px; }
+.status-steps li span { color: var(--accent); font-family: var(--font-mono); }
+.status-actions { margin-top: var(--space-8); display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.status-actions .button { margin-top: 0; cursor: pointer; }
+
 /* Vehicle valuation */
 .valuation-page { min-height: 100vh; overflow: clip; }
 .valuation-layout { padding-block: var(--page-content-top) clamp(110px, 13vw, 180px); display: grid; grid-template-columns: minmax(0, .82fr) minmax(560px, 1.18fr); gap: clamp(42px, 7vw, 110px); align-items: start; }
@@ -954,7 +959,7 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
   .valuation-promises li { gap: 18px; padding-block: 17px; color: #d4d7d0; font-size: .84rem; line-height: normal; }
 }
 
-.valuation-form, .valuation-success { border-radius: 24px; background: rgba(14, 17, 15, .88); }
+.valuation-form, .valuation-success { border-radius: var(--radius-feature); background: rgba(14, 17, 15, .88); }
 .valuation-form { overflow: hidden; scroll-margin-top: 110px; }
 .valuation-form-heading { min-height: 80px; padding: 18px clamp(20px, 3vw, 32px); display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line); }
 .valuation-form-heading > div { display: grid; gap: 5px; }
@@ -1053,16 +1058,13 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 .valuation-back-button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 8px; }
 .valuation-form-submit > small { color: #6d726a; font-size: .61rem; text-align: center; }
 
-.valuation-success { min-height: 680px; padding: clamp(34px, 6vw, 72px); display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
-.valuation-success-icon { width: 54px; height: 54px; margin-bottom: 28px; display: grid; place-items: center; color: var(--accent-dark); border-radius: 15px; background: var(--accent); }
-.valuation-success h2 { max-width: 700px; font-size: clamp(2.7rem, 5vw, 5rem); }
-.valuation-success > p:not(.eyebrow) { max-width: 610px; color: var(--muted); line-height: 1.65; }
-.valuation-success-next { width: 100%; margin: 22px 0 30px; padding: 22px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255, 255, 255, .025); }
-.valuation-success-next > strong { display: block; margin-bottom: 14px; font-size: .75rem; }
-.valuation-success-next ol { margin: 0; padding: 0; display: grid; gap: 11px; list-style: none; color: var(--muted); font-size: .72rem; }
-.valuation-success-next li { display: flex; gap: 10px; }
-.valuation-success-next li span { color: var(--accent); font-family: var(--font-mono); }
-.valuation-success > small { margin-top: 15px; color: #6d726a; font-size: .61rem; }
+.valuation-success { min-height: 680px; justify-content: center; }
+.valuation-success > small { margin-top: var(--space-4); color: var(--color-text-tertiary); font-size: .61rem; }
+
+/* Emailed alert confirmation result */
+.alert-result-page { min-height: 100vh; overflow: clip; }
+.alert-result-layout { padding-block: var(--page-content-top) clamp(90px, 11vw, 150px); display: grid; justify-items: center; }
+.alert-result { width: min(100%, 820px); }
 
 .site-footer { min-height: 260px; padding-block: 70px 35px; display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: start; }
 .footer-intro { display: grid; gap: 10px; }
@@ -1282,8 +1284,9 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
   .catalog-card-title h2 { font-size: 1.55rem; }
   .catalog-contact { min-height: 440px; grid-template-columns: 1fr; align-content: space-between; gap: 44px; }
   .catalog-contact .button { width: 100%; white-space: normal; }
-  .catalog-empty-actions { width: 100%; flex-direction: column; }
-  .catalog-empty-actions .button { width: 100%; }
+  .status-panel { padding: 34px 22px; }
+  .status-actions { width: 100%; flex-direction: column; }
+  .status-actions .button { width: 100%; }
   .compare-dock-shell { bottom: 10px; padding-inline: 10px; }
   .compare-dock { min-height: 70px; padding: 9px; gap: 9px; border-radius: 15px; }
   .compare-dock-heading > span { width: 40px; height: 40px; }
@@ -1309,8 +1312,8 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
   .valuation-stepper li strong { display: none; }
   .valuation-stepper li:nth-child(2) { justify-content: center; }
   .valuation-step-actions { flex-direction: column-reverse; }
-  .valuation-form, .valuation-success { border-radius: 18px; }
-  .valuation-success { min-height: 620px; padding: 34px 22px; }
+  .valuation-form, .valuation-success { border-radius: var(--radius-card); }
+  .valuation-success { min-height: 620px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

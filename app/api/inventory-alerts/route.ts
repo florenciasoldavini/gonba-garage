@@ -1,7 +1,10 @@
-import { NextResponse } from 'next/server';
+import { after, NextResponse } from 'next/server';
 
 import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
 import { saveInventorySubscription } from '@/lib/alerts/subscriptions';
+import { alertDeliveryEnabled } from '@/lib/alerts/config';
+import { reserveAlertSignup } from '@/lib/alerts/signup-limit';
+import { sendSignupConfirmationSafely } from '@/lib/alerts/confirmation';
 import { rejectCrossSiteJson } from '@/lib/alerts/request-guard';
 
 type InventoryAlertRequest = {
@@ -94,8 +97,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    await saveInventorySubscription({ email, query, make, transmission, bodyType, fuel,
+    if (!await reserveAlertSignup('inventory', email, request)) {
+      return NextResponse.json({ message: 'Recibimos demasiadas solicitudes. Probá más tarde.' }, { status: 429 });
+    }
+    const alert = await saveInventorySubscription({ email, query, make, transmission, bodyType, fuel,
       minPrice, maxPrice, minMileage, maxMileage });
+    // Pending until confirmed. Without email delivery (demo mode) it is stored and nothing is sent.
+    if (alert.status === 'pending' && alertDeliveryEnabled()) after(() => sendSignupConfirmationSafely({ scope: 'inventory', id: alert.id, generation: alert.generation, email }));
   } catch {
     console.error('Unable to create inventory alert');
     return NextResponse.json(

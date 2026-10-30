@@ -6,8 +6,9 @@ import { readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/oa
 import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
 import { savePriceSubscription } from '@/lib/alerts/subscriptions';
 import { alertDeliveryEnabled } from '@/lib/alerts/config';
-import { reservePriceSignup } from '@/lib/alerts/signup-limit';
-import { activatePriceAlert, runPriceAlertWorkSafely } from '@/lib/alerts/price-delivery';
+import { reserveAlertSignup } from '@/lib/alerts/signup-limit';
+import { requestPriceAlert } from '@/lib/alerts/price-delivery';
+import { sendSignupConfirmationSafely } from '@/lib/alerts/confirmation';
 import { rejectCrossSiteJson } from '@/lib/alerts/request-guard';
 
 type PriceAlertRequest = {
@@ -51,7 +52,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (alertDeliveryEnabled() && !await reservePriceSignup(email)) {
+    if (!await reserveAlertSignup('price', email, request)) {
       return NextResponse.json({ message: 'Recibimos demasiadas solicitudes. Probá más tarde.' }, { status: 429 });
     }
     // Price/currency come from our catalog, never from client-supplied amounts.
@@ -68,8 +69,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'El vehículo ya no está disponible.' }, { status: 400 });
     }
     if (alertDeliveryEnabled()) {
-      await activatePriceAlert(email, vehicle);
-      after(runPriceAlertWorkSafely);
+      // Pending until the owner confirms by email. The response does not reveal which case applied.
+      const alert = await requestPriceAlert(email, vehicle);
+      if (alert.status === 'pending') after(() => sendSignupConfirmationSafely({ scope: 'price', id: alert.id, generation: alert.generation, email, title: alert.vehicle_title }));
     } else {
       await savePriceSubscription({ email, vehicleSlug: vehicle.slug, price: vehicle.price, currency: vehicle.currency });
     }
