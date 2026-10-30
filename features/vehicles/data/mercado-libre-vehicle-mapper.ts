@@ -1,4 +1,5 @@
 import type { Vehicle, VehicleStatus } from '@/features/vehicles/domain/vehicle';
+import { fullSizeMercadoLibreImageUrl } from '@/lib/integrations/mercado-libre/pictures';
 import type {
   MercadoLibreAttribute,
   MercadoLibreDescription,
@@ -55,10 +56,6 @@ function slugify(value: string) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
-}
-
-function secureImageUrl(value?: string) {
-  return value?.replace(/^http:\/\//, 'https://') ?? null;
 }
 
 function mapStatus(status?: string): VehicleStatus {
@@ -121,10 +118,10 @@ export function mapMercadoLibreItemToVehicle(
   const make = attributeText(item, 'BRAND') ?? 'Sin marca';
   const model = attributeText(item, 'MODEL') ?? item.title;
   const version = attributeText(item, 'TRIM') ?? attributeText(item, 'SHORT_VERSION') ?? '';
-  const primaryImage = secureImageUrl(item.pictures?.[0]?.secure_url)
-    ?? secureImageUrl(item.pictures?.[0]?.url)
-    ?? secureImageUrl(item.secure_thumbnail)
-    ?? secureImageUrl(item.thumbnail)
+  const primaryImage = fullSizeMercadoLibreImageUrl(item.pictures?.[0]?.secure_url)
+    ?? fullSizeMercadoLibreImageUrl(item.pictures?.[0]?.url)
+    ?? fullSizeMercadoLibreImageUrl(item.secure_thumbnail)
+    ?? fullSizeMercadoLibreImageUrl(item.thumbnail)
     ?? '/showroom-car.jpg';
   const descriptionText = description?.plain_text?.trim() || description?.text?.trim() || '';
 
