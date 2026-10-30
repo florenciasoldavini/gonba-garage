@@ -41,7 +41,9 @@ Today the backend catalog API caches public listing presentation data for five m
 data cache, and only looks up item IDs present in the cached active set. Price alerts bypass it and
 read Mercado Libre directly. See [the Mercado Libre setup notes](mercado-libre-local.md).
 
-OAuth tokens and client secrets are server-only. The seller should own the Mercado Libre app and
+OAuth tokens and client secrets are server-only. The current access token is stored encrypted next to
+the refresh token and shared by every server instance until it expires, so the one-use refresh
+token rotates about once per token lifetime rather than once per instance. The seller should own the Mercado Libre app and
 production credentials.
 
 ## Motion and 3D strategy

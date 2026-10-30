@@ -39,7 +39,12 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: VehicleDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const vehicle = await findCatalogVehicle(slug);
+  let vehicle;
+  try {
+    vehicle = await findCatalogVehicle(slug);
+  } catch {
+    return { title: "Catálogo no disponible | Gonba's Garage", robots: { index: false, follow: false } };
+  }
 
   if (!vehicle) {
     return { title: "Vehículo no encontrado | Gonba's Garage" };
@@ -64,8 +69,14 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
 
 export default async function VehicleDetailPage({ params }: VehicleDetailPageProps) {
   const { slug } = await params;
-  const vehicle = await findCatalogVehicle(slug);
-  const publication = await findCatalogPublication(slug);
+  let vehicle, publication;
+  try {
+    vehicle = await findCatalogVehicle(slug);
+    publication = await findCatalogPublication(slug);
+  } catch {
+    // A backend failure is not a missing vehicle: keep notFound() for real 404s only.
+    return <main className="section-shell"><SiteHeader active="vehicles" /><h1>Catálogo no disponible</h1><p>No pudimos consultar esta publicación. Volvé a intentar en unos minutos.</p></main>;
+  }
 
   if (!vehicle) notFound();
   const pictures = publication?.source.pictures ?? [];

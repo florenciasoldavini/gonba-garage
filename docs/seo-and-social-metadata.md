@@ -188,6 +188,11 @@ views, crawlers or share-image requests. The live catalog opts into request-time
 handler; the demo catalog remains statically cacheable. Canonical URLs, structured data and the
 indexing gate are unchanged.
 
+When the live catalog backend fails, a vehicle detail page shows a "Catálogo no disponible"
+message with `noindex, nofollow` metadata instead of a server error. Only a genuinely missing
+vehicle returns `notFound()` and a real 404. The demo catalog never takes this path; the metadata
+check asserts that a missing vehicle still returns 404.
+
 ## Private alert management
 
 `/api/alerts/daily` requires the cron secret. `/api/price-alerts/cancel` validates a signed,

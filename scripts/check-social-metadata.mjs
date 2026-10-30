@@ -279,6 +279,11 @@ assert.equal(
   'The 404 page should not claim the homepage canonical',
 );
 
+// The catalog-unavailable fallback must never hide a genuinely missing vehicle.
+const missingVehicle = await fetch(new URL('/vehiculos/vehiculo-inexistente-2000', targetOrigin));
+assert.equal(missingVehicle.status, 404, 'A missing vehicle should return 404');
+assert.equal(getMetadata(await missingVehicle.text()).canonical, undefined, 'A missing vehicle should not claim a canonical URL');
+
 console.table(results);
 console.log(
   `\nSocial metadata and ${indexingEnabled ? 'production' : 'demo'} indexing verification passed for ${routes.length} public routes.`,

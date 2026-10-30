@@ -14,12 +14,13 @@ tokens, refresh tokens and their ciphertext are never included in those logs or 
 The existing protected diagnostic endpoint accepts `?connection=1`. It uses the same
 server-side catalog API key as the catalog and returns `private, no-store` / `noindex`.
 It reads the credential record; it does not make a token request, clear locks or contact
-Mercado Libre. Never put the API key in the URL.
+Mercado Libre. It never returns the encrypted refresh or access token. Never put the API key in the URL.
 
 - `not_connected`: no stored credential record.
 - `connected`: a stored, unlocked record exists. `providerVerified: false` explicitly
   means this read-only check does not prove Mercado Libre will accept the token.
-- `renewing`: a renewal lock is less than two minutes old.
+- `renewing`: a renewal lock is less than two minutes old. Other instances wait for it, up to
+  25 seconds, and reuse the access token it stores instead of failing immediately.
 - `reauthorization_required`: the lock is at least two minutes old and has not cleared.
 
 The response includes the renewal's timestamp, age and incident ID (when known), plus

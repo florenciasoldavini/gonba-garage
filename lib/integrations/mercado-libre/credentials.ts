@@ -2,7 +2,7 @@ import 'server-only';
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { get, put } from '@vercel/blob';
 import { securelyMatches } from './oauth';
-import { createRefreshTokenStore, type TokenRecord } from './refresh-token-store';
+import { createRefreshTokenStore, type AccessToken, type TokenRecord } from './refresh-token-store';
 import { failure, readSafeIncident, safeFailure } from './failures';
 
 export function required(name: string) {
@@ -27,7 +27,9 @@ function storage() {
       if (result.statusCode !== 200) throw new Error('Unable to read credentials');
       const record = await new Response(result.stream).json() as TokenRecord;
       if (record.version !== 1 || typeof record.encryptedRefreshToken !== 'string' ||
-        (record.refreshStartedAt !== null && !Number.isFinite(record.refreshStartedAt))) throw new Error('Invalid credential record');
+        (record.refreshStartedAt !== null && !Number.isFinite(record.refreshStartedAt)) ||
+        (record.encryptedAccessToken !== undefined && typeof record.encryptedAccessToken !== 'string') ||
+        (record.accessTokenExpiresAt !== undefined && !Number.isFinite(record.accessTokenExpiresAt))) throw new Error('Invalid credential record');
       return { record, etag: result.blob.etag };
     },
     async write(record: TokenRecord, etag?: string) {
@@ -44,7 +46,7 @@ function store() {
   return createRefreshTokenStore(storage(), encrypt, decrypt);
 }
 
-/** Private, read-only health view. Does not refresh tokens or expose encrypted credentials. */
+/** Private, read-only health view. Does not refresh tokens or expose encrypted credentials or access tokens. */
 export async function readConnectionDiagnostics() {
   const existing = await storage().read().catch(error => { throw safeFailure(error, 'credential_read'); });
   if (!existing) return { state: 'not_connected', lastFailure: null };
@@ -91,6 +93,6 @@ export async function saveAuthorization(sellerId: number, token: string) {
   catch (error) { throw safeFailure(error, 'credential_save'); }
 }
 
-export async function withRefreshToken<T>(operation: (token: string, save: (next: string) => Promise<void>) => Promise<T>) {
-  return store().refresh(operation);
+export async function sharedAccessToken(renew: (token: string, save: (next: string, access: AccessToken) => Promise<void>) => Promise<AccessToken>) {
+  return store().accessToken(renew);
 }

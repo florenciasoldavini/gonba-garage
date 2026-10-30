@@ -52,36 +52,40 @@ const storage = {
     return String(++revision);
   },
 };
-const store = createRefreshTokenStore(storage, token => `cipher:${token}`, value => value.slice(7));
+const store = createRefreshTokenStore(storage, token => `cipher:${token}`, value => value.slice(7), { pollMs: 5, waitMs: 100 });
+// Saved as already expired, so each call below renews instead of reusing it.
+const expired = value => ({ value, expiresAt: Date.now() - 1 });
 await store.authorize('original');
-await assert.rejects(store.refresh(async () => { throw upstream; }));
+await assert.rejects(store.accessToken(async () => { throw upstream; }));
 const providerIncident = record.lastFailure;
 assert.equal(providerIncident.stage, 'token_refresh');
 assert.equal(providerIncident.providerCode, 'invalid_grant');
 assert.equal(record.refreshIncidentId, providerIncident.incidentId);
 const lockedRevision = revision;
-await assert.rejects(store.refresh(async () => assert.fail('Blocked renewal must not contact the provider')),
+await assert.rejects(store.accessToken(async () => assert.fail('Blocked renewal must not contact the provider')),
   error => error.incident.code === 'renewal_in_progress' && error.incident.incidentId === providerIncident.incidentId);
 assert.equal(revision, lockedRevision, 'Blocked requests must preserve the original failure');
 record.refreshStartedAt = Date.now() - 121000;
-await assert.rejects(store.refresh(async () => assert.fail()), error => error.incident.code === 'renewal_interrupted');
+await assert.rejects(store.accessToken(async () => assert.fail()), error => error.incident.code === 'renewal_interrupted');
 await store.authorize('new');
 assert.deepEqual(record.lastFailure, providerIncident);
-await store.refresh(async (_token, save) => { await save('next'); return 'access'; });
+await store.accessToken(async (_token, save) => { await save('next', expired('access')); return expired('access'); });
 assert.deepEqual(record.lastFailure, providerIncident, 'A successful refresh also keeps the last incident');
 assert.equal(record.refreshIncidentId, undefined);
-await assert.rejects(store.refresh(async () => 'forgot to save'),
+await assert.rejects(store.accessToken(async () => expired('forgot to save')),
   error => error.incident.stage === 'credential_save' && error.incident.code === 'replacement_not_saved');
 record.refreshStartedAt = Date.now() - 121000;
 await store.authorize('restart-for-storage-test');
 failSavingReplacement = true;
-await assert.rejects(store.refresh(async (_token, save) => save('unsaved')));
+await assert.rejects(store.accessToken(async (_token, save) => save('unsaved', expired('unsaved'))));
 assert.equal(record.lastFailure.stage, 'credential_save');
 assert.equal(record.lastFailure.httpStatus, 503);
 assert.equal(record.refreshStartedAt === null, false, 'Diagnostics must not unlock an ambiguous rotation');
 
 const originalSeller = process.env.MERCADO_LIBRE_SELLER_ID;
 process.env.MERCADO_LIBRE_SELLER_ID = '123';
+record.encryptedAccessToken = 'cipher:shared-access';
+record.accessTokenExpiresAt = Date.now() + 60_000;
 try {
   const credentials = load('../lib/integrations/mercado-libre/credentials.ts', {
     '@vercel/blob': { get: async () => ({ statusCode: 200, stream: new Response(JSON.stringify(record)).body, blob: { etag: '1' } }) },
@@ -93,10 +97,30 @@ try {
   assert.equal(connection.providerVerified, false);
   assert.equal(JSON.stringify(connection).includes('cipher:'), false);
   assert.equal('encryptedRefreshToken' in connection, false);
+  assert.equal(JSON.stringify(connection).includes('access'), false, 'Diagnostics never expose the shared access token');
 } finally {
   if (originalSeller === undefined) delete process.env.MERCADO_LIBRE_SELLER_ID;
   else process.env.MERCADO_LIBRE_SELLER_ID = originalSeller;
 }
+let tokenResponse;
+let shared;
+const accessTokens = load('../lib/integrations/mercado-libre/access-token.ts', {
+  './credentials': { required: () => '123', sharedAccessToken: renew => shared(renew) },
+  './oauth': { refreshMercadoLibreToken: async () => tokenResponse },
+  './failures': failures,
+});
+tokenResponse = { user_id: 456, access_token: secret, refresh_token: secret, expires_in: 21600 };
+shared = renew => renew('refresh', async () => assert.fail('Another seller\'s token must not be saved'));
+await assert.rejects(accessTokens.catalogAccessToken(), error => error.incident.code === 'unexpected_seller');
+const saved = [];
+tokenResponse = { ...tokenResponse, user_id: 123, refresh_token: 'rotated', access_token: 'live-access' };
+shared = renew => renew('refresh', async (next, access) => { saved.push({ next, access }); });
+assert.equal(await accessTokens.catalogAccessToken(), 'live-access');
+assert.equal(saved.length, 1, 'The access token is shared only together with the rotated refresh token');
+assert.equal(saved[0].next, 'rotated');
+assert.ok(saved[0].access.expiresAt > Date.now() + 21_000_000);
+shared = () => assert.fail('A valid in-memory token must not read shared storage');
+assert.equal(await accessTokens.catalogAccessToken(), 'live-access');
 let authenticated = false;
 let connectionReads = 0;
 let refreshCalls = 0;
@@ -124,4 +148,4 @@ assert.equal(errorResponse.status, 503);
 const errorBody = await errorResponse.json();
 assert.equal(errorBody.incidentId, upstream.incident.incidentId);
 assert.equal(JSON.stringify(errorBody).includes(secret), false);
-console.log('Integration diagnostics: provider rejection vs storage failure, timeout, network error, safe persistence, correlation, reauthorization history and read-only credential privacy passed.');
+console.log('Integration diagnostics: provider rejection vs storage failure, timeout, network error, safe persistence, correlation, reauthorization history, seller-checked access-token sharing and read-only credential privacy passed.');
