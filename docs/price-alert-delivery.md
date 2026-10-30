@@ -8,9 +8,11 @@ The subscription stores the stable Mercado Libre publication ID, display slug/ti
 price/currency and the last price accepted for delivery. Existing live slugs are backfilled to IDs.
 
 Creating an alert stores it as `pending` and sends a confirmation email (double opt-in). Pending
-alerts are never watched and receive no price emails. The link opens `/api/alerts/confirm`, whose
-GET only shows a button; the POST activates the alert and queues the activation email with a
-cancellation link, exactly once even if confirmed repeatedly. Links expire after 72 hours.
+alerts are never watched and receive no price emails. The link opens `/api/alerts/confirm`. Its
+GET changes nothing, but in a browser the page immediately posts itself, so the person sees
+"Alerta confirmada" after one click. Link scanners that only fetch the URL never send that POST.
+The POST activates the alert and queues the activation email with a cancellation link, exactly
+once even if confirmed repeatedly. Links expire after 72 hours.
 Repeated signups for an active alert preserve the baseline and send nothing. Repeated signups for a
 pending alert refresh its price reference and may resend the confirmation (see limits below).
 Cancellation followed by a new signup gets a new generation, needs a new confirmation, and starts a

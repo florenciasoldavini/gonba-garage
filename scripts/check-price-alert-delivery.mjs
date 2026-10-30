@@ -232,6 +232,14 @@ try {
   assert.match(page.headers.get('x-robots-tag'), /noindex/);
   assert.match(page.headers.get('content-security-policy'), /default-src 'none'/);
   assert.equal((await statusOf()).status, 'pending', 'GET scanners cannot confirm');
+  // Browsers post the form on load; only that exact inline script is allowed by the CSP.
+  const html = await page.text();
+  assert.match(html, /<form method="post">/);
+  const script = html.match(/<script>(.*?)<\/script>/)[1];
+  assert.equal(script, 'document.forms[0].submit()');
+  const scriptHash = (await import('node:crypto')).createHash('sha256').update(script).digest('base64');
+  assert.ok(page.headers.get('content-security-policy').includes(`script-src 'sha256-${scriptHash}'`));
+  assert.doesNotMatch(page.headers.get('content-security-policy'), /unsafe-inline'[^;]*script|script-src[^;]*unsafe/);
   const base = 'https://example.test/api/alerts/confirm?token=';
   const expiredToken = confirmation.confirmationToken('price', subscribed.id, subscribed.generation, Date.now() - 73 * 3600 * 1000);
   assert.equal(confirmation.parseConfirmationToken(expiredToken).expired, true);
@@ -255,7 +263,7 @@ try {
   const [confirmed, again] = await Promise.all([confirmRequest(confirmUrl, 'POST'), confirmRequest(confirmUrl, 'POST')]);
   assert.equal(confirmed.status, 200);
   assert.equal(again.status, 200, 'Confirmation is idempotent');
-  assert.match(await confirmed.text(), /Alerta confirmada/);
+  assert.match(await confirmed.text(), /Alerta confirmada.*baje el precio/s);
   assert.equal((await statusOf()).status, 'active');
   assert.ok((await statusOf()).confirmed_at);
   assert.equal((await confirmRequest(confirmUrl, 'POST')).status, 200);

@@ -195,6 +195,8 @@ for price and inventory alerts and serves the same kind of minimal page. All thr
 `private, no-store` and `noindex, nofollow` in every indexing mode and excluded from the
 sitemap. Cancellation and confirmation GETs do not mutate data, so email scanners cannot cancel
 or activate subscriptions. POST performs the change, including RFC 8058 one-click cancellation.
+The confirmation GET page submits its own POST form on load, so a click in the email confirms in
+one step; its CSP allows only that inline script by hash, and without JavaScript a button is shown.
 Confirmation and cancellation tokens use distinct signed formats and cannot be swapped. No email
 address is embedded in any URL. Email links use the explicit fixed `ALERTS_PUBLIC_URL` origin.
 
