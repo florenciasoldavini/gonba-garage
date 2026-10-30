@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 const stages = ['configuration', 'credential_read', 'credential_decrypt', 'credential_lock',
   'token_refresh', 'token_response', 'credential_save', 'credential_diagnostics_save',
-  'authorization_exchange', 'catalog_query', 'publication_diagnostics'] as const;
+  'authorization_exchange', 'catalog_query', 'publication_diagnostics', 'catalog_sync'] as const;
 const codes = ['operation_failed', 'timeout', 'network_error', 'http_error', 'invalid_response',
   'missing_configuration', 'not_connected', 'renewal_in_progress', 'renewal_interrupted',
   'unexpected_seller', 'missing_refresh_token', 'replacement_not_saved'] as const;
@@ -40,7 +40,7 @@ export function safeFailure(error: unknown, stage: FailureStage, incidentId?: st
     if (clean) return new IntegrationFailure({ ...clean, ...(incidentId ? { incidentId } : {}) });
   }
   const name = error instanceof Error ? error.name : '';
-  const isProviderRequest = ['token_refresh', 'authorization_exchange', 'catalog_query', 'publication_diagnostics'].includes(stage);
+  const isProviderRequest = ['token_refresh', 'authorization_exchange', 'catalog_query', 'publication_diagnostics', 'catalog_sync'].includes(stage);
   const code = name === 'AbortError' || name === 'TimeoutError' ? 'timeout'
     : error instanceof TypeError && isProviderRequest ? 'network_error' : 'operation_failed';
   const status = error && typeof error === 'object'

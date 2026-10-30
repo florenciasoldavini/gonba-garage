@@ -4,7 +4,7 @@
 
 1. En Vercel, crear un Blob store **Private** y conectarlo al proyecto backend Gonba Garage, solo al entorno de producción. Usar las credenciales OIDC y `BLOB_STORE_ID` que configura Vercel; el SDK también admite `BLOB_READ_WRITE_TOKEN` privado si la conexión usa ese mecanismo. No crear un store público ni conectar previews al store de producción.
 2. Configurar como secretos del backend `MERCADO_LIBRE_CLIENT_ID`, `MERCADO_LIBRE_CLIENT_SECRET`, `MERCADO_LIBRE_CATALOG_API_KEY` (al menos 32 bytes aleatorios) y `MERCADO_LIBRE_TOKEN_ENCRYPTION_KEY` (otros 32 bytes aleatorios, codificados en base64). La clave de cifrado debe estar respaldada fuera de Blob. El backend no necesita ninguna variable de Supabase para esta integración.
-3. Configurar `MERCADO_LIBRE_SELLER_ID=322618227` y `MERCADO_LIBRE_REDIRECT_URI=https://gonba-garage.vercel.app/api/mercado-libre/callback`. Mantener `VEHICLE_DATA_SOURCE=demo` en Vercel durante la prueba local para evitar que el frontend se consulte a sí mismo. Mantener la indexación desactivada. Redeployar para recibir la configuración.
+3. Configurar `MERCADO_LIBRE_SELLER_ID=322618227` y `MERCADO_LIBRE_REDIRECT_URI=https://gonba-garage.vercel.app/api/mercado-libre/callback`. Mantener `VEHICLE_DATA_SOURCE=demo` en Vercel hasta completar la primera sincronización (pasos 7 a 9). Mantener la indexación desactivada. Redeployar para recibir la configuración.
 4. Abrir `https://gonba-garage.vercel.app/api/mercado-libre/connect`. El navegador pide usuario y contraseña: usar `admin` y la clave privada `MERCADO_LIBRE_CATALOG_API_KEY`. Autorizar Gonba Garage. El callback valida state/PKCE y seller; guarda el refresh token cifrado en `mercado-libre/322618227/refresh-token.json`, siempre privado. Nunca devuelve el token ni la URL del blob al cliente.
 5. En `.env.local` del servidor local configurar:
 
@@ -16,10 +16,14 @@ MERCADO_LIBRE_CATALOG_API_KEY=<misma clave privada que Vercel>
 ```
 
 6. Reiniciar `npm run dev` y abrir `http://localhost:3000/vehiculos`. No hacen falta túneles, variables de Supabase, credenciales de Blob ni tokens de Mercado Libre en localhost.
+7. Antes de desplegar este cambio, con el `DATABASE_URL` de producción, ejecutar `npm run db:migrate` (crea las tablas `catalog_*`). Sin ellas el webhook responde 503 y Mercado Libre reintenta. Repetir con el branch de desarrollo. Configurar en Vercel `CRON_SECRET` (al menos 32 caracteres aleatorios) si todavía no existe.
+8. En la aplicación de Mercado Libre, configurar la URL de notificaciones `https://gonba-garage.vercel.app/api/mercado-libre/webhook` con los tópicos `items` e `items_prices`.
+9. Hacer la primera sincronización sin esperar al cron: `curl -H "Authorization: Bearer $CRON_SECRET" https://gonba-garage.vercel.app/api/mercado-libre/sync`. Revisar `GET /api/mercado-libre/diagnostics?sync=1` (clave Bearer del catálogo): `jobs.pending` en 0 y `publications.active` igual a las publicaciones activas.
+10. Para publicar el catálogo real en Vercel, cambiar a `VEHICLE_DATA_SOURCE=mercado-libre` sin `MERCADO_LIBRE_BACKEND_URL` y redeployar: el sitio lee su propia copia en Neon.
 
 ## Almacenamiento y concurrencia
 
-El SDK lee el blob privado con `useCache: false`, directamente desde origen. El JSON contiene solo la versión, el refresh token cifrado, el access token vigente cifrado con su vencimiento y un marcador técnico de renovación. El cifrado AES-256-GCM usa un IV aleatorio y vincula cada secreto al seller. La clave queda fuera del store. El inventario no se persiste en Blob; solo sus datos públicos de presentación pasan unos minutos por la caché de datos del servidor (ver «Endpoint y verificación»).
+El SDK lee el blob privado con `useCache: false`, directamente desde origen. El JSON contiene solo la versión, el refresh token cifrado, el access token vigente cifrado con su vencimiento y un marcador técnico de renovación. El cifrado AES-256-GCM usa un IV aleatorio y vincula cada secreto al seller. La clave queda fuera del store. El inventario no se persiste en Blob: su copia vive en Neon (ver «Copia sincronizada y endpoint»).
 
 Cada instancia reutiliza el access token guardado mientras no venza (con un minuto de margen) y lo conserva además en memoria. Así el refresh token de un solo uso se renueva aproximadamente una vez por vida del access token (unas 6 horas) en total, no una vez por instancia nueva. Una reautorización descarta el access token guardado.
 
@@ -31,15 +35,17 @@ Si hay timeout o caída durante la renovación, el marcador permanece bloqueado:
 
 No cambiar la clave de cifrado sin migrar el ciphertext o reautorizar. No exponer URLs privadas mediante presigned URLs ni agregar rutas de descarga para este blob. No registrar cuerpos de respuestas OAuth, ciphertext ni claves en logs. Las otras funciones del proyecto que ya usan Supabase quedan fuera de esta integración.
 
-## Endpoint y verificación
+## Copia sincronizada y endpoint
 
-`GET /api/mercado-libre/catalog` requiere `Authorization: Bearer <clave>`, enviado desde el servidor local. `?item=MLA...` solo entrega fichas activas del seller esperado. Devuelve datos de presentación, fotos, descripción y atributos, con `private, no-store` y `noindex`; no devuelve la respuesta privada completa del vendedor. No habilita CORS.
+Las páginas nunca consultan Mercado Libre. Leen la copia en Neon (`catalog_publications`), que mantienen el webhook y el cron de reconciliación; el diseño completo está en `docs/architecture.md` («Mercado Libre sync»). Un cambio en Mercado Libre aparece en el sitio en segundos cuando llega la notificación. Si una notificación se pierde, la reconciliación diaria la repara (cada 15 minutos con un plan Pro de Vercel, cambiando `vercel.json`). La copia guarda solo datos públicos de presentación, nunca el payload privado del vendedor.
 
-El backend guarda esos datos públicos en la caché de datos de Next (`unstable_cache`, etiqueta `mercado-libre-catalog`) durante 5 minutos, compartida por todas las visitas: la carga sobre Mercado Libre depende de esa ventana y no del tráfico. Al vencer, se sirve una vez el dato anterior mientras se renueva en segundo plano; si la renovación falla, se conserva el anterior. Los errores no se guardan. Un `?item=` solo consulta Mercado Libre si el ID figura en el listado activo en caché; cualquier otro ID devuelve 404 sin llamadas. Las claves usan el seller y el ID, nunca el token ni el header `Authorization`, y la respuesta HTTP sigue siendo `private, no-store`. Una publicación nueva, pausada o con precio cambiado puede tardar hasta unos 5 minutos en reflejarse. Las alertas de precio no usan esta caché: leen Mercado Libre directamente. Verificación: `node scripts/check-catalog-cache.mjs`.
+`GET /api/mercado-libre/catalog` requiere `Authorization: Bearer <clave>`, enviado desde el servidor local, y lee la misma copia. Sin `item` devuelve las publicaciones activas. `?item=MLA...` entrega la ficha sincronizada en cualquier estado (activa, pausada o cerrada), para que su página conserve la URL. Devuelve datos de presentación, fotos, descripción y atributos, con `private, no-store` y `noindex`. No habilita CORS. Verificación: `node scripts/check-inventory-sync.mjs`.
+
+Las alertas de precio no usan la copia: leen Mercado Libre directamente antes de enviar, para tener el precio vigente.
 
 Pruebas locales: `node scripts/check-refresh-token-store.mjs`, typecheck, lint, build y `test:metadata` en modo demo y producción. El test de almacenamiento simula escrituras condicionales e incluye dos renovaciones concurrentes, reutilización del access token guardado, espera durante una renovación en curso, rotación, timeout ambiguo, bloqueos interrumpidos que nunca se reclaman, recuperación y rechazo de escrituras obsoletas. La prueba real del store privado y de la cuenta requiere crearlo, configurar secretos, desplegar y autorizar después de revisar el PR. Probar también acceso denegado al blob sin credenciales, acceso desde localhost tras reiniciarlo y recuperación tras una revocación.
 
-No hay migraciones de Supabase que aplicar para Mercado Libre.
+No hay migraciones de Supabase que aplicar para Mercado Libre. La copia del catálogo usa la migración de Neon `20261031_catalog_sync.sql` (`npm run db:migrate`).
 
 ## Diagnóstico de estados y atributos de todas las publicaciones
 

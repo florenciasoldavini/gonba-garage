@@ -2,11 +2,24 @@ import 'server-only';
 import { cache } from 'react';
 import { activeMockVehicles, findMockVehicle } from '@/features/vehicles/data/mock-vehicles';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
-import type { MercadoLibrePublication } from './types';
+import {
+  findCatalogPublication as findStoredPublication,
+  listActiveCatalogVehicles,
+  type CatalogPublication,
+} from '@/lib/catalog/store';
 import { fullSizeMercadoLibreImageUrl } from './pictures';
 
 export function isLiveCatalog() {
   return process.env.VEHICLE_DATA_SOURCE === 'mercado-libre';
+}
+
+/**
+ * A server with MERCADO_LIBRE_BACKEND_URL (local development) reads the synced catalog through
+ * the deployed backend. Otherwise the server reads its own synced copy from the database.
+ * Neither path calls Mercado Libre during a page request.
+ */
+function readsRemoteBackend() {
+  return Boolean(process.env.MERCADO_LIBRE_BACKEND_URL?.trim());
 }
 
 async function remoteCatalog<T>(item?: string): Promise<T | null> {
@@ -18,39 +31,40 @@ async function remoteCatalog<T>(item?: string): Promise<T | null> {
   if (item) url.searchParams.set('item', item);
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${key}` }, cache: 'no-store',
-    redirect: 'error', signal: AbortSignal.timeout(90_000),
+    redirect: 'error', signal: AbortSignal.timeout(30_000),
   });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error('Remote catalog unavailable');
   return response.json() as Promise<T>;
 }
 
+function withFullSizeImage(vehicle: Vehicle): Vehicle {
+  return { ...vehicle, image: fullSizeMercadoLibreImageUrl(vehicle.image) ?? vehicle.image };
+}
+
 export const listCatalogVehicles = cache(async () => {
   if (!isLiveCatalog()) return activeMockVehicles;
+  if (!readsRemoteBackend()) return (await listActiveCatalogVehicles()).map(withFullSizeImage);
   const result = await remoteCatalog<{ vehicles: Vehicle[] }>();
   if (!result) throw new Error('Missing catalog');
-  return result.vehicles.map((vehicle) => ({
-    ...vehicle,
-    image: fullSizeMercadoLibreImageUrl(vehicle.image) ?? vehicle.image,
-  }));
+  return result.vehicles.map(withFullSizeImage);
 });
 
-export const findCatalogPublication = cache(async (slug: string): Promise<MercadoLibrePublication | null> => {
+/**
+ * Looks the publication up by the Mercado Libre ID at the end of the slug, in any status. The
+ * returned vehicle carries the canonical slug, which can differ from the requested one.
+ */
+export const findCatalogPublication = cache(async (slug: string): Promise<CatalogPublication | null> => {
   if (!isLiveCatalog()) return null;
   const id = slug.match(/-(mla\d+)$/i)?.[1]?.toUpperCase();
   if (!id) return null;
-  const result = await remoteCatalog<MercadoLibrePublication>(id);
-  if (result?.vehicle.slug !== slug) return null;
-  return {
-    ...result,
-    vehicle: {
-      ...result.vehicle,
-      image: fullSizeMercadoLibreImageUrl(result.vehicle.image) ?? result.vehicle.image,
-    },
-  };
+  const result = readsRemoteBackend() ? await remoteCatalog<CatalogPublication>(id) : await findStoredPublication(id);
+  return result ? { ...result, vehicle: withFullSizeImage(result.vehicle) } : null;
 });
 
+/** Only an exact canonical slug resolves to a vehicle. */
 export const findCatalogVehicle = cache(async (slug: string) => {
   if (!isLiveCatalog()) return findMockVehicle(slug);
-  return (await findCatalogPublication(slug))?.vehicle;
+  const vehicle = (await findCatalogPublication(slug))?.vehicle;
+  return vehicle?.slug === slug ? vehicle : undefined;
 });

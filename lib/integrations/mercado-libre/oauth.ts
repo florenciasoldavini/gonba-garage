@@ -86,7 +86,7 @@ async function fetchMercadoLibre<T>(path: string, accessToken: string) {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-    cache: 'no-store',
+    cache: 'no-store', signal: AbortSignal.timeout(20_000),
   }).catch(error => { throw safeFailure(error, 'catalog_query'); });
 
   return parseMercadoLibreResponse<T>(response, `Mercado Libre GET ${path}`);
@@ -97,7 +97,7 @@ async function fetchOptionalMercadoLibre<T>(path: string, accessToken: string) {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-    cache: 'no-store',
+    cache: 'no-store', signal: AbortSignal.timeout(20_000),
   }).catch(error => { throw safeFailure(error, 'catalog_query'); });
 
   if (response.status === 404) return null;

@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 import { authorized } from '@/lib/integrations/mercado-libre/credentials';
-import { findActiveCatalogPublication, listActiveCatalogVehicles } from '@/lib/integrations/mercado-libre/public-catalog';
+import { findCatalogPublication, listActiveCatalogVehicles } from '@/lib/catalog/store';
 import { reportIntegrationFailure } from '@/lib/integrations/mercado-libre/failures';
 
 export const runtime = 'nodejs';
-// The data is cached server-side. This authenticated response must stay out of shared HTTP caches.
+// Served from the synced database copy, never from Mercado Libre. Keep it out of shared HTTP caches.
 const headers = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow' };
 
 export async function GET(request: Request) {
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   const id = new URL(request.url).searchParams.get('item');
   if (id && !/^MLA\d+$/.test(id)) return NextResponse.json({ message: 'Invalid item' }, { status: 400, headers });
   try {
-    const result = id ? await findActiveCatalogPublication(id) : { vehicles: await listActiveCatalogVehicles() };
+    const result = id ? await findCatalogPublication(id) : { vehicles: await listActiveCatalogVehicles() };
     return NextResponse.json(result, { status: result ? 200 : 404, headers });
   } catch (error) {
     const incident = reportIntegrationFailure(error, 'catalog_query');

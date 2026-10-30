@@ -3,6 +3,7 @@ import { authorized, required, readConnectionDiagnostics } from '@/lib/integrati
 import { catalogAccessToken } from '@/lib/integrations/mercado-libre/access-token';
 import { readPublicationDiagnostics } from '@/lib/integrations/mercado-libre/publication-diagnostics';
 import { providerFailure, reportIntegrationFailure, safeFailure } from '@/lib/integrations/mercado-libre/failures';
+import { readSyncHealth } from '@/lib/catalog/store';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -11,9 +12,12 @@ const headers = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex
 export async function GET(request: Request) {
   if (!authorized(request)) return NextResponse.json({ message: 'Unauthorized' }, { status: 401, headers });
   try {
-    if (new URL(request.url).searchParams.get('connection') === '1') {
+    const query = new URL(request.url).searchParams;
+    if (query.get('connection') === '1') {
       return NextResponse.json(await readConnectionDiagnostics(), { headers });
     }
+    // Local copy health: reconciliation, queue backlog and row counts. Reads only the database.
+    if (query.get('sync') === '1') return NextResponse.json(await readSyncHealth(), { headers });
     const deadline = AbortSignal.timeout(50_000);
     const token = await catalogAccessToken();
     const result = await readPublicationDiagnostics(required('MERCADO_LIBRE_SELLER_ID'), async <T,>(path: string): Promise<T> => {

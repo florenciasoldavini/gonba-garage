@@ -1,6 +1,8 @@
 import { after, NextResponse } from 'next/server';
 import { alertDeliveryEnabled, privateHeaders, requireAlertConfig } from '@/lib/alerts/config';
+import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
 import { enqueuePriceItem, runPriceAlertWorkSafely } from '@/lib/alerts/price-delivery';
+import { enqueueCatalogSync, runCatalogSyncWorkSafely } from '@/lib/integrations/mercado-libre/inventory-sync';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -22,15 +24,24 @@ export async function POST(request: Request) {
     || !process.env.MERCADO_LIBRE_CLIENT_ID || String(notification.application_id) !== process.env.MERCADO_LIBRE_CLIENT_ID) {
     return NextResponse.json({ ok: true }, { headers: privateHeaders });
   }
-  if (!alertDeliveryEnabled()) return NextResponse.json({ ok: true }, { headers: privateHeaders });
+  const catalogSync = isAlertsDatabaseConfigured();
+  const priceAlerts = alertDeliveryEnabled();
+  if (!catalogSync && !priceAlerts) return NextResponse.json({ ok: true }, { headers: privateHeaders });
   try {
-    requireAlertConfig();
-    await enqueuePriceItem(match[1]);
+    // The payload is only a hint: both queues read the item again from Mercado Libre.
+    if (catalogSync) await enqueueCatalogSync(match[1]);
+    if (priceAlerts) {
+      requireAlertConfig();
+      await enqueuePriceItem(match[1]);
+    }
   } catch {
     // Never acknowledge a relevant event before it is durable. Mercado Libre can retry.
-    console.error('price_alert_webhook_enqueue_failed');
+    console.error('mercado_libre_webhook_enqueue_failed');
     return NextResponse.json({ ok: false }, { status: 503, headers: privateHeaders });
   }
-  after(runPriceAlertWorkSafely);
+  after(() => Promise.all([
+    catalogSync && runCatalogSyncWorkSafely(),
+    priceAlerts && runPriceAlertWorkSafely(),
+  ]));
   return NextResponse.json({ ok: true }, { headers: privateHeaders });
 }

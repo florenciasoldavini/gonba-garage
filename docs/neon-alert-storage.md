@@ -1,8 +1,8 @@
 # Alert subscriptions on Neon
 
-The catalog still reads vehicles, pictures and attributes from Mercado Libre. Neon stores
-only the website's alert subscriptions and the price reference needed for price-drop alerts.
-The two alert endpoints no longer need a Supabase project.
+Neon stores the website's alert subscriptions, the price reference needed for price-drop
+alerts and the synced copy of the Mercado Libre catalog (see `docs/architecture.md`). The two
+alert endpoints no longer need a Supabase project.
 
 ## Environments
 
@@ -21,7 +21,7 @@ Set `DATABASE_URL` to the appropriate pooled Neon connection string with SSL ena
 
 With the target `DATABASE_URL` set, run `npm run db:migrate`. The script loads `.env.local`
 when present, but preserves an already set environment variable. It applies the plain SQL
-in `database/migrations/` (subscriptions, price delivery and signup confirmation) in one transaction. It is safe
+in `database/migrations/` (subscriptions, price delivery, signup confirmation and catalog sync) in one transaction. It is safe
 to rerun on these new databases. For migrations, it resolves the direct (non-pooled)
 endpoint of the same branch. Apply to both branches; schema changes on production do
 not automatically propagate to an existing development branch.
