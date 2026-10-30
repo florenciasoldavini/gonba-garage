@@ -8,6 +8,7 @@ import { savePriceSubscription } from '@/lib/alerts/subscriptions';
 import { alertDeliveryEnabled } from '@/lib/alerts/config';
 import { reservePriceSignup } from '@/lib/alerts/signup-limit';
 import { activatePriceAlert, runPriceAlertWorkSafely } from '@/lib/alerts/price-delivery';
+import { rejectCrossSiteJson } from '@/lib/alerts/request-guard';
 
 type PriceAlertRequest = {
   email?: unknown;
@@ -18,6 +19,9 @@ type PriceAlertRequest = {
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
+  const rejected = rejectCrossSiteJson(request);
+  if (rejected) return rejected;
+
   let body: PriceAlertRequest;
 
   try {

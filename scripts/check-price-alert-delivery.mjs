@@ -164,7 +164,7 @@ try {
   overrides['@/lib/integrations/mercado-libre/catalog'] = { findCatalogVehicle: async () => { throw Error('Must not use demo catalog'); } };
   const priceRoute = load('app/api/price-alerts/route.ts');
   const priceResponse = await priceRoute.POST(new Request('https://example.test/api/price-alerts', { method: 'POST',
-    body: JSON.stringify({ email: 'route@example.invalid', vehicleSlug: vehicle.slug, price: 1, currency: 'ARS' }) }));
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'route@example.invalid', vehicleSlug: vehicle.slug, price: 1, currency: 'ARS' }) }));
   assert.equal(priceResponse.status, 201);
   const subscribed = (await db.query("SELECT * FROM vehicle_price_alerts WHERE email='route@example.invalid'")).rows[0];
   assert.equal(Number(subscribed.current_price), vehicle.price);
