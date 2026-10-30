@@ -1,8 +1,8 @@
 # Alert subscriptions on Neon
 
 Neon stores the website's alert subscriptions, the price reference needed for price-drop
-alerts and the synced copy of the Mercado Libre catalog (see `docs/architecture.md`). The two
-alert endpoints no longer need a Supabase project.
+alerts and the synced copy of the Mercado Libre catalog (see `docs/architecture.md`). It is the
+project's only database.
 
 ## Environments
 

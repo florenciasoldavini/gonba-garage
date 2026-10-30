@@ -1,4 +1,4 @@
--- Standalone PostgreSQL: no Supabase roles, extensions or auth schema required.
+-- Standalone PostgreSQL: no provider-specific roles, extensions or auth schema required.
 -- Rerunnable on the new empty Neon database. The application connects server-side.
 CREATE TABLE IF NOT EXISTS public.vehicle_price_alerts (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
