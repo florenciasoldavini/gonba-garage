@@ -181,8 +181,10 @@ sitemap. The custom-domain checklist contains the separate live-launch verificat
 ## Catalog rendering
 
 Vehicle details render at request time, including publication slugs that were unknown during the
-build. Do not generate a static-parameter list for these pages: live publication requests use
-uncached backend data. The live catalog opts into request-time rendering before its API error
+build. Do not generate a static-parameter list for these pages: live publication requests read the
+backend at request time. The backend caches public listing data for about five minutes and only
+looks up IDs from the cached active listing set, so Mercado Libre API calls do not grow with page
+views, crawlers or share-image requests. The live catalog opts into request-time rendering before its API error
 handler; the demo catalog remains statically cacheable. Canonical URLs, structured data and the
 indexing gate are unchanged.
 

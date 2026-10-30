@@ -34,7 +34,7 @@ type VehicleDetailPageProps = {
 
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
-// Live publications use uncached API data and must render at request time.
+// Live publications are read from the backend, which caches them briefly, at request time.
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: VehicleDetailPageProps): Promise<Metadata> {
