@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { saveAuthorization } from '@/lib/integrations/mercado-libre/credentials';
+import { reportIntegrationFailure } from '@/lib/integrations/mercado-libre/failures';
 
 import {
   exchangeMercadoLibreAuthorizationCode,
@@ -72,12 +73,13 @@ export async function GET(request: Request) {
       },
       200,
     );
-  } catch {
-    console.error('Mercado Libre connection could not be saved');
+  } catch (error) {
+    const incident = reportIntegrationFailure(error, 'authorization_exchange');
     return diagnosticResponse(
       {
         ok: false,
         message: 'La autorización llegó, pero no pudimos leer las publicaciones.',
+        incidentId: incident.incidentId,
       },
       502,
     );

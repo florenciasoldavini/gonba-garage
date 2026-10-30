@@ -1,0 +1,1295 @@
+{
+  "categoryId": "MLA1744",
+  "reviewedAt": "2026-10-28",
+  "source": "https://api.mercadolibre.com/categories/MLA1744/attributes",
+  "attributes": [
+    {
+      "id": "BRAND",
+      "name": "Marca"
+    },
+    {
+      "id": "MODEL",
+      "name": "Modelo"
+    },
+    {
+      "id": "VEHICLE_YEAR",
+      "name": "Año"
+    },
+    {
+      "id": "TRIM",
+      "name": "Versión"
+    },
+    {
+      "id": "MARKET",
+      "name": "Mercado"
+    },
+    {
+      "id": "APGID",
+      "name": "APGID"
+    },
+    {
+      "id": "COLOR",
+      "name": "Color"
+    },
+    {
+      "id": "PRESALE_END_DATE",
+      "name": "Fecha término de preventa"
+    },
+    {
+      "id": "PREVIOUS_PRICE",
+      "name": "Precio anterior"
+    },
+    {
+      "id": "IS_GUARANTEED_PRE_OWNED",
+      "name": "Seminuevo garantizado"
+    },
+    {
+      "id": "REPUVE_REGISTRATION",
+      "name": "Inscripción en REPUVE"
+    },
+    {
+      "id": "AMDA_SECURITY_PAPER_INVOICE",
+      "name": "Factura en papel seguridad AMDA"
+    },
+    {
+      "id": "US_CANADA_CIRCULATION_ALERT",
+      "name": "Alerta de circulación en EE.UU. o canadá"
+    },
+    {
+      "id": "NORTH_AMERICA_CIRCULATION_RECORD",
+      "name": "Registro de circulación en norteamérica"
+    },
+    {
+      "id": "HAS_TOTAL_LOSS",
+      "name": "Pérdida total"
+    },
+    {
+      "id": "IS_OFFERED_BY_BRAND",
+      "name": "Es ofrecido por la marca"
+    },
+    {
+      "id": "WITH_OFF_ROAD_LIGHTS",
+      "name": "Con luces exploradoras"
+    },
+    {
+      "id": "KILOMETERS",
+      "name": "Kilómetros"
+    },
+    {
+      "id": "CONTACT_SCHEDULE",
+      "name": "Horario de contacto"
+    },
+    {
+      "id": "CMG_SITE",
+      "name": "Sitio de origen"
+    },
+    {
+      "id": "SELLER_CATALOG_VERSION_ID",
+      "name": "Id catálogo vendedor"
+    },
+    {
+      "id": "LICENSE_PLATE",
+      "name": "Patente"
+    },
+    {
+      "id": "VIN",
+      "name": "VIN"
+    },
+    {
+      "id": "VIN_LAST_DIGITS",
+      "name": "Últimos dígitos de la VIN"
+    },
+    {
+      "id": "VEHICLE_GALLERY_INTERIOR",
+      "name": "Diseño interior"
+    },
+    {
+      "id": "VEHICLE_GALLERY_EXTERIOR",
+      "name": "Diseño exterior"
+    },
+    {
+      "id": "BRAND_BENEFITS",
+      "name": "Beneficios de la marca"
+    },
+    {
+      "id": "CAROUSEL_BULLETS",
+      "name": "Viñetas carrusel"
+    },
+    {
+      "id": "HIGHLIGHT_TEXT",
+      "name": "Texto destacado"
+    },
+    {
+      "id": "SPECS_FILE_URL",
+      "name": "Archivo pdf"
+    },
+    {
+      "id": "VEHICLE_LOGO_ID",
+      "name": "Logo vehiculo"
+    },
+    {
+      "id": "GUMMY",
+      "name": "Color de engomado"
+    },
+    {
+      "id": "HOLOGRAM",
+      "name": "Holograma"
+    },
+    {
+      "id": "SINGLE_OWNER",
+      "name": "Único dueño"
+    },
+    {
+      "id": "ARMORED",
+      "name": "Blindado"
+    },
+    {
+      "id": "WITH_SAFETY_FILMS",
+      "name": "Con films de seguridad"
+    },
+    {
+      "id": "WITH_NEW_WHEELS",
+      "name": "Con llantas nuevas"
+    },
+    {
+      "id": "WITH_LUXURY_WHEELS",
+      "name": "Con llantas de lujo"
+    },
+    {
+      "id": "WITH_TECHNOMECHANICAL_REVIEW",
+      "name": "Con revisión tecnomecánica"
+    },
+    {
+      "id": "IS_INSURED_VEHICLE",
+      "name": "Vehículo asegurado"
+    },
+    {
+      "id": "WITH_NEGOTIABLE_PRICE",
+      "name": "Con precio negociable"
+    },
+    {
+      "id": "SALE_WITH_EXCHANGE",
+      "name": "Acepta permuta"
+    },
+    {
+      "id": "CAR_DELIVERY",
+      "name": "Entrega a domicilio"
+    },
+    {
+      "id": "VIRTUAL_TOURS",
+      "name": "Tours virtuales"
+    },
+    {
+      "id": "HOME_TEST_DRIVE",
+      "name": "Test drive a domicilio"
+    },
+    {
+      "id": "SANITIZATION_POLICY",
+      "name": "Sanitiza el vehículo"
+    },
+    {
+      "id": "PAPERWORK_FROM_HOME",
+      "name": "Documentación en casa"
+    },
+    {
+      "id": "WITH_PAID_IPVA",
+      "name": "Con IPVA pago"
+    },
+    {
+      "id": "HAS_VEHICLE_INSPECTION",
+      "name": "Inspección vehicular"
+    },
+    {
+      "id": "THEFT_REPORTS_NUMBER",
+      "name": "Cantidad de denuncias de robo"
+    },
+    {
+      "id": "REMARKED_CHASSIS_NUMBER",
+      "name": "Cantidad de chasis remarcado"
+    },
+    {
+      "id": "USED_AS_POLICE_CAR_NUMBER",
+      "name": "Cantidad de veces utilizado como vehículo policial"
+    },
+    {
+      "id": "SUFFERED_DAMAGE_NUMBER",
+      "name": "Cantidad de daños sufridos"
+    },
+    {
+      "id": "SCHEDULED_FOR_SCRAPPING_NUMBER",
+      "name": "Cantidad de veces que fue desmantelado"
+    },
+    {
+      "id": "INSURANCE_DEREGISTRATION_NUMBER",
+      "name": "Fue dado de baja por la aseguradora"
+    },
+    {
+      "id": "PENDING_FINES_NUMBER",
+      "name": "Cantidad de multas pendientes"
+    },
+    {
+      "id": "OWNERS_NUMBER",
+      "name": "Cantidad de dueños"
+    },
+    {
+      "id": "PRIOR_AUCTIONS_NUMBER",
+      "name": "Número de subastas anteriores"
+    },
+    {
+      "id": "VERIFIED_VEHICLES",
+      "name": "Vehiculos verificados"
+    },
+    {
+      "id": "VERIFICATION_TYPE",
+      "name": "Tipo de verificación"
+    },
+    {
+      "id": "LEGALIZED_INTERNATIONAL_ENTRY",
+      "name": "Entrada internacional legalizada"
+    },
+    {
+      "id": "VEHICLE_RISK_PROFILE_IDENTIFIER",
+      "name": "Identificador del perfil de riesgo del vehículo"
+    },
+    {
+      "id": "BATTERY_TYPE",
+      "name": "Tipo de batería"
+    },
+    {
+      "id": "BATTERY_CAPACITY",
+      "name": "Capacidad de la batería"
+    },
+    {
+      "id": "CHARGE_TIME",
+      "name": "Tiempo de carga"
+    },
+    {
+      "id": "CHARGER_TYPE",
+      "name": "Tipo de cargador"
+    },
+    {
+      "id": "CARS_BATTERY_AUTONOMY",
+      "name": "Autonomia de la batería"
+    },
+    {
+      "id": "HAS_LEADS_PENALIZATION",
+      "name": "Tiene penalización por Leads"
+    },
+    {
+      "id": "ENGINE_CONDITION",
+      "name": "Estado del motor"
+    },
+    {
+      "id": "BODYWORK_CONDITION",
+      "name": "Estado de la carrocería"
+    },
+    {
+      "id": "BRAKES_CONDITION",
+      "name": "Estado de los frenos"
+    },
+    {
+      "id": "TIRES_CONDITION",
+      "name": "Estado de los neumáticos"
+    },
+    {
+      "id": "CABIN_CONDITION",
+      "name": "Estado de la cabina"
+    },
+    {
+      "id": "WITH_VERIFICATION_REPORT",
+      "name": "Con verificación vehicular"
+    },
+    {
+      "id": "VEHICLE_INSPECTION_STATUS",
+      "name": "Estado de la inspección mecánica"
+    },
+    {
+      "id": "VEHICLE_INSPECTION_DATE",
+      "name": "Fecha de la inspección mecánica"
+    },
+    {
+      "id": "VEHICLE_INSPECTION_ID",
+      "name": "Identificador de la inspección mecánica"
+    },
+    {
+      "id": "VEHICLE_INSPECTION_PROVIDER_NAME",
+      "name": "Nombre del proveedor de la inspección mecánica"
+    },
+    {
+      "id": "HAS_GOOD_QUALITY",
+      "name": "Tiene buena calidad"
+    },
+    {
+      "id": "SUGGESTED_PARENT_ID",
+      "name": "ID de padre sugerido"
+    },
+    {
+      "id": "PRICE_HIGHLIGHT_TIER",
+      "name": "Nivel de precio destacado"
+    },
+    {
+      "id": "PRICE_INCLUDES_SHIPPING_AND_DOCUMENTATION",
+      "name": "Precio incluye flete y formularios"
+    },
+    {
+      "id": "HAS_AUTOPILOT",
+      "name": "Piloto automático"
+    },
+    {
+      "id": "VEHICLE_TYPE",
+      "name": "Tipo de vehículo"
+    },
+    {
+      "id": "FUEL_TYPE",
+      "name": "Tipo de combustible"
+    },
+    {
+      "id": "DOORS",
+      "name": "Puertas"
+    },
+    {
+      "id": "STEERING",
+      "name": "Dirección"
+    },
+    {
+      "id": "TRANSMISSION",
+      "name": "Transmisión"
+    },
+    {
+      "id": "TRACTION_CONTROL",
+      "name": "Control de tracción"
+    },
+    {
+      "id": "FIPE_CODE",
+      "name": "Código FIPE"
+    },
+    {
+      "id": "MOLICAR_CODE",
+      "name": "Código Molicar"
+    },
+    {
+      "id": "HAS_ABS_BRAKES",
+      "name": "Frenos ABS"
+    },
+    {
+      "id": "HAS_AIR_CONDITIONING",
+      "name": "Aire acondicionado"
+    },
+    {
+      "id": "HAS_ALARM",
+      "name": "Alarma"
+    },
+    {
+      "id": "HAS_ALLOY_WHEELS",
+      "name": "Llantas de aleación"
+    },
+    {
+      "id": "HAS_AMFM_RADIO",
+      "name": "AM/FM"
+    },
+    {
+      "id": "HAS_AUXILIARY_PORT",
+      "name": "Entrada auxiliar"
+    },
+    {
+      "id": "HAS_BLUETOOTH",
+      "name": "Bluetooth"
+    },
+    {
+      "id": "HAS_BULL_BAR",
+      "name": "Defensa delantera"
+    },
+    {
+      "id": "HAS_CD_PLAYER",
+      "name": "CD"
+    },
+    {
+      "id": "HAS_DRIVER_AIRBAG",
+      "name": "Airbag conductor"
+    },
+    {
+      "id": "HAS_DVD",
+      "name": "DVD"
+    },
+    {
+      "id": "HAS_HEIGHT_ADJUSTABLE_STEERING_WHEEL",
+      "name": "Regulación de altura del volante"
+    },
+    {
+      "id": "HAS_ELECTRIC_MIRRORS",
+      "name": "Control eléctrico para los retrovisores"
+    },
+    {
+      "id": "HAS_ELECTRONIC_BRAKE_ASSIST",
+      "name": "Repartidor electrónico de fuerza de frenado"
+    },
+    {
+      "id": "HAS_ENGINE_INMOVILIZER",
+      "name": "Sistema de bloqueo de encendido"
+    },
+    {
+      "id": "HAS_FOG_LIGHT",
+      "name": "Faros antiniebla"
+    },
+    {
+      "id": "HAS_FRONT_FOGLIGHTS",
+      "name": "Faros antinieblas delanteros"
+    },
+    {
+      "id": "HAS_GPS",
+      "name": "GPS"
+    },
+    {
+      "id": "HAS_HEADLIGHT_CONTROL",
+      "name": "Faros con regulación automática"
+    },
+    {
+      "id": "HAS_HEADREST_REAR_SEAT",
+      "name": "Apoya cabeza en asientos traseros"
+    },
+    {
+      "id": "HAS_HEIGHT_ADJUSTABLE_DRIVER_SEAT",
+      "name": "Asiento conductor regulable en altura"
+    },
+    {
+      "id": "HAS_LEATHER_UPHOLSTERY",
+      "name": "Tapizado de cuero"
+    },
+    {
+      "id": "HAS_SEMI_LEATHER_UPHOLSTERY",
+      "name": "Tapizado de semicuero"
+    },
+    {
+      "id": "HAS_FABRIC_UPHOLSTERY",
+      "name": "Tapizado de tela"
+    },
+    {
+      "id": "HAS_LIGHT_ON_REMINDER",
+      "name": "Alarma de luces encendidas"
+    },
+    {
+      "id": "HAS_LIGHT_SENSOR",
+      "name": "Sensor de luz"
+    },
+    {
+      "id": "HAS_MP3_PLAYER",
+      "name": "Reproductor de MP3"
+    },
+    {
+      "id": "HAS_ONBOARD_COMPUTER",
+      "name": "Computadora de abordo"
+    },
+    {
+      "id": "HAS_PAINTED_BUMPER",
+      "name": "Paragolpes pintados"
+    },
+    {
+      "id": "HAS_PARKING_SENSOR",
+      "name": "Sensor de estacionamiento"
+    },
+    {
+      "id": "HAS_PASSENGER_AIRBAG",
+      "name": "Airbag para conductor y pasajero"
+    },
+    {
+      "id": "HAS_POWER_WINDOWS",
+      "name": "Cristales eléctricos"
+    },
+    {
+      "id": "HAS_RAIN_SENSOR",
+      "name": "Sensor de lluvia"
+    },
+    {
+      "id": "HAS_REAR_FOGLIGHTS",
+      "name": "Faros antinieblas traseros"
+    },
+    {
+      "id": "HAS_REAR_FOLDING_SEAT",
+      "name": "Asiento trasero rebatible"
+    },
+    {
+      "id": "HAS_REAR_WINDOW_DEFOGGER",
+      "name": "Desempañador trasero"
+    },
+    {
+      "id": "HAS_REMOTE_TRUNK_RELEASE",
+      "name": "Apertura remota de baúl"
+    },
+    {
+      "id": "HAS_ROLL_BAR",
+      "name": "Barra anti vuelco"
+    },
+    {
+      "id": "HAS_SD_CARD",
+      "name": "Tarjeta SD"
+    },
+    {
+      "id": "HAS_SIDE_IMPACT_AIRBAG",
+      "name": "Airbag laterales"
+    },
+    {
+      "id": "HAS_SLIDING_ROOF",
+      "name": "Techo solar eléctrico retráctil"
+    },
+    {
+      "id": "HAS_SPARE_TYRE_SUPPORT",
+      "name": "Soporte para rueda de auxilio"
+    },
+    {
+      "id": "HAS_STABILITY_CONTROL",
+      "name": "Control de estabilidad"
+    },
+    {
+      "id": "HAS_STEERING_WHEEL_CONTROL",
+      "name": "Comando remoto para radio en el volante"
+    },
+    {
+      "id": "HAS_THIRD_STOP",
+      "name": "Tercera luz de freno led"
+    },
+    {
+      "id": "HAS_TRAY_COVER",
+      "name": "Capota marítima"
+    },
+    {
+      "id": "HAS_TRAY_MAT",
+      "name": "Cobertor de caja"
+    },
+    {
+      "id": "HAS_USB",
+      "name": "Entrada USB"
+    },
+    {
+      "id": "HAS_WINDSCREEN_WIPER",
+      "name": "Limpia/lava luneta"
+    },
+    {
+      "id": "HAS_XENON_HEADLIGHTS",
+      "name": "Faros de xenón"
+    },
+    {
+      "id": "ENGINE",
+      "name": "Motor"
+    },
+    {
+      "id": "HAS_CURTAIN_AIRBAG",
+      "name": "Airbag de cortina"
+    },
+    {
+      "id": "HAS_ELECTRIC_SEATS",
+      "name": "Asientos eléctricos"
+    },
+    {
+      "id": "HAS_REAR_BACKREST",
+      "name": "Respaldo trasero"
+    },
+    {
+      "id": "HAS_CENTRAL_POWER_DOOR_LOCKS",
+      "name": "Cierre centralizado de puertas"
+    },
+    {
+      "id": "HAS_COASTERS",
+      "name": "Porta vasos"
+    },
+    {
+      "id": "HAS_CLIMATE_CONTROL",
+      "name": "Climatizador"
+    },
+    {
+      "id": "VEHICLE_BODY_TYPE",
+      "name": "Tipo de carrocería"
+    },
+    {
+      "id": "WITH_MANUAL_GLASSES",
+      "name": "Con vidrios manuales"
+    },
+    {
+      "id": "HAS_AUTO_WINDOW_CLOSER",
+      "name": "Cierre automático de vidrios"
+    },
+    {
+      "id": "ENGINE_DISPLACEMENT",
+      "name": "Cilindrada"
+    },
+    {
+      "id": "HAS_LUGGAGE_ROOF_RACK",
+      "name": "Porta equipaje en techo"
+    },
+    {
+      "id": "HAS_HISTORIC_INFORMATION",
+      "name": "Histórico vehicular"
+    },
+    {
+      "id": "WITH_BACKUP_CAMERA",
+      "name": "Con cámara de retroceso"
+    },
+    {
+      "id": "WITH_BED_COVER",
+      "name": "Con tapa de caja"
+    },
+    {
+      "id": "WITH_THIRD_ROW",
+      "name": "Con tercera fila"
+    },
+    {
+      "id": "WITH_NERF_BARS",
+      "name": "Con estribos"
+    },
+    {
+      "id": "WITH_SPOILER",
+      "name": "Con alerón"
+    },
+    {
+      "id": "WITH_AUDIO_AMPLIFIER",
+      "name": "Con amplificador de audio"
+    },
+    {
+      "id": "WITH_FACTORY_WARRANTY",
+      "name": "Con garantía de fábrica"
+    },
+    {
+      "id": "WITH_MECHANICAL_WARRANTY",
+      "name": "Con garantía mecánica"
+    },
+    {
+      "id": "HISTORIC_INFORMATION_DATE",
+      "name": "Fecha de información histórica"
+    },
+    {
+      "id": "VEHICLE_CLASSIFICATION",
+      "name": "Clasificación del vehículo"
+    },
+    {
+      "id": "AGID",
+      "name": "AGID"
+    },
+    {
+      "id": "ITEM_CONDITION",
+      "name": "Condición del ítem"
+    },
+    {
+      "id": "LICENSE_PLATE_PARITY",
+      "name": "Paridad de la patente"
+    },
+    {
+      "id": "LICENSE_PLATE_LAST_DIGIT",
+      "name": "Último dígito de la patente"
+    },
+    {
+      "id": "VEHICLE_LANDING",
+      "name": "Vehiculo visible en landings"
+    },
+    {
+      "id": "WITH_IRREGULAR_PRICE",
+      "name": "Con variación de precio"
+    },
+    {
+      "id": "LINE",
+      "name": "Línea"
+    },
+    {
+      "id": "GEAR_NUMBER",
+      "name": "Numero de velocidades"
+    },
+    {
+      "id": "PASSENGER_CAPACITY",
+      "name": "Capacidad de personas"
+    },
+    {
+      "id": "POWER",
+      "name": "Potencia"
+    },
+    {
+      "id": "LENGTH",
+      "name": "Largo"
+    },
+    {
+      "id": "HEIGHT",
+      "name": "Altura"
+    },
+    {
+      "id": "TRANSMISSION_DETAIL",
+      "name": "Detalle transmisión"
+    },
+    {
+      "id": "WIDTH",
+      "name": "Ancho"
+    },
+    {
+      "id": "DISTANCE_BETWEEN_AXES",
+      "name": "Distancia entre ejes"
+    },
+    {
+      "id": "LUGGAGE_CAPACITY",
+      "name": "Baúl"
+    },
+    {
+      "id": "FUEL_CAPACITY",
+      "name": "Capacidad del tanque"
+    },
+    {
+      "id": "CYLINDERS",
+      "name": "Cilindros"
+    },
+    {
+      "id": "VALVES_PER_CYLINDER",
+      "name": "Válvulas por cilindro"
+    },
+    {
+      "id": "HAS_SIDE_IMPACT_FRONT_AIRBAG",
+      "name": "Airbag laterales delanteros"
+    },
+    {
+      "id": "HAS_SIDE_IMPACT_REAR_AIRBAG",
+      "name": "Airbag laterales traseros"
+    },
+    {
+      "id": "HAS_ISOFIX",
+      "name": "Sistema ISOFIX"
+    },
+    {
+      "id": "HAS_ASR_TRACTION",
+      "name": "Tracción ASR"
+    },
+    {
+      "id": "HAS_REMOTE_DOOR_OPENER",
+      "name": "Apertura remota de puertas"
+    },
+    {
+      "id": "HAS_ELECTRIC_SEATS_TILT_DRIVER",
+      "name": "Asiento delantero conductor con regulación eléctrica de inclinación"
+    },
+    {
+      "id": "HAS_ELECTRIC_SEATS_BACKREST_TILT_DRIVER",
+      "name": "Asiento delantero conductor con regulación eléctrica de la inclinación del respaldo"
+    },
+    {
+      "id": "HAS_ELECTRIC_SEATS_LENGTH_DRIVER",
+      "name": "Asiento delantero conductor con regulación eléctrica longitudinal"
+    },
+    {
+      "id": "HAS_FRONT_INTEGRAL_SEATS",
+      "name": "Asiento delantero integral"
+    },
+    {
+      "id": "HAS_FRONT_INTEGRAL_DUALPART_SEATS",
+      "name": "Asiento delantero integral bipartido"
+    },
+    {
+      "id": "HAS_ELECTRIC_SEATS_HEIGHT_PASSENGER",
+      "name": "Asiento delantero pasajero con regulación eléctrica de altura"
+    },
+    {
+      "id": "HAS_ELECTRIC_SEATS_TILT_PASSENGER",
+      "name": "Asiento delantero pasajero con regulación eléctrica de inclinación"
+    },
+    {
+      "id": "HAS_ELECTRIC_SEATS_BACKREST_TILT_PASSENGER",
+      "name": "Asiento delantero pasajero con regulación eléctrica de la inclinación del respaldo"
+    },
+    {
+      "id": "HAS_ELECTRIC_SEATS_LENGTH_PASSENGER",
+      "name": "Asiento delantero pasajero con regulación eléctrica longitudinal"
+    },
+    {
+      "id": "HAS_HEIGHT_ADJUSTABLE_PASSENGER_SEAT",
+      "name": "Asiento acompañante regulable en altura"
+    },
+    {
+      "id": "HAS_CENTRAL_ARMREST_REAR_SEAT",
+      "name": "Asiento trasero con apoyabrazo central"
+    },
+    {
+      "id": "HAS_LENGHT_ADJUSTABLE_REAR_SEAT",
+      "name": "Asiento trasero con regulación longitudinal"
+    },
+    {
+      "id": "HAS_DUALPART_BACKREST_REAR_SEAT",
+      "name": "Asiento trasero con respaldo bipartido"
+    },
+    {
+      "id": "HAS_HEATED_FRONT_SEATS",
+      "name": "Asientos delanteros calefaccionados"
+    },
+    {
+      "id": "HAS_INDIVIDUAL_FRONT_SEATS",
+      "name": "Asientos delanteros individuales"
+    },
+    {
+      "id": "HAS_CRUISE_CONTROL",
+      "name": "Control de velocidad crucero"
+    },
+    {
+      "id": "HAS_POWER_FRONT_WINDOWS",
+      "name": "Levantavidrios eléctricos delanteros"
+    },
+    {
+      "id": "HAS_POWER_REAR_WINDOWS",
+      "name": "Levantavidrios eléctricos traseros"
+    },
+    {
+      "id": "HAS_COASTERS_CENTRAL_REAR",
+      "name": "Posavasos en apoyabrazos central trasero"
+    },
+    {
+      "id": "HAS_LENGTH_ADJUSTABLE_STEERING_WHEEL",
+      "name": "Regulación longitudinal del volante"
+    },
+    {
+      "id": "HAS_FRONT_PARKING_SENSOR",
+      "name": "Sensor delantero de distancia para estacionamiento"
+    },
+    {
+      "id": "HAS_REAR_PARKING_SENSOR",
+      "name": "Sensor trasero de distancia para estacionamiento"
+    },
+    {
+      "id": "HAS_CHROME_ACCENT_PANEL",
+      "name": "Tablero con detalles cromados"
+    },
+    {
+      "id": "HAS_ALUMINIUM_ACCENT_PANEL",
+      "name": "Tablero con detalles en aluminio"
+    },
+    {
+      "id": "HAS_SPECIAL_COLOR_ACCENT_PANEL",
+      "name": "Tablero con detalles en color especial"
+    },
+    {
+      "id": "HAS_WOOD_ACCENT_PANEL",
+      "name": "Tablero con detalles en madera"
+    },
+    {
+      "id": "HAS_STEERING_WHEEL_LEATHER",
+      "name": "Volante revestido en cuero"
+    },
+    {
+      "id": "HAS_CHROME_HANDLES",
+      "name": "Manijas externas de puertas cromadas"
+    },
+    {
+      "id": "HAS_PAINTED_FRONT_BUMPER",
+      "name": "Paragolpe delantero del color del vehículo"
+    },
+    {
+      "id": "HAS_SPECIAL_PAINTED_FRONT_BUMPER",
+      "name": "Paragolpe delantero pintados de color especial"
+    },
+    {
+      "id": "HAS_PAINTED_REAR_BUMPER",
+      "name": "Paragolpe trasero del color del vehículo"
+    },
+    {
+      "id": "HAS_SPECIAL_PAINTED_BACK_BUMPER",
+      "name": "Paragolpe trasero pintados de color especial"
+    },
+    {
+      "id": "HAS_ANDROID_AUTO",
+      "name": "Android auto"
+    },
+    {
+      "id": "HAS_APPLE_CARPLAY",
+      "name": "Apple CarPlay"
+    },
+    {
+      "id": "ACCELERATION",
+      "name": "Aceleración"
+    },
+    {
+      "id": "ACCELERATION_GASOLINE",
+      "name": "Aceleración nafta"
+    },
+    {
+      "id": "ACCELERATION_ALCOHOL",
+      "name": "Aceleración alcohol"
+    },
+    {
+      "id": "ACCELERATION_DIESEL",
+      "name": "Aceleración diesel"
+    },
+    {
+      "id": "AVERAGE_FUEL_ECONOMY",
+      "name": "Consumo promedio combustible"
+    },
+    {
+      "id": "AVERAGE_FUEL_ENCONOMY_GASOLINE",
+      "name": "Consumo promedio nafta"
+    },
+    {
+      "id": "AVERAGE_FUEL_ENCONOMY_ALCOHOL",
+      "name": "Consumo promedio alcohol"
+    },
+    {
+      "id": "AVERAGE_FUEL_ENCONOMY_DIESEL",
+      "name": "Consumo promedio diesel"
+    },
+    {
+      "id": "AUTONOMY",
+      "name": "Autonomía"
+    },
+    {
+      "id": "AUTONOMY_GASOLINE",
+      "name": "Autonomía con nafta"
+    },
+    {
+      "id": "AUTONOMY_ALCOHOL",
+      "name": "Autonomía con alcohol"
+    },
+    {
+      "id": "AUTONOMY_DIESEL",
+      "name": "Autonomía con diesel"
+    },
+    {
+      "id": "MAXIMUM_VELOCITY",
+      "name": "Velocidad máxima"
+    },
+    {
+      "id": "MAXIMUM_VELOCITY_GASOLINE",
+      "name": "Velocidad máxima con nafta"
+    },
+    {
+      "id": "MAXIMUM_VELOCITY_ALCOHOL",
+      "name": "Velocidad máxima con alcohol"
+    },
+    {
+      "id": "MAXIMUM_VELOCITY_DIESEL",
+      "name": "Velocidad máxima con diesel"
+    },
+    {
+      "id": "SHORT_VERSION",
+      "name": "Versiones"
+    },
+    {
+      "id": "ROUTE_AVERAGE_CONSUMPTION",
+      "name": "Consumo medio en ruta"
+    },
+    {
+      "id": "CITY_AVERAGE_CONSUMPTION",
+      "name": "Consumo medio en ciudad"
+    },
+    {
+      "id": "HAS_BLIND_SIDE_ZONE_ALERT",
+      "name": "Aviso de punto ciego"
+    },
+    {
+      "id": "WITH_PANORAMIC_GLASS_ROOF",
+      "name": "Con techo de vidrio panorámico"
+    },
+    {
+      "id": "WITH_SKY_WINDOW",
+      "name": "Con techo solar sky window"
+    },
+    {
+      "id": "WITH_PANORAMIC_SOLAR_ROOF",
+      "name": "Con techo solar panorámico"
+    },
+    {
+      "id": "WITH_LED_FOGLIGHTS",
+      "name": "Con faros de neblina LED"
+    },
+    {
+      "id": "WITH_AUXILIARY_LIGHTS_ACTIVATION_IN_CASE_OF_SUDDEN_STOP",
+      "name": "Con accionamiento de luces auxiliares en caso de frenado brusco"
+    },
+    {
+      "id": "WITH_RETRACTABLE_FRONT_SEAT_BELTS",
+      "name": "Con cinturones de seguridad delanteros retráctiles"
+    },
+    {
+      "id": "WITH_RETRACTABLE_FRONT_SEAT_BELTS_WITH_ELECTRIC_ADJUSTMENT",
+      "name": "Con cinturones de seguridad delanteros retráctiles con regulación eléctrica de altura"
+    },
+    {
+      "id": "WITH_RETRACTABLE_FRONT_SEAT_BELTS_WITH_HEIGHT_ADJUSTMENT",
+      "name": "Con cinturones de seguridad delanteros retráctiles con regulación de altura"
+    },
+    {
+      "id": "WITH_RETRACTABLE_REAR_SEAT_BELTS",
+      "name": "Con cinturones de seguridad traseros retráctiles"
+    },
+    {
+      "id": "WITH_RETRACTABLE_REAR_SEAT_BELTS_WITH_ELECTRIC_ADJUSTMENT",
+      "name": "Con cinturones de seguridad traseros retráctiles con regulación eléctrica de altura"
+    },
+    {
+      "id": "WITH_RETRACTABLE_REAR_SEAT_BELTS_WITH_HEIGHT_ADJUSTMENT",
+      "name": "Con cinturones de seguridad traseros retráctiles con regulación de altura"
+    },
+    {
+      "id": "WITH_AUTOMATIC_UNLOCK_DOORS_IN_ACCIDENT",
+      "name": "Con destrabamiento automático de puertas en caso de accidente"
+    },
+    {
+      "id": "WITH_CORNERING_BRAKE_CONTROL_SYSTEM_CBC",
+      "name": "Con sistema de control de frenado en curva (CBC)"
+    },
+    {
+      "id": "WITH_AUTOMATIC_AIR_CONDITIONING_WITH_INDIVIDUAL_CONTROLS",
+      "name": "Con aire acondicionado automático con controles individuales"
+    },
+    {
+      "id": "WITH_AUTOMATIC_AIR_CONDITIONING_WITH_INDIVIDUAL_CONTROLS_REAR_PART_3_ZONES",
+      "name": "Con aire acondicionado automático con controles individuales del/tras (3 zonas)"
+    },
+    {
+      "id": "WITH_AUTOMATIC_AIR_CONDITIONING_WITH_INDIVIDUAL_CONTROLS_REAR_PART_4_ZONES",
+      "name": "Con aire acondicionado automático con controles individuales del/tras (4 zonas)"
+    },
+    {
+      "id": "WITH_AUTOMATIC_AIR_CONDITIONING_WITH_INDIVIDUAL_FRONT_AND_REAR_CONTROLS",
+      "name": "Con aire acondicionado automático con controles individuales delanteros/traseros"
+    },
+    {
+      "id": "WITH_AIR_CONDITIONING_WITH_AUTOMATIC_TEMPERATURE_CONTROL",
+      "name": "Con aire acondicionado con control automático de la temperatura"
+    },
+    {
+      "id": "WITH_AIR_CONDITIONING_WITH_INDIVIDUAL_CONTROLS",
+      "name": "Con aire acondicionado con controles individuales"
+    },
+    {
+      "id": "WITH_ELECTROCHROMIC_INTERNAL_REAR_VIEW_MIRROR",
+      "name": "Con espejo retrovisor interno electro crómico"
+    },
+    {
+      "id": "WITH_EXTERNAL_MIRRORS_WITH_AUTOMATIC_TILTING_IN_REVERSE",
+      "name": "Con espejos externos con inclinación automática en marcha atrás"
+    },
+    {
+      "id": "WITH_EXTERNAL_REARVIEW_MIRRORS_WITH_ELECTRICAL_FOLDING",
+      "name": "Con espejos retrovisores externos rebatibles eléctricamente"
+    },
+    {
+      "id": "WITH_HEADLIGHTS_WITH_AUTOMATIC_ACTIVATION",
+      "name": "Con faros con accionamiento automático-encendido"
+    },
+    {
+      "id": "WITH_DRIVER_FRONT_SEAT_WITH_ELECTRIC_ADJUSTMENT",
+      "name": "Con asiento del conductor con regulación eléctrica de altura"
+    },
+    {
+      "id": "WITH_PASSENGER_FRONT_SEAT_WITH_ELECTRIC_ADJUSTMENT",
+      "name": "Con asiento del pasajero con regulación eléctrica de altura"
+    },
+    {
+      "id": "WITH_DRIVER_ARMREST",
+      "name": "Con apoyabrazos conductor"
+    },
+    {
+      "id": "WITH_ARMREST_BETWEEN_FRONT_SEATS",
+      "name": "Con apoyabrazos entre los asientos delanteros"
+    },
+    {
+      "id": "WITH_FRONT_SEATS_INDIVIDUAL_ARMRESTS",
+      "name": "Con apoyabrazos delanteros individuales"
+    },
+    {
+      "id": "WITH_GEARS_CHANGE_IN_STEERING_WHEEL",
+      "name": "Con cambio de marchas en el volante"
+    },
+    {
+      "id": "WITH_LANE_CHANGING_SENSOR",
+      "name": "Con sensor de cambio de carril"
+    },
+    {
+      "id": "WITH_ACTIVE_LANE_CHANGING_SENSOR",
+      "name": "Con sensor de cambio de carril activo"
+    },
+    {
+      "id": "WITH_PARKING_SENSOR_BY_FRONT_CAMERA",
+      "name": "Con sensor de estacionamiento por cámara delantera"
+    },
+    {
+      "id": "WITH_PARKING_SENSOR_BY_REAR_CAMERA",
+      "name": "Con sensor de estacionamiento por cámara trasera"
+    },
+    {
+      "id": "WITH_AUTOMATIC_PARKING_SENSOR",
+      "name": "Con sistema de estacionamiento automático"
+    },
+    {
+      "id": "WITH_PARKING_SENSOR_WITH_GRAPHICS",
+      "name": "Con sistema de estacionamiento con gráficos"
+    },
+    {
+      "id": "WITH_ECO_MODE",
+      "name": "Con modo Eco"
+    },
+    {
+      "id": "WITH_ENGINE_WITH_EMISSION_REDUCTION_TECHNOLOGY",
+      "name": "Con motor con tecnología de reducción de emisiones (Efficiency)"
+    },
+    {
+      "id": "WITH_STEEL_WHEELS",
+      "name": "Con llantas de acero"
+    },
+    {
+      "id": "WITH_CHROMED_ALLOY_WHEELS",
+      "name": "Con llantas de aleación cromadas"
+    },
+    {
+      "id": "WITH_SPECIAL_PAINTED_ALLOY_WHEELS",
+      "name": "Con llantas de aleación en color especial"
+    },
+    {
+      "id": "WITH_CHROMED_DOOR_HANDLES",
+      "name": "Con manija de puertas cromadas"
+    },
+    {
+      "id": "WITH_PAINTED_DOOR_HANDLES",
+      "name": "Con manija de puertas en color del vehículo"
+    },
+    {
+      "id": "WITH_SPECIAL_PAINTED_DOOR_HANDLES",
+      "name": "Con manija de puertas en color especial"
+    },
+    {
+      "id": "WITH_CHROMED_FRONT_BUMPER",
+      "name": "Con paragolpes delantero cromado"
+    },
+    {
+      "id": "WITH_CHROMED_REAR_BUMPER",
+      "name": "Con paragolpes trasero cromado"
+    },
+    {
+      "id": "WITH_LED_HEADLIGHTS",
+      "name": "Con faros delanteros LED"
+    },
+    {
+      "id": "WITH_DAYTIME_LED_LIGHTS",
+      "name": "Con faros diurnos LED"
+    },
+    {
+      "id": "WITH_LED_REAR_LIGHTS",
+      "name": "Con faros traseros LED"
+    },
+    {
+      "id": "WITH_HEADLIGHT_WASHER",
+      "name": "Con lavador de faros"
+    },
+    {
+      "id": "WITH_HEADLIGHT_CLEANER",
+      "name": "Con limpiador de faros"
+    },
+    {
+      "id": "WITH_CRANKCASE_GUARD",
+      "name": "Con protector de cárter"
+    },
+    {
+      "id": "WITH_FUEL_TANK_PROTECTOR",
+      "name": "Con protector de tanque de combustible"
+    },
+    {
+      "id": "WITH_STEEL_SPARE_WHEEL",
+      "name": "Con rueda de auxilio de acero"
+    },
+    {
+      "id": "WITH_ALLOY_SPARE_WHEEL",
+      "name": "Con rueda de auxilio de aleación"
+    },
+    {
+      "id": "WITH_TEMPORARY_SPARE_WHEEL",
+      "name": "Con rueda de auxilio temporal"
+    },
+    {
+      "id": "MILEAGE_WARRANTY",
+      "name": "Garantía en kilómetros"
+    },
+    {
+      "id": "YEAR_WARRANTY",
+      "name": "Garantía en años"
+    },
+    {
+      "id": "WITH_BLU_RAY",
+      "name": "Con Blu-ray"
+    },
+    {
+      "id": "WITH_TOUCH_SCREEN_LCD",
+      "name": "Con LCD con sistema touch screen"
+    },
+    {
+      "id": "WITH_PANEL_LCD",
+      "name": "Con LCD en panel"
+    },
+    {
+      "id": "WITH_DASHBOARD_LCD",
+      "name": "Con LCD en panel de instrumentos"
+    },
+    {
+      "id": "WITH_FRONT_SEAT_BACKREST_LCD",
+      "name": "Con LCD en respaldo asiento delantero"
+    },
+    {
+      "id": "WITH_ROOF_LCD",
+      "name": "Con LCD en techo"
+    },
+    {
+      "id": "WITH_LCD_BETWEEN_FRONT_SEATS",
+      "name": "Con LCD entre asientos delanteros"
+    },
+    {
+      "id": "WITH_LCD_FOR_REAR_SEATS",
+      "name": "Con LCD para asientos traseros"
+    },
+    {
+      "id": "WITH_VOICE_ACTIVATED_GPS",
+      "name": "Con sistema de GPS con indicación por voz"
+    },
+    {
+      "id": "WITH_VOICE_COMMAND_SYSTEM",
+      "name": "Con sistema de comando de voz"
+    },
+    {
+      "id": "WITH_HANDS_FREE_SYSTEM",
+      "name": "Con teléfono celular manos libres"
+    },
+    {
+      "id": "WITH_BLUETOOTH_SPEAKER",
+      "name": "Con viva-voz con sistema Bluetooth"
+    },
+    {
+      "id": "WITH_HEADLIGHTS_IGNITION_WHEN_RAIN",
+      "name": "Con faros con encendido en caso de lluvia"
+    },
+    {
+      "id": "FIPE_BRAND",
+      "name": "Marca FIPE"
+    },
+    {
+      "id": "FIPE_MODEL",
+      "name": "Modelo FIPE"
+    },
+    {
+      "id": "FIPE_VEHICLE_YEAR",
+      "name": "Año FIPE"
+    },
+    {
+      "id": "FIPE_PRICE",
+      "name": "Precio FIPE"
+    },
+    {
+      "id": "PRICE_NEW",
+      "name": "Precio nuevo"
+    },
+    {
+      "id": "PRICE_USED",
+      "name": "Precio usado"
+    },
+    {
+      "id": "CURRENCY",
+      "name": "Moneda"
+    },
+    {
+      "id": "WITH_POSITIVE_IMPACT",
+      "name": "Con impacto positivo"
+    },
+    {
+      "id": "DETAILED_MODEL",
+      "name": "Modelo detallado"
+    },
+    {
+      "id": "MANUFACTURING_YEAR",
+      "name": "Año de fabricación"
+    }
+  ]
+}

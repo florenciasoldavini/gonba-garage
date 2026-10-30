@@ -382,6 +382,8 @@ h3 { letter-spacing: -0.04em; }
 .catalog-filter-note { margin: 28px 0 0; padding-top: 20px; color: #6f746c; border-top: 1px solid var(--line); font-size: 0.64rem; line-height: 1.55; }
 .catalog-results { min-width: 0; }
 .catalog-toolbar {
+  position: relative;
+  z-index: 3;
   min-height: 46px;
   margin-bottom: 14px;
   padding: 0;
@@ -801,6 +803,14 @@ h3 { letter-spacing: -0.04em; }
 .detail-specs dt { color: var(--muted); font-size: 0.72rem; }
 .detail-specs dd { margin: 0; color: #e0e3dd; font-size: 0.76rem; text-align: right; }
 
+.detail-specs-groups details { border-top: 1px solid var(--line); }
+.detail-specs-groups summary { min-height: 60px; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; color: var(--text); font-size: 0.8rem; font-weight: 600; list-style: none; cursor: pointer; }
+.detail-specs-groups summary::-webkit-details-marker { display: none; }
+.detail-specs-groups summary:hover { color: var(--accent); }
+.detail-specs-groups summary svg { flex-shrink: 0; color: var(--muted); }
+.detail-specs-groups details[open] summary svg { transform: rotate(180deg); color: var(--accent); }
+.detail-specs-panel { overflow: hidden; }
+
 .detail-gallery { display: grid; grid-template-columns: 1.5fr 0.5fr; gap: 14px; }
 .detail-gallery-image { position: relative; min-height: clamp(480px, 55vw, 760px); overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: #111411; }
 .detail-crop-left { object-position: 18% center; }
@@ -945,7 +955,7 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 }
 
 .valuation-form, .valuation-success { border-radius: 24px; background: rgba(14, 17, 15, .88); }
-.valuation-form { overflow: hidden; }
+.valuation-form { overflow: hidden; scroll-margin-top: 110px; }
 .valuation-form-heading { min-height: 80px; padding: 18px clamp(20px, 3vw, 32px); display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--line); }
 .valuation-form-heading > div { display: grid; gap: 5px; }
 .valuation-form-heading > div > span { color: var(--accent); font: 600 .62rem var(--font-mono); letter-spacing: .08em; text-transform: uppercase; }

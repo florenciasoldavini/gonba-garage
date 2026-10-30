@@ -3,10 +3,11 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { get, put } from '@vercel/blob';
 import { securelyMatches } from './oauth';
 import { createRefreshTokenStore, type TokenRecord } from './refresh-token-store';
+import { failure, readSafeIncident, safeFailure } from './failures';
 
 export function required(name: string) {
   const value = process.env[name]?.trim();
-  if (!value) throw new Error(`Missing ${name}`);
+  if (!value) throw failure('configuration', 'missing_configuration');
   return value;
 }
 
@@ -15,11 +16,11 @@ export function authorized(request: Request) {
   return !!expected && securelyMatches(request.headers.get('authorization') ?? '', `Bearer ${expected}`);
 }
 
-function store() {
+function storage() {
   const seller = required('MERCADO_LIBRE_SELLER_ID');
   if (!/^\d+$/.test(seller)) throw new Error('Invalid seller ID');
   const pathname = `mercado-libre/${seller}/refresh-token.json`;
-  return createRefreshTokenStore({
+  return {
     async read() {
       const result = await get(pathname, { access: 'private', useCache: false });
       if (!result) return null;
@@ -29,14 +30,36 @@ function store() {
         (record.refreshStartedAt !== null && !Number.isFinite(record.refreshStartedAt))) throw new Error('Invalid credential record');
       return { record, etag: result.blob.etag };
     },
-    async write(record, etag) {
+    async write(record: TokenRecord, etag?: string) {
       const result = await put(pathname, JSON.stringify(record), {
         access: 'private', addRandomSuffix: false, allowOverwrite: !!etag,
         ...(etag ? { ifMatch: etag } : {}), contentType: 'application/json',
       });
       return result.etag;
     },
-  }, encrypt, decrypt);
+  };
+}
+
+function store() {
+  return createRefreshTokenStore(storage(), encrypt, decrypt);
+}
+
+/** Private, read-only health view. Does not refresh tokens or expose encrypted credentials. */
+export async function readConnectionDiagnostics() {
+  const existing = await storage().read().catch(error => { throw safeFailure(error, 'credential_read'); });
+  if (!existing) return { state: 'not_connected', lastFailure: null };
+  const { refreshStartedAt, lastFailure } = existing.record;
+  const lockAgeSeconds = refreshStartedAt === null ? null : Math.max(0, Math.floor((Date.now() - refreshStartedAt) / 1000));
+  return {
+    state: lockAgeSeconds === null ? 'connected' : lockAgeSeconds < 120 ? 'renewing' : 'reauthorization_required',
+    // An unlocked record is present, but this read-only check does not prove provider acceptance.
+    providerVerified: false,
+    refreshStartedAt: refreshStartedAt === null ? null : new Date(refreshStartedAt).toISOString(),
+    lockAgeSeconds,
+    incidentId: typeof existing.record.refreshIncidentId === 'string' && /^[a-f0-9-]{36}$/.test(existing.record.refreshIncidentId)
+      ? existing.record.refreshIncidentId : null,
+    lastFailure: readSafeIncident(lastFailure),
+  };
 }
 
 function key() {
@@ -64,7 +87,8 @@ function decrypt(value: string) {
 
 export async function saveAuthorization(sellerId: number, token: string) {
   if (String(sellerId) !== required('MERCADO_LIBRE_SELLER_ID')) throw new Error('Unexpected seller');
-  await store().authorize(token);
+  try { await store().authorize(token); }
+  catch (error) { throw safeFailure(error, 'credential_save'); }
 }
 
 export async function withRefreshToken<T>(operation: (token: string, save: (next: string) => Promise<void>) => Promise<T>) {

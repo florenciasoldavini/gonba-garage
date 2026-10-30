@@ -177,3 +177,28 @@ npm run test:metadata -- http://localhost:3100
 Then rebuild and repeat the metadata test with `SITE_INDEXING_ENABLED=true`. Confirm that demo mode
 uses `noindex` and an empty sitemap, while production mode exposes indexable routes and advertises the
 sitemap. The custom-domain checklist contains the separate live-launch verification.
+
+## Catalog rendering
+
+Vehicle details render at request time, including publication slugs that were unknown during the
+build. Do not generate a static-parameter list for these pages: live publication requests use
+uncached backend data. The live catalog opts into request-time rendering before its API error
+handler; the demo catalog remains statically cacheable. Canonical URLs, structured data and the
+indexing gate are unchanged.
+
+## Private alert management
+
+`/api/alerts/daily` requires the cron secret. `/api/price-alerts/cancel` validates a signed,
+generation-scoped capability and serves a minimal cancellation confirmation. Both are
+`private, no-store` and `noindex, nofollow` in every indexing mode and excluded from the
+sitemap. Cancellation GET does not mutate data, so email scanners cannot cancel subscriptions.
+POST performs the cancellation, including RFC 8058 one-click requests. No email address is
+embedded in either URL. Email links use the explicit fixed `ALERTS_PUBLIC_URL` origin.
+
+## Homepage inventory
+
+The homepage selection uses up to three active vehicles from the same catalog source as
+`/vehiculos`, including their photos, slugs and specifications. In live mode it renders at
+request time. An unavailable or empty catalog shows an explicit message and never falls
+back to example vehicle links. Decorative photography and shared homepage metadata are
+unchanged.

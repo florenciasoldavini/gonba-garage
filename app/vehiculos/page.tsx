@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { connection } from 'next/server';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { InnerPageMotion } from '@/components/motion/inner-page-motion';
@@ -18,6 +19,8 @@ export const metadata: Metadata = { ...createPageMetadata({
 }), ...(isLiveCatalog() ? { robots: { index: false, follow: false } } : {}) };
 
 export default async function VehiclesPage() {
+  // Keep Next.js request-time rendering outside the API failure handler.
+  if (isLiveCatalog()) await connection();
   let vehicles;
   const quotePromise = getMepQuote();
   try {

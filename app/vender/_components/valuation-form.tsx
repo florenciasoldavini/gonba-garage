@@ -7,9 +7,9 @@ import { ArrowLeft, ArrowUpRight, Check } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import { getWhatsAppUrl } from '@/lib/contact';
 import { ValuationContactFields } from './valuation-contact-fields';
 import { ValuationStepper } from './valuation-stepper';
-import { ValuationSuccess } from './valuation-success';
 import { VehicleCatalogFields } from './vehicle-catalog-fields';
 import { VehicleConditionFields } from './vehicle-condition-fields';
 
@@ -20,7 +20,6 @@ if (typeof window !== 'undefined') {
 const TOTAL_STEPS = 3;
 
 export function ValuationForm() {
-  const [submitted, setSubmitted] = useState(false);
   const [step, setStep] = useState(1);
   const [isStepComplete, setIsStepComplete] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -100,6 +99,11 @@ export function ValuationForm() {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (step < TOTAL_STEPS) {
+      continueToNextStep();
+      return;
+    }
+
     const contactSection = event.currentTarget.querySelector<HTMLElement>('[data-step="3"]');
     const contactControls = contactSection?.querySelectorAll<HTMLInputElement>('input') ?? [];
     const consentControl = event.currentTarget.elements.namedItem('consent');
@@ -115,14 +119,26 @@ export function ValuationForm() {
       }
     }
 
-    captureAnalyticsEvent('valuation_demo_completed', { total_steps: TOTAL_STEPS });
-    setSubmitted(true);
-    event.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const data = new FormData(event.currentTarget);
+    const value = (name: string) => String(data.get(name) ?? '').trim();
+    const mileage = Number(value('mileage')).toLocaleString('es-AR');
+    const optionalLine = (label: string, name: string) => value(name) ? `${label}: ${value(name)}` : null;
+    const message = [
+      `Hola, Gonba's Garage. Soy ${value('name')} y me gustaría que evalúen mi auto para venderlo.`,
+      '',
+      `Marca: ${value('make')}`,
+      `Modelo: ${value('model')}`,
+      `Año: ${value('year')}`,
+      optionalLine('Versión', 'version'),
+      optionalLine('Color', 'color'),
+      `Kilometraje: ${mileage} km`,
+      `Estado general: ${value('condition')}`,
+      optionalLine('Comentarios', 'notes'),
+      '',
+      `Teléfono de contacto: ${value('phone')}`,
+    ].filter((line) => line !== null).join('\n');
+    window.open(getWhatsAppUrl(message), '_blank', 'noopener,noreferrer');
   };
-
-  if (submitted) {
-    return <ValuationSuccess onReset={() => { setSubmitted(false); setStep(1); }} />;
-  }
 
   return (
     <form
@@ -172,10 +188,10 @@ export function ValuationForm() {
               Continuar <ArrowUpRight aria-hidden="true" size={16} />
             </Button>
           ) : (
-            <Button type="submit" disabled={!isStepComplete}>Solicitar estimación <ArrowUpRight aria-hidden="true" size={16} /></Button>
+            <Button type="submit" disabled={!isStepComplete}>Enviar mensaje <ArrowUpRight aria-hidden="true" size={16} /></Button>
           )}
         </div>
-        <small>Esta versión es demostrativa y no envía información todavía.</small>
+        <small>Se abrirá WhatsApp con los datos del auto, sin fotos. Revisá el mensaje y envialo cuando quieras.</small>
       </div>
     </form>
   );

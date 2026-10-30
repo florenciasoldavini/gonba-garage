@@ -2,9 +2,16 @@ import assert from 'node:assert/strict';
 
 const targetOrigin = new URL(process.argv[2] || 'http://localhost:3100');
 const indexingEnabled = process.env.SITE_INDEXING_ENABLED === 'true';
-for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect']) {
+for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect', '/api/mercado-libre/diagnostics']) {
   const response = await fetch(new URL(path, targetOrigin));
   assert.equal(response.status, 401, `${path} must reject unauthenticated requests`);
+  assert.match(response.headers.get('cache-control') ?? '', /no-store/);
+  assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
+}
+// Alert management is never indexable, even when production indexing is enabled.
+for (const [path, status] of [['/api/alerts/daily', 401], ['/api/price-alerts/cancel', 400]]) {
+  const response = await fetch(new URL(path, targetOrigin));
+  assert.equal(response.status, status);
   assert.match(response.headers.get('cache-control') ?? '', /no-store/);
   assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
 }
@@ -114,6 +121,17 @@ for (const route of routes) {
     assert.ok(metadata.icon, 'Home should link the branded favicon');
     assert.ok(metadata.appleIcon, 'Home should link the Apple touch icon');
     assert.ok(metadata.manifest, 'Home should link the web manifest');
+    assert.ok(!html.includes('Demo visual · Contenido e información comercial a confirmar'), 'Home footer must omit the obsolete demo note');
+
+    const featuredLinks = [...html.matchAll(/<a\b[^>]*class="[^"]*vehicle-card-link[^"]*"[^>]*>/g)]
+      .map(([tag]) => getAttributes(tag).href);
+    assert.ok(featuredLinks.length > 0 && featuredLinks.length <= 3, 'Home must show up to three available catalog vehicles');
+    assert.equal(new Set(featuredLinks).size, featuredLinks.length, 'Home vehicle links must be unique');
+    for (const href of featuredLinks) {
+      assert.match(href, /^\/vehiculos\/[^/?#]+$/);
+      const detail = await fetch(new URL(href, targetOrigin));
+      assert.equal(detail.status, 200, `Home vehicle link ${href} must resolve`);
+    }
   }
 
   if (route.path === '/vehiculos') {
@@ -125,6 +143,8 @@ for (const route of routes) {
   }
 
   if (route.path.startsWith('/vehiculos/')) {
+    assert.match(response.headers.get('cache-control') || '', /no-store/,
+      'Vehicle details must render at request time, including live slugs absent during build');
     const vehicleGraph = jsonLd.flatMap((entry) => entry['@graph'] || []);
     const product = vehicleGraph.find((entry) => Array.isArray(entry['@type']) && entry['@type'].includes('Product'));
     const breadcrumb = vehicleGraph.find((entry) => entry['@type'] === 'BreadcrumbList');

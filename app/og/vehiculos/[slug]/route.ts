@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { extname, join, sep } from 'node:path';
 import { createElement } from 'react';
 import { ImageResponse } from 'next/og';
 
@@ -9,6 +11,26 @@ type VehicleSocialImageRouteProps = {
   params: Promise<{ slug: string }>;
 };
 
+const publicDirectory = join(process.cwd(), 'public');
+const localImageContentTypes: Record<string, string> = {
+  '.jpeg': 'image/jpeg',
+  '.jpg': 'image/jpeg',
+};
+
+// ImageResponse refuses to fetch private addresses (SSRF protection), which includes this
+// app's own origin during local runs. Local photos are embedded from public/ instead.
+async function resolveVehicleImageSource(image: string, requestUrl: string) {
+  const contentType = localImageContentTypes[extname(image).toLowerCase()];
+  const filePath = join(publicDirectory, image);
+  const isLocalPublicFile =
+    image.startsWith('/') && !image.startsWith('//') && filePath.startsWith(`${publicDirectory}${sep}`);
+
+  if (!contentType || !isLocalPublicFile) return new URL(image, requestUrl).toString();
+
+  const bytes = await readFile(filePath);
+  return `data:${contentType};base64,${bytes.toString('base64')}`;
+}
+
 export async function GET(request: Request, { params }: VehicleSocialImageRouteProps) {
   const { slug } = await params;
   const vehicle = await findCatalogVehicle(slug);
@@ -16,7 +38,7 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
   if (!vehicle) return new Response('Vehicle not found', { status: 404 });
 
   const status = getVehicleStatusPresentation(vehicle.status);
-  const imageUrl = new URL(vehicle.image, request.url).toString();
+  const imageUrl = await resolveVehicleImageSource(vehicle.image, request.url);
 
   const image = createElement(
     'div',

@@ -11,17 +11,19 @@ import { JsonLd } from '@/components/seo/json-ld';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { mockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { findCatalogPublication, findCatalogVehicle, isLiveCatalog } from '@/lib/integrations/mercado-libre/catalog';
 import { fullSizeMercadoLibreImageUrl } from '@/lib/integrations/mercado-libre/pictures';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleSpecification, vehicleSpecificationLabels, type VehicleSpecificationKey } from '@/features/vehicles/presentation/specifications';
+import { publicVehicleAttributes } from '@/features/vehicles/presentation/public-attributes';
+import { VehicleSpecificationGroups } from './_components/vehicle-specification-groups';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 import { createPageMetadata } from '@/lib/metadata';
 import { isSiteIndexingEnabled } from '@/lib/site-indexing';
 import { getSiteUrl } from '@/lib/site-url';
 import { ORGANIZATION_SCHEMA_ID } from '@/lib/structured-data';
 import { PriceAlert } from './_components/price-alert';
+import { alertDeliveryEnabled } from '@/lib/alerts/config';
 import { ShareButton } from './_components/share-button';
 import { VehicleAnalytics } from './_components/vehicle-analytics';
 import { VehiclePhotoViewer } from './_components/vehicle-photo-viewer';
@@ -32,10 +34,8 @@ type VehicleDetailPageProps = {
 
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
-export function generateStaticParams() {
-  if (isLiveCatalog()) return [];
-  return mockVehicles.map(({ slug }) => ({ slug }));
-}
+// Live publications use uncached API data and must render at request time.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: VehicleDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -72,7 +72,10 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const photos = pictures.map(picture => fullSizeMercadoLibreImageUrl(picture.secure_url || picture.url))
     .filter((src): src is string => Boolean(src));
   if (!photos.length) photos.push(vehicle.image);
-  const attributes = publication?.source.attributes ?? [];
+  const attributes = publicVehicleAttributes(
+    publication?.source.attributes ?? [],
+    `${vehicle.make} ${vehicle.model} ${vehicle.version}`,
+  );
 
   const siteUrl = getSiteUrl();
   const vehicleUrl = new URL(`/vehiculos/${vehicle.slug}`, siteUrl).toString();
@@ -208,7 +211,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
           <p className="detail-price-label">Precio publicado</p>
           <p className="detail-price">{formatVehiclePrice(vehicle.price, vehicle.currency)}</p>
           <p className="detail-location">{vehicle.location}</p>
-          {status.isAvailable && !publication ? (
+          {status.isAvailable && (!publication || alertDeliveryEnabled()) ? (
             <PriceAlert
               vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
               vehicleSlug={vehicle.slug}
@@ -243,11 +246,11 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             <p>Ficha técnica</p>
             <span>{vehicle.stockCode}</span>
           </div>
-          <dl>
-            {(publication ? attributes.map((attribute) => [attribute.name, attribute.value_name ?? attribute.values?.map((value) => value.name).filter(Boolean).join(', ') ?? 'No especificado']) : specs).map(([label, value], index) => (
+          {publication ? <VehicleSpecificationGroups attributes={attributes} /> : <dl>
+            {specs.map(([label, value], index) => (
               <div key={`${label}-${index}`}><dt>{label}</dt><dd>{value || 'No especificado'}</dd></div>
             ))}
-          </dl>
+          </dl>}
         </div>
       </section>
 
