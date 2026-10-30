@@ -20,6 +20,13 @@ const confirmLink = await fetch(new URL('/api/alerts/confirm?token=invalid', tar
 assert.equal(confirmLink.status, 303);
 assert.match(confirmLink.headers.get('cache-control') ?? '', /private/);
 assert.equal(confirmLink.headers.get('location'), '/alertas/confirmacion?estado=no-valido');
+// Site-wide framing protection must not replace the alert pages' stricter route-level policies.
+const sitePage = await fetch(new URL('/', targetOrigin));
+assert.equal(sitePage.headers.get('x-frame-options'), 'DENY');
+assert.match(sitePage.headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/);
+const alertLinkPage = await fetch(new URL('/api/price-alerts/cancel?token=invalid', targetOrigin));
+assert.match(alertLinkPage.headers.get('content-security-policy') ?? '', /^default-src 'none';/);
+assert.equal(alertLinkPage.headers.get('referrer-policy'), 'no-referrer');
 assert.notEqual(process.env.VEHICLE_DATA_SOURCE, 'mercado-libre',
   'Run the permanent/demo metadata contract without the temporary local session. Live preview must remain noindex with an empty sitemap.');
 
