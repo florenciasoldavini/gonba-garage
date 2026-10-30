@@ -95,7 +95,6 @@ a:focus-visible, button:focus-visible, summary:focus-visible {
 .main-nav .nav-current { color: var(--accent); }
 
 .header-cta {
-  justify-self: end;
   display: inline-flex;
   align-items: center;
   gap: 18px;
@@ -109,6 +108,54 @@ a:focus-visible, button:focus-visible, summary:focus-visible {
 }
 
 .header-cta:hover { transform: translateY(-2px); }
+
+.header-actions { justify-self: end; display: flex; align-items: center; gap: 8px; }
+
+/* Compact menu: replaces .main-nav at 1000px and below with a full-screen overlay. Its top row sits
+   exactly where the floating header is, so the wordmark doesn't move when the menu opens. */
+.site-menu-trigger {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: none;
+  place-items: center;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-button);
+  background: rgba(255, 255, 255, .045);
+  cursor: pointer;
+  transition: border-color var(--duration-default) ease, background var(--duration-default) ease;
+}
+.site-menu-trigger:hover { border-color: var(--color-border-strong); background: rgba(255, 255, 255, .09); }
+.site-menu-bars { width: 18px; display: grid; justify-items: end; gap: 5px; }
+.site-menu-bars i { width: 18px; height: 2px; border-radius: 2px; background: currentColor; }
+.site-menu-bars i:last-child { width: 11px; background: var(--accent); }
+
+html:has(.site-menu-dialog[open]) { overflow: hidden; }
+.site-menu-dialog { inset: 0; width: 100%; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; overflow-y: auto; overscroll-behavior: contain; color: var(--text); border: 0; background: radial-gradient(circle at 90% 8%, rgba(220, 255, 0, .08), transparent 18rem), rgba(8, 10, 9, .985); }
+.site-menu-dialog::backdrop { background: var(--color-canvas); }
+.site-menu-panel { --site-menu-width: min(var(--layout-max-width), calc(100% - (var(--layout-gutter) * 2))); min-height: 100%; display: grid; grid-template-rows: auto 1fr auto; will-change: transform, opacity; }
+.site-menu-top { width: var(--site-menu-width); min-height: 68px; margin: 14px auto 0; padding: 10px 12px 10px 22px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 1px solid var(--color-border-subtle); border-radius: var(--radius-card); }
+.site-menu-close { min-height: 44px; padding: 0 12px 0 14px; display: inline-flex; align-items: center; gap: 8px; color: var(--text); border: 1px solid var(--line); border-radius: var(--radius-button); background: rgba(255, 255, 255, .045); font: 700 .72rem var(--font-sans); cursor: pointer; transition: border-color var(--duration-default) ease, background var(--duration-default) ease; }
+.site-menu-close:hover { border-color: var(--color-border-strong); background: rgba(255, 255, 255, .09); }
+.site-menu-nav { width: var(--site-menu-width); margin: 0 auto; padding: 30px 12px 32px; }
+.site-menu-nav .eyebrow { margin-bottom: 14px; }
+.site-menu-list { margin: 0; padding: 0; list-style: none; }
+.site-menu-link { min-height: 66px; display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 0 4px; border-bottom: 1px solid var(--color-border-subtle); transition: color var(--duration-default) ease; }
+.site-menu-list li:first-child .site-menu-link { border-top: 1px solid var(--color-border-subtle); }
+.site-menu-link:hover { color: var(--accent); }
+.site-menu-link svg { color: var(--color-text-tertiary); }
+.site-menu-index { align-self: start; padding-top: 18px; color: var(--color-text-tertiary); font: 500 var(--text-micro) var(--font-mono); letter-spacing: .06em; }
+/* The "Estás acá" tag wraps under the label only when both don't fit on one line. */
+.site-menu-link-text { padding-block: 12px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.site-menu-link-label { font-size: clamp(2.35rem, 6.4vw, 3.6rem); font-weight: 800; line-height: 1; letter-spacing: -.06em; }
+.site-menu-link[aria-current='page'], .site-menu-link[aria-current='page'] .site-menu-index { color: var(--accent); }
+.site-menu-current { padding: 5px 8px; color: var(--accent-dark); border-radius: var(--radius-pill); background: var(--accent); font: 700 var(--text-micro) var(--font-mono); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.site-menu-contact { width: var(--site-menu-width); margin: 0 auto; padding: 0 12px max(26px, env(safe-area-inset-bottom)); display: grid; gap: 6px; }
+.site-menu-contact .button { width: 100%; }
+.site-menu-contact-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: .74rem; }
+.site-menu-contact-meta a { min-height: 44px; display: inline-flex; align-items: center; color: var(--text); font-weight: 600; transition: color var(--duration-default) ease; }
+.site-menu-contact-meta a:hover { color: var(--accent); }
 
 .hero {
   position: relative;
@@ -1173,6 +1220,9 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 @media (max-width: 1000px) {
   .main-nav { display: none; }
   .site-header { grid-template-columns: 1fr auto; }
+  .site-menu-trigger { display: inline-grid; }
+  /* WhatsApp moves into the menu overlay, so the bar only holds the wordmark and the menu button. */
+  .header-cta { display: none; }
   .hero-content { width: 80%; }
   .hero-facts { display: none; }
   .vehicle-grid { grid-template-columns: 1fr 1fr; }
@@ -1214,7 +1264,8 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 @media (max-width: 700px) {
   .section-shell, .site-header { width: min(100% - 24px, 1380px); }
   .site-header { top: 8px; margin-top: 8px; min-height: 60px; padding: 8px 8px 8px 16px; }
-  .header-cta { padding: 12px 14px; gap: 8px; }
+  .site-menu-panel { --site-menu-width: min(100% - 24px, 1380px); }
+  .site-menu-top { min-height: 60px; margin-top: 8px; padding: 8px 8px 8px 16px; }
   .hero { min-height: 720px; margin-top: 12px; padding: 28px 22px; align-items: flex-end; }
   .hero-overlay { background: linear-gradient(0deg, rgba(4,5,4,.96) 8%, rgba(4,5,4,.45) 72%, rgba(4,5,4,.12)); }
   .hero-content { width: 100%; }

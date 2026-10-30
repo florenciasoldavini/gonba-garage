@@ -51,6 +51,7 @@ export function SiteFooter({
           <span className="footer-link-label">Secciones</span>
           <div className="footer-link-list">
             <Link href={home ? '#vehiculos' : '/vehiculos'}>Vehículos</Link>
+            <Link href="/vender">Vendé tu auto</Link>
             <Link href={home ? '#servicios' : '/#servicios'}>Servicios</Link>
             <Link href={home ? '#preguntas' : '/#preguntas'}>FAQ</Link>
           </div>
