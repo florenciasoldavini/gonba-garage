@@ -1,8 +1,8 @@
 # Analytics and search measurement
 
 Gonba's Garage uses PostHog for on-site behavior and conversion funnels. Google Search Console owns
-organic search visibility and indexing data. Supabase remains the source of truth for persisted
-leads and business outcomes.
+organic search visibility and indexing data. The data the site stores itself (alert subscriptions and
+the synced catalog) lives in Neon PostgreSQL.
 
 ## PostHog setup
 

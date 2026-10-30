@@ -93,8 +93,8 @@ integration is enabled.
 
 ### Other services
 
-- [ ] Update any Supabase Auth **Site URL** and redirect allow list if customer or admin login is
-  added. The current site does not require this for its public pages.
+- [ ] Update the authentication provider's site URL and redirect allow list if customer or admin
+  login is added. The current site does not require this for its public pages.
 - [ ] Update webhook endpoints, CORS allow lists, CAPTCHA allowed domains, maps APIs, storage/CDN
   origins, or form providers if any are added before launch.
 - [ ] Update uptime checks and Vercel monitors to request the custom hostname.

@@ -30,12 +30,13 @@ npm run build
 - `components/ui/` contains reusable interface controls.
 - `features/vehicles/` contains the vehicle domain model, repository boundary, and provisional data.
 - `lib/integrations/` contains server-only adapters for external services.
-- `lib/supabase/` contains Supabase clients and generated database types.
-- `supabase/migrations/` contains versioned database migrations.
+- `lib/catalog/` and `lib/alerts/` contain the server-only database access for the synced catalog and
+  alerts (Neon PostgreSQL).
+- `database/migrations/` contains versioned database migrations, applied with `npm run db:migrate`.
 
-Copy `.env.example` to `.env.local` and fill in the environment values that are available. Supabase
-has separate clients for browser components, request-scoped server code, and trusted server-only sync
-jobs in `lib/supabase`. Never expose `SUPABASE_SECRET_KEY` to browser code.
+Copy `.env.example` to `.env.local` and fill in the environment values that are available. The
+database is reached only from server code through the server-only `DATABASE_URL`; never expose it to
+browser code. See [Neon storage](docs/neon-alert-storage.md) for environments and migrations.
 
 ### Demo indexing safety
 
@@ -52,9 +53,6 @@ SITE_INDEXING_ENABLED=true
 
 Do not submit the sitemap to Search Console until the production deployment has been verified with
 those values. Follow the [custom-domain launch checklist](docs/custom-domain-launch-checklist.md).
-
-Generated database types live in `lib/supabase/generated/database.types.ts` and should be
-regenerated after every schema change.
 
 ## Principles
 
