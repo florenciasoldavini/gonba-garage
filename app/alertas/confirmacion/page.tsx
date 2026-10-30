@@ -5,6 +5,7 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { StatusIcon, StatusSteps } from '@/components/ui/status';
 import { confirmationLifetimeHours } from '@/lib/alerts/config';
 import { createPageMetadata } from '@/lib/metadata';
 import { AlertResultMotion } from './_components/alert-result-motion';
@@ -89,7 +90,6 @@ export default async function AlertConfirmationPage({ searchParams }: { searchPa
   const result = state === 'confirmada'
     ? confirmed(single(params.tipo), single(params.vehiculo))
     : failures[state ?? ''] ?? failures['no-valido'];
-  const Icon = result.icon;
   const success = state === 'confirmada';
 
   return (
@@ -98,23 +98,12 @@ export default async function AlertConfirmationPage({ searchParams }: { searchPa
 
       <div className="section-shell alert-result-layout">
         <AlertResultMotion labelledBy="alert-result-title">
-          <span className={success ? 'alert-result-icon' : 'alert-result-icon alert-result-icon-muted'}>
-            <Icon aria-hidden="true" size={24} strokeWidth={2} />
-          </span>
+          <StatusIcon icon={result.icon} tone={success ? 'success' : 'danger'} />
           <Eyebrow>{result.eyebrow}</Eyebrow>
           <h1 id="alert-result-title">{result.title}</h1>
           <p>{result.text}</p>
-          {result.steps && (
-            <div className="alert-result-next">
-              <strong>¿Qué sigue?</strong>
-              <ol>
-                {result.steps.map((step, index) => (
-                  <li key={step}><span>{String(index + 1).padStart(2, '0')}</span> {step}</li>
-                ))}
-              </ol>
-            </div>
-          )}
-          <div className="alert-result-actions">
+          {result.steps && <StatusSteps steps={result.steps} />}
+          <div className="status-actions">
             {result.actions.map((action, index) => (
               <ButtonLink key={action.href} href={action.href} variant={index === 0 ? 'accent' : 'glass'}>
                 {action.label} {index === 0 && <ArrowUpRight aria-hidden="true" size={16} />}

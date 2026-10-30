@@ -1,49 +1,35 @@
 'use client';
 
 import { useRef } from 'react';
-import { useGSAP } from '@gsap/react';
-import gsap from 'gsap';
 import { ArrowUpRight, Check } from 'lucide-react';
 
+import { useStatusMotion } from '@/components/motion/use-status-motion';
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-
-if (typeof window !== 'undefined') {
-  gsap.registerPlugin(useGSAP);
-}
+import { StatusIcon, StatusSteps } from '@/components/ui/status';
 
 export function ValuationSuccess({ onReset }: { onReset: () => void }) {
   const root = useRef<HTMLElement>(null);
-
-  useGSAP(
-    () => {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-      gsap.timeline({ defaults: { ease: 'power3.out' } })
-        .from('.valuation-success-icon', { scale: 0.35, rotation: -12, autoAlpha: 0, duration: 0.6, ease: 'back.out(1.8)' })
-        .from('.valuation-success > :not(.valuation-success-icon)', { y: 24, autoAlpha: 0, stagger: 0.08, duration: 0.52 }, '<0.14')
-        .from('.valuation-success-next li', { x: 20, autoAlpha: 0, stagger: 0.08, duration: 0.42 }, '<0.1');
-    },
-    { scope: root },
-  );
+  useStatusMotion(root);
 
   return (
-    <section className="valuation-success glass-panel" aria-live="polite" ref={root}>
-      <span className="valuation-success-icon"><Check aria-hidden="true" size={24} strokeWidth={2} /></span>
+    <section className="valuation-success status-panel glass-panel" aria-live="polite" ref={root}>
+      <StatusIcon icon={Check} />
       <Eyebrow>Solicitud preparada</Eyebrow>
       <h2>Ya tenemos una primera foto de tu auto.</h2>
       <p>En la versión final, Gonba&apos;s Garage recibirá estos datos para revisar la unidad y contactarte con una estimación preliminar.</p>
-      <div className="valuation-success-next">
-        <strong>¿Qué sigue?</strong>
-        <ol>
-          <li><span>01</span> Revisamos la información.</li>
-          <li><span>02</span> Te contactamos para conocer más detalles.</li>
-          <li><span>03</span> Coordinamos una inspección si la unidad encaja.</li>
-        </ol>
+      <StatusSteps
+        steps={[
+          'Revisamos la información.',
+          'Te contactamos para conocer más detalles.',
+          'Coordinamos una inspección si la unidad encaja.',
+        ]}
+      />
+      <div className="status-actions">
+        <Button type="button" onClick={onReset}>
+          Cargar otro vehículo <ArrowUpRight aria-hidden="true" size={16} />
+        </Button>
       </div>
-      <Button type="button" onClick={onReset}>
-        Cargar otro vehículo <ArrowUpRight aria-hidden="true" size={16} />
-      </Button>
       <small>Demostración: todavía no se enviaron datos.</small>
     </section>
   );

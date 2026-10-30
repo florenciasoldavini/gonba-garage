@@ -5,6 +5,7 @@ import { ArrowRight, ArrowUpRight, BellRing, Check, TrendingDown, X } from 'luci
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { StatusIcon } from '@/components/ui/status';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 
@@ -89,11 +90,13 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
 
           {state === 'success' ? (
             <div className="price-alert-success" data-dialog-view aria-live="polite">
-              <span aria-hidden="true"><Check size={22} strokeWidth={2.2} /></span>
-              <p>Revisá tu email</p>
+              <StatusIcon icon={Check} />
+              <Eyebrow>Revisá tu email</Eyebrow>
               <h2>Confirmá la alerta desde tu correo.</h2>
               <p>Te enviamos un enlace para activar la alerta del {vehicleName}. Hasta que la confirmes no recibirás avisos. El precio actual es {formattedPrice}.</p>
-              <Button type="button" onClick={closeDialog}>Seguir viendo el auto <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} /></Button>
+              <div className="status-actions">
+                <Button type="button" onClick={closeDialog}>Seguir viendo el auto <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} /></Button>
+              </div>
             </div>
           ) : (
             <form className="price-alert-form ph-no-capture" data-dialog-view data-private onSubmit={handleSubmit}>
