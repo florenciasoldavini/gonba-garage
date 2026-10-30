@@ -19,7 +19,7 @@ MERCADO_LIBRE_CATALOG_API_KEY=<misma clave privada que Vercel>
 
 ## Almacenamiento y concurrencia
 
-El SDK lee el blob privado con `useCache: false`, directamente desde origen. El JSON contiene solo la versión, el refresh token cifrado y un marcador técnico de renovación. El cifrado AES-256-GCM usa un IV aleatorio y vincula el secreto al seller. La clave queda fuera del store. El access token vive únicamente en memoria; no se almacena inventario.
+El SDK lee el blob privado con `useCache: false`, directamente desde origen. El JSON contiene solo la versión, el refresh token cifrado y un marcador técnico de renovación. El cifrado AES-256-GCM usa un IV aleatorio y vincula el secreto al seller. La clave queda fuera del store. El access token vive únicamente en memoria. El inventario no se persiste en Blob; solo sus datos públicos de presentación pasan unos minutos por la caché de datos del servidor (ver «Endpoint y verificación»).
 
 Antes de consumir el refresh token, el backend escribe el marcador de renovación con `ifMatch: etag`. Solo una instancia puede obtenerlo. El token nuevo se guarda mediante otro `ifMatch` sobre la versión bloqueada, antes de usar el access token. Una escritura obsoleta falla y no sobrescribe una conexión nueva. La creación inicial usa `allowOverwrite: false` para resolver también las carreras al autorizar por primera vez.
 
@@ -30,6 +30,8 @@ No cambiar la clave de cifrado sin migrar el ciphertext o reautorizar. No expone
 ## Endpoint y verificación
 
 `GET /api/mercado-libre/catalog` requiere `Authorization: Bearer <clave>`, enviado desde el servidor local. `?item=MLA...` solo entrega fichas activas del seller esperado. Devuelve datos de presentación, fotos, descripción y atributos, con `private, no-store` y `noindex`; no devuelve la respuesta privada completa del vendedor. No habilita CORS.
+
+El backend guarda esos datos públicos en la caché de datos de Next (`unstable_cache`, etiqueta `mercado-libre-catalog`) durante 5 minutos, compartida por todas las visitas: la carga sobre Mercado Libre depende de esa ventana y no del tráfico. Al vencer, se sirve una vez el dato anterior mientras se renueva en segundo plano; si la renovación falla, se conserva el anterior. Los errores no se guardan. Un `?item=` solo consulta Mercado Libre si el ID figura en el listado activo en caché; cualquier otro ID devuelve 404 sin llamadas. Las claves usan el seller y el ID, nunca el token ni el header `Authorization`, y la respuesta HTTP sigue siendo `private, no-store`. Una publicación nueva, pausada o con precio cambiado puede tardar hasta unos 5 minutos en reflejarse. Las alertas de precio no usan esta caché: leen Mercado Libre directamente. Verificación: `node scripts/check-catalog-cache.mjs`.
 
 Pruebas locales: `node scripts/check-refresh-token-store.mjs`, typecheck, lint, build y `test:metadata` en modo demo y producción. El test de almacenamiento simula escrituras condicionales e incluye dos renovaciones concurrentes, rotación, timeout ambiguo, recuperación y rechazo de escrituras obsoletas. La prueba real del store privado y de la cuenta requiere crearlo, configurar secretos, desplegar y autorizar después de revisar el PR. Probar también acceso denegado al blob sin credenciales, acceso desde localhost tras reiniciarlo y recuperación tras una revocación.
 
