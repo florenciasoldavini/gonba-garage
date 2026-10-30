@@ -10,6 +10,11 @@ and verify both demo mode (`SITE_INDEXING_ENABLED=false`) and production indexin
 (`SITE_INDEXING_ENABLED=true`). Do not enable production indexing or replace the canonical origin
 until the permanent-domain launch requirements in the documentation are satisfied.
 
+## Commits and pull requests
+
+Always write commit messages, pull request titles and pull request descriptions in English, even
+when earlier history or the change itself (site copy, Spanish docs) is in Spanish.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
