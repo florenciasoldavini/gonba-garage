@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
 import { saveInventorySubscription } from '@/lib/alerts/subscriptions';
+import { rejectCrossSiteJson } from '@/lib/alerts/request-guard';
 
 type InventoryAlertRequest = {
   email?: unknown;
@@ -38,6 +39,9 @@ function normalizeBound(value: unknown, maximum: number) {
 }
 
 export async function POST(request: Request) {
+  const rejected = rejectCrossSiteJson(request);
+  if (rejected) return rejected;
+
   let body: InventoryAlertRequest;
 
   try {

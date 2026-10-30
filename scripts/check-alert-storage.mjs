@@ -35,12 +35,33 @@ const dependencies = {
   },
   '@/lib/integrations/mercado-libre/catalog': { findCatalogVehicle: async () => vehicle },
 };
+dependencies['@/lib/alerts/request-guard'] = load('../lib/alerts/request-guard.ts', dependencies);
 const inventory = load('../app/api/inventory-alerts/route.ts', dependencies).POST;
 const price = load('../app/api/price-alerts/route.ts', dependencies).POST;
-const post = body => new Request('https://example.test/api/alerts', {
-  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+const post = (body, headers = {}) => new Request('https://example.test/api/alerts', {
+  method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body),
 });
 const request = { email: ' Test@Example.invalid ', vehicleSlug: vehicle.slug };
+for (const handler of [inventory, price]) {
+  const before = calls.length;
+  // A cross-site HTML form can only send simple content types, never application/json.
+  const form = new Request('https://example.test/api/alerts', { method: 'POST', body: JSON.stringify(request) });
+  assert.equal(form.headers.get('content-type'), 'text/plain;charset=UTF-8');
+  assert.equal((await handler(form)).status, 415);
+  assert.equal((await handler(post(request, { 'Content-Type': 'application/x-www-form-urlencoded' }))).status, 415);
+  assert.equal((await handler(post(request, { Origin: 'https://attacker.test' }))).status, 403);
+  assert.equal((await handler(post(request, { Origin: 'null' }))).status, 403);
+  assert.equal((await handler(post(request, { Origin: 'https://attacker.test', Host: 'example.test' }))).status, 403);
+  assert.equal((await handler(post(request, { 'Sec-Fetch-Site': 'cross-site' }))).status, 403);
+  assert.equal(calls.length, before, 'Rejected cross-site requests must not touch storage');
+  assert.equal((await handler(post(request, { 'Content-Type': 'Application/JSON; charset=utf-8' }))).status, 201);
+  assert.equal((await handler(post(request, { Origin: 'https://example.test', 'Sec-Fetch-Site': 'same-origin' }))).status, 201);
+  // Behind Vercel and other proxies the public host arrives in Host / X-Forwarded-Host, not request.url.
+  assert.equal((await handler(post(request, { Origin: 'https://preview-abc.vercel.app',
+    'X-Forwarded-Host': 'preview-abc.vercel.app' }))).status, 201);
+  assert.equal((await handler(post(request, { Origin: 'http://localhost:3100', Host: 'localhost:3100' }))).status, 201);
+  assert.equal(calls.length, before + 4);
+}
 for (const handler of [inventory, price]) {
   for (const body of [null, [], 'bad', { email: 'invalid' }]) assert.equal((await handler(post(body))).status, 400);
   const before = calls.length;
@@ -70,7 +91,7 @@ for (const handler of [inventory, price]) {
   assert.equal(response.status, 500);
   assert.equal(JSON.stringify(await response.json()).includes('Private DB error'), false);
 }
-console.log('Alert routes: validation, normalized email, honeypot, missing configuration, live catalog prices and safe failures passed.');
+console.log('Alert routes: same-origin JSON only, validation, normalized email, honeypot, missing configuration, live catalog prices and safe failures passed.');
 
 async function checkStorage(sql, subscriptions) {
   const email = `gonba-storage-test-${randomUUID()}@example.invalid`;
