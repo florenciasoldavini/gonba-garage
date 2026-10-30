@@ -87,8 +87,11 @@ history or operator email alerts are not included in this PR.
 
 ## Activation after PR review
 
-1. Apply `npm run db:migrate` to the development branch, test, and then production. It applies both
+1. Apply `npm run db:migrate` to the development branch, test, and then production. It applies all
    migrations and is rerunnable. The new tables and columns are not applied to production by this PR.
+   Apply the signup-confirmation migration **before** deploying the code that uses it: the new code
+   writes `pending`, which the old schema rejects. The migration keeps status defaults unchanged,
+   so code that is already deployed keeps working against the migrated schema.
 2. Verify a Gonba sending domain in Resend, including its sending DNS records. Do not use a domain
    belonging to a different project. Create a sending-only API key for the verified domain.
 3. Set server-only variables on the backend:

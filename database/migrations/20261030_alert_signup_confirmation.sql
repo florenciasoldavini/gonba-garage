@@ -2,17 +2,16 @@
 -- signed confirmation link makes them 'active'. Every delivery query selects status = 'active',
 -- so pending rows never receive alerts. Existing rows keep their status: subscriptions created
 -- before this migration are grandfathered as confirmed, with confirmed_at left NULL because no
--- confirmation was recorded for them. Any insert that omits status is now unconfirmed by default.
--- Plain rerunnable DDL, without embedded semicolons.
+-- confirmation was recorded for them. Status defaults stay 'active': the application always sets
+-- 'pending' explicitly, and code deployed before this change must keep working against the new
+-- schema. Apply this migration first, then deploy. Plain rerunnable DDL, without embedded semicolons.
 ALTER TABLE public.vehicle_price_alerts DROP CONSTRAINT IF EXISTS vehicle_price_alerts_status_check;
 ALTER TABLE public.vehicle_price_alerts ADD CONSTRAINT vehicle_price_alerts_status_check
   CHECK (status IN ('pending', 'active', 'notified', 'cancelled'));
-ALTER TABLE public.vehicle_price_alerts ALTER COLUMN status SET DEFAULT 'pending';
 ALTER TABLE public.vehicle_price_alerts ADD COLUMN IF NOT EXISTS confirmed_at timestamptz;
 ALTER TABLE public.vehicle_inventory_alerts DROP CONSTRAINT IF EXISTS vehicle_inventory_alerts_status_check;
 ALTER TABLE public.vehicle_inventory_alerts ADD CONSTRAINT vehicle_inventory_alerts_status_check
   CHECK (status IN ('pending', 'active', 'cancelled'));
-ALTER TABLE public.vehicle_inventory_alerts ALTER COLUMN status SET DEFAULT 'pending';
 ALTER TABLE public.vehicle_inventory_alerts ADD COLUMN IF NOT EXISTS confirmed_at timestamptz;
 -- Scopes confirmation links, as price alerts already do for cancellation links.
 ALTER TABLE public.vehicle_inventory_alerts ADD COLUMN IF NOT EXISTS generation uuid NOT NULL DEFAULT gen_random_uuid();

@@ -178,6 +178,13 @@ if (process.argv.includes('--live')) {
       const legacy = (await db.query(`SELECT status, confirmed_at FROM public.${table} WHERE email = 'legacy@example.invalid'`)).rows;
       assert.deepEqual(legacy, [{ status: 'active', confirmed_at: null }], `${table}: existing rows stay active after the migration`);
     }
+    // Code deployed before this migration inserts without a status; those rows must stay active.
+    await db.exec(`INSERT INTO public.vehicle_inventory_alerts (email) VALUES ('old-code@example.invalid');
+      INSERT INTO public.vehicle_price_alerts (email, vehicle_slug, current_price, currency) VALUES ('old-code@example.invalid', 'old-code-mla2', 1, 'USD')`);
+    for (const table of ['vehicle_inventory_alerts', 'vehicle_price_alerts']) {
+      const rows = (await db.query(`SELECT status FROM public.${table} WHERE email = 'old-code@example.invalid'`)).rows;
+      assert.deepEqual(rows, [{ status: 'active' }], `${table}: the migration is safe to apply before deploying the new code`);
+    }
     const subscriptions = load('../lib/alerts/subscriptions.ts', { './database': { getAlertsSql: () => sql } });
     await checkStorage(sql, subscriptions);
     const malicious = { email: 'quoted@example.invalid', query: "'; DROP TABLE vehicle_inventory_alerts; --", make: '',
