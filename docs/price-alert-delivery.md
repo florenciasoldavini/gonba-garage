@@ -9,8 +9,8 @@ price/currency and the last price accepted for delivery. Existing live slugs are
 
 Creating an alert stores it as `pending` and sends a confirmation email (double opt-in). Pending
 alerts are never watched and receive no price emails. The link opens `/api/alerts/confirm`. Its
-GET changes nothing, but in a browser the page immediately posts itself, so the person sees
-"Alerta confirmada" after one click. Link scanners that only fetch the URL never send that POST.
+GET changes nothing, but in a browser the page immediately posts itself, so after one click the
+person lands on `/alertas/confirmacion` ("Te avisaremos si baja.", with a link back to the vehicle). Link scanners that only fetch the URL never send that POST.
 The POST activates the alert and queues the activation email with a cancellation link, exactly
 once even if confirmed repeatedly. Links expire after 72 hours.
 Repeated signups for an active alert preserve the baseline and send nothing. Repeated signups for a

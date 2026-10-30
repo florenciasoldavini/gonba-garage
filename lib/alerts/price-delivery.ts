@@ -41,7 +41,7 @@ export async function requestPriceAlert(email: string, vehicle: Vehicle) {
 /**
  * Activation and the welcome email are queued atomically, as signup did before confirmation existed.
  * Idempotent: repeated or concurrent confirmations update and queue at most once.
- * Returns whether that generation is active now.
+ * Returns the vehicle slug when that generation is active now, otherwise null.
  */
 export async function confirmPriceAlert(id: string, generation: string) {
   const sql = getAlertsSql();
@@ -52,8 +52,8 @@ export async function confirmPriceAlert(id: string, generation: string) {
   ) INSERT INTO public.price_alert_deliveries (alert_id, generation, kind, price, previous_price, currency, title, vehicle_slug)
     SELECT id, generation, 'welcome', current_price, current_price, currency, vehicle_title, vehicle_slug FROM confirmed
     ON CONFLICT DO NOTHING`;
-  const rows = await sql`SELECT 1 FROM public.vehicle_price_alerts WHERE id = ${id} AND generation = ${generation} AND status = 'active'`;
-  return rows.length > 0;
+  const rows = await sql`SELECT vehicle_slug FROM public.vehicle_price_alerts WHERE id = ${id} AND generation = ${generation} AND status = 'active'`;
+  return rows.length ? String(rows[0].vehicle_slug) : null;
 }
 
 export async function enqueuePriceItem(id: string) {

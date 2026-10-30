@@ -9,18 +9,17 @@ for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect', 
   assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
 }
 // Alert management is never indexable, even when production indexing is enabled.
-for (const [path, status] of [['/api/alerts/daily', 401], ['/api/price-alerts/cancel', 400], ['/api/alerts/confirm', 400]]) {
-  const response = await fetch(new URL(path, targetOrigin));
+for (const [path, status] of [['/api/alerts/daily', 401], ['/api/price-alerts/cancel', 400], ['/api/alerts/confirm', 303]]) {
+  const response = await fetch(new URL(path, targetOrigin), { redirect: 'manual' });
   assert.equal(response.status, status, path);
   assert.match(response.headers.get('cache-control') ?? '', /no-store/);
   assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
 }
-// Emailed confirmation links render a private page; GET never activates an alert.
-const confirmPage = await fetch(new URL('/api/alerts/confirm?token=invalid', targetOrigin));
-assert.equal(confirmPage.status, 400);
-assert.match(confirmPage.headers.get('cache-control') ?? '', /private/);
-assert.match(confirmPage.headers.get('content-security-policy') ?? '', /default-src 'none'/);
-assert.match(await confirmPage.text(), /<meta name="robots" content="noindex,nofollow">/);
+// Emailed confirmation links never activate on GET; invalid ones redirect to the result page.
+const confirmLink = await fetch(new URL('/api/alerts/confirm?token=invalid', targetOrigin), { redirect: 'manual' });
+assert.equal(confirmLink.status, 303);
+assert.match(confirmLink.headers.get('cache-control') ?? '', /private/);
+assert.equal(confirmLink.headers.get('location'), '/alertas/confirmacion?estado=no-valido');
 assert.notEqual(process.env.VEHICLE_DATA_SOURCE, 'mercado-libre',
   'Run the permanent/demo metadata contract without the temporary local session. Live preview must remain noindex with an empty sitemap.');
 
@@ -257,6 +256,20 @@ if (indexingEnabled) {
   assert.doesNotMatch(robotsText, /Sitemap:/, 'Demo mode should not advertise the sitemap');
   assert.doesNotMatch(sitemapText, /<url>/, 'Demo mode should serve an empty sitemap');
 }
+
+// The alert confirmation result page is a normal site page, but never indexable or in the sitemap.
+for (const query of ['?estado=confirmada&tipo=precio&vehiculo=bmw-330i-m-sport-2021', '?estado=vencido', '']) {
+  const response = await fetch(new URL(`/alertas/confirmacion${query}`, targetOrigin));
+  assert.equal(response.status, 200);
+  const metadata = getMetadata(await response.text());
+  assert.equal(metadata.title, "Confirmación de alerta | Gonba's Garage");
+  assert.match(metadata.robots || '', /noindex/, '/alertas/confirmacion must be noindex in every mode');
+  assert.match(metadata.robots || '', /nofollow/);
+  assert.equal(new URL(metadata.canonical).pathname, '/alertas/confirmacion', 'The canonical excludes the query');
+  assert.equal(new URL(metadata.canonical).search, '');
+}
+const alertSitemap = await (await fetch(new URL('/sitemap.xml', targetOrigin))).text();
+assert.doesNotMatch(alertSitemap, /alertas/, 'Alert pages are excluded from the sitemap');
 
 const missingResponse = await fetch(new URL('/this-page-does-not-exist', targetOrigin));
 assert.equal(missingResponse.status, 404, 'Unknown pages should return 404');

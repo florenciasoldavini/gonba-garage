@@ -197,6 +197,11 @@ sitemap. Cancellation and confirmation GETs do not mutate data, so email scanner
 or activate subscriptions. POST performs the change, including RFC 8058 one-click cancellation.
 The confirmation GET page submits its own POST form on load, so a click in the email confirms in
 one step; its CSP allows only that inline script by hash, and without JavaScript a button is shown.
+Every confirmation outcome then redirects (303, relative `Location`) to `/alertas/confirmacion`,
+a normal site page with the header and footer. Its query holds only the outcome, the alert type
+and, for price alerts, the public vehicle slug: never the token or an email. The page uses
+`createPageMetadata()` with a query-free canonical, is `noindex, nofollow` in every mode, and is
+excluded from the sitemap.
 Confirmation and cancellation tokens use distinct signed formats and cannot be swapped. No email
 address is embedded in any URL. Email links use the explicit fixed `ALERTS_PUBLIC_URL` origin.
 

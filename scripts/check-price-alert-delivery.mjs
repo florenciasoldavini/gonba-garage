@@ -79,7 +79,7 @@ const cancel = load('lib/alerts/cancellation.ts');
 // Signup followed by the owner's confirmation, which is what activation used to do in one step.
 async function activate(address, listing) {
   const alert = await engine.requestPriceAlert(address, listing);
-  assert.equal(await engine.confirmPriceAlert(alert.id, alert.generation), true);
+  assert.equal(await engine.confirmPriceAlert(alert.id, alert.generation), listing.slug);
 }
 const sentTo = (address, prefix) => providerCalls.map(call => JSON.parse(call.body))
   .filter(body => body.to.includes(address) && body.subject.startsWith(prefix));
@@ -223,6 +223,15 @@ try {
 
   const confirmRoute = load('app/api/alerts/confirm/route.ts');
   const confirmRequest = (url, method = 'GET') => confirmRoute[method](new Request(url, { method }));
+  // Every outcome redirects to the site's result page, privately and without the token.
+  const outcome = async (url, method = 'POST') => {
+    const response = await confirmRequest(url, method);
+    assert.equal(response.status, 303);
+    assert.match(response.headers.get('cache-control'), /no-store/);
+    const location = response.headers.get('location');
+    assert.ok(location.startsWith('/alertas/confirmacion?') && !location.includes('token'), location);
+    return Object.fromEntries(new URL(location, 'https://example.test').searchParams);
+  };
   const statusOf = async () => (await db.query('SELECT status, confirmed_at FROM vehicle_price_alerts WHERE id = $1', [subscribed.id])).rows[0];
   const confirmToken = new URL(confirmUrl).searchParams.get('token');
   assert.deepEqual(confirmation.parseConfirmationToken(confirmToken), { scope: 'price', id: subscribed.id, generation: subscribed.generation, expired: false });
@@ -243,7 +252,8 @@ try {
   const base = 'https://example.test/api/alerts/confirm?token=';
   const expiredToken = confirmation.confirmationToken('price', subscribed.id, subscribed.generation, Date.now() - 73 * 3600 * 1000);
   assert.equal(confirmation.parseConfirmationToken(expiredToken).expired, true);
-  assert.equal((await confirmRequest(base + expiredToken, 'POST')).status, 410, 'Expired links cannot confirm');
+  assert.deepEqual(await outcome(base + expiredToken), { estado: 'vencido' }, 'Expired links cannot confirm');
+  assert.deepEqual(await outcome(base + expiredToken, 'GET'), { estado: 'vencido' });
   const signature = confirmToken.slice(confirmToken.lastIndexOf('.') + 1);
   for (const forged of [
     cancel.cancellationToken(subscribed.id, subscribed.generation), // cancel scope
@@ -254,19 +264,20 @@ try {
     '', 'bad',
   ]) {
     assert.equal(confirmation.parseConfirmationToken(forged), null);
-    assert.equal((await confirmRequest(base + forged, 'POST')).status, 400);
+    assert.deepEqual(await outcome(base + forged), { estado: 'no-valido' });
+    assert.deepEqual(await outcome(base + forged, 'GET'), { estado: 'no-valido' });
   }
   assert.equal((await cancelRoute.POST(new Request(`https://example.test/api/price-alerts/cancel?token=${confirmToken}`, { method: 'POST' }))).status, 400,
-    'A confirmation confirmToken cannot cancel');
+    'A confirmation token cannot cancel');
   assert.equal((await statusOf()).status, 'pending');
   deferred = [];
-  const [confirmed, again] = await Promise.all([confirmRequest(confirmUrl, 'POST'), confirmRequest(confirmUrl, 'POST')]);
-  assert.equal(confirmed.status, 200);
-  assert.equal(again.status, 200, 'Confirmation is idempotent');
-  assert.match(await confirmed.text(), /Alerta confirmada.*baje el precio/s);
+  const [confirmed, again] = await Promise.all([outcome(confirmUrl), outcome(confirmUrl)]);
+  const confirmedPrice = { estado: 'confirmada', tipo: 'precio', vehiculo: vehicle.slug };
+  assert.deepEqual(confirmed, confirmedPrice);
+  assert.deepEqual(again, confirmedPrice, 'Confirmation is idempotent');
   assert.equal((await statusOf()).status, 'active');
   assert.ok((await statusOf()).confirmed_at);
-  assert.equal((await confirmRequest(confirmUrl, 'POST')).status, 200);
+  assert.deepEqual(await outcome(confirmUrl), confirmedPrice);
   assert.deepEqual((await deliveriesFor(subscribed.id)).map(row => row.kind), ['welcome'], 'Exactly one welcome after repeated confirmation');
   assert.ok(deferred.length >= 1, 'Confirmation starts delivery work');
   deferred = [];
@@ -288,12 +299,12 @@ try {
   assert.equal(`${searchEmail.text}${searchEmail.html}`.includes('PREMIO'), false, 'Submitted search text is never echoed to the recipient');
   const searchUrl = searchEmail.text.match(/https:\/\/example\.test\/api\/alerts\/confirm\?token=\S+/)[0];
   const crossScope = confirmation.confirmationToken('price', search.id, search.generation);
-  assert.equal((await confirmRequest(base + crossScope, 'POST')).status, 410, 'A price-scoped token cannot confirm an inventory alert');
-  assert.equal((await confirmRequest(searchUrl, 'POST')).status, 200);
+  assert.deepEqual(await outcome(base + crossScope), { estado: 'no-valido' }, 'A price-scoped token cannot confirm an inventory alert');
+  assert.deepEqual(await outcome(searchUrl), { estado: 'confirmada', tipo: 'busqueda' });
   assert.equal((await db.query("SELECT status FROM vehicle_inventory_alerts WHERE email='search@example.invalid'")).rows[0].status, 'active');
-  assert.equal((await confirmRequest(searchUrl, 'POST')).status, 200);
+  assert.deepEqual(await outcome(searchUrl), { estado: 'confirmada', tipo: 'busqueda' });
   await db.exec("UPDATE vehicle_inventory_alerts SET status='cancelled' WHERE email='search@example.invalid'");
-  assert.equal((await confirmRequest(searchUrl, 'POST')).status, 410, 'A cancelled alert is not reactivated by an old link');
+  assert.deepEqual(await outcome(searchUrl), { estado: 'no-valido' }, 'A cancelled alert is not reactivated by an old link');
   deferred = [];
   overrides['@/lib/alerts/price-delivery'] = { enqueuePriceItem: async id => { if (enqueueFail) throw Error(); queued.push(id); }, runPriceAlertWorkSafely: async () => {} };
   const webhook = load('app/api/mercado-libre/webhook/route.ts');
