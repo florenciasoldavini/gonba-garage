@@ -43,6 +43,9 @@ const post = body => new Request('https://example.test/api/alerts', {
 const request = { email: ' Test@Example.invalid ', vehicleSlug: vehicle.slug };
 for (const handler of [inventory, price]) {
   for (const body of [null, [], 'bad', { email: 'invalid' }]) assert.equal((await handler(post(body))).status, 400);
+  const started = performance.now();
+  assert.equal((await handler(post({ ...request, email: `a@${'.'.repeat(1_000_000)}@` }))).status, 400);
+  assert.ok(performance.now() - started < 1000, 'Oversized emails must be rejected before the regex runs');
   const before = calls.length;
   assert.equal((await handler(post({ website: 'bot' }))).status, 201);
   assert.equal(calls.length, before, 'Honeypot must not touch storage');
@@ -70,7 +73,7 @@ for (const handler of [inventory, price]) {
   assert.equal(response.status, 500);
   assert.equal(JSON.stringify(await response.json()).includes('Private DB error'), false);
 }
-console.log('Alert routes: validation, normalized email, honeypot, missing configuration, live catalog prices and safe failures passed.');
+console.log('Alert routes: validation, oversized email, normalized email, honeypot, missing configuration, live catalog prices and safe failures passed.');
 
 async function checkStorage(sql, subscriptions) {
   const email = `gonba-storage-test-${randomUUID()}@example.invalid`;

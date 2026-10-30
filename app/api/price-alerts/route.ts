@@ -34,7 +34,8 @@ export async function POST(request: Request) {
   const email = typeof body.email === 'string' ? body.email.trim().toLocaleLowerCase('es') : '';
   const vehicleSlug = typeof body.vehicleSlug === 'string' ? body.vehicleSlug.trim() : '';
 
-  if (!vehicleSlug || vehicleSlug.length > 160 || !emailPattern.test(email) || email.length > 320) {
+  // Check the length before the regex: it backtracks quadratically on long inputs.
+  if (!vehicleSlug || vehicleSlug.length > 160 || email.length > 320 || !emailPattern.test(email)) {
     return NextResponse.json(
       { message: 'Revisá el email e intentá nuevamente.' },
       { status: 400 },
