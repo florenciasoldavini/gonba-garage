@@ -90,9 +90,9 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
           {state === 'success' ? (
             <div className="price-alert-success" data-dialog-view aria-live="polite">
               <span aria-hidden="true"><Check size={22} strokeWidth={2.2} /></span>
-              <p>Alerta activada</p>
-              <h2>Te avisaremos si baja.</h2>
-              <p>Guardamos tu alerta para el {vehicleName}. El precio actual es {formattedPrice}.</p>
+              <p>Revisá tu email</p>
+              <h2>Confirmá la alerta desde tu correo.</h2>
+              <p>Te enviamos un enlace para activar la alerta del {vehicleName}. Hasta que la confirmes no recibirás avisos. El precio actual es {formattedPrice}.</p>
               <Button type="button" onClick={closeDialog}>Seguir viendo el auto <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} /></Button>
             </div>
           ) : (
@@ -121,7 +121,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
               </label>
 
               <Button type="submit" disabled={state === 'submitting'}>
-                <span>{state === 'submitting' ? 'Activando…' : 'Crear alerta'}</span>
+                <span>{state === 'submitting' ? 'Enviando…' : 'Crear alerta'}</span>
                 <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
               </Button>
               <p className="price-alert-privacy">Te avisaremos de cada nueva baja de esta unidad. Podés cancelar la alerta desde cualquier correo.</p>

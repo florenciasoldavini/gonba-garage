@@ -7,10 +7,15 @@ and their email delivery remains separate work. No catalog, photos or vehicle hi
 The subscription stores the stable Mercado Libre publication ID, display slug/title, original
 price/currency and the last price accepted for delivery. Existing live slugs are backfilled to IDs.
 
-Creating an alert activates it immediately and queues an activation email with a cancellation
-link. There is no confirmation step. Repeated active signups preserve the baseline and do not
-send a second activation email. Cancellation followed by a new signup gets a new generation,
-price reference and email. A cancellation link from an old generation cannot cancel a new alert.
+Creating an alert stores it as `pending` and sends a confirmation email (double opt-in). Pending
+alerts are never watched and receive no price emails. The link opens `/api/alerts/confirm`, whose
+GET only shows a button; the POST activates the alert and queues the activation email with a
+cancellation link, exactly once even if confirmed repeatedly. Links expire after 72 hours.
+Repeated signups for an active alert preserve the baseline and send nothing. Repeated signups for a
+pending alert refresh its price reference and may resend the confirmation (see limits below).
+Cancellation followed by a new signup gets a new generation, needs a new confirmation, and starts a
+new price reference. A cancellation or confirmation link from an old generation cannot affect the
+new alert. Alerts that existed before double opt-in are grandfathered as confirmed.
 The live price-alert UI is shown only when `PRICE_ALERT_DELIVERY_ENABLED=true` on the frontend.
 
 Drops are compared in the **same original currency**, in nominal amounts, with the last notified
@@ -65,8 +70,16 @@ inactive or no-longer-available price. Once a request might have been accepted, 
 Cancellation URLs contain signed subscription/generation IDs, never an email. GET is read-only and
 shows a confirmation form so scanners cannot unsubscribe users. POST performs cancellation; this
 also supports the RFC 8058 one-click headers. It needs no account. A send already in progress may
-finish during cancellation. Price signup requests have shared per-address (5/hour) and total
-(100/hour) limits; addresses are hashed in the rate-limit table. Existing honeypot stays in place.
+finish during cancellation.
+
+Both signup endpoints (price and inventory) have shared, fixed-window limits with separate keys
+per endpoint: 20/hour per client IP (first `X-Forwarded-For` hop or `X-Real-IP`; IPv6 grouped by
+/64), 5/hour per address and 100/hour in total. Confirmation emails are capped at one per
+subscription every 10 minutes and five per recipient per day across both endpoints; a suppressed
+send still returns the same success response. IPs and addresses are HMAC'd with
+`ALERTS_SIGNING_SECRET` and never stored raw. Limits also apply in demo mode whenever the database
+is configured; without a signing secret (demo only) only the total bucket applies. The existing
+honeypot stays in place.
 Resend applies provider-level suppression of hard bounces/complaints. A full local delivery-events
 history or operator email alerts are not included in this PR.
 
@@ -79,7 +92,7 @@ history or operator email alerts are not included in this PR.
 3. Set server-only variables on the backend:
    - `RESEND_API_KEY`
    - `ALERTS_EMAIL_FROM` (e.g. `Gonba's Garage <avisos@your-verified-domain>`)
-   - `ALERTS_PUBLIC_URL` (fixed HTTPS origin serving the vehicle pages and cancellation endpoint)
+   - `ALERTS_PUBLIC_URL` (fixed HTTPS origin serving the vehicle pages, confirmation and cancellation endpoints)
    - `ALERTS_SIGNING_SECRET` (at least 32 random characters, keep stable)
    - `CRON_SECRET` (at least 32 random characters)
    - existing database and Mercado Libre credentials, seller ID and client ID
@@ -91,7 +104,7 @@ history or operator email alerts are not included in this PR.
    storage, so the worker and signup route must use the same intended database/environment. A frontend
    in live mode can use the deployed catalog backend as before. Alert activation on the backend
    resolves the real publication directly, even if that deployment's public frontend is in demo mode.
-6. Test a signup, activation mail, cancellation, repeated price reductions with synthetic observations
+6. Test a signup, confirmation mail and link, activation mail, cancellation, repeated price reductions with synthetic observations
    against development, provider acceptance, then an authenticated daily invocation. Do not edit
    Mercado Libre prices or expose the cron secret in a URL. Inspect the pending/failed/blocked counts.
 7. Verify actual `items` notification delivery and acknowledgment latency on the production callback.

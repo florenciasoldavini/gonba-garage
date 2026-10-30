@@ -9,12 +9,18 @@ for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect', 
   assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
 }
 // Alert management is never indexable, even when production indexing is enabled.
-for (const [path, status] of [['/api/alerts/daily', 401], ['/api/price-alerts/cancel', 400]]) {
+for (const [path, status] of [['/api/alerts/daily', 401], ['/api/price-alerts/cancel', 400], ['/api/alerts/confirm', 400]]) {
   const response = await fetch(new URL(path, targetOrigin));
-  assert.equal(response.status, status);
+  assert.equal(response.status, status, path);
   assert.match(response.headers.get('cache-control') ?? '', /no-store/);
   assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
 }
+// Emailed confirmation links render a private page; GET never activates an alert.
+const confirmPage = await fetch(new URL('/api/alerts/confirm?token=invalid', targetOrigin));
+assert.equal(confirmPage.status, 400);
+assert.match(confirmPage.headers.get('cache-control') ?? '', /private/);
+assert.match(confirmPage.headers.get('content-security-policy') ?? '', /default-src 'none'/);
+assert.match(await confirmPage.text(), /<meta name="robots" content="noindex,nofollow">/);
 assert.notEqual(process.env.VEHICLE_DATA_SOURCE, 'mercado-libre',
   'Run the permanent/demo metadata contract without the temporary local session. Live preview must remain noindex with an empty sitemap.');
 

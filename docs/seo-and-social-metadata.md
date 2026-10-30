@@ -189,11 +189,14 @@ indexing gate are unchanged.
 ## Private alert management
 
 `/api/alerts/daily` requires the cron secret. `/api/price-alerts/cancel` validates a signed,
-generation-scoped capability and serves a minimal cancellation confirmation. Both are
+generation-scoped capability and serves a minimal cancellation confirmation.
+`/api/alerts/confirm` validates a signed, generation-scoped and expiring signup confirmation
+for price and inventory alerts and serves the same kind of minimal page. All three are
 `private, no-store` and `noindex, nofollow` in every indexing mode and excluded from the
-sitemap. Cancellation GET does not mutate data, so email scanners cannot cancel subscriptions.
-POST performs the cancellation, including RFC 8058 one-click requests. No email address is
-embedded in either URL. Email links use the explicit fixed `ALERTS_PUBLIC_URL` origin.
+sitemap. Cancellation and confirmation GETs do not mutate data, so email scanners cannot cancel
+or activate subscriptions. POST performs the change, including RFC 8058 one-click cancellation.
+Confirmation and cancellation tokens use distinct signed formats and cannot be swapped. No email
+address is embedded in any URL. Email links use the explicit fixed `ALERTS_PUBLIC_URL` origin.
 
 ## Homepage inventory
 
