@@ -1,12 +1,12 @@
 'use client';
 
 import { useRef } from 'react';
-import { ArrowUpRight, Check } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 
 import { useStatusMotion } from '@/components/motion/use-status-motion';
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { StatusIcon, StatusSteps } from '@/components/ui/status';
+import { StatusSteps } from '@/components/ui/status';
 
 export function ValuationSuccess({ onReset }: { onReset: () => void }) {
   const root = useRef<HTMLElement>(null);
@@ -14,7 +14,6 @@ export function ValuationSuccess({ onReset }: { onReset: () => void }) {
 
   return (
     <section className="valuation-success status-panel glass-panel" aria-live="polite" ref={root}>
-      <StatusIcon icon={Check} />
       <Eyebrow>Solicitud preparada</Eyebrow>
       <h2>Ya tenemos una primera foto de tu auto.</h2>
       <p>En la versión final, Gonba&apos;s Garage recibirá estos datos para revisar la unidad y contactarte con una estimación preliminar.</p>

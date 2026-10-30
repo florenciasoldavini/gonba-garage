@@ -1,11 +1,10 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { ArrowRight, ArrowUpRight, BellRing, Check, TrendingDown, X } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BellRing, TrendingDown, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { StatusIcon } from '@/components/ui/status';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 
@@ -90,7 +89,6 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
 
           {state === 'success' ? (
             <div className="price-alert-success" data-dialog-view aria-live="polite">
-              <StatusIcon icon={Check} />
               <Eyebrow>Revisá tu email</Eyebrow>
               <h2>Confirmá la alerta desde tu correo.</h2>
               <p>Te enviamos un enlace para activar la alerta del {vehicleName}. Hasta que la confirmes no recibirás avisos. El precio actual es {formattedPrice}.</p>

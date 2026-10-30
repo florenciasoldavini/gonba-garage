@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 
 export function CatalogEmptyState({ alertAction, onReset }: { alertAction: ReactNode; onReset: () => void }) {
-  // An empty state, not the outcome of an action: no status icon, the count is the status.
   return (
     <div className="catalog-empty status-panel glass-panel">
       <Eyebrow>0 resultados</Eyebrow>

@@ -83,23 +83,18 @@ an opaque dark surface when backdrop filtering is unavailable.
 
 ### Status feedback
 
-Success, failure and empty states share one composition: optional `StatusIcon`, `Eyebrow`, title,
-supporting copy, optional `StatusSteps` ("¿Qué sigue?"), and a `status-actions` row. In-page
-panels use `.status-panel` with `glass-panel`, `--radius-card` and `--text-display-md` titles,
-and animate with `useStatusMotion`. Current uses: the alert dialogs' success view, the `/vender`
-success view, `/alertas/confirmacion` and the catalog's empty results.
+Success, failure and empty states share one composition: `Eyebrow`, title, supporting copy,
+optional `StatusSteps` ("¿Qué sigue?"), and a `status-actions` row. In-page panels use
+`.status-panel` with `glass-panel`, `--radius-card` and `--text-display-md` titles, and animate
+with `useStatusMotion`. Current uses: the alert dialogs' success view, the `/vender` success view,
+`/alertas/confirmacion` and the catalog's empty results.
 
-- **Icon or not.** `StatusIcon` marks the outcome of something the person just did (a submitted
-  form, a clicked email link). Empty states have no icon: nothing was attempted, and the eyebrow
-  ("0 resultados") already states the status.
-- **Shape.** A 48px tile with `--radius-button`, never a circle: `50%` is reserved for icon
-  controls, and dialogs place a circular close button next to it. The radius matches the action
-  button below.
-- **Tone.** `success` uses the acid fill. `danger` is for failed operations (expired, invalid or
-  failed confirmation), following the color roles above. Both are paired with text.
+- **No status icons.** The eyebrow and title state the outcome in words ("Alerta confirmada",
+  "Enlace vencido", "0 resultados"), as in every other editorial section. An acid icon tile would
+  also compete with the primary action, the only acid block in the panel.
 - **Label.** Always `Eyebrow`; never a hand-made acid or mono label.
-- **Rhythm.** Icon to eyebrow `--space-6`, eyebrow to title `--space-eyebrow`, title to copy
-  `--space-5`, copy to steps or actions `--space-8`.
+- **Rhythm.** Eyebrow to title `--space-eyebrow`, title to copy `--space-5`, copy to steps or
+  actions `--space-8`.
 
 Deliberate differences:
 

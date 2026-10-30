@@ -1,11 +1,10 @@
 'use client';
 
 import { FormEvent, useId, useState } from 'react';
-import { ArrowRight, ArrowUpRight, BellRing, Check, X } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BellRing, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { StatusIcon } from '@/components/ui/status';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
@@ -121,7 +120,6 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
 
           {state === 'success' ? (
             <div className="price-alert-success" data-dialog-view aria-live="polite">
-              <StatusIcon icon={Check} />
               <Eyebrow>Revisá tu email</Eyebrow>
               <h2 id={successTitleId}>Confirmá la alerta desde tu correo.</h2>
               <p>Te enviamos un enlace para activarla. Después te escribiremos cuando ingrese una unidad que coincida con estos criterios.</p>
