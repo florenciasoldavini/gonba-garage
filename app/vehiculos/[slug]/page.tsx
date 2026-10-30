@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, permanentRedirect } from 'next/navigation';
 import { ArrowDown, ArrowUpRight, Scale } from 'lucide-react';
 
 import { SiteFooter } from '@/components/layout/site-footer';
@@ -34,7 +34,7 @@ type VehicleDetailPageProps = {
 
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
-// Live publications are read from the backend, which caches them briefly, at request time.
+// Live publications are read at request time from the synced database copy.
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: VehicleDetailPageProps): Promise<Metadata> {
@@ -71,13 +71,15 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const { slug } = await params;
   let vehicle, publication;
   try {
-    vehicle = await findCatalogVehicle(slug);
     publication = await findCatalogPublication(slug);
+    vehicle = publication ? publication.vehicle : await findCatalogVehicle(slug);
   } catch {
     // A backend failure is not a missing vehicle: keep notFound() for real 404s only.
     return <main className="section-shell"><SiteHeader active="vehicles" /><h1>Catálogo no disponible</h1><p>No pudimos consultar esta publicación. Volvé a intentar en unos minutos.</p></main>;
   }
 
+  // The slug is fixed at the first sync. Older or edited slugs for the same publication redirect.
+  if (publication && publication.vehicle.slug !== slug) permanentRedirect(`/vehiculos/${publication.vehicle.slug}`);
   if (!vehicle) notFound();
   const pictures = publication?.source.pictures ?? [];
   const photos = pictures.map(picture => fullSizeMercadoLibreImageUrl(picture.secure_url || picture.url))

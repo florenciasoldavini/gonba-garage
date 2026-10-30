@@ -10,7 +10,7 @@ price, description, and contact action must remain usable without WebGL or clien
 - Next.js App Router, React Server Components, and TypeScript.
 - Tailwind is available for utilities; project-specific art direction can live in authored CSS.
 - Cloudflare-compatible Vinext runtime for the current local and hosting foundation.
-- Mercado Libre is the planned source of truth for inventory.
+- Mercado Libre is the source of truth for inventory. The site reads a synced copy in Neon.
 - Server-rendered vehicle detail routes will own metadata, canonical URLs, and structured data.
 - A repository boundary in `features/vehicles/domain` keeps Mercado Libre transport details out of pages.
 
@@ -30,16 +30,43 @@ foundation. Do not introduce a motion or 3D dependency until a specific interact
 
 ## Mercado Libre sync
 
-1. Mercado Libre sends an item notification.
-2. The webhook acknowledges it quickly and records the item ID.
-3. The server fetches the authoritative item and price resources with the seller token.
-4. Normalized vehicle data is cached or persisted behind `VehicleRepository`.
-5. Relevant pages are invalidated without rebuilding the whole site.
-6. A scheduled reconciliation repairs missed notifications.
+The seller keeps managing inventory in Mercado Libre. The site never calls Mercado Libre while
+rendering a page: it reads a local copy in Neon (`database/migrations/20261031_catalog_sync.sql`)
+that a sync worker keeps current. Sync is one-way; nothing is edited on the site.
 
-Today the backend catalog API caches public listing presentation data for five minutes in the Next
-data cache, and only looks up item IDs present in the cached active set. Price alerts bypass it and
-read Mercado Libre directly. See [the Mercado Libre setup notes](mercado-libre-local.md).
+1. Mercado Libre sends an `items` or `items_prices` notification to `/api/mercado-libre/webhook`.
+2. The webhook checks the seller and application IDs, records the item ID in `catalog_sync_jobs`
+   and only then answers 200. If the job cannot be stored it answers 503 so Mercado Libre retries.
+3. After the response, the worker leases the job and reads the item and description again with the
+   seller token. The notification payload is never trusted, so duplicate, forged or out-of-order
+   notifications cannot write wrong data.
+4. Items of the configured seller are saved in `catalog_publications` (public presentation fields
+   only). Items that no longer exist are marked `closed`. Other sellers' items are ignored.
+5. Pages, the share-image route and the alert signup read the copy at request time, so a change is
+   visible on the next request. There is no page cache to invalidate.
+6. `/api/mercado-libre/sync` (Vercel cron, `CRON_SECRET`) reconciles: it lists the seller's active
+   items and queues every item that is new, changed, no longer active or not refreshed for a day,
+   then drains the queue. It never closes or edits a vehicle from the listing alone, so a partial or
+   empty provider response cannot remove vehicles from the site.
+
+Ownership of fields: Mercado Libre owns price, currency, status, title, attributes, pictures and
+description. The copy owns the slug (fixed at the first sync, so URLs survive title edits; other slugs
+for the same ID redirect permanently), `published_at`, `closed_at`, `content_changed_at` (used as the
+vehicle's `updatedAt`) and `catalog_price_history`.
+
+Safety properties: one job row per item with a revision counter, so a notification arriving during a
+read makes the item due again; writes require the item's current job lease, so a worker whose lease
+expired cannot overwrite a newer read; failed reads back off exponentially up to an hour and are given
+up after eight attempts with the error kept for diagnostics; a single-row lease allows one
+reconciliation at a time. `GET /api/mercado-libre/diagnostics?sync=1` reports the last reconciliation,
+queue backlog and row counts.
+
+The cron runs daily so it also works on the Vercel Hobby plan, which rejects more frequent crons.
+Webhooks carry real-time changes; on a Pro plan, change the schedule in `vercel.json` to
+`*/15 * * * *` to repair missed notifications within 15 minutes.
+
+Price alerts keep their own queue and read Mercado Libre directly before sending, for an
+authoritative price. See [the Mercado Libre setup notes](mercado-libre-local.md).
 
 OAuth tokens and client secrets are server-only. The current access token is stored encrypted next to
 the refresh token and shared by every server instance until it expires, so the one-use refresh

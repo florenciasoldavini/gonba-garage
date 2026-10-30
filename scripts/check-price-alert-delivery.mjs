@@ -307,6 +307,8 @@ try {
   assert.deepEqual(await outcome(searchUrl), { estado: 'no-valido' }, 'A cancelled alert is not reactivated by an old link');
   deferred = [];
   overrides['@/lib/alerts/price-delivery'] = { enqueuePriceItem: async id => { if (enqueueFail) throw Error(); queued.push(id); }, runPriceAlertWorkSafely: async () => {} };
+  const syncQueued = [];
+  overrides['@/lib/integrations/mercado-libre/inventory-sync'] = { enqueueCatalogSync: async id => { syncQueued.push(id); }, runCatalogSyncWorkSafely: async () => {} };
   const webhook = load('app/api/mercado-libre/webhook/route.ts');
   const post = body => new Request('https://example.test/api/mercado-libre/webhook', { method: 'POST', body: JSON.stringify(body) });
   const notification = { topic: 'items', resource: '/items/MLA123', user_id: 123, application_id: 456 };
@@ -315,6 +317,7 @@ try {
   assert.equal(queued.length, 0);
   assert.equal((await webhook.POST(post(notification))).status, 200);
   assert.deepEqual(queued, ['MLA123']);
+  assert.deepEqual(syncQueued, ['MLA123'], 'The same notification also queues a catalog sync');
   assert.equal(deferred.length, 1);
   enqueueFail = true;
   assert.equal((await webhook.POST(post(notification))).status, 503, 'Failed persistence must request provider retry');

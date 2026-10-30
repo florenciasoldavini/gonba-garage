@@ -182,11 +182,16 @@ sitemap. The custom-domain checklist contains the separate live-launch verificat
 
 Vehicle details render at request time, including publication slugs that were unknown during the
 build. Do not generate a static-parameter list for these pages: live publication requests read the
-backend at request time. The backend caches public listing data for about five minutes and only
-looks up IDs from the cached active listing set, so Mercado Libre API calls do not grow with page
-views, crawlers or share-image requests. The live catalog opts into request-time rendering before its API error
-handler; the demo catalog remains statically cacheable. Canonical URLs, structured data and the
+synced database copy at request time, so Mercado Libre API calls do not grow with page views,
+crawlers or share-image requests. The live catalog opts into request-time rendering before its API
+error handler; the demo catalog remains statically cacheable. Canonical URLs, structured data and the
 indexing gate are unchanged.
+
+Each live vehicle keeps the slug assigned at its first sync, even when the seller edits the listing
+title. Any other slug ending in the same Mercado Libre ID returns a permanent redirect to the
+canonical URL. Paused and closed publications keep their page with the lifecycle label from
+`features/vehicles/presentation/status.ts`; only active ones are listed. `updatedAt` is the last real
+content or availability change recorded by the sync, never a provider-side touch or the sync time.
 
 When the live catalog backend fails, a vehicle detail page shows a "Catálogo no disponible"
 message with `noindex, nofollow` metadata instead of a server error. Only a genuinely missing
@@ -195,7 +200,7 @@ check asserts that a missing vehicle still returns 404.
 
 ## Private alert management
 
-`/api/alerts/daily` requires the cron secret. `/api/price-alerts/cancel` validates a signed,
+`/api/alerts/daily` and `/api/mercado-libre/sync` require the cron secret. `/api/price-alerts/cancel` validates a signed,
 generation-scoped capability and serves a minimal cancellation confirmation.
 `/api/alerts/confirm` validates a signed, generation-scoped and expiring signup confirmation
 for price and inventory alerts and serves the same kind of minimal page. All three are

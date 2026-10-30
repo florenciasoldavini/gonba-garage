@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/alerts/daily", "schedule": "0 12 * * *" }
+    { "path": "/api/alerts/daily", "schedule": "0 12 * * *" },
+    { "path": "/api/mercado-libre/sync", "schedule": "0 9 * * *" }
   ]
 }

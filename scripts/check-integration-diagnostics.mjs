@@ -124,6 +124,7 @@ assert.equal(await accessTokens.catalogAccessToken(), 'live-access');
 let authenticated = false;
 let connectionReads = 0;
 let refreshCalls = 0;
+let syncHealthReads = 0;
 const diagnosticRoute = load('../app/api/mercado-libre/diagnostics/route.ts', {
   'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) } },
   '@/lib/integrations/mercado-libre/credentials': {
@@ -133,6 +134,7 @@ const diagnosticRoute = load('../app/api/mercado-libre/diagnostics/route.ts', {
   '@/lib/integrations/mercado-libre/access-token': { catalogAccessToken: async () => { refreshCalls++; throw upstream; } },
   '@/lib/integrations/mercado-libre/publication-diagnostics': { readPublicationDiagnostics: async () => assert.fail() },
   '@/lib/integrations/mercado-libre/failures': failures,
+  '@/lib/catalog/store': { readSyncHealth: async () => { syncHealthReads++; return { jobs: { pending: 0 } }; } },
 });
 const healthRequest = new Request('https://example.test/api/mercado-libre/diagnostics?connection=1');
 assert.equal((await diagnosticRoute.GET(healthRequest)).status, 401);
@@ -143,6 +145,10 @@ assert.equal(healthResponse.status, 200);
 assert.equal(healthResponse.headers.get('Cache-Control'), 'private, no-store');
 assert.equal(connectionReads, 1);
 assert.equal(refreshCalls, 0, 'The health check must never consume a refresh token');
+const syncResponse = await diagnosticRoute.GET(new Request('https://example.test/api/mercado-libre/diagnostics?sync=1'));
+assert.equal(syncResponse.status, 200);
+assert.equal(syncHealthReads, 1);
+assert.equal(refreshCalls, 0, 'The sync health check reads only the database');
 const errorResponse = await diagnosticRoute.GET(new Request('https://example.test/api/mercado-libre/diagnostics'));
 assert.equal(errorResponse.status, 503);
 const errorBody = await errorResponse.json();

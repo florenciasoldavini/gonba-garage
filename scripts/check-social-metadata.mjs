@@ -8,8 +8,8 @@ for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect', 
   assert.match(response.headers.get('cache-control') ?? '', /no-store/);
   assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
 }
-// Alert management is never indexable, even when production indexing is enabled.
-for (const [path, status] of [['/api/alerts/daily', 401], ['/api/price-alerts/cancel', 400], ['/api/alerts/confirm', 303]]) {
+// Alert management and catalog sync are never indexable, even when production indexing is enabled.
+for (const [path, status] of [['/api/alerts/daily', 401], ['/api/mercado-libre/sync', 401], ['/api/price-alerts/cancel', 400], ['/api/alerts/confirm', 303]]) {
   const response = await fetch(new URL(path, targetOrigin), { redirect: 'manual' });
   assert.equal(response.status, status, path);
   assert.match(response.headers.get('cache-control') ?? '', /no-store/);
