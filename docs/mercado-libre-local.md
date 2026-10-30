@@ -19,9 +19,13 @@ MERCADO_LIBRE_CATALOG_API_KEY=<misma clave privada que Vercel>
 
 ## Almacenamiento y concurrencia
 
-El SDK lee el blob privado con `useCache: false`, directamente desde origen. El JSON contiene solo la versión, el refresh token cifrado y un marcador técnico de renovación. El cifrado AES-256-GCM usa un IV aleatorio y vincula el secreto al seller. La clave queda fuera del store. El access token vive únicamente en memoria; no se almacena inventario.
+El SDK lee el blob privado con `useCache: false`, directamente desde origen. El JSON contiene solo la versión, el refresh token cifrado, el access token vigente cifrado con su vencimiento y un marcador técnico de renovación. El cifrado AES-256-GCM usa un IV aleatorio y vincula cada secreto al seller. La clave queda fuera del store. No se almacena inventario.
 
-Antes de consumir el refresh token, el backend escribe el marcador de renovación con `ifMatch: etag`. Solo una instancia puede obtenerlo. El token nuevo se guarda mediante otro `ifMatch` sobre la versión bloqueada, antes de usar el access token. Una escritura obsoleta falla y no sobrescribe una conexión nueva. La creación inicial usa `allowOverwrite: false` para resolver también las carreras al autorizar por primera vez.
+Cada instancia reutiliza el access token guardado mientras no venza (con un minuto de margen) y lo conserva además en memoria. Así el refresh token de un solo uso se renueva aproximadamente una vez por vida del access token (unas 6 horas) en total, no una vez por instancia nueva. Una reautorización descarta el access token guardado.
+
+Antes de consumir el refresh token, el backend escribe el marcador de renovación con `ifMatch: etag`. Solo una instancia puede obtenerlo. El refresh token nuevo y su access token se guardan juntos mediante otro `ifMatch` sobre la versión bloqueada, antes de usar el access token. Una escritura obsoleta falla y no sobrescribe una conexión nueva. La creación inicial usa `allowOverwrite: false` para resolver también las carreras al autorizar por primera vez.
+
+Si otra instancia encuentra una renovación de menos de dos minutos, consulta el registro cada segundo durante hasta 25 segundos y usa el access token nuevo en cuanto se guarda; no consume el refresh token. Si la renovación registra un fallo, el marcador supera los dos minutos o se agota la espera, devuelve el error de bloqueo sin reintentar.
 
 Si hay timeout o caída durante la renovación, el marcador permanece bloqueado: no se reutiliza automáticamente un refresh token que Mercado Libre puede haber consumido. La API devuelve 503. Para recuperar, esperar dos minutos y autorizar nuevamente desde `/connect`. Una reautorización también usa ETag y no puede pisar una renovación reciente. No quitar manualmente el bloqueo para reintentar el token anterior. Una caída entre Mercado Libre y Blob puede exigir esta recuperación porque ambos servicios no comparten una transacción.
 
@@ -31,7 +35,7 @@ No cambiar la clave de cifrado sin migrar el ciphertext o reautorizar. No expone
 
 `GET /api/mercado-libre/catalog` requiere `Authorization: Bearer <clave>`, enviado desde el servidor local. `?item=MLA...` solo entrega fichas activas del seller esperado. Devuelve datos de presentación, fotos, descripción y atributos, con `private, no-store` y `noindex`; no devuelve la respuesta privada completa del vendedor. No habilita CORS.
 
-Pruebas locales: `node scripts/check-refresh-token-store.mjs`, typecheck, lint, build y `test:metadata` en modo demo y producción. El test de almacenamiento simula escrituras condicionales e incluye dos renovaciones concurrentes, rotación, timeout ambiguo, recuperación y rechazo de escrituras obsoletas. La prueba real del store privado y de la cuenta requiere crearlo, configurar secretos, desplegar y autorizar después de revisar el PR. Probar también acceso denegado al blob sin credenciales, acceso desde localhost tras reiniciarlo y recuperación tras una revocación.
+Pruebas locales: `node scripts/check-refresh-token-store.mjs`, typecheck, lint, build y `test:metadata` en modo demo y producción. El test de almacenamiento simula escrituras condicionales e incluye dos renovaciones concurrentes, reutilización del access token guardado, espera durante una renovación en curso, rotación, timeout ambiguo, bloqueos interrumpidos que nunca se reclaman, recuperación y rechazo de escrituras obsoletas. La prueba real del store privado y de la cuenta requiere crearlo, configurar secretos, desplegar y autorizar después de revisar el PR. Probar también acceso denegado al blob sin credenciales, acceso desde localhost tras reiniciarlo y recuperación tras una revocación.
 
 No hay migraciones de Supabase que aplicar para Mercado Libre.
 

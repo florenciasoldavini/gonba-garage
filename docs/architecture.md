@@ -37,7 +37,9 @@ foundation. Do not introduce a motion or 3D dependency until a specific interact
 5. Relevant pages are invalidated without rebuilding the whole site.
 6. A scheduled reconciliation repairs missed notifications.
 
-OAuth tokens and client secrets are server-only. The seller should own the Mercado Libre app and
+OAuth tokens and client secrets are server-only. The current access token is stored encrypted next to
+the refresh token and shared by every server instance until it expires, so the one-use refresh
+token rotates about once per token lifetime rather than once per instance. The seller should own the Mercado Libre app and
 production credentials.
 
 ## Motion and 3D strategy
