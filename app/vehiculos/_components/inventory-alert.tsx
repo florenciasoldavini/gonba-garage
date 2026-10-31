@@ -1,13 +1,14 @@
 'use client';
 
-import { FormEvent, useId, useState } from 'react';
-import { ArrowRight, ArrowUpRight, BellRing, X } from 'lucide-react';
+import { FormEvent, useEffect, useId, useRef, useState } from 'react';
+import { ArrowRight, ArrowUpRight, BellRing, CircleAlert, RotateCw, WifiOff, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import { postJson, type RequestFailure } from '@/lib/json-request';
 
 export type InventoryAlertCriteria = {
   query: string;
@@ -33,9 +34,12 @@ type SubmissionState = 'idle' | 'submitting' | 'success' | 'error';
 export function InventoryAlert({ activeFilterCount, criteria, placement, resultCount }: InventoryAlertProps) {
   const titleId = useId();
   const successTitleId = useId();
+  const emailErrorId = useId();
+  const emailRef = useRef<HTMLInputElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
   const [email, setEmail] = useState('');
   const [state, setState] = useState<SubmissionState>('idle');
-  const [message, setMessage] = useState('');
+  const [failure, setFailure] = useState<RequestFailure | null>(null);
   const { closeDialog, dialogRef, openDialog: animateDialogOpen } = useDialogMotion({
     contentKey: state === 'success' ? 'success' : undefined,
     itemSelector: '.price-alert-form > :not(.price-alert-honeypot)',
@@ -55,7 +59,7 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
 
   const openDialog = () => {
     setState('idle');
-    setMessage('');
+    setFailure(null);
     captureAnalyticsEvent('inventory_alert_opened', {
       active_filter_count: activeFilterCount,
       result_count: resultCount,
@@ -65,32 +69,33 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
 
   const triggerCopy = placement === 'empty' ? 'Avisarme si ingresa uno' : 'Crear alerta';
 
+  // The submit button is disabled while sending, which drops focus to <body>. Put it back somewhere useful.
+  useEffect(() => {
+    if (failure) (failure.field === 'email' ? emailRef : submitRef).current?.focus();
+  }, [failure]);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setState('submitting');
-    setMessage('');
     const form = new FormData(event.currentTarget);
+    const result = await postJson('/api/inventory-alerts', { email, website: form.get('website'), ...criteria });
 
-    try {
-      const response = await fetch('/api/inventory-alerts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, website: form.get('website'), ...criteria }),
-      });
-      const result = await response.json() as { message?: string };
-      if (!response.ok) throw new Error(result.message || 'No pudimos guardar la alerta.');
-
+    if (result.ok) {
       setState('success');
       captureAnalyticsEvent('inventory_alert_created', {
         active_filter_count: activeFilterCount,
         result_count: resultCount,
       });
-    } catch (error) {
+    } else {
       setState('error');
-      setMessage(error instanceof Error ? error.message : 'No pudimos guardar la alerta.');
+      setFailure(result.failure);
       captureAnalyticsEvent('inventory_alert_failed', { active_filter_count: activeFilterCount });
     }
   };
+
+  const shownFailure = state === 'error' ? failure : null;
+  const emailInvalid = shownFailure?.field === 'email';
+  const retry = shownFailure?.retryable === true;
 
   return (
     <>
@@ -142,6 +147,7 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
               <label>
                 <span>Email</span>
                 <input
+                  ref={emailRef}
                   type="email"
                   name="email"
                   value={email}
@@ -150,20 +156,36 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
                   autoComplete="email"
                   maxLength={320}
                   required
+                  aria-invalid={emailInvalid || undefined}
+                  aria-describedby={emailInvalid ? emailErrorId : undefined}
                 />
               </label>
+              {emailInvalid && (
+                <p className="price-alert-field-error" id={emailErrorId} role="alert">
+                  <CircleAlert aria-hidden="true" size={15} strokeWidth={2} />{shownFailure.title}
+                </p>
+              )}
 
               <label className="price-alert-honeypot" aria-hidden="true">
                 <span>Sitio web</span>
                 <input name="website" type="text" tabIndex={-1} autoComplete="off" />
               </label>
 
-              <Button type="submit" disabled={state === 'submitting'}>
-                <span>{state === 'submitting' ? 'Enviando…' : 'Crear alerta'}</span>
-                <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
+              <Button ref={submitRef} type="submit" disabled={state === 'submitting'}>
+                <span>{state === 'submitting' ? 'Enviando…' : retry ? 'Reintentar' : 'Crear alerta'}</span>
+                {retry
+                  ? <RotateCw aria-hidden="true" size={16} strokeWidth={1.8} />
+                  : <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />}
               </Button>
+              {shownFailure && !emailInvalid && (
+                <div className="price-alert-error" role="alert">
+                  {shownFailure.kind === 'connection'
+                    ? <WifiOff aria-hidden="true" size={18} strokeWidth={2} />
+                    : <CircleAlert aria-hidden="true" size={18} strokeWidth={2} />}
+                  <p><strong>{shownFailure.title}</strong>{shownFailure.detail && <span>{shownFailure.detail}</span>}</p>
+                </div>
+              )}
               <p className="price-alert-privacy">Usaremos tu email únicamente para avisarte sobre esta búsqueda.</p>
-              {state === 'error' && <p className="price-alert-error" role="alert">{message}</p>}
             </form>
           )}
         </div>

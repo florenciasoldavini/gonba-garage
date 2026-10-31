@@ -86,8 +86,10 @@ export async function POST(request: Request) {
     (maxPrice > 0 && maxPrice < minPrice) ||
     (maxMileage > 0 && maxMileage < minMileage)
   ) {
+    // `field` lets the form point at the input. Invalid criteria come from the filters, not the dialog.
+    const emailInvalid = email === null || !emailPattern.test(email);
     return NextResponse.json(
-      { message: 'Revisá el email y los criterios de búsqueda.' },
+      { message: 'Revisá el email y los criterios de búsqueda.', ...(emailInvalid ? { field: 'email' } : {}) },
       { status: 400 },
     );
   }

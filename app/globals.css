@@ -824,7 +824,7 @@ h3 { letter-spacing: -0.04em; }
   font-size: 1.25rem;
 }
 .price-alert-form h2, .price-alert-success h2 { margin-bottom: var(--space-5); font-size: clamp(2.25rem, 6vw, 4rem); }
-.price-alert-form > p:not(.eyebrow, .price-alert-privacy, .price-alert-error) { color: var(--muted); line-height: 1.65; }
+.price-alert-form > p:not(.eyebrow, .price-alert-privacy, .price-alert-field-error) { color: var(--muted); line-height: 1.65; }
 .price-alert-form label { margin-top: 30px; display: grid; gap: 9px; }
 .price-alert-form label > span { color: #a7aba3; font: 500 0.65rem var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
 .price-alert-form input {
@@ -840,11 +840,19 @@ h3 { letter-spacing: -0.04em; }
 }
 .price-alert-form label:not(.price-alert-honeypot) input:hover { border-color: rgba(220, 255, 0, 0.42); background: rgba(255, 255, 255, 0.07); }
 .price-alert-form input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(220, 255, 0, 0.12); }
+.price-alert-form label:not(.price-alert-honeypot) input[aria-invalid='true'] { border-color: var(--color-danger); }
+.price-alert-form label:not(.price-alert-honeypot) input[aria-invalid='true']:focus { box-shadow: 0 0 0 2px var(--color-danger-soft); }
 .price-alert-form .button { width: 100%; margin-top: 12px; cursor: pointer; }
 .price-alert-form .button:disabled { cursor: wait; opacity: 0.66; }
 .price-alert-honeypot { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 .price-alert-privacy { margin: 12px 0 0; color: var(--color-text-tertiary); font-size: var(--text-fine); line-height: 1.5; }
-.price-alert-error { margin: 12px 0 0; color: var(--color-danger); font-size: var(--text-caption); }
+.price-alert-error { margin: 14px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 10px; align-items: start; font-size: var(--text-small); line-height: 1.5; }
+.price-alert-error svg { margin-top: 1px; color: var(--color-danger); }
+.price-alert-error p { margin: 0; }
+.price-alert-error strong { display: block; color: var(--color-danger); font-weight: 700; }
+.price-alert-error span { color: #c9ccc4; }
+.price-alert-field-error { margin: 8px 0 0; display: flex; gap: 7px; align-items: flex-start; color: var(--color-danger); font-size: var(--text-small); line-height: 1.45; }
+.price-alert-field-error svg { flex: 0 0 auto; margin-top: 1px; }
 .price-alert-success { min-height: 410px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; }
 
 .detail-overview {

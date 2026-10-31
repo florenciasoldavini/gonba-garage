@@ -41,8 +41,10 @@ export async function POST(request: Request) {
 
   // Check the length before the regex: it backtracks quadratically on long inputs.
   if (!vehicleSlug || vehicleSlug.length > 160 || email.length > 320 || !emailPattern.test(email)) {
+    // `field` lets the form point at the input. Other 400s (e.g. a sold vehicle) are not about the email.
+    const emailInvalid = email.length > 320 || !emailPattern.test(email);
     return NextResponse.json(
-      { message: 'Revisá el email e intentá nuevamente.' },
+      { message: 'Revisá el email e intentá nuevamente.', ...(emailInvalid ? { field: 'email' } : {}) },
       { status: 400 },
     );
   }

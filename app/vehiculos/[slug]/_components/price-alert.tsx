@@ -1,12 +1,13 @@
 'use client';
 
-import { FormEvent, useId, useState } from 'react';
-import { ArrowRight, ArrowUpRight, BellRing, TrendingDown, X } from 'lucide-react';
+import { FormEvent, useEffect, useId, useRef, useState } from 'react';
+import { ArrowRight, ArrowUpRight, BellRing, CircleAlert, RotateCw, TrendingDown, WifiOff, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import { postJson, type RequestFailure } from '@/lib/json-request';
 
 type PriceAlertProps = {
   vehicleName: string;
@@ -19,9 +20,12 @@ type SubmissionState = 'idle' | 'submitting' | 'success' | 'error';
 export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAlertProps) {
   const [email, setEmail] = useState('');
   const [state, setState] = useState<SubmissionState>('idle');
-  const [message, setMessage] = useState('');
+  const [failure, setFailure] = useState<RequestFailure | null>(null);
   const titleId = useId();
   const successTitleId = useId();
+  const emailErrorId = useId();
+  const emailRef = useRef<HTMLInputElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
   const { closeDialog, dialogRef, openDialog: animateDialogOpen } = useDialogMotion({
     contentKey: state === 'success' ? 'success' : undefined,
     itemSelector: '.price-alert-form > :not(.price-alert-honeypot)',
@@ -30,41 +34,40 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
 
   const openDialog = () => {
     setState('idle');
-    setMessage('');
+    setFailure(null);
     captureAnalyticsEvent('price_alert_opened', { vehicle_slug: vehicleSlug });
     requestAnimationFrame(animateDialogOpen);
   };
 
+  // The submit button is disabled while sending, which drops focus to <body>. Put it back somewhere useful.
+  useEffect(() => {
+    if (failure) (failure.field === 'email' ? emailRef : submitRef).current?.focus();
+  }, [failure]);
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setState('submitting');
-    setMessage('');
 
     const form = new FormData(event.currentTarget);
+    const result = await postJson('/api/price-alerts', {
+      email,
+      vehicleSlug,
+      website: form.get('website'),
+    });
 
-    try {
-      const response = await fetch('/api/price-alerts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          vehicleSlug,
-          website: form.get('website'),
-        }),
-      });
-
-      const result = await response.json() as { message?: string };
-
-      if (!response.ok) throw new Error(result.message || 'No pudimos guardar la alerta.');
-
+    if (result.ok) {
       setState('success');
       captureAnalyticsEvent('price_alert_created', { vehicle_slug: vehicleSlug });
-    } catch (error) {
+    } else {
       setState('error');
-      setMessage(error instanceof Error ? error.message : 'No pudimos guardar la alerta.');
+      setFailure(result.failure);
       captureAnalyticsEvent('price_alert_failed', { vehicle_slug: vehicleSlug });
     }
   };
+
+  const shownFailure = state === 'error' ? failure : null;
+  const emailInvalid = shownFailure?.field === 'email';
+  const retry = shownFailure?.retryable === true;
 
   return (
     <>
@@ -107,6 +110,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
               <label>
                 <span>Email</span>
                 <input
+                  ref={emailRef}
                   type="email"
                   name="email"
                   value={email}
@@ -115,20 +119,36 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
                   autoComplete="email"
                   maxLength={320}
                   required
+                  aria-invalid={emailInvalid || undefined}
+                  aria-describedby={emailInvalid ? emailErrorId : undefined}
                 />
               </label>
+              {emailInvalid && (
+                <p className="price-alert-field-error" id={emailErrorId} role="alert">
+                  <CircleAlert aria-hidden="true" size={15} strokeWidth={2} />{shownFailure.title}
+                </p>
+              )}
 
               <label className="price-alert-honeypot" aria-hidden="true">
                 <span>Sitio web</span>
                 <input name="website" type="text" tabIndex={-1} autoComplete="off" />
               </label>
 
-              <Button type="submit" disabled={state === 'submitting'}>
-                <span>{state === 'submitting' ? 'Enviando…' : 'Crear alerta'}</span>
-                <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
+              <Button ref={submitRef} type="submit" disabled={state === 'submitting'}>
+                <span>{state === 'submitting' ? 'Enviando…' : retry ? 'Reintentar' : 'Crear alerta'}</span>
+                {retry
+                  ? <RotateCw aria-hidden="true" size={16} strokeWidth={1.8} />
+                  : <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />}
               </Button>
+              {shownFailure && !emailInvalid && (
+                <div className="price-alert-error" role="alert">
+                  {shownFailure.kind === 'connection'
+                    ? <WifiOff aria-hidden="true" size={18} strokeWidth={2} />
+                    : <CircleAlert aria-hidden="true" size={18} strokeWidth={2} />}
+                  <p><strong>{shownFailure.title}</strong>{shownFailure.detail && <span>{shownFailure.detail}</span>}</p>
+                </div>
+              )}
               <p className="price-alert-privacy">Te avisaremos de cada nueva baja de esta unidad. Podés cancelar la alerta desde cualquier correo.</p>
-              {state === 'error' && <p className="price-alert-error" role="alert">{message}</p>}
             </form>
           )}
         </div>
