@@ -39,7 +39,7 @@ export default async function VehiclesPage() {
         <section className="section-shell catalog-hero" aria-labelledby="catalog-title">
           <span className="catalog-scan-line" aria-hidden="true" />
           <div>
-            <Eyebrow>Inventario actual · {isLiveCatalog() ? 'Mercado Libre' : 'Datos demostrativos'}</Eyebrow>
+            <Eyebrow>Inventario actual</Eyebrow>
             <h1 id="catalog-title">Autos con una razón para estar acá.</h1>
           </div>
           <div className="catalog-hero-copy">
