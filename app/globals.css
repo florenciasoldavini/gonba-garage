@@ -535,6 +535,11 @@ h3 { letter-spacing: -0.04em; }
 }
 .catalog-card-index { left: 12px; color: var(--accent); background: rgba(6, 8, 6, 0.76); backdrop-filter: blur(12px); }
 .catalog-card-status { right: 12px; color: var(--accent-dark); background: var(--accent); text-transform: uppercase; }
+/* Solid lime means available. Other statuses keep a distinct badge and a muted photo. */
+:is(.vehicle-card, .catalog-card)[data-status='paused'] :is(.vehicle-status, .catalog-card-status) { color: var(--accent); background: rgba(6, 8, 6, 0.77); box-shadow: inset 0 0 0 1px rgba(220, 255, 0, 0.7); backdrop-filter: blur(12px); }
+:is(.vehicle-card, .catalog-card)[data-status='closed'] :is(.vehicle-status, .catalog-card-status) { color: var(--muted); background: rgba(6, 8, 6, 0.77); box-shadow: inset 0 0 0 1px var(--line); backdrop-filter: blur(12px); }
+:is(.vehicle-card, .catalog-card)[data-status='sold'] :is(.vehicle-status, .catalog-card-status) { color: var(--background); background: var(--text); }
+:is(.vehicle-card, .catalog-card):not([data-status='active']) .cover-image { filter: grayscale(1) brightness(0.72); }
 .catalog-card-compare {
   position: absolute;
   z-index: 2;
@@ -672,6 +677,10 @@ h3 { letter-spacing: -0.04em; }
 .detail-utility-actions { display: flex; flex-direction: column-reverse; align-items: flex-end; gap: 7px; }
 .detail-availability { min-height: 34px; display: flex; align-items: center; gap: 9px; color: #dfe2dc; font-size: var(--text-caption); text-transform: uppercase; letter-spacing: 0.1em; }
 .detail-availability span { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 0 rgba(220, 255, 0, 0.5), 0 0 18px rgba(220, 255, 0, 0.65); animation: availability-pulse 1.8s var(--ease-standard) infinite; }
+.detail-availability:not([data-status='active']) span { animation: none; box-shadow: none; }
+.detail-availability[data-status='paused'] span { background: transparent; box-shadow: inset 0 0 0 1.5px var(--accent); }
+.detail-availability[data-status='closed'] span { background: var(--muted); }
+.detail-availability[data-status='sold'] span { background: var(--text); }
 
 @keyframes availability-pulse {
   0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 255, 0, 0.5), 0 0 18px rgba(220, 255, 0, 0.65); }

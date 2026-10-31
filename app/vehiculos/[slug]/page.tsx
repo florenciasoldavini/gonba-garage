@@ -207,7 +207,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
         <aside className="detail-purchase-card glass-panel" aria-label="Precio y consulta">
           <div className="detail-purchase-top">
-            <div className="detail-availability"><span /> {status.label}</div>
+            <div className="detail-availability" data-status={vehicle.status}><span /> {status.label}</div>
             <div className="detail-utility-actions">
               <Link className="detail-compare-button" href={compareHref}>
                 <span>Comparar</span>
