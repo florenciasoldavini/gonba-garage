@@ -192,7 +192,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
       <section className="section-shell detail-title" aria-labelledby="vehicle-title">
         <div>
-          <Eyebrow>{status.label} · {publication ? 'Mercado Libre' : 'Datos demostrativos'}</Eyebrow>
+          <Eyebrow>{status.label}</Eyebrow>
           <h1 id="vehicle-title">{`${vehicle.make} ${vehicle.model}`}{' '}<em>{vehicle.version}</em></h1>
         </div>
         <div className="detail-title-meta">
@@ -240,7 +240,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             </ButtonAnchor>
             <ButtonAnchor href="#ficha" variant="glass">Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
           </div>
-          <p className="detail-disclaimer">Precio y disponibilidad sujetos a confirmación.{!publication && ' Esta página utiliza información de demostración.'}</p>
+          <p className="detail-disclaimer">Precio y disponibilidad sujetos a confirmación.</p>
         </aside>
       </section>
 
@@ -249,7 +249,6 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
           <Eyebrow>La unidad</Eyebrow>
           <h2 id="overview-title">Elegido por cómo se siente. Revisado por todo lo demás.</h2>
           <p style={{ whiteSpace: 'pre-wrap' }}>{vehicle.description || 'Esta publicación no incluye descripción.'}</p>
-          {publication?.source.permalink && <a href={publication.source.permalink} target="_blank" rel="noreferrer">Ver publicación en Mercado Libre</a>}
           <ul className="detail-highlights" aria-label="Puntos destacados">
             {vehicle.highlights.map((highlight, index) => (
               <li key={highlight}><span>0{index + 1}</span>{highlight}</li>
