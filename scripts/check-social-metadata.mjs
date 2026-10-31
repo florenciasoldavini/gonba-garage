@@ -275,6 +275,15 @@ for (const query of ['?estado=confirmada&tipo=precio&vehiculo=bmw-330i-m-sport-2
   assert.equal(new URL(metadata.canonical).pathname, '/alertas/confirmacion', 'The canonical excludes the query');
   assert.equal(new URL(metadata.canonical).search, '');
 }
+// Catalog filters, sort and comparison live in the query string; they never create a canonical.
+const filteredCatalog = await fetch(new URL('/vehiculos?marca=BMW&orden=recientes&comparar=bmw-330i-m-sport-2021', targetOrigin));
+assert.equal(filteredCatalog.status, 200);
+assert.equal(
+  normalizeUrl(getMetadata(await filteredCatalog.text()).canonical),
+  normalizeUrl(new URL('/vehiculos', canonicalOrigin)),
+  'A filtered catalog URL must keep the /vehiculos canonical',
+);
+
 const alertSitemap = await (await fetch(new URL('/sitemap.xml', targetOrigin))).text();
 assert.doesNotMatch(alertSitemap, /alertas/, 'Alert pages are excluded from the sitemap');
 

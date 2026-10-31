@@ -16,7 +16,6 @@ export function InventoryCatalogFromSearchParams({
   quote,
 }: InventoryCatalogFromSearchParamsProps) {
   const searchParams = useSearchParams();
-  const initialCompareSlug = searchParams.get('comparar') || undefined;
 
-  return <InventoryCatalog key={quote?.updatedAt ?? 'no-quote'} vehicles={vehicles} quote={quote} initialCompareSlug={initialCompareSlug} />;
+  return <InventoryCatalog key={quote?.updatedAt ?? 'no-quote'} vehicles={vehicles} quote={quote} searchParams={searchParams.toString()} />;
 }

@@ -15,6 +15,7 @@ import { getWhatsAppUrl } from '@/lib/contact';
 import { CatalogEmptyState } from './catalog-empty-state';
 import { usePublishCatalogResultCount } from './catalog-result-count';
 import { CatalogVehicleCard } from './catalog-vehicle-card';
+import { parseCatalogUrlState, serializeCatalogUrlState, type CatalogUrlBounds } from './catalog-url-state';
 import { InventoryAlert, type InventoryAlertCriteria } from './inventory-alert';
 import { InventoryFilters, type InventoryFiltersProps } from './inventory-filters';
 import { InventoryToolbar, type InventorySort } from './inventory-toolbar';
@@ -29,7 +30,8 @@ if (typeof window !== 'undefined') {
 type InventoryCatalogProps = {
   vehicles: Vehicle[];
   quote: MepQuote | null;
-  initialCompareSlug?: string;
+  // The request query string. When present, the catalog starts from it and keeps it in sync.
+  searchParams?: string;
 };
 
 const MAX_COMPARE_VEHICLES = 3;
@@ -37,8 +39,9 @@ const MIN_PRICE = 0;
 const PRICE_STEP = 5000;
 const MIN_MILEAGE = 0;
 const MILEAGE_STEP = 5000;
+const URL_SYNC_DELAY_MS = 300;
 
-export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: InventoryCatalogProps) {
+export function InventoryCatalog({ vehicles, quote, searchParams }: InventoryCatalogProps) {
   const resultsRef = useRef<HTMLDivElement>(null);
   const priceEnabled = quote !== null || vehicles.every(v => v.currency === 'USD');
   const comparisonPrices = useMemo(() => new Map(vehicles.map(v => [v.slug, comparableUsdPrice(v, quote)])), [vehicles, quote]);
@@ -50,27 +53,38 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
     () => Math.ceil(Math.max(...vehicles.map(({ mileageKm }) => mileageKm), MILEAGE_STEP) / MILEAGE_STEP) * MILEAGE_STEP,
     [vehicles],
   );
-  const [query, setQuery] = useState('');
-  const [make, setMake] = useState('all');
-  const [transmission, setTransmission] = useState('all');
-  const [bodyType, setBodyType] = useState('all');
-  const [fuel, setFuel] = useState('all');
-  const [minPrice, setMinPrice] = useState(MIN_PRICE);
-  const [maxPrice, setMaxPrice] = useState(priceCeiling);
-  const [minMileage, setMinMileage] = useState(MIN_MILEAGE);
-  const [maxMileage, setMaxMileage] = useState(mileageCeiling);
-  const [sort, setSort] = useState<InventorySort>('featured');
-  const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>(() => {
-    const initialVehicle = vehicles.find(({ slug }) => slug === initialCompareSlug);
-    return initialVehicle ? [initialVehicle] : [];
-  });
-  const [isCompareOpen, setIsCompareOpen] = useState(false);
-  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
-  const lastAnalyticsPayloadRef = useRef('');
-
   const makes = useMemo(() => [...new Set(vehicles.map(({ make: value }) => value))].sort(), [vehicles]);
   const bodyTypes = useMemo(() => [...new Set(vehicles.map(({ body }) => body.split(' · ')[0]))].sort(), [vehicles]);
   const fuelTypes = useMemo(() => [...new Set(vehicles.map(({ fuel: value }) => value))].sort(), [vehicles]);
+  const urlBounds: CatalogUrlBounds = {
+    bodyTypes,
+    fuelTypes,
+    makes,
+    maxCompare: MAX_COMPARE_VEHICLES,
+    mileageCeiling,
+    mileageStep: MILEAGE_STEP,
+    priceCeiling,
+    priceEnabled,
+    priceStep: PRICE_STEP,
+    vehicleSlugs: vehicles.map(({ slug }) => slug),
+  };
+  const [initialState] = useState(() => parseCatalogUrlState(new URLSearchParams(searchParams), urlBounds));
+  const [query, setQuery] = useState(initialState.query);
+  const [make, setMake] = useState(initialState.make);
+  const [transmission, setTransmission] = useState(initialState.transmission);
+  const [bodyType, setBodyType] = useState(initialState.bodyType);
+  const [fuel, setFuel] = useState(initialState.fuel);
+  const [minPrice, setMinPrice] = useState(initialState.minPrice);
+  const [maxPrice, setMaxPrice] = useState(initialState.maxPrice);
+  const [minMileage, setMinMileage] = useState(initialState.minMileage);
+  const [maxMileage, setMaxMileage] = useState(initialState.maxMileage);
+  const [sort, setSort] = useState<InventorySort>(initialState.sort);
+  const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>(() =>
+    initialState.compare.flatMap((slug) => vehicles.filter((vehicle) => vehicle.slug === slug)),
+  );
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
+  const lastAnalyticsPayloadRef = useRef('');
 
   const filteredVehicles = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase('es');
@@ -196,6 +210,37 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
 
     return () => window.clearTimeout(timeout);
   }, [activeFilterCount, bodyType, filteredVehicles.length, fuel, make, maxMileage, maxPrice, minMileage, minPrice, query, sort, transmission]);
+
+  const nextSearchParams = serializeCatalogUrlState({
+    bodyType,
+    compare: selectedVehicles.map(({ slug }) => slug),
+    fuel,
+    make,
+    maxMileage,
+    maxPrice,
+    minMileage,
+    minPrice,
+    query,
+    sort,
+    transmission,
+  }, urlBounds);
+
+  const syncsUrl = searchParams !== undefined;
+
+  useEffect(() => {
+    // The Suspense fallback renders without the request query and must not overwrite it.
+    if (!syncsUrl) return;
+
+    // Replace, not push: Back from the catalog leaves the catalog instead of stepping through
+    // every filter change. The delay also stays clear of Safari's history.replaceState limit.
+    const timeout = window.setTimeout(() => {
+      const { hash, pathname, search } = window.location;
+      if (search.replace(/^\?/, '') === nextSearchParams) return;
+      window.history.replaceState(null, '', `${pathname}${nextSearchParams ? `?${nextSearchParams}` : ''}${hash}`);
+    }, URL_SYNC_DELAY_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [nextSearchParams, syncsUrl]);
 
   const resetFilters = () => {
     setQuery('');
