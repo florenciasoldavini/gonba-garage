@@ -366,7 +366,7 @@ h3 { letter-spacing: -0.04em; }
   border-bottom: 1px solid var(--line);
 }
 .catalog-hero h1 { max-width: 1000px; margin-bottom: 0; font-size: clamp(3.7rem, 6.2vw, 6.4rem); }
-.catalog-hero-copy { padding-bottom: 12px; }
+.catalog-hero-copy { padding-bottom: 4px; }
 .catalog-hero-copy p { margin: 0 0 34px; color: var(--muted); font-size: clamp(0.95rem, 1.25vw, 1.12rem); line-height: 1.65; }
 .catalog-hero-copy span, .catalog-kicker {
   color: var(--accent);
@@ -375,6 +375,15 @@ h3 { letter-spacing: -0.04em; }
   text-transform: uppercase;
 }
 .catalog-kicker { display: inline-flex; align-items: center; gap: 6px; }
+/* Same box in both states, so applying a filter never changes the hero height or shifts the catalog. */
+.catalog-hero-count {
+  display: inline-block;
+  padding: 7px 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  transition: padding var(--duration-default) var(--ease-standard), border-color var(--duration-default) ease, background var(--duration-default) ease;
+}
+.catalog-hero-count-filtered { padding-inline: 10px; border-color: rgba(220, 255, 0, .32); background: rgba(220, 255, 0, .06); }
 .catalog-layout {
   padding-block: clamp(26px, 3.5vw, 48px) clamp(110px, 13vw, 180px);
   display: grid;
