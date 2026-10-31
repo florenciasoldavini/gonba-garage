@@ -16,7 +16,8 @@ type MobileInventoryFiltersProps = {
 export function MobileInventoryFilters({ filters, isOpen, onClose, resultCount }: MobileInventoryFiltersProps) {
   const { closeDialog, dialogRef } = useDialogMotion({
     isOpen,
-    itemSelector: '.mobile-filter-header, .catalog-filter-group, .mobile-filter-footer',
+    // Stagger each filter field; the panel's own heading is hidden inside the sheet.
+    itemSelector: '.mobile-filter-header, .mobile-filter-scroll .catalog-filters > :not(.catalog-filter-heading), .mobile-filter-footer',
     panelSelector: '.mobile-filter-sheet',
     variant: 'sheet',
   });
