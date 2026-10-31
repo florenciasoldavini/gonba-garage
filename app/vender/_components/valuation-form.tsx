@@ -24,6 +24,7 @@ export function ValuationForm() {
   const [isStepComplete, setIsStepComplete] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const hasStartedRef = useRef(false);
+  const previousStepRef = useRef(step);
 
   const updateStepCompleteness = useCallback(() => {
     const currentSection = formRef.current?.querySelector<HTMLElement>('[data-step]:not([hidden])');
@@ -44,6 +45,13 @@ export function ValuationForm() {
     updateStepCompleteness();
   }, [updateStepCompleteness]);
 
+  // Move focus to the new step's heading, but not on first load.
+  useEffect(() => {
+    if (previousStepRef.current === step) return;
+    previousStepRef.current = step;
+    formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"] [role="heading"]`)?.focus({ preventScroll: true });
+  }, [step]);
+
   useGSAP(
     () => {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -53,8 +61,8 @@ export function ValuationForm() {
 
       gsap.fromTo(
         activeStep,
-        { x: step === 1 ? 0 : 28, autoAlpha: 0 },
-        { x: 0, autoAlpha: 1, duration: 0.48, ease: 'power3.out' },
+        { x: step === 1 ? 0 : 28, opacity: 0 },
+        { x: 0, opacity: 1, duration: 0.48, ease: 'power3.out' },
       );
       gsap.fromTo(
         '.valuation-stepper li.is-active > span',
@@ -72,7 +80,8 @@ export function ValuationForm() {
   const moveToStep = (nextStep: number) => {
     setIsStepComplete(false);
     setStep(nextStep);
-    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    formRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   };
 
   const continueToNextStep = () => {

@@ -19,6 +19,8 @@ const manualMakeOption = { value: MANUAL_OPTION, label: 'Otra / No la encuentro'
 const manualModelOption = { value: MANUAL_OPTION, label: 'Otro / No lo encuentro' };
 const manualVersionOption = { value: MANUAL_OPTION, label: 'Otra / No la encuentro' };
 const manualYearOption = { value: MANUAL_OPTION, label: 'Otro / No aparece' };
+// Module-level so every render agrees; manual year fields only render after user input, never in server HTML.
+const MAX_VEHICLE_YEAR = new Date().getFullYear() + 1;
 
 type ManualCatalogFieldProps = {
   label: string;
@@ -210,7 +212,7 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
         )}
 
         {makeId === MANUAL_OPTION || modelId === MANUAL_OPTION ? (
-          <ManualCatalogField label="Año *" name="year" inputMode="numeric" type="number" min={1950} max={2027} placeholder="2021" required />
+          <ManualCatalogField label="Año *" name="year" inputMode="numeric" type="number" min={1950} max={MAX_VEHICLE_YEAR} placeholder="2021" required />
         ) : year === MANUAL_OPTION ? (
           <ManualCatalogField
             label="Año *"
@@ -218,7 +220,7 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
             inputMode="numeric"
             type="number"
             min={1950}
-            max={2027}
+            max={MAX_VEHICLE_YEAR}
             onReturn={() => handleYearChange('')}
             placeholder="Escribí el año"
             required

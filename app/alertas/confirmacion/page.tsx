@@ -86,10 +86,10 @@ export default async function AlertConfirmationPage({ searchParams }: { searchPa
     : failures[state ?? ''] ?? failures['no-valido'];
 
   return (
-    <main className="alert-result-page" id="alert-result-top">
+    <div className="alert-result-page" id="alert-result-top">
       <SiteHeader />
 
-      <div className="section-shell alert-result-layout">
+      <main className="section-shell alert-result-layout">
         <AlertResultMotion labelledBy="alert-result-title">
           <Eyebrow>{result.eyebrow}</Eyebrow>
           <h1 id="alert-result-title">{result.title}</h1>
@@ -103,9 +103,9 @@ export default async function AlertConfirmationPage({ searchParams }: { searchPa
             ))}
           </div>
         </AlertResultMotion>
-      </div>
+      </main>
 
       <SiteFooter topHref="#alert-result-top" />
-    </main>
+    </div>
   );
 }

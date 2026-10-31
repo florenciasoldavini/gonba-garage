@@ -41,6 +41,7 @@ export default async function Home() {
     <HomeGsapMotion>
       <SiteHeader />
 
+      <main>
       <section className="hero section-shell" aria-labelledby="hero-title">
         <div className="hero-media" aria-hidden="true">
           <Image src="/showroom-car.jpg" alt="" fill loading="eager" sizes="100vw" className="cover-image" />
@@ -161,6 +162,7 @@ export default async function Home() {
         title="El próximo paso puede empezar con un mensaje."
         titleId="contact-title"
       />
+      </main>
 
       <SiteFooter home topHref="#inicio" />
     </HomeGsapMotion>

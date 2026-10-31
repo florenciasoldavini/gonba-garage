@@ -27,13 +27,14 @@ export default async function VehiclesPage() {
   try {
     vehicles = await listCatalogVehicles();
   } catch {
-    return <main className="section-shell"><SiteHeader active="vehicles" /><h1>Catálogo no disponible</h1><p>No pudimos consultar las publicaciones. Revisá la conexión del backend y volvé a intentar.</p></main>;
+    return <div className="section-shell"><SiteHeader active="vehicles" /><main><h1>Catálogo no disponible</h1><p>No pudimos consultar las publicaciones. Revisá la conexión del backend y volvé a intentar.</p></main></div>;
   }
   const quote = await quotePromise;
   return (
     <InnerPageMotion className="catalog-page" id="catalog-top" variant="catalog">
       <SiteHeader active="vehicles" />
 
+      <main>
       <CatalogResultCountProvider>
         <section className="section-shell catalog-hero" aria-labelledby="catalog-title">
           <span className="catalog-scan-line" aria-hidden="true" />
@@ -51,6 +52,7 @@ export default async function VehiclesPage() {
           <InventoryCatalogFromSearchParams vehicles={vehicles} quote={quote} />
         </Suspense>
       </CatalogResultCountProvider>
+      </main>
 
       <SiteFooter topHref="#catalog-top" />
     </InnerPageMotion>

@@ -10,7 +10,7 @@ if (typeof window !== 'undefined') {
 }
 
 export function HomeGsapMotion({ children }: { children: ReactNode }) {
-  const root = useRef<HTMLElement>(null);
+  const root = useRef<HTMLDivElement>(null);
 
   useGSAP(
     () => {
@@ -271,8 +271,8 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
   );
 
   return (
-    <main className="home-gsap" id="inicio" ref={root}>
+    <div className="home-gsap" id="inicio" ref={root}>
       {children}
-    </main>
+    </div>
   );
 }

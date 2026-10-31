@@ -56,7 +56,7 @@ export function SiteFooter({
             <Link href={home ? '#preguntas' : '/#preguntas'}>FAQ</Link>
           </div>
         </nav>
-        <nav className="footer-link-group" aria-label="Redes sociales">
+        <nav className="footer-link-group" aria-label="Contacto">
           <span className="footer-link-label">Contacto</span>
           <div className="footer-link-list">
             <a href={WHATSAPP_URL} target="_blank" rel="noreferrer">

@@ -21,6 +21,7 @@ export default function SellVehiclePage() {
     <InnerPageMotion className="valuation-page" id="valuation-top" variant="valuation">
       <SiteHeader active="sell" />
 
+      <main>
       <section className="section-shell valuation-layout" aria-labelledby="valuation-title">
         <aside className="valuation-intro">
           <Eyebrow>Tasación inicial</Eyebrow>
@@ -41,6 +42,7 @@ export default function SellVehiclePage() {
 
         <ValuationForm />
       </section>
+      </main>
 
       <SiteFooter
         topHref="#valuation-top"

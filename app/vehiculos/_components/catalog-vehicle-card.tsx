@@ -54,7 +54,7 @@ export function CatalogVehicleCard({
   return (
     <article className={`catalog-card glass-panel${isSelected ? ' catalog-card-selected' : ''}`} ref={cardRef}>
       <div className="catalog-card-image">
-        <Link className="catalog-card-image-link" href={href} aria-label={`Ver ${vehicleName}`}>
+        <Link className="catalog-card-image-link" href={href} aria-hidden="true" tabIndex={-1}>
           <Image
             src={vehicle.image}
             alt={vehicle.imageAlt}
@@ -79,10 +79,10 @@ export function CatalogVehicleCard({
       <div className="catalog-card-copy">
         <div className="catalog-card-title">
           <p>{vehicle.year} · {vehicle.body.split(' · ')[0]}</p>
-          <h2><Link href={href}>{vehicleName}</Link></h2>
+          <h2><Link href={href} aria-label={`${vehicleName} ${vehicle.year}`}>{vehicleName}</Link></h2>
           <span>{vehicle.version}</span>
         </div>
-        <Link className="catalog-card-arrow" href={href} aria-label={`Ver detalle de ${vehicleName}`}>
+        <Link className="catalog-card-arrow" href={href} aria-hidden="true" tabIndex={-1}>
           <ArrowUpRight aria-hidden="true" size={17} strokeWidth={1.8} />
         </Link>
       </div>
