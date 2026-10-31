@@ -6,11 +6,14 @@
   --color-surface-glass: rgba(20, 22, 20, 0.72);
   --color-text-primary: #f5f6f2;
   --color-text-secondary: #a6aaa2;
-  --color-text-tertiary: #73786f;
+  /* 5.48:1 on the canvas and >= 4.5:1 on every panel, dialog and input fill it sits on. */
+  --color-text-tertiary: #83887f;
   --color-text-disabled: #555b53;
   --color-border-subtle: rgba(255, 255, 255, 0.08);
   --color-border-default: rgba(255, 255, 255, 0.13);
   --color-border-strong: rgba(255, 255, 255, 0.25);
+  /* Boundary of unchecked checkboxes and empty slots: >= 3:1 on canvas, panels and dialogs. */
+  --color-border-control: #6b7068;
   --color-brand: #dcff00;
   --color-on-brand: #151a00;
   --color-brand-soft: rgba(220, 255, 0, 0.12);
@@ -28,7 +31,12 @@
   --text-body-lg: 1.125rem;
   --text-body: 1rem;
   --text-small: 0.8125rem;
+  /* Minimum sizes: sentence-case helper, meta and control text never goes below caption,
+     legal and fine print never below fine, and only short uppercase or mono labels use label. */
+  --text-caption: 0.75rem;
+  --text-fine: 0.7rem;
   --text-micro: 0.6875rem;
+  --text-label: 0.65rem;
   --leading-tight: 0.94;
   --leading-body: 1.6;
   --tracking-display: -0.065em;
