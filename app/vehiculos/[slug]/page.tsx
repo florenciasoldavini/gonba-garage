@@ -75,7 +75,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
     vehicle = publication ? publication.vehicle : await findCatalogVehicle(slug);
   } catch {
     // A backend failure is not a missing vehicle: keep notFound() for real 404s only.
-    return <main className="section-shell"><SiteHeader active="vehicles" /><h1>Catálogo no disponible</h1><p>No pudimos consultar esta publicación. Volvé a intentar en unos minutos.</p></main>;
+    return <div className="section-shell"><SiteHeader active="vehicles" /><main><h1>Catálogo no disponible</h1><p>No pudimos consultar esta publicación. Volvé a intentar en unos minutos.</p></main></div>;
   }
 
   // The slug is fixed at the first sync. Older or edited slugs for the same publication redirect.
@@ -181,16 +181,19 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
       <SiteHeader active="vehicles" />
 
-      <div className="section-shell detail-breadcrumbs" aria-label="Ruta de navegación">
-        <Link href="/">Inicio</Link><span>/</span>
-        <Link href="/vehiculos">Vehículos</Link><span>/</span>
-        <span>{vehicle.make} {vehicle.model}</span>
-      </div>
+      <main>
+      <nav className="section-shell detail-breadcrumbs" aria-label="Ruta de navegación">
+        <ol>
+          <li><Link href="/">Inicio</Link><span aria-hidden="true">/</span></li>
+          <li><Link href="/vehiculos">Vehículos</Link><span aria-hidden="true">/</span></li>
+          <li aria-current="page"><span>{`${vehicle.make} ${vehicle.model}`}</span></li>
+        </ol>
+      </nav>
 
       <section className="section-shell detail-title" aria-labelledby="vehicle-title">
         <div>
           <Eyebrow>{status.label} · {publication ? 'Mercado Libre' : 'Datos demostrativos'}</Eyebrow>
-          <h1 id="vehicle-title">{vehicle.make} {vehicle.model}<em>{vehicle.version}</em></h1>
+          <h1 id="vehicle-title">{`${vehicle.make} ${vehicle.model}`}{' '}<em>{vehicle.version}</em></h1>
         </div>
         <div className="detail-title-meta">
           <span>{vehicle.year}</span>
@@ -285,6 +288,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         title="Conocelo en persona. El resto se entiende manejando."
         titleId="contact-title"
       />
+      </main>
 
       <SiteFooter topHref="#vehicle-title" />
     </InnerPageMotion>

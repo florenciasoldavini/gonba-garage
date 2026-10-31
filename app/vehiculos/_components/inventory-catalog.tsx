@@ -5,11 +5,13 @@ import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ArrowUpRight } from 'lucide-react';
 
-import { ButtonLink } from '@/components/ui/button';
+import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { WHATSAPP_CATALOG_MESSAGE } from '@/constants/contact';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { comparableUsdPrice, type MepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import { getWhatsAppUrl } from '@/lib/contact';
 import { CatalogEmptyState } from './catalog-empty-state';
 import { usePublishCatalogResultCount } from './catalog-result-count';
 import { CatalogVehicleCard } from './catalog-vehicle-card';
@@ -378,9 +380,15 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
           <Eyebrow>¿No encontraste lo que buscabas?</Eyebrow>
           <h2 id="catalog-contact-title">Contanos qué auto tenés en mente.</h2>
         </div>
-        <ButtonLink href="/#contacto" variant="accent">
+        <ButtonAnchor
+          href={getWhatsAppUrl(WHATSAPP_CATALOG_MESSAGE)}
+          onClick={() => captureAnalyticsEvent('contact_intent_clicked', { channel: 'whatsapp', placement: 'catalog_contact' })}
+          rel="noreferrer"
+          target="_blank"
+          variant="accent"
+        >
           Hablar con Gonba&apos;s Garage <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
-        </ButtonLink>
+        </ButtonAnchor>
       </section>
     </>
   );

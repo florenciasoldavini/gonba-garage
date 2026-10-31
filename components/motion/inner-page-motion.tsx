@@ -17,7 +17,7 @@ type InnerPageMotionProps = {
 };
 
 export function InnerPageMotion({ children, className, id, variant }: InnerPageMotionProps) {
-  const root = useRef<HTMLElement>(null);
+  const root = useRef<HTMLDivElement>(null);
 
   useGSAP(
     () => {
@@ -80,7 +80,7 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
 
             intro
               .from('.site-header', { y: -30, autoAlpha: 0, duration: 0.75 })
-              .from('.detail-breadcrumbs > *', { x: -14, autoAlpha: 0, stagger: 0.06, duration: 0.42 }, 0.18)
+              .from('.detail-breadcrumbs li > *', { x: -14, autoAlpha: 0, stagger: 0.06, duration: 0.42 }, 0.18)
               .from('.detail-title .eyebrow', { x: -30, autoAlpha: 0, duration: 0.52 }, 0.28)
               .from(
                 '#vehicle-title',
@@ -211,8 +211,8 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
   );
 
   return (
-    <main className={`${className} inner-page-motion inner-page-motion-${variant}`} id={id} ref={root}>
+    <div className={`${className} inner-page-motion inner-page-motion-${variant}`} id={id} ref={root}>
       {children}
-    </main>
+    </div>
   );
 }

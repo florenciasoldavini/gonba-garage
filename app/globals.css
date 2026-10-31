@@ -611,6 +611,8 @@ h3 { letter-spacing: -0.04em; }
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+.detail-breadcrumbs ol { margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; list-style: none; }
+.detail-breadcrumbs li { display: flex; gap: 10px; }
 .detail-breadcrumbs a { color: #b8bcb4; }
 .detail-breadcrumbs a:hover { color: var(--accent); }
 
@@ -1067,6 +1069,7 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 .valuation-step-heading > span { width: 36px; height: 36px; flex: 0 0 auto; display: grid; place-items: center; color: var(--accent-dark); border-radius: 9px; background: var(--accent); }
 .valuation-step-heading > div { min-height: 36px; display: grid; align-content: center; gap: 4px; }
 .valuation-step-heading strong { font-size: .82rem; }
+.valuation-step-heading strong:focus { outline: none; }
 .valuation-step-heading p { margin: 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.5; }
 .valuation-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; }
 .valuation-fields > label:not(.valuation-file-field), .valuation-select-field { display: grid; gap: 8px; }
