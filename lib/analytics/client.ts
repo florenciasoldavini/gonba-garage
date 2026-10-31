@@ -46,7 +46,7 @@ type AnalyticsEventProperties = {
     vehicle_slug: string;
     year: number;
   };
-  vehicle_shared: { method: 'clipboard' | 'email' | 'whatsapp'; vehicle_slug: string };
+  vehicle_shared: { method: 'clipboard' | 'email' | 'native' | 'whatsapp'; vehicle_slug: string };
   price_alert_opened: { vehicle_slug: string };
   price_alert_created: { vehicle_slug: string };
   price_alert_failed: { vehicle_slug: string };
