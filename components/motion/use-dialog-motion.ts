@@ -42,11 +42,16 @@ export function useDialogMotion({
       openAnimationRef.current = contextSafe!(() => {
         const dialog = dialogRef.current;
         if (!dialog) return;
-        if (!dialog.open) dialog.showModal();
 
         timelineRef.current?.kill();
 
         const panel = dialog.querySelector<HTMLElement>(panelSelector);
+        // The close animation leaves the dialog hidden. Clear that first, or showModal() finds
+        // nothing focusable and focus stays on the page behind it.
+        gsap.set(panel ? [dialog, panel] : dialog, { clearProps: 'opacity,visibility' });
+        if (!dialog.open) dialog.showModal();
+        const initialFocus = document.activeElement;
+
         if (!panel) return;
 
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -58,7 +63,13 @@ export function useDialogMotion({
           ? Array.from(dialog.querySelectorAll<HTMLElement>(itemSelector))
           : [];
         const start = getPanelStart(variant);
-        const timeline = gsap.timeline({ defaults: { ease: 'power3.out' } });
+        // The opening frame hides the dialog again, and the browser can drop the focus showModal()
+        // just placed. Put it back once the dialog (and, at the end, every item) is visible.
+        const restoreFocus = () => {
+          if (dialog.contains(document.activeElement)) return;
+          if (initialFocus instanceof HTMLElement && dialog.contains(initialFocus)) initialFocus.focus();
+        };
+        const timeline = gsap.timeline({ defaults: { ease: 'power3.out' }, onComplete: restoreFocus });
 
         timeline
           .fromTo(dialog, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.24 })
@@ -67,7 +78,8 @@ export function useDialogMotion({
             { ...start, autoAlpha: 0 },
             { xPercent: 0, y: 0, scale: 1, autoAlpha: 1, duration: variant === 'compare' ? 0.62 : 0.52 },
             0,
-          );
+          )
+          .call(restoreFocus, undefined, 0.02);
 
         if (items.length > 0) {
           timeline.fromTo(
