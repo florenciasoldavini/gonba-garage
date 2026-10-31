@@ -68,6 +68,9 @@ for (const handler of [inventory, price]) {
 }
 for (const handler of [inventory, price]) {
   for (const body of [null, [], 'bad', { email: 'invalid' }]) assert.equal((await handler(post(body))).status, 400);
+  const invalidEmail = await handler(post({ ...request, email: 'cliente@gmail' }));
+  assert.equal(invalidEmail.status, 400);
+  assert.equal((await invalidEmail.json()).field, 'email', 'The form highlights the email only when the API says so');
   const started = performance.now();
   assert.equal((await handler(post({ ...request, email: `a@${'.'.repeat(1_000_000)}@` }))).status, 400);
   assert.ok(performance.now() - started < 1000, 'Oversized emails must be rejected before the regex runs');
@@ -78,7 +81,9 @@ for (const handler of [inventory, price]) {
   assert.equal((await handler(post(request))).status, 503);
   configured = true;
 }
-assert.equal((await inventory(post({ ...request, minPrice: 20, maxPrice: 10 }))).status, 400);
+const invalidCriteria = await inventory(post({ ...request, minPrice: 20, maxPrice: 10 }));
+assert.equal(invalidCriteria.status, 400);
+assert.equal((await invalidCriteria.json()).field, undefined, 'Criteria errors are not about the email');
 assert.equal((await inventory(post({ ...request, maxMileage: -1 }))).status, 400);
 assert.equal((await inventory(post({ ...request, transmission: 'invalid' }))).status, 400);
 assert.equal((await inventory(post({ ...request, minPrice: 0, maxPrice: 100000, make: 'Toyota' }))).status, 201);
@@ -90,7 +95,9 @@ assert.equal(calls.at(-1).currency, 'USD');
 vehicle = null;
 assert.equal((await price(post(request))).status, 400);
 vehicle = { ...request, slug: request.vehicleSlug, status: 'paused' };
-assert.equal((await price(post(request))).status, 400);
+const unavailable = await price(post(request));
+assert.equal(unavailable.status, 400);
+assert.equal((await unavailable.json()).field, undefined, 'An unavailable vehicle is not an email error');
 vehicle = { slug: request.vehicleSlug, price: 49900, currency: 'USD', status: 'active' };
 failStorage = true;
 for (const handler of [inventory, price]) {
