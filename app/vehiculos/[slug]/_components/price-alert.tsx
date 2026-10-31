@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useId, useState } from 'react';
 import { ArrowRight, ArrowUpRight, BellRing, TrendingDown, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,8 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
   const [email, setEmail] = useState('');
   const [state, setState] = useState<SubmissionState>('idle');
   const [message, setMessage] = useState('');
+  const titleId = useId();
+  const successTitleId = useId();
   const { closeDialog, dialogRef, openDialog: animateDialogOpen } = useDialogMotion({
     contentKey: state === 'success' ? 'success' : undefined,
     itemSelector: '.price-alert-form > :not(.price-alert-honeypot)',
@@ -78,7 +80,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
       <dialog
         className="price-alert-dialog"
         ref={dialogRef}
-        aria-labelledby="price-alert-title"
+        aria-labelledby={state === 'success' ? successTitleId : titleId}
         onCancel={(event) => { event.preventDefault(); closeDialog(); }}
         onClick={(event) => {
           if (event.target === event.currentTarget) closeDialog();
@@ -90,7 +92,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
           {state === 'success' ? (
             <div className="price-alert-success" data-dialog-view aria-live="polite">
               <Eyebrow>Revisá tu email</Eyebrow>
-              <h2>Confirmá la alerta desde tu correo.</h2>
+              <h2 id={successTitleId}>Confirmá la alerta desde tu correo.</h2>
               <p>Te enviamos un enlace para activar la alerta del {vehicleName}. Hasta que la confirmes no recibirás avisos. El precio actual es {formattedPrice}.</p>
               <div className="status-actions">
                 <Button type="button" onClick={closeDialog}>Seguir viendo el auto <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} /></Button>
@@ -99,7 +101,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
           ) : (
             <form className="price-alert-form ph-no-capture" data-dialog-view data-private onSubmit={handleSubmit}>
               <Eyebrow>Alerta de precio</Eyebrow>
-              <h2 id="price-alert-title">¿Esperando una mejor oportunidad?</h2>
+              <h2 id={titleId}>¿Esperando una mejor oportunidad?</h2>
               <p>Dejanos tu email y te avisamos si el precio del {vehicleName} baja de {formattedPrice}.</p>
 
               <label>

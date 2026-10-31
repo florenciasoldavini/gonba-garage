@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { Check, ChevronDown, Search, X } from 'lucide-react';
@@ -47,6 +47,8 @@ export function CustomSelect({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const menuId = useId();
+  const labelId = useId();
+  const valueId = useId();
   const selectedOption = options.find((option) => option.value === value);
   const normalizedQuery = query.trim().toLocaleLowerCase('es');
   const filteredOptions = normalizedQuery
@@ -132,6 +134,16 @@ export function CustomSelect({
     }
   };
 
+  // Tabbing out of the trigger, search field or options closes the menu. A null relatedTarget
+  // (clicks on non-focusable areas, or on buttons in Safari) is left to the outside-click handler,
+  // otherwise an option would unmount before its click lands.
+  const closeOnFocusOut = (event: FocusEvent<HTMLDivElement>) => {
+    const nextTarget = event.relatedTarget;
+    if (menuIsOpen && nextTarget instanceof Node && !rootRef.current?.contains(nextTarget)) {
+      setIsOpen(false);
+    }
+  };
+
   const selectOption = (nextValue: string) => {
     onChange(nextValue);
     setIsOpen(false);
@@ -141,13 +153,13 @@ export function CustomSelect({
   };
 
   return (
-    <div className="custom-select" ref={rootRef}>
+    <div className="custom-select" ref={rootRef} onBlur={closeOnFocusOut}>
       {name && <input type="hidden" name={name} value={value} />}
       <button
         className="custom-select-trigger"
         type="button"
         ref={triggerRef}
-        aria-label={ariaLabel}
+        aria-labelledby={`${labelId} ${valueId}`}
         aria-haspopup="listbox"
         aria-expanded={menuIsOpen}
         aria-controls={menuId}
@@ -157,7 +169,8 @@ export function CustomSelect({
         onClick={() => setIsOpen((current) => !current)}
         onKeyDown={handleTriggerKeyDown}
       >
-        <span className={selectedOption ? '' : 'is-placeholder'}>{selectedOption?.label ?? placeholder}</span>
+        <span className="sr-only" id={labelId}>{ariaLabel}</span>
+        <span className={selectedOption ? '' : 'is-placeholder'} id={valueId}>{selectedOption?.label ?? placeholder}</span>
         <ChevronDown aria-hidden="true" size={15} className={menuIsOpen ? 'is-open' : ''} />
       </button>
 
