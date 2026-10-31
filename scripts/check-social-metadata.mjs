@@ -139,10 +139,21 @@ for (const route of routes) {
       .map(([tag]) => getAttributes(tag).href);
     assert.ok(featuredLinks.length > 0 && featuredLinks.length <= 3, 'Home must show up to three available catalog vehicles');
     assert.equal(new Set(featuredLinks).size, featuredLinks.length, 'Home vehicle links must be unique');
-    for (const href of featuredLinks) {
+    const featuredBadges = [...html.matchAll(/<span class="vehicle-status">([^<]*)<\/span>/g)]
+      .map(([, label]) => decodeHtml(label));
+    assert.equal(featuredBadges.length, featuredLinks.length, 'Every home vehicle card must show a status badge');
+    for (const [index, href] of featuredLinks.entries()) {
       assert.match(href, /^\/vehiculos\/[^/?#]+$/);
       const detail = await fetch(new URL(href, targetOrigin));
       assert.equal(detail.status, 200, `Home vehicle link ${href} must resolve`);
+      // The badge comes from the vehicle's status, the same one behind the detail label and Offer.
+      const detailHtml = await detail.text();
+      const detailLabel = decodeHtml(detailHtml.match(/class="detail-availability"><span><\/span> ?(?:<!-- -->)?([^<]*)</)?.[1] ?? '');
+      const offer = getJsonLd(detailHtml).flatMap((entry) => entry['@graph'] || [])
+        .find((entry) => Array.isArray(entry['@type']) && entry['@type'].includes('Product'))?.offers;
+      assert.equal(featuredBadges[index], detailLabel, `Home badge for ${href} must match its detail page status`);
+      assert.equal(featuredBadges[index], 'Disponible', `Home must only feature available vehicles (${href})`);
+      assert.equal(offer?.availability, 'https://schema.org/InStock', `Featured ${href} must be InStock`);
     }
   }
 

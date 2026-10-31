@@ -17,6 +17,7 @@ import { FaqAccordion } from '@/app/_components/faq-accordion';
 import { isLiveCatalog, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { formatVehicleMileage } from '@/features/vehicles/presentation/formatters';
+import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 
 export const metadata: Metadata = createPageMetadata({
   title: "Gonba's Garage | Autos usados seleccionados",
@@ -86,7 +87,7 @@ export default async function Home() {
                 <div className="vehicle-image">
                   <Image src={vehicle.image} alt={vehicle.imageAlt} fill sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw" className="cover-image" />
                   <span className="vehicle-index">0{index + 1}</span>
-                  {index === 0 && <span className="vehicle-status">Disponible</span>}
+                  <span className="vehicle-status">{getVehicleStatusPresentation(vehicle.status).label}</span>
                 </div>
                 <div className="vehicle-copy">
                   <div><p>{vehicle.year}</p><h3>{vehicle.make} {vehicle.model}</h3></div>
