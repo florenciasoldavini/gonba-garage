@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useId, useMemo, useState, type CSSProperties } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ArrowUpRight, Check, Scale, X } from 'lucide-react';
@@ -33,6 +33,7 @@ const comparisonKeys: VehicleSpecificationKey[] = [
 
 export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onClear }: VehicleCompareDialogProps) {
   const [differencesOnly, setDifferencesOnly] = useState(true);
+  const titleId = useId();
   const vehicleKey = vehicles.map(({ slug }) => slug).join('|');
   const { closeDialog, closeDialogAfter, dialogRef } = useDialogMotion({
     isOpen,
@@ -90,6 +91,7 @@ export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onCl
     <dialog
       className="vehicle-compare-dialog"
       ref={dialogRef}
+      aria-labelledby={titleId}
       onCancel={(event) => { event.preventDefault(); closeDialog(); }}
       onClick={(event) => { if (event.target === event.currentTarget) closeDialog(); }}
       onClose={onClose}
@@ -99,7 +101,7 @@ export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onCl
           <div className="vehicle-compare-modal-title">
             <span><Scale aria-hidden="true" size={17} strokeWidth={1.8} /></span>
             <div>
-              <h2>Comparar vehículos</h2>
+              <h2 id={titleId}>Comparar vehículos</h2>
               <p>{vehicles.length} unidades seleccionadas · Inventario actual</p>
             </div>
           </div>
