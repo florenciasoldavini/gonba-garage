@@ -148,7 +148,7 @@ for (const route of routes) {
       assert.equal(detail.status, 200, `Home vehicle link ${href} must resolve`);
       // The badge comes from the vehicle's status, the same one behind the detail label and Offer.
       const detailHtml = await detail.text();
-      const detailLabel = decodeHtml(detailHtml.match(/class="detail-availability"><span><\/span> ?(?:<!-- -->)?([^<]*)</)?.[1] ?? '');
+      const detailLabel = decodeHtml(detailHtml.match(/class="detail-availability"[^>]*><span><\/span> ?(?:<!-- -->)?([^<]*)</)?.[1] ?? '');
       const offer = getJsonLd(detailHtml).flatMap((entry) => entry['@graph'] || [])
         .find((entry) => Array.isArray(entry['@type']) && entry['@type'].includes('Product'))?.offers;
       assert.equal(featuredBadges[index], detailLabel, `Home badge for ${href} must match its detail page status`);

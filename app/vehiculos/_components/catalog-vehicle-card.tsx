@@ -52,7 +52,7 @@ export function CatalogVehicleCard({
   );
 
   return (
-    <article className={`catalog-card glass-panel${isSelected ? ' catalog-card-selected' : ''}`} ref={cardRef}>
+    <article className={`catalog-card glass-panel${isSelected ? ' catalog-card-selected' : ''}`} data-status={vehicle.status} ref={cardRef}>
       <div className="catalog-card-image">
         <Link className="catalog-card-image-link" href={href} aria-hidden="true" tabIndex={-1}>
           <Image
