@@ -11,6 +11,7 @@ import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { comparableUsdPrice, type MepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { CatalogEmptyState } from './catalog-empty-state';
+import { usePublishCatalogResultCount } from './catalog-result-count';
 import { CatalogVehicleCard } from './catalog-vehicle-card';
 import { InventoryAlert, type InventoryAlertCriteria } from './inventory-alert';
 import { InventoryFilters, type InventoryFiltersProps } from './inventory-filters';
@@ -152,6 +153,7 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
     minPrice !== MIN_PRICE || maxPrice !== priceCeiling,
     minMileage !== MIN_MILEAGE || maxMileage !== mileageCeiling,
   ].filter(Boolean).length;
+  usePublishCatalogResultCount(activeFilterCount > 0 ? filteredVehicles.length : null);
 
   useEffect(() => {
     if (activeFilterCount === 0) return;

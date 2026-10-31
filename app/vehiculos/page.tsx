@@ -8,6 +8,7 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { isLiveCatalog, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { createPageMetadata } from '@/lib/metadata';
 import { getMepQuote } from '@/lib/integrations/mep-quote';
+import { CatalogHeroCount, CatalogResultCountProvider } from './_components/catalog-result-count';
 import { InventoryCatalog } from './_components/inventory-catalog';
 import { InventoryCatalogFromSearchParams } from './_components/inventory-catalog-from-search-params';
 
@@ -33,21 +34,23 @@ export default async function VehiclesPage() {
     <InnerPageMotion className="catalog-page" id="catalog-top" variant="catalog">
       <SiteHeader active="vehicles" />
 
-      <section className="section-shell catalog-hero" aria-labelledby="catalog-title">
-        <span className="catalog-scan-line" aria-hidden="true" />
-        <div>
-          <Eyebrow>Inventario actual · {isLiveCatalog() ? 'Mercado Libre' : 'Datos demostrativos'}</Eyebrow>
-          <h1 id="catalog-title">Autos con una razón para estar acá.</h1>
-        </div>
-        <div className="catalog-hero-copy">
-          <p>Una selección breve, revisada y presentada con claridad. Compará las unidades y encontrá la que mejor encaja con vos.</p>
-          <span>{String(vehicles.length).padStart(2, '0')} unidades publicadas</span>
-        </div>
-      </section>
+      <CatalogResultCountProvider>
+        <section className="section-shell catalog-hero" aria-labelledby="catalog-title">
+          <span className="catalog-scan-line" aria-hidden="true" />
+          <div>
+            <Eyebrow>Inventario actual · {isLiveCatalog() ? 'Mercado Libre' : 'Datos demostrativos'}</Eyebrow>
+            <h1 id="catalog-title">Autos con una razón para estar acá.</h1>
+          </div>
+          <div className="catalog-hero-copy">
+            <p>Una selección breve, revisada y presentada con claridad. Compará las unidades y encontrá la que mejor encaja con vos.</p>
+            <CatalogHeroCount total={vehicles.length} />
+          </div>
+        </section>
 
-      <Suspense fallback={<InventoryCatalog vehicles={vehicles} quote={quote} />}>
-        <InventoryCatalogFromSearchParams vehicles={vehicles} quote={quote} />
-      </Suspense>
+        <Suspense fallback={<InventoryCatalog vehicles={vehicles} quote={quote} />}>
+          <InventoryCatalogFromSearchParams vehicles={vehicles} quote={quote} />
+        </Suspense>
+      </CatalogResultCountProvider>
 
       <SiteFooter topHref="#catalog-top" />
     </InnerPageMotion>
