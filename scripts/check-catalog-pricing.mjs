@@ -6,7 +6,7 @@ const source = readFileSync(new URL('../features/vehicles/domain/catalog-pricing
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const exports = {};
 new Function('exports', compiled)(exports);
-const { parseMepQuote, comparableUsdPrice, MAX_QUOTE_AGE_MS } = exports;
+const { parseMepQuote, comparableUsdPrice, formatMepQuoteUpdatedAt, MAX_QUOTE_AGE_MS } = exports;
 const now = Date.parse('2026-10-28T18:00:00Z');
 const payload = { moneda: 'USD', casa: 'bolsa', venta: 1566, compra: 1500, fechaActualizacion: '2026-10-28T17:57:00Z' };
 const quote = parseMepQuote(payload, now);
@@ -24,4 +24,7 @@ for (const patch of [{ venta: 0 }, { venta: -1 }, { venta: Infinity }, { venta: 
   assert.equal(parseMepQuote({ ...payload, ...patch }, now), null);
 }
 assert.ok(parseMepQuote({ ...payload, fechaActualizacion: new Date(now - 72*3_600_000).toISOString() }, now), 'Weekend quote remains usable with its original timestamp');
-console.log('MEP venta: currency-aware sorting/filtering, immutable originals, stale/invalid quote rejection, and outage behavior passed.');
+// Formatted on the server with plain spaces, so the text matches what browsers render on hydration.
+assert.equal(formatMepQuoteUpdatedAt('2026-10-31T17:57:00.000Z'), '31/10/26, 2:57 p. m.');
+assert.equal(formatMepQuoteUpdatedAt('2026-10-31T03:05:00.000Z'), '31/10/26, 12:05 a. m.');
+console.log('MEP venta: currency-aware sorting/filtering, immutable originals, stale/invalid quote rejection, outage behavior, and update-time formatting passed.');

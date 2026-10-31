@@ -9,7 +9,7 @@ import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { WHATSAPP_CATALOG_MESSAGE } from '@/constants/contact';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
-import { comparableUsdPrice, type MepQuote } from '@/features/vehicles/domain/catalog-pricing';
+import { comparableUsdPrice, type CatalogMepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { CatalogEmptyState } from './catalog-empty-state';
@@ -29,7 +29,7 @@ if (typeof window !== 'undefined') {
 
 type InventoryCatalogProps = {
   vehicles: Vehicle[];
-  quote: MepQuote | null;
+  quote: CatalogMepQuote | null;
   // The request query string. When present, the catalog starts from it and keeps it in sync.
   searchParams?: string;
 };
