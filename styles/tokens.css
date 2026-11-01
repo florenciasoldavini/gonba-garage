@@ -37,6 +37,7 @@
   --text-fine: 0.7rem;
   --text-micro: 0.6875rem;
   --text-label: 0.65rem;
+  --text-eyebrow: 0.72rem;
   --leading-tight: 0.94;
   --leading-body: 1.6;
   --tracking-display: -0.065em;
@@ -96,5 +97,10 @@
   :root {
     --layout-gutter: var(--layout-gutter-compact);
     --page-content-top: 44px;
+    /* Phones read every label, badge and note at caption size or larger. */
+    --text-fine: var(--text-caption);
+    --text-micro: var(--text-caption);
+    --text-label: var(--text-caption);
+    --text-eyebrow: var(--text-caption);
   }
 }

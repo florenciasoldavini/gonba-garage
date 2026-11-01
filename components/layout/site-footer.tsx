@@ -13,6 +13,7 @@ import {
 } from '@/constants/contact';
 import { LEGAL_PAGES } from '@/constants/legal';
 import { getWhatsAppUrl } from '@/lib/contact';
+import { siteNavigation } from './navigation';
 
 type SiteFooterProps = {
   topHref: string;
@@ -77,10 +78,9 @@ export function SiteFooter({
           <nav className="footer-link-group" aria-label="Secciones">
             <span className="footer-link-label">Secciones</span>
             <div className="footer-link-list">
-              <Link href={home ? '#vehiculos' : '/vehiculos'}>Vehículos</Link>
-              <Link href="/vender">Vendé tu auto</Link>
-              <Link href={home ? '#servicios' : '/#servicios'}>Servicios</Link>
-              <Link href={home ? '#preguntas' : '/#preguntas'}>FAQ</Link>
+              {siteNavigation.map((item) => (
+                <Link href={item.path} key={item.label}>{item.label}</Link>
+              ))}
             </div>
           </nav>
           <nav className="footer-link-group" aria-label="Contacto">
