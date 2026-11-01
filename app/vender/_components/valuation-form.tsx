@@ -146,6 +146,20 @@ export function ValuationForm() {
       '',
       `Teléfono de contacto: ${value('phone')}`,
     ].filter((line) => line !== null).join('\n');
+
+    // Catalog picks arrive in hidden inputs; a hand-typed make or model is free text and stays out.
+    const form = event.currentTarget;
+    const catalogValue = (name: string) => {
+      const control = form.elements.namedItem(name);
+      return control instanceof HTMLInputElement && control.type === 'hidden' ? value(name) : '';
+    };
+    captureAnalyticsEvent('valuation_sent_to_whatsapp', {
+      has_photos: data.getAll('photos').some((photo) => photo instanceof File && photo.size > 0),
+      make: catalogValue('make'),
+      model: catalogValue('model'),
+      total_steps: TOTAL_STEPS,
+      year: Number(value('year')),
+    });
     window.open(getWhatsAppUrl(message), '_blank', 'noopener,noreferrer');
   };
 

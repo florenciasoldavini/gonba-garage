@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
 import { ArrowDown, ArrowUpRight, Scale } from 'lucide-react';
 
+import { TrackedButtonAnchor } from '@/components/analytics/tracked-anchor';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { ContactCallout } from '@/components/marketing/contact-callout';
@@ -26,6 +27,7 @@ import { createPageMetadata } from '@/lib/metadata';
 import { isSiteIndexingEnabled } from '@/lib/site-indexing';
 import { getSiteUrl } from '@/lib/site-url';
 import { ORGANIZATION_SCHEMA_ID } from '@/lib/structured-data';
+import type { AnalyticsEvent } from '@/lib/analytics/client';
 import { PriceAlert } from './_components/price-alert';
 import { alertDeliveryEnabled } from '@/lib/alerts/config';
 import { ShareButton } from './_components/share-button';
@@ -147,6 +149,15 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
     eyebrow: '¿Buscás algo parecido?',
     title: 'Contanos qué auto buscás. Te avisamos cuando entre.',
   };
+  const contactEvent = (placement: 'hero' | 'callout'): AnalyticsEvent => ({
+    name: 'vehicle_contact_clicked',
+    properties: {
+      channel: 'whatsapp',
+      placement,
+      vehicle_slug: vehicle.slug,
+      vehicle_status: status.isAvailable ? 'available' : isReserved ? 'reserved' : 'sold',
+    },
+  });
   const organizationId = new URL(ORGANIZATION_SCHEMA_ID, siteUrl).toString();
   const vehicleSchemaId = `${vehicleUrl}#vehicle`;
   const vehicleStructuredData = {
@@ -297,9 +308,9 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
                 />
               ) : null}
               <div className="detail-actions">
-                <ButtonAnchor href={vehicleContactHref} rel="noreferrer" target="_blank">
+                <TrackedButtonAnchor analyticsEvent={contactEvent('hero')} href={vehicleContactHref} rel="noreferrer" target="_blank">
                   Consultar por este auto <Arrow />
-                </ButtonAnchor>
+                </TrackedButtonAnchor>
                 <ButtonAnchor href="#ficha" variant="glass">Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
               </div>
             </>
@@ -413,7 +424,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       <ContactCallout
         actionHref={contact.href}
         actionLabel={contact.label}
-        analytics={{ channel: 'whatsapp', placement: 'vehicle_detail', vehicleSlug: vehicle.slug }}
+        analytics={contactEvent('callout')}
         className="detail-contact"
         eyebrow={contact.eyebrow}
         id="consulta"

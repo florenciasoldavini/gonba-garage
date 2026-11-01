@@ -4,7 +4,7 @@ import { ArrowUpRight } from 'lucide-react';
 
 import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import { captureAnalyticsEvent, type AnalyticsEvent } from '@/lib/analytics/client';
 
 type ContactCalloutProps = {
   actionHref: string;
@@ -14,11 +14,7 @@ type ContactCalloutProps = {
   note?: string;
   title: string;
   titleId: string;
-  analytics?: {
-    channel: 'email' | 'whatsapp' | 'internal';
-    placement: string;
-    vehicleSlug?: string;
-  };
+  analytics?: AnalyticsEvent;
   className?: string;
 };
 
@@ -48,13 +44,7 @@ export function ContactCallout({
         <ButtonAnchor
           href={actionHref}
           onClick={() => {
-            if (analytics) {
-              captureAnalyticsEvent('contact_intent_clicked', {
-                channel: analytics.channel,
-                placement: analytics.placement,
-                ...(analytics.vehicleSlug ? { vehicle_slug: analytics.vehicleSlug } : {}),
-              });
-            }
+            if (analytics) captureAnalyticsEvent(analytics.name, analytics.properties);
           }}
         >
           {actionLabel} <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />

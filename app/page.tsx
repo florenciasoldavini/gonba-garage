@@ -157,7 +157,7 @@ export default async function Home() {
       <ContactCallout
         actionHref={getWhatsAppUrl(WHATSAPP_GENERAL_MESSAGE)}
         actionLabel="Escribir por WhatsApp"
-        analytics={{ channel: 'whatsapp', placement: 'home_contact' }}
+        analytics={{ name: 'contact_intent_clicked', properties: { channel: 'whatsapp', placement: 'home_contact' } }}
         eyebrow="Hablemos"
         id="contacto"
         title="El próximo paso puede empezar con un mensaje."
