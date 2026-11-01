@@ -91,6 +91,14 @@ The root layout publishes a `WebSite` and `AutoDealer` graph. Vehicle detail pag
 - an `Offer` with price, currency, used condition, seller, URL, and lifecycle-derived availability;
 - a three-level `BreadcrumbList`: Inicio → Vehículos → current vehicle.
 
+The business facts behind the `AutoDealer` entity and the footer live in `constants/contact.ts`.
+Its `address` is locality-level only (Villa Pueyrredón, CABA, AR): the owner publishes no street
+address, so never add `streetAddress` or a postal code. Opening hours are deliberately left out of
+the schema. Visits are always by appointment, and `openingHours` or `openingHoursSpecification`
+would let search results show the business as "open now" to walk-ins. The hours appear in the
+footer next to "Siempre con cita previa" instead. `areaServed` stays at Buenos Aires because the
+dealer sells to buyers outside its own neighborhood. The metadata check asserts all of this.
+
 Use absolute URLs and stable `@id` values derived from the canonical origin. Reuse the organization
 ID from `lib/structured-data.ts` rather than defining another seller entity. Escape JSON-LD through
 the shared `JsonLd` component; do not interpolate unescaped JSON into a script element.
