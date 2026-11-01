@@ -64,12 +64,15 @@ owns those facts rather than from browser clicks.
 ## Google Search Console setup
 
 The application exposes `/sitemap.xml` and `/robots.txt`. Both use `NEXT_PUBLIC_SITE_URL`, so replace
-the local value with the canonical production origin before launch. While the site is a demo,
+the local value with the canonical production origin before launch. Until then,
 `SITE_INDEXING_ENABLED=false` keeps every page out of search results and serves an empty sitemap.
+The catalog, car pages and sitemap also stay out of search results until the final version of the
+site, even with indexing enabled.
 
 After the final domain is connected:
 
-1. Replace demonstrative inventory and connect all production forms.
+1. Lift the catalog indexing hold ([SEO guidelines](seo-and-social-metadata.md#indexing-gates-and-permanent-domain-policy))
+   and connect all production forms.
 2. Set `SITE_INDEXING_ENABLED=true` and redeploy.
 3. Add a Domain property in Google Search Console and verify it with the DNS record supplied by Google.
 4. Submit `https://<production-domain>/sitemap.xml`.

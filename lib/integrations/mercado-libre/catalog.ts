@@ -1,6 +1,5 @@
 import 'server-only';
 import { cache } from 'react';
-import { activeMockVehicles, findMockVehicle } from '@/features/vehicles/data/mock-vehicles';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import {
   findCatalogPublication as findStoredPublication,
@@ -8,10 +7,6 @@ import {
   type CatalogPublication,
 } from '@/lib/catalog/store';
 import { fullSizeMercadoLibreImageUrl } from './pictures';
-
-export function isLiveCatalog() {
-  return process.env.VEHICLE_DATA_SOURCE === 'mercado-libre';
-}
 
 /**
  * A server with MERCADO_LIBRE_BACKEND_URL (local development) reads the synced catalog through
@@ -43,7 +38,6 @@ function withFullSizeImage(vehicle: Vehicle): Vehicle {
 }
 
 export const listCatalogVehicles = cache(async () => {
-  if (!isLiveCatalog()) return activeMockVehicles;
   if (!readsRemoteBackend()) return (await listActiveCatalogVehicles()).map(withFullSizeImage);
   const result = await remoteCatalog<{ vehicles: Vehicle[] }>();
   if (!result) throw new Error('Missing catalog');
@@ -55,7 +49,6 @@ export const listCatalogVehicles = cache(async () => {
  * returned vehicle carries the canonical slug, which can differ from the requested one.
  */
 export const findCatalogPublication = cache(async (slug: string): Promise<CatalogPublication | null> => {
-  if (!isLiveCatalog()) return null;
   const id = slug.match(/-(mla\d+)$/i)?.[1]?.toUpperCase();
   if (!id) return null;
   const result = readsRemoteBackend() ? await remoteCatalog<CatalogPublication>(id) : await findStoredPublication(id);
@@ -64,7 +57,6 @@ export const findCatalogPublication = cache(async (slug: string): Promise<Catalo
 
 /** Only an exact canonical slug resolves to a vehicle. */
 export const findCatalogVehicle = cache(async (slug: string) => {
-  if (!isLiveCatalog()) return findMockVehicle(slug);
   const vehicle = (await findCatalogPublication(slug))?.vehicle;
   return vehicle?.slug === slug ? vehicle : undefined;
 });

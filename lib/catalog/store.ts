@@ -1,6 +1,7 @@
 import 'server-only';
 import type { Vehicle, VehicleStatus } from '@/features/vehicles/domain/vehicle';
 import type { MercadoLibreItem, MercadoLibrePublication } from '@/lib/integrations/mercado-libre/types';
+import type { VehicleCategory } from '@/lib/integrations/mercado-libre/vehicle-categories';
 import { getAlertsSql } from '@/lib/alerts/database';
 
 /**
@@ -67,7 +68,7 @@ export async function findCatalogPublication(id: string): Promise<CatalogPublica
  * the alert work. A listing first seen more than NEW_LISTING_DAYS after it was published (a
  * backfill or a fresh database) is old stock, not news, and records nothing.
  */
-export async function savePublication(publication: MercadoLibrePublication, lease: string) {
+export async function savePublication(publication: MercadoLibrePublication, vehicleCategory: VehicleCategory, lease: string) {
   const { source, description } = publication;
   // Slug, status and updatedAt live in their own columns. updatedAt is ours, not the provider's.
   const { slug, status, ...vehicle } = publication.vehicle;
@@ -80,12 +81,12 @@ export async function savePublication(publication: MercadoLibrePublication, leas
       SELECT price, currency, status FROM public.catalog_publications WHERE publication_id = ${source.id}::text
     ), saved AS (
       INSERT INTO public.catalog_publications (publication_id, slug, status, price, currency, vehicle, source, description,
-        listed_at, source_updated_at, published_at, closed_at)
+        listed_at, source_updated_at, published_at, closed_at, vehicle_category)
       SELECT ${source.id}::text, ${slug}::text, ${status}::text, ${vehicle.price}::numeric, ${vehicle.currency}::text,
         ${storedVehicle}::jsonb, ${JSON.stringify(publicSource)}::jsonb, ${description ? JSON.stringify(description) : null}::jsonb,
         ${toTimestamp(source.start_time ?? source.date_created)}::timestamptz, ${toTimestamp(source.last_updated)}::timestamptz,
         CASE WHEN ${status}::text = 'active' THEN now() END,
-        CASE WHEN ${status}::text IN ('closed', 'sold') THEN now() END
+        CASE WHEN ${status}::text IN ('closed', 'sold') THEN now() END, ${vehicleCategory}::text
       FROM lease
       ON CONFLICT (publication_id) DO UPDATE SET
         status = EXCLUDED.status, price = EXCLUDED.price, currency = EXCLUDED.currency,
@@ -97,7 +98,7 @@ export async function savePublication(publication: MercadoLibrePublication, leas
           THEN now() ELSE catalog_publications.content_changed_at END,
         published_at = COALESCE(catalog_publications.published_at, EXCLUDED.published_at),
         closed_at = CASE WHEN EXCLUDED.status IN ('closed', 'sold') THEN COALESCE(catalog_publications.closed_at, now()) END,
-        synced_at = now()
+        vehicle_category = EXCLUDED.vehicle_category, synced_at = now()
       RETURNING publication_id, price, currency, status, listed_at
     ), history AS (
       INSERT INTO public.catalog_price_history (publication_id, price, currency)
@@ -169,9 +170,12 @@ export async function failCatalogJob(id: string, lease: string, revision: number
 }
 
 export async function readStoredSyncState() {
-  const rows = await getAlertsSql()`SELECT publication_id, status, source_updated_at, synced_at FROM public.catalog_publications`;
+  const rows = await getAlertsSql()`SELECT publication_id, status, source_updated_at, synced_at, vehicle_category
+    FROM public.catalog_publications`;
   return new Map(rows.map(row => [String(row.publication_id), {
     status: row.status as VehicleStatus,
+    // Null only for rows saved before categories were recorded, until they are read again.
+    vehicleCategory: (row.vehicle_category ?? null) as VehicleCategory | null,
     sourceUpdatedAt: row.source_updated_at ? new Date(row.source_updated_at as string).getTime() : null,
     syncedAt: new Date(row.synced_at as string).getTime(),
   }]));

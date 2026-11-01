@@ -37,7 +37,13 @@ type MercadoLibreItemSearch = {
     offset: number;
     limit: number;
   };
-  results: string[];
+  results: string[] | null;
+  scroll_id?: string;
+};
+
+type MercadoLibreCategory = {
+  id: string;
+  path_from_root?: Array<{ id: string; name?: string }>;
 };
 
 export type MercadoLibreReadTest = {
@@ -112,24 +118,31 @@ function chunks<T>(values: T[], size: number) {
   );
 }
 
-async function readAllActiveItemIds(userId: number, accessToken: string) {
-  const itemIds: string[] = [];
+/**
+ * Every publication of the seller, in any status (active, paused, closed and so on). Scan mode has no
+ * offset ceiling. A short scan only leaves items out, which reconciliation treats as "read again".
+ */
+async function readAllItemIds(userId: number, accessToken: string) {
+  const itemIds = new Set<string>();
   let total = 0;
-  let offset = 0;
+  let scrollId: string | undefined;
 
-  do {
+  for (;;) {
+    const query = new URLSearchParams({ search_type: 'scan', limit: String(ITEMS_SEARCH_LIMIT) });
+    if (scrollId) query.set('scroll_id', scrollId);
     const search = await fetchMercadoLibre<MercadoLibreItemSearch>(
-      `/users/${encodeURIComponent(userId)}/items/search?status=active&orders=start_time_desc&limit=${ITEMS_SEARCH_LIMIT}&offset=${offset}`,
+      `/users/${encodeURIComponent(userId)}/items/search?${query}`,
       accessToken,
     );
 
     total = search.paging.total;
-    itemIds.push(...search.results);
-    if (search.results.length === 0) break;
-    offset += search.results.length;
-  } while (itemIds.length < total);
+    const previousSize = itemIds.size;
+    for (const id of search.results ?? []) itemIds.add(id);
+    if (itemIds.size >= total || itemIds.size === previousSize || !search.scroll_id) break;
+    scrollId = search.scroll_id;
+  }
 
-  return { itemIds, total };
+  return { itemIds: [...itemIds], total };
 }
 
 async function readItems(itemIds: string[], accessToken: string) {
@@ -213,7 +226,7 @@ export async function exchangeMercadoLibreAuthorizationCode(code: string, verifi
 
 export async function readMercadoLibrePublications(accessToken: string) {
   const user = await fetchMercadoLibre<MercadoLibreUser>('/users/me', accessToken);
-  const { itemIds, total } = await readAllActiveItemIds(user.id, accessToken);
+  const { itemIds, total } = await readAllItemIds(user.id, accessToken);
   const items = await readItems(itemIds, accessToken);
   const publications = items.map((item) => mapMercadoLibreItemToVehicle(item));
 
@@ -230,6 +243,13 @@ export async function readMercadoLibrePublications(accessToken: string) {
       items: publications,
     },
   } satisfies MercadoLibreReadTest;
+}
+
+/** The category's ancestry, root first and ending with the category itself. */
+export async function readMercadoLibreCategoryPath(categoryId: string, accessToken: string) {
+  const category = await fetchMercadoLibre<MercadoLibreCategory>(`/categories/${encodeURIComponent(categoryId)}`, accessToken);
+  if (!Array.isArray(category.path_from_root) || !category.path_from_root.length) throw failure('catalog_query', 'invalid_response');
+  return category.path_from_root.map(({ id }) => id);
 }
 
 export async function refreshMercadoLibreToken(refreshToken: string) {

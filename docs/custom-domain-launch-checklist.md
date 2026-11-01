@@ -4,10 +4,12 @@ Use this checklist when Gonba's Garage receives its final production domain. Rep
 `https://<custom-domain>` below with the chosen canonical origin, including `www` if that is the
 preferred public hostname.
 
-> **Indexing release gate:** the demo intentionally defaults to `SITE_INDEXING_ENABLED=false`.
-> Connecting the permanent URL is not enough by itself. Set the final `NEXT_PUBLIC_SITE_URL`, change
-> `SITE_INDEXING_ENABLED=true` in Production, then redeploy and verify both values before submitting
-> the sitemap.
+> **Indexing release gate:** the site intentionally defaults to `SITE_INDEXING_ENABLED=false`, and
+> the catalog, car pages and sitemap stay out of search results until the final version of the site
+> even when it is `true`. Connecting the permanent URL is not enough by itself. Lift the catalog
+> indexing hold in code ([SEO guidelines](seo-and-social-metadata.md#indexing-gates-and-permanent-domain-policy)),
+> set the final `NEXT_PUBLIC_SITE_URL`, change `SITE_INDEXING_ENABLED=true` in Production, then
+> redeploy and verify both values before submitting the sitemap.
 
 ## Current temporary setup
 
@@ -42,8 +44,10 @@ Reference: [Vercel custom-domain setup](https://vercel.com/docs/domains/set-up-c
 ## 2. Update the repository and Vercel environment
 
 - [ ] Set `NEXT_PUBLIC_SITE_URL=https://<custom-domain>` in the Vercel **Production** environment.
-- [ ] Set `SITE_INDEXING_ENABLED=true` in **Production** only after the real inventory, forms, domain,
-  and business details are ready to be indexed. Keep it `false` for demos and previews.
+- [ ] Lift the catalog indexing hold in code so `/vehiculos`, active car pages and the sitemap can be
+  indexed ([SEO guidelines](seo-and-social-metadata.md#indexing-gates-and-permanent-domain-policy)).
+- [ ] Set `SITE_INDEXING_ENABLED=true` in **Production** only after the final site, forms, domain,
+  and business details are ready to be indexed. Keep it `false` locally and on previews.
 - [ ] Set the same value for **Preview** only if previews should deliberately publish canonical and
   share URLs pointing to production. Otherwise, keep previews protected from indexing.
 - [ ] Redeploy after changing the variable; existing deployments do not receive a new value

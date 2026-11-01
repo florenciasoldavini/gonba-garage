@@ -28,8 +28,10 @@ npm run build
 - `app/` contains routes, layouts, and thin API handlers. Route-only components live in private
   `_components` folders beside the route that owns them.
 - `components/ui/` contains reusable interface controls.
-- `features/vehicles/` contains the vehicle domain model, Mercado Libre item mapper,
-  presentation helpers, and demo data.
+- `features/vehicles/` contains the vehicle domain model, Mercado Libre item mapper, and
+  presentation helpers. The site ships no demo vehicles: every environment shows the real Mercado
+  Libre catalog. Locally, read it through the deployed backend
+  ([Mercado Libre setup notes](docs/mercado-libre-local.md#desarrollo-local)).
 - `lib/integrations/` contains server-only adapters for external services.
 - `lib/catalog/` and `lib/alerts/` contain the server-only database access for the synced catalog and
   alerts (Neon PostgreSQL).
@@ -39,13 +41,16 @@ Copy `.env.example` to `.env.local` and fill in the environment values that are 
 database is reached only from server code through the server-only `DATABASE_URL`; never expose it to
 browser code. See [Neon storage](docs/neon-alert-storage.md) for environments and migrations.
 
-### Demo indexing safety
+### Indexing safety
 
-The site defaults to `SITE_INDEXING_ENABLED=false`. Demo deployments emit `noindex, nofollow` and
-an empty sitemap while preserving Open Graph and social sharing.
+The site defaults to `SITE_INDEXING_ENABLED=false`. With indexing disabled, deployments emit
+`noindex, nofollow` and an empty sitemap while preserving Open Graph and social sharing. Separately,
+the catalog, car pages and sitemap stay out of search results until the final version of the site,
+even with indexing enabled ([catalog indexing hold](docs/seo-and-social-metadata.md#indexing-gates-and-permanent-domain-policy)).
 
-When the permanent URL is connected and the real inventory, forms, and business details are ready,
-the production launch must include both environment changes below, followed by a redeploy:
+When the permanent URL is connected and the final site, forms, and business details are ready, the
+production launch must lift the catalog indexing hold in code and include both environment changes
+below, followed by a redeploy:
 
 ```bash
 NEXT_PUBLIC_SITE_URL=https://<permanent-domain>

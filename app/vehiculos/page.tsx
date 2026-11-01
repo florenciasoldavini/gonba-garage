@@ -6,23 +6,25 @@ import { SiteHeader } from '@/components/layout/site-header';
 import { InnerPageMotion } from '@/components/motion/inner-page-motion';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { alertEmailsConfigured } from '@/lib/alerts/config';
-import { isLiveCatalog, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
+import { listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { createPageMetadata } from '@/lib/metadata';
 import { getMepQuote } from '@/lib/integrations/mep-quote';
 import { CatalogHeroCount, CatalogResultCountProvider } from './_components/catalog-result-count';
 import { InventoryCatalog } from './_components/inventory-catalog';
 import { InventoryCatalogFromSearchParams } from './_components/inventory-catalog-from-search-params';
 
+// The catalog stays out of search results until the final version of the site, whatever
+// SITE_INDEXING_ENABLED says (docs/seo-and-social-metadata.md).
 export const metadata: Metadata = { ...createPageMetadata({
   title: "Vehículos disponibles | Gonba's Garage",
   description:
     "Explorá el inventario de autos usados seleccionados de Gonba's Garage. Filtrá por marca, transmisión, tipo y precio.",
   path: '/vehiculos',
-}), ...(isLiveCatalog() ? { robots: { index: false, follow: false } } : {}) };
+}), robots: { index: false, follow: false } };
 
 export default async function VehiclesPage() {
   // Keep Next.js request-time rendering outside the API failure handler.
-  if (isLiveCatalog()) await connection();
+  await connection();
   let vehicles;
   const quotePromise = getMepQuote();
   try {

@@ -175,7 +175,7 @@ try {
   assert.equal(await limiter.reserveAlertSignup('inventory', 'limited@example.invalid', from('192.0.2.99')), true, 'Inventory has its own buckets');
   await db.exec('DELETE FROM price_alert_signup_windows');
   assert.equal(cancel.parseCancellationToken(token + '.'), null);
-  overrides['@/lib/integrations/mercado-libre/catalog'] = { findCatalogVehicle: async () => { throw Error('Must not use demo catalog'); } };
+  overrides['@/lib/integrations/mercado-libre/catalog'] = { findCatalogVehicle: async () => { throw Error('Must resolve the publication through Mercado Libre, not the synced copy'); } };
   const priceRoute = load('app/api/price-alerts/route.ts');
   const priceResponse = await priceRoute.POST(new Request('https://example.test/api/price-alerts', { method: 'POST',
     headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'route@example.invalid', vehicleSlug: vehicle.slug, price: 1, currency: 'ARS' }) }));

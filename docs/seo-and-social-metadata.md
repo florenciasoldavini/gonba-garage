@@ -30,13 +30,13 @@ check when applicable.
 | --- | --- |
 | Shared page metadata | `lib/metadata.ts` |
 | Canonical origin | `lib/site-url.ts` and `NEXT_PUBLIC_SITE_URL` |
-| Demo/production indexing gate | `lib/site-indexing.ts` and `SITE_INDEXING_ENABLED` |
+| Site-wide indexing gate | `lib/site-indexing.ts` and `SITE_INDEXING_ENABLED` |
 | Site and dealer JSON-LD | `lib/structured-data.ts` |
 | Safe JSON-LD rendering | `components/seo/json-ld.tsx` |
 | Vehicle Product/Offer/Breadcrumb JSON-LD | `app/vehiculos/[slug]/page.tsx` |
 | Dynamic vehicle share cards | `app/og/vehiculos/[slug]/route.ts` |
 | Crawler rules | `app/robots.ts` |
-| Discoverable URLs and freshness | `app/sitemap.ts` |
+| Discoverable URLs and freshness | `app/sitemap.ts` (empty until the indexing launch) |
 | Favicon, Apple icon, and manifest | `public/favicon.svg`, `app/apple-icon.tsx`, and `app/manifest.ts` |
 | Brand logo files (header, footer, share cards, dealer `logo`) | `public/brand/` |
 | End-to-end metadata contract | `scripts/check-social-metadata.mjs` |
@@ -78,7 +78,7 @@ Do not add `keywords` metadata: it is not part of this project's SEO strategy.
 - Open Graph currently uses `type: website` for all routes. Vehicle identity is expressed through
   Product/Vehicle JSON-LD; change this decision only after validating compatibility across the target
   sharing platforms.
-- Social sharing must continue to work while the demo is `noindex`.
+- Social sharing must continue to work while pages are `noindex`.
 
 When a vehicle's visible fields or status labels change, review both the generated card and its
 metadata. Social platforms cache previews, so stable URLs should serve current content with explicit
@@ -109,26 +109,31 @@ seller identity, canonical URL, or breadcrumbs change.
 
 ## Inventory lifecycle and indexing
 
-Inventory status controls visible labels, Offer availability, sitemap membership, and sometimes page
-robots metadata. Keep the mapping centralized in `features/vehicles/presentation/status.ts`.
+Inventory status controls visible labels, Offer availability and listing. Keep the mapping
+centralized in `features/vehicles/presentation/status.ts`.
 
 Mercado Libre has no reserved or sold status. The seller pauses a publication when a buyer reserves
 the car in person and usually leaves it paused after the sale until it expires and closes. The page
 therefore shows a paused car as reserved only for `RESERVATION_WINDOW_DAYS` (14) after the pause,
 measured from `updatedAt`, and as sold afterwards. A closed publication always shows as sold.
 
-| Stored status | Shown as | Page behavior | Sitemap | Offer availability |
-| --- | --- | --- | --- | --- |
-| `active` | Disponible | Available and eligible for indexing | Included | `InStock` |
-| `paused`, within the window | Reservado | Kept; `noindex, follow` in production mode | Excluded | `Reserved` |
-| `paused`, past the window | Vendido | Kept; `noindex, follow` in production mode | Excluded | `SoldOut` |
-| `closed` or `sold` | Vendido | Kept; `noindex, follow` in production mode | Excluded | `SoldOut` |
+| Stored status | Shown as | Page behavior | Offer availability |
+| --- | --- | --- | --- |
+| `active` | Disponible | Listed in the catalog and on the home page | `InStock` |
+| `paused`, within the window | Reservado | Kept, not listed | `Reserved` |
+| `paused`, past the window | Vendido | Kept, not listed | `SoldOut` |
+| `closed` or `sold` | Vendido | Kept, not listed | `SoldOut` |
+
+Every car page is `noindex, nofollow` and the sitemap is empty until the final version of the site
+(see the catalog indexing hold below). The policy to restore at the indexing launch: active cars are
+indexable and in the sitemap; reserved and sold pages are `noindex, follow` and stay out of it.
 
 Reserved and sold pages never imply availability: no contact-to-buy action or comparison. They keep
 the published price as a visible reference (so the Offer stays truthful), offer an email alert, and
 link to up to three similar available cars. Those links give the page enduring
-value, so it stays reachable rather than returning 404. It stays out of search results because the
-seller often relists the same car under a new publication, which would otherwise compete with it.
+value, so it stays reachable rather than returning 404. Once indexing launches it must stay out of
+search results, because the seller often relists the same car under a new publication, which would
+otherwise compete with it.
 Their description states the status instead of inviting an availability query, and the share card
 omits a sold car's price because it is no longer current. Never redirect every removed vehicle to the
 homepage.
@@ -136,26 +141,38 @@ homepage.
 Each inventory record must provide a reliable `updatedAt`; sitemap `lastModified` must reflect a real
 content or availability update, not the build time.
 
-## Demo and permanent-domain policy
+## Indexing gates and permanent-domain policy
 
-The `VEHICLE_DATA_SOURCE=mercado-libre` local preview always marks catalog and vehicle
-detail pages `noindex, nofollow` and returns an empty sitemap. The social image route reads the same
-vehicle source as the detail page. The protected Vercel API uses `no-store` and `noindex`, requires
-server-side credentials and is excluded from the sitemap. This preview is not a permanent-domain launch.
+The site never ships demo or placeholder vehicles. Every environment shows the real Mercado Libre
+catalog (see «Catalog rendering»). Two separate gates keep it out of search results.
 
-The safe default is:
+**Site-wide gate.** The safe default is:
 
 ```bash
 SITE_INDEXING_ENABLED=false
 ```
 
-Demo and preview deployments emit `noindex, nofollow`, serve an empty sitemap, and omit the sitemap
-and host from `robots.txt`. `robots.txt` still allows page crawling so crawlers can read the `noindex`
-directive; blocking the entire site in `robots.txt` would prevent that.
+With indexing disabled (local, preview and today's production deployments), every page emits
+`noindex, nofollow`, the sitemap is empty, and `robots.txt` omits the sitemap and host.
+`robots.txt` still allows page crawling so crawlers can read the `noindex` directive; blocking the
+entire site in `robots.txt` would prevent that.
+
+**Catalog indexing hold.** Until the final version of the site, `/vehiculos` and every
+`/vehiculos/[slug]` page are `noindex, nofollow` and `app/sitemap.ts` returns no URLs, whatever
+`SITE_INDEXING_ENABLED` says. With `SITE_INDEXING_ENABLED=true` only the home page, `/vender`,
+`/privacidad` and `/terminos` become indexable, and `robots.txt` advertises the still-empty sitemap.
+Lifting the hold is a code change that belongs to the indexing launch: drop the forced robots in
+`app/vehiculos/page.tsx` and `app/vehiculos/[slug]/page.tsx` (keeping `noindex, follow` for reserved
+and sold cars), list the public pages and active cars from `listCatalogVehicles()` in
+`app/sitemap.ts` with `updatedAt` as `lastModified`, and update `scripts/check-social-metadata.mjs`.
+
+The social image route reads the same vehicle source as the detail page. The protected Vercel API
+uses `no-store` and `noindex`, requires server-side credentials and is excluded from the sitemap.
 
 Do not enable indexing merely because a custom domain has been connected. Follow the
 [custom-domain launch checklist](custom-domain-launch-checklist.md). Production indexing requires
-real inventory and business content, working advertised forms, the permanent canonical domain, and:
+the final version of the site, working advertised forms, the permanent canonical domain, lifting the
+catalog indexing hold, and:
 
 ```bash
 NEXT_PUBLIC_SITE_URL=https://<permanent-domain>
@@ -184,8 +201,11 @@ Before merging a new public route or an SEO-relevant change:
 
 ## Verification
 
-The metadata check expects a running production build. Verify both safety modes when indexing logic
-or public routes change:
+The metadata check expects a running production build that reads the real catalog, locally through
+`MERCADO_LIBRE_BACKEND_URL` (see [the Mercado Libre setup notes](mercado-libre-local.md)). It
+discovers the car pages to check from the server's own `/vehiculos` page, so the catalog must list at
+least one car; no vehicle data is shipped for it. Verify both indexing modes when indexing logic or
+public routes change:
 
 ```bash
 npm run lint
@@ -195,30 +215,36 @@ npm run start -- --port 3100
 npm run test:metadata -- http://localhost:3100
 ```
 
-Then rebuild and repeat the metadata test with `SITE_INDEXING_ENABLED=true`. Confirm that demo mode
-uses `noindex` and an empty sitemap, while production mode exposes indexable routes and advertises the
-sitemap. The custom-domain checklist contains the separate live-launch verification.
+Then rebuild and repeat the metadata test with `SITE_INDEXING_ENABLED=true` set for the build, the
+server and the test. Confirm that disabled indexing uses `noindex` everywhere and an empty sitemap,
+while enabled indexing makes the home page, `/vender` and the legal pages indexable and advertises the
+sitemap, and the catalog hold keeps the catalog, car pages and sitemap as they were.
+
+Reserved and sold pages are listed nowhere, so the check covers them only when their slugs are passed
+in, comma-separated: `METADATA_UNLISTED_VEHICLES=<slug>,<slug> npm run test:metadata -- <origin>`.
+The car's slug is the end of its URL. Without it the script says which checks were not covered, as it
+also does for the price alert form when email delivery is disabled on the server. The
+custom-domain checklist contains the separate live-launch verification.
 
 ## Catalog rendering
 
-Vehicle details render at request time, including publication slugs that were unknown during the
-build. Do not generate a static-parameter list for these pages: live publication requests read the
-synced database copy at request time, so Mercado Libre API calls do not grow with page views,
-crawlers or share-image requests. The live catalog opts into request-time rendering before its API
-error handler; the demo catalog remains statically cacheable. Canonical URLs, structured data and the
-indexing gate are unchanged.
+The home page, the catalog and vehicle details render at request time, including publication slugs
+that were unknown during the build. Do not generate a static-parameter list for these pages: they
+read the synced database copy at request time, so Mercado Libre API calls do not grow with page
+views, crawlers or share-image requests. The home page and the catalog opt into request-time rendering
+before their catalog error handler.
 
-Each live vehicle keeps the slug assigned at its first sync, even when the seller edits the listing
+Each vehicle keeps the slug assigned at its first sync, even when the seller edits the listing
 title. Any other slug ending in the same Mercado Libre ID returns a permanent redirect to the
 canonical URL. Paused and closed publications keep their page with the lifecycle label from
-`features/vehicles/presentation/status.ts` (see the table above); only active ones are listed. The
-demo catalog includes unlisted reserved and sold vehicles so the metadata check covers each state. `updatedAt` is the last real
-content or availability change recorded by the sync, never a provider-side touch or the sync time.
+`features/vehicles/presentation/status.ts` (see the table above); only active ones are listed.
+`updatedAt` is the last real content or availability change recorded by the sync, never a
+provider-side touch or the sync time.
 
-When the live catalog backend fails, a vehicle detail page shows a "Catálogo no disponible"
-message with `noindex, nofollow` metadata instead of a server error. Only a genuinely missing
-vehicle returns `notFound()` and a real 404. The demo catalog never takes this path; the metadata
-check asserts that a missing vehicle still returns 404.
+When the catalog backend fails, a vehicle detail page shows a "Catálogo no disponible" message with
+`noindex, nofollow` metadata instead of a server error. Only a genuinely missing vehicle returns
+`notFound()` and a real 404; the metadata check asserts that missing slugs, with and without a
+publication ID, still return 404, and that a non-canonical slug redirects.
 
 ## Private alert management
 
@@ -242,8 +268,7 @@ address is embedded in any URL. Email links use the explicit fixed `ALERTS_PUBLI
 ## Homepage inventory
 
 The homepage selection uses up to three active vehicles from the same catalog source as
-`/vehiculos`, including their photos, slugs and specifications. In live mode it renders at
-request time. An unavailable or empty catalog shows an explicit message and never falls
+`/vehiculos`, including their photos, slugs and specifications. It renders at request time. An unavailable or empty catalog shows an explicit message and never falls
 back to example vehicle links. Decorative photography and shared homepage metadata are
 unchanged.
 
@@ -251,9 +276,9 @@ unchanged.
 
 `/privacidad` (privacy policy under Ley 25.326) and `/terminos` (terms of use) are static public
 pages built with `createPageMetadata()`, the branded default card and the environment-wide indexing
-gate. They are indexable in production mode and listed in the sitemap with `lastModified` taken
-from `LEGAL_PAGES` in `constants/legal.ts`, the same date each page shows. Change that date with
-every revision. The owner's name, CUIT and location live in the same file. Every footer links both
+gate. They are indexable once indexing is enabled. When the sitemap is filled at the indexing launch,
+list them with `lastModified` taken from `LEGAL_PAGES` in `constants/legal.ts`, the same date each
+page shows. Change that date with every revision. The owner's name, CUIT and location live in the same file. Every footer links both
 pages, and both alert forms link the privacy policy next to the email field.
 
 The privacy policy describes what the code actually does. Update it in the same change whenever

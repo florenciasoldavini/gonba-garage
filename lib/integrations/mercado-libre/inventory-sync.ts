@@ -6,10 +6,33 @@ import {
 } from '@/lib/catalog/store';
 import { catalogAccessToken } from './access-token';
 import { failure, IntegrationFailure, safeFailure, type IntegrationIncident } from './failures';
-import { readMercadoLibrePublication, readMercadoLibrePublications } from './oauth';
+import { readMercadoLibreCategoryPath, readMercadoLibrePublication, readMercadoLibrePublications } from './oauth';
+import type { MercadoLibreItem } from './types';
+import { vehicleCategoryOf, type VehicleCategory } from './vehicle-categories';
 
 /** Rows not refreshed for a day are read again, which also picks up description-only edits. */
 const REFRESH_AFTER_MS = 24 * 60 * 60 * 1000;
+
+const vehicleCategories = new Map<string, Promise<VehicleCategory | null>>();
+
+/**
+ * The car, pickup or motorcycle category that qualifies the item (vehicle-categories.ts), or null
+ * when it is anything else. Cached per category. An item without a category is an unexpected
+ * response, retried later rather than guessed.
+ */
+async function vehicleCategory(item: MercadoLibreItem) {
+  const categoryId = item.category_id;
+  if (typeof categoryId !== 'string' || !/^MLA\d+$/.test(categoryId)) throw failure('catalog_query', 'invalid_response');
+  let result = vehicleCategories.get(categoryId);
+  if (!result) {
+    result = catalogAccessToken()
+      .then(token => readMercadoLibreCategoryPath(categoryId, token))
+      .then(vehicleCategoryOf);
+    vehicleCategories.set(categoryId, result);
+    result.catch(() => vehicleCategories.delete(categoryId));
+  }
+  return result;
+}
 
 function sellerId() {
   const seller = process.env.MERCADO_LIBRE_SELLER_ID?.trim();
@@ -55,9 +78,10 @@ export async function processNextCatalogJob() {
     if (!publication) {
       await markPublicationRemoved(job.id, lease);
     } else if (String(publication.source.seller_id) === seller && publication.source.id === job.id) {
-      await savePublication(publication, lease);
+      const category = await vehicleCategory(publication.source);
+      if (category) await savePublication(publication, category, lease);
     }
-    // Items of other sellers are never stored. The job is done either way.
+    // Items of other sellers and items that are not vehicles are never stored. The job is done either way.
     await completeCatalogJob(job.id, lease, job.revision);
   } catch (error) {
     const incident = safeFailure(error, 'catalog_sync').incident;
@@ -81,10 +105,10 @@ export async function runCatalogSyncWorkSafely() {
 }
 
 /**
- * Repairs missed notifications. Compares the seller's active listing with the local copy and
- * queues every item that is new, changed, no longer listed as active, or not refreshed for a day.
- * It never closes or edits rows itself: each queued item is read again on its own, so a partial
- * or empty listing response cannot remove vehicles from the site.
+ * Repairs missed notifications and backfills the copy. Compares every vehicle the seller has on
+ * Mercado Libre, in any status, with the local copy and queues each one that is missing, changed,
+ * no longer listed, or not refreshed for a day. It never closes or edits rows itself: each queued
+ * item is read again on its own, so a partial or empty listing response cannot remove vehicles.
  */
 export async function reconcileCatalog() {
   const lease = randomUUID();
@@ -93,19 +117,25 @@ export async function reconcileCatalog() {
     const seller = sellerId();
     const catalog = await readMercadoLibrePublications(await catalogAccessToken());
     if (String(catalog.seller.id) !== seller) throw failure('catalog_sync', 'unexpected_seller');
-    const listed = new Map(catalog.publications.items
-      .filter(({ source }) => String(source.seller_id) === seller)
-      .map(({ source }) => [source.id, lastUpdatedTime(source.last_updated)]));
+    const listed = new Map<string, { status: string; lastUpdated: number | null }>();
+    for (const { source, vehicle } of catalog.publications.items) {
+      if (String(source.seller_id) !== seller) continue;
+      // An unresolved category is compared anyway: the item's own job decides, and retries.
+      if (await vehicleCategory(source).catch(() => undefined) === null) continue;
+      listed.set(source.id, { status: vehicle.status, lastUpdated: lastUpdatedTime(source.last_updated) });
+    }
     const stored = await readStoredSyncState();
     const due = new Set<string>();
-    for (const [id, lastUpdated] of listed) {
+    for (const [id, { status, lastUpdated }] of listed) {
       const row = stored.get(id);
-      if (!row || row.status !== 'active' || row.sourceUpdatedAt !== lastUpdated) due.add(id);
+      // A row saved before categories were recorded is read again once to record its category.
+      if (!row || row.status !== status || row.sourceUpdatedAt !== lastUpdated || !row.vehicleCategory) due.add(id);
     }
     const staleBefore = Date.now() - REFRESH_AFTER_MS;
     for (const [id, row] of stored) {
-      if (row.status === 'active' && !listed.has(id)) due.add(id);
-      if (row.status !== 'closed' && row.status !== 'sold' && row.syncedAt < staleBefore) due.add(id);
+      const closed = row.status === 'closed' || row.status === 'sold';
+      if (!closed && !listed.has(id)) due.add(id);
+      if (!closed && row.syncedAt < staleBefore) due.add(id);
     }
     await enqueueCatalogJobs([...due]);
     await finishReconciliation(lease, { listed: listed.size });

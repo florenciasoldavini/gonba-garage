@@ -13,12 +13,12 @@ price, description, and contact action must remain usable without WebGL or clien
 - Mercado Libre is the source of truth for inventory. The site reads a synced copy in Neon.
 - Server-rendered vehicle detail routes will own metadata, canonical URLs, and structured data.
 - `lib/integrations/mercado-libre/catalog.ts` is the catalog read boundary. `listCatalogVehicles`,
-  `findCatalogPublication` and `findCatalogVehicle` return demo data from
-  `features/vehicles/data/mock-vehicles.ts` unless `VEHICLE_DATA_SOURCE=mercado-libre`. In live mode
-  they read the synced copy through `lib/catalog/store.ts`, or the deployed backend's copy when
-  `MERCADO_LIBRE_BACKEND_URL` is set. Pages and the share-image route read inventory only through
-  this module. The sitemap reads the demo data directly and is empty in live mode. The price alert
-  signup is described under the sync section.
+  `findCatalogPublication` and `findCatalogVehicle` read the synced copy through
+  `lib/catalog/store.ts`, or the deployed backend's copy when `MERCADO_LIBRE_BACKEND_URL` is set
+  (local development). There is no demo catalog: every environment shows the real Mercado Libre
+  inventory, and the codebase ships no placeholder vehicles. Pages and the share-image route read
+  inventory only through this module. The sitemap is empty until the indexing launch
+  (`docs/seo-and-social-metadata.md`). The price alert signup is described under the sync section.
 
 The experimental work should happen at the edge of the interface, not in the data or routing
 foundation. Do not introduce a motion or 3D dependency until a specific interaction justifies it.
@@ -46,15 +46,25 @@ that a sync worker keeps current. Sync is one-way; nothing is edited on the site
 3. After the response, the worker leases the job and reads the item and description again with the
    seller token. The notification payload is never trusted, so duplicate, forged or out-of-order
    notifications cannot write wrong data.
-4. Items of the configured seller are saved in `catalog_publications` (public presentation fields
-   only). Items that no longer exist are marked `closed`. Other sellers' items are ignored.
+4. Cars, pickups and motorcycles of the configured seller are saved in `catalog_publications`
+   (public presentation fields only) in any status: active, paused or closed. Items that no longer
+   exist are marked `closed`. Other sellers' items and anything else (trucks, boats, savings plans,
+   the seller's scale models and accessories) are never stored. The Mercado Libre category decides:
+   it must be, or sit below, one of the categories in
+   `lib/integrations/mercado-libre/vehicle-categories.ts` (Autos y Camionetas, new, classic and
+   damaged cars, and Motos). Categories are looked up once each; an item without a readable category
+   is retried, never guessed. Each row records its qualifying category in `vehicle_category`, and
+   the database rejects any insert or update without one of those categories
+   (`catalog_publications_vehicle_category_check`), so no other code path can store anything else.
 5. Pages and the share-image route read the copy at request time, so a change is visible on the next
    request. There is no page cache to invalidate. The price alert signup reads the copy only while
    alert delivery is disabled (see below).
-6. `/api/mercado-libre/sync` (Vercel cron, `CRON_SECRET`) reconciles: it lists the seller's active
-   items and queues every item that is new, changed, no longer active or not refreshed for a day,
-   then drains the queue. It never closes or edits a vehicle from the listing alone, so a partial or
-   empty provider response cannot remove vehicles from the site.
+6. `/api/mercado-libre/sync` (Vercel cron, `CRON_SECRET`) reconciles: it scans every publication of
+   the seller in any status, keeps the vehicles, and queues each one that is missing from the copy,
+   changed (status or last update), no longer listed or not refreshed for a day, then drains the
+   queue. This also backfills vehicles that were paused or closed before the copy existed, so every
+   car the seller ever listed keeps its page. It never closes or edits a vehicle from the listing
+   alone, so a partial or empty provider response cannot remove vehicles from the site.
 
 Ownership of fields: Mercado Libre owns price, currency, status, title, attributes, pictures and
 description. The copy owns the slug (fixed at the first sync, so URLs survive title edits; other slugs
@@ -75,10 +85,9 @@ Webhooks carry real-time changes; on a Pro plan, change the schedule in `vercel.
 Price alerts keep their own queue and read Mercado Libre directly before sending, for an
 authoritative price. Where alert emails are configured, the signup route
 (`app/api/price-alerts/route.ts`) does not use the copy either: it reads the item from Mercado Libre
-with the seller token, rejects items of other sellers and takes the starting price from that read, so
-it works even on a backend whose public frontend is in demo mode. Without that configuration the signup
-resolves the vehicle with `findCatalogVehicle` (demo data or the synced copy) and only stores the
-subscription. See [the Mercado Libre setup notes](mercado-libre-local.md).
+with the seller token, rejects items of other sellers and takes the starting price from that read.
+Without that configuration the signup resolves the vehicle from the synced copy with
+`findCatalogVehicle` and only stores the subscription. See [the Mercado Libre setup notes](mercado-libre-local.md).
 
 Search alerts work from the copy instead. When a save turns an item active (a new listing, or a
 reserved one released), the same statement records an `inventory_alert_events` row; the alert worker
