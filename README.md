@@ -28,7 +28,8 @@ npm run build
 - `app/` contains routes, layouts, and thin API handlers. Route-only components live in private
   `_components` folders beside the route that owns them.
 - `components/ui/` contains reusable interface controls.
-- `features/vehicles/` contains the vehicle domain model, repository boundary, and provisional data.
+- `features/vehicles/` contains the vehicle domain model, Mercado Libre item mapper,
+  presentation helpers, and demo data.
 - `lib/integrations/` contains server-only adapters for external services.
 - `lib/catalog/` and `lib/alerts/` contain the server-only database access for the synced catalog and
   alerts (Neon PostgreSQL).
@@ -58,7 +59,7 @@ those values. Follow the [custom-domain launch checklist](docs/custom-domain-lau
 
 - Server-render the product and SEO-critical content.
 - Treat motion and 3D as progressive enhancement.
-- Keep Mercado Libre behind the repository boundary in `features/vehicles/domain`.
+- Pages read inventory only through `lib/integrations/mercado-libre/catalog.ts`, never Mercado Libre directly.
 - Make performance budgets part of acceptance criteria.
 
 See [architecture](docs/architecture.md), [design system](docs/design-system.md), and
