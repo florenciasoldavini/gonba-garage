@@ -25,6 +25,8 @@ export type InventoryAlertCriteria = {
 /** Trigger and dialog copy for the alert card on a vehicle that is no longer for sale. */
 export type VehicleInventoryAlertCopy = {
   trigger: string;
+  /** Second line of the trigger: what else the alert covers, and the channel. */
+  hint: string;
   title: string;
   description: string;
 };
@@ -115,7 +117,7 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
           <span className="detail-alert-symbol" aria-hidden="true"><BellRing size={20} strokeWidth={2} /></span>
           <span className="detail-alert-copy">
             <strong>{vehicleCopy.trigger}</strong>
-            <small>Recibí una alerta por email</small>
+            <small>{vehicleCopy.hint}</small>
           </span>
           <span className="detail-alert-arrow" aria-hidden="true"><ArrowRight size={18} strokeWidth={1.8} /></span>
         </button>

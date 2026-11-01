@@ -308,7 +308,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
               <h2 className="detail-status-title">{isReserved ? 'Este auto está reservado.' : 'Este auto ya se vendió.'}</h2>
               <p className="detail-status-copy">
                 {isReserved
-                  ? 'Alguien lo reservó, pero a veces las reservas se caen: dejanos tu email y te avisamos si se libera.'
+                  ? 'Alguien lo reservó, pero a veces las reservas se caen: dejanos tu email y te avisamos si se libera o si entra otro igual.'
                   : 'Si buscás algo así, dejanos tu email y te avisamos cuando entre uno parecido.'}
                 {similarVehicles.length > 0 && (isReserved
                   ? ' Mientras tanto, abajo tenés autos parecidos disponibles.'
@@ -325,10 +325,12 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
                 resultCount={similarVehicles.length}
                 vehicleCopy={isReserved ? {
                   trigger: 'Avisame si se libera',
+                  hint: 'O si entra otro igual. Por email.',
                   title: 'Avisame si se libera.',
-                  description: `Si la reserva se cae o entra otro ${vehicleName}, te avisamos por email.`,
+                  description: `Te avisamos por email si la reserva se cae o si entra otro ${vehicleName}.`,
                 } : {
                   trigger: 'Avisame si entra uno parecido',
+                  hint: 'Recibí una alerta por email',
                   title: 'Avisame si entra uno parecido.',
                   description: `Te avisamos por email cuando entre otro ${vehicle.make} ${bodyType.toLocaleLowerCase('es')}.`,
                 }}
