@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 
 import { Wordmark } from '@/components/brand/wordmark';
 import { WHATSAPP_GENERAL_MESSAGE } from '@/constants/contact';
+import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { siteNavigation, type NavigationKey } from './navigation';
 import { SiteMenu } from './site-menu';
@@ -61,6 +62,7 @@ export function SiteHeader({ active }: SiteHeaderProps) {
         <Link
           className="header-cta"
           href={contactHref}
+          onClick={() => captureAnalyticsEvent('contact_intent_clicked', { channel: 'whatsapp', placement: 'header' })}
           rel="noreferrer"
           target="_blank"
         >

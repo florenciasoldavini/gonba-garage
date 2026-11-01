@@ -42,17 +42,24 @@ optional session replay. Update it whenever events, replay settings or the analy
 | `comparison_vehicle_added` | A vehicle was added to the comparison selection. |
 | `comparison_vehicle_removed` | A vehicle was removed from the comparison selection. |
 | `comparison_opened` | The comparison dialog opened with two or more vehicles. |
-| `contact_intent_clicked` | A visitor clicked an email, WhatsApp, or internal contact action. This is intent, not a confirmed lead. |
+| `vehicle_contact_clicked` | A visitor clicked a WhatsApp button on a vehicle page: `placement` is `hero` (the purchase card) or `callout` (the contact section), and `vehicle_status` is `available`, `reserved`, or `sold`. This is intent, not a confirmed lead. |
+| `contact_intent_clicked` | A visitor clicked a general contact action; `placement` is `header`, `menu`, `footer`, `home_contact`, or `catalog_contact`. This is intent, not a confirmed lead. |
 | `price_alert_opened` | The price-alert dialog opened. |
 | `price_alert_created` | The price-alert API confirmed a successful database write. |
 | `price_alert_failed` | The price-alert request failed. |
 | `valuation_started` | A visitor first interacted with the valuation form. |
 | `valuation_step_completed` | A valid valuation step advanced. |
-| `valuation_demo_completed` | The current demonstration form reached its success screen; this is not a submitted lead. |
+| `valuation_sent_to_whatsapp` | The completed sell-your-car form opened WhatsApp with the prefilled message. Properties are `total_steps`, `has_photos`, `year`, and `make` and `model` (empty when typed by hand instead of picked from the catalog). The visitor still has to send the message, so this is intent, not a received lead. |
 
-Only introduce `valuation_submitted` after a production endpoint has accepted and persisted the
-lead. Record downstream outcomes such as qualified lead, scheduled visit, and vehicle sold from the
-system that owns those facts rather than from browser clicks.
+All WhatsApp contact clicks are `vehicle_contact_clicked` plus `contact_intent_clicked` with
+`channel` `whatsapp`; vehicle pages report only the first. Earlier data recorded the vehicle page's
+contact section as `contact_intent_clicked` with placement `vehicle_detail`, and did not record its
+main button at all.
+
+The sell-your-car form is sent from the visitor's own WhatsApp, so the site never receives the lead.
+Only introduce `valuation_submitted` if a server endpoint ever accepts and persists it. Record
+downstream outcomes such as qualified lead, scheduled visit, and vehicle sold from the system that
+owns those facts rather than from browser clicks.
 
 ## Google Search Console setup
 
