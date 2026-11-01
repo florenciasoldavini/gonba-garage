@@ -290,6 +290,18 @@ assert.match(manifestResponse.headers.get('content-type') || '', /application\/m
 const manifest = await manifestResponse.json();
 assert.equal(manifest.name, "Gonba's Garage", 'Manifest should use the brand name');
 assert.ok(manifest.icons?.some((icon) => icon.src === '/favicon.svg'), 'Manifest should include the branded icon');
+// Android Chrome only offers installation with 192 and 512 PNG icons; the maskable one survives its circular crop.
+for (const [sizes, purpose] of [['192x192', 'any'], ['512x512', 'any'], ['512x512', 'maskable']]) {
+  const icon = manifest.icons.find((entry) => entry.sizes === sizes && entry.type === 'image/png' && (entry.purpose ?? 'any') === purpose);
+  assert.ok(icon, `Manifest should list a ${sizes} ${purpose} PNG icon`);
+  const response = await fetch(new URL(icon.src, targetOrigin));
+  assert.equal(response.status, 200, `${icon.src} should return 200`);
+  assert.equal(response.headers.get('content-type'), 'image/png', `${icon.src} should be PNG`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const [width, height] = sizes.split('x').map(Number);
+  assert.equal(bytes.readUInt32BE(16), width, `${icon.src} should be ${width}px wide`);
+  assert.equal(bytes.readUInt32BE(20), height, `${icon.src} should be ${height}px tall`);
+}
 
 const faviconResponse = await fetch(new URL('/favicon.svg', targetOrigin));
 assert.equal(faviconResponse.status, 200, 'Branded favicon should return 200');
