@@ -189,27 +189,6 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
                 duration: 0.86,
               }, 0.52);
           }
-
-          // Explicit end state: the Instagram card has a CSS transform transition, so a `from` tween could
-          // read a mid-transition offset as its resting position. Clearing the transform afterwards keeps
-          // the footer identical to the home page and lets the card's hover lift work again.
-          gsap.fromTo(
-            '.site-footer > *',
-            { y: 24, autoAlpha: 0 },
-            {
-              y: 0,
-              autoAlpha: 1,
-              stagger: 0.07,
-              duration: 0.58,
-              ease: 'power3.out',
-              clearProps: 'transform',
-              scrollTrigger: {
-                trigger: '.site-footer',
-                start: 'top 90%',
-                once: true,
-              },
-            },
-          );
         },
       );
 

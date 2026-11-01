@@ -3,6 +3,7 @@ import { ArrowUp, ArrowUpRight } from 'lucide-react';
 
 import { TrackedAnchor } from '@/components/analytics/tracked-anchor';
 import { Wordmark } from '@/components/brand/wordmark';
+import { FooterMotion } from '@/components/motion/footer-motion';
 import {
   BUSINESS_AREA,
   BUSINESS_HOURS,
@@ -27,7 +28,7 @@ export function SiteFooter({
   home = false,
 }: SiteFooterProps) {
   return (
-    <footer className="site-footer section-shell">
+    <FooterMotion className="site-footer section-shell">
       <div className="footer-intro">
         <Wordmark className="footer-wordmark" href={home ? '#inicio' : '/'} />
         <p>Autos usados seleccionados · Buenos Aires, Argentina</p>
@@ -108,6 +109,6 @@ export function SiteFooter({
         </Link>
       </div>
       {note && <small className="footer-note">{note}</small>}
-    </footer>
+    </FooterMotion>
   );
 }
