@@ -131,7 +131,24 @@ for (const route of routes) {
 
     const siteGraph = jsonLd.flatMap((entry) => entry['@graph'] || []);
     assert.ok(siteGraph.some((entry) => entry['@type'] === 'WebSite'), 'Home should describe the website');
-    assert.ok(siteGraph.some((entry) => entry['@type'] === 'AutoDealer'), 'Home should describe the business');
+    const dealer = siteGraph.find((entry) => entry['@type'] === 'AutoDealer');
+    assert.ok(dealer, 'Home should describe the business');
+    // The dealer is located by locality only and receives visits by appointment, so the graph must
+    // never publish a street address or opening hours that would read as walk-in hours.
+    assert.deepEqual(dealer.address, {
+      '@type': 'PostalAddress',
+      addressLocality: 'Villa Pueyrredón',
+      addressRegion: 'CABA',
+      addressCountry: 'AR',
+    });
+    for (const property of ['openingHours', 'openingHoursSpecification']) {
+      assert.ok(!(property in dealer), `AutoDealer must not publish ${property}`);
+    }
+    // The address is a visible fact: the footer shows the same area beside the appointment-only hours.
+    const footerText = decodeHtml(html.match(/<footer\b.*?<\/footer>/s)?.[0].replace(/<!--.*?-->/g, '').replace(/<[^>]+>/g, ' ') ?? '').replace(/\s+/g, ' ');
+    for (const fact of ['Villa Pueyrredón, CABA', 'Lunes a viernes de 10 a 18 h', 'Sábados de 10 a 13 h', 'Siempre con cita previa', 'Pedí tu cita']) {
+      assert.ok(footerText.includes(fact), `Footer must show "${fact}"`);
+    }
     assert.ok(metadata.icon, 'Home should link the branded favicon');
     assert.ok(metadata.appleIcon, 'Home should link the Apple touch icon');
     assert.ok(metadata.manifest, 'Home should link the web manifest');

@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { INSTAGRAM_URL, WHATSAPP_NUMBER } from '@/constants/contact';
+import { BUSINESS_AREA, INSTAGRAM_URL, WHATSAPP_NUMBER } from '@/constants/contact';
 import { SITE_NAME } from '@/lib/metadata';
 import { getSiteUrl } from '@/lib/site-url';
 
@@ -30,6 +30,14 @@ export function getSiteStructuredData() {
         description: 'Compra y venta de autos usados seleccionados con atención personalizada.',
         logo: new URL('/favicon.svg', siteUrl).toString(),
         telephone: `+${WHATSAPP_NUMBER}`,
+        // Locality only: there is no public street address. Opening hours are omitted on purpose
+        // because visits are by appointment and schema hours would read as walk-in hours.
+        address: {
+          '@type': 'PostalAddress',
+          addressLocality: BUSINESS_AREA.locality,
+          addressRegion: BUSINESS_AREA.region,
+          addressCountry: BUSINESS_AREA.country,
+        },
         areaServed: {
           '@type': 'AdministrativeArea',
           name: 'Buenos Aires, Argentina',

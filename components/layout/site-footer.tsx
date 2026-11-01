@@ -3,8 +3,16 @@ import { ArrowUp, ArrowUpRight } from 'lucide-react';
 
 import { TrackedAnchor } from '@/components/analytics/tracked-anchor';
 import { Wordmark } from '@/components/brand/wordmark';
-import { INSTAGRAM_URL, WHATSAPP_URL } from '@/constants/contact';
+import {
+  BUSINESS_AREA,
+  BUSINESS_HOURS,
+  BUSINESS_VISIT_POLICY,
+  INSTAGRAM_URL,
+  WHATSAPP_APPOINTMENT_MESSAGE,
+  WHATSAPP_URL,
+} from '@/constants/contact';
 import { LEGAL_PAGES } from '@/constants/legal';
+import { getWhatsAppUrl } from '@/lib/contact';
 
 type SiteFooterProps = {
   topHref: string;
@@ -48,40 +56,57 @@ export function SiteFooter({
         </span>
       </a>
 
-      <div className="footer-navigation">
-        <nav className="footer-link-group" aria-label="Secciones">
-          <span className="footer-link-label">Secciones</span>
-          <div className="footer-link-list">
-            <Link href={home ? '#vehiculos' : '/vehiculos'}>Vehículos</Link>
-            <Link href="/vender">Vendé tu auto</Link>
-            <Link href={home ? '#servicios' : '/#servicios'}>Servicios</Link>
-            <Link href={home ? '#preguntas' : '/#preguntas'}>FAQ</Link>
-          </div>
-        </nav>
-        <nav className="footer-link-group" aria-label="Contacto">
-          <span className="footer-link-label">Contacto</span>
-          <div className="footer-link-list">
-            <TrackedAnchor
-              analyticsEvent={{ name: 'contact_intent_clicked', properties: { channel: 'whatsapp', placement: 'footer' } }}
-              href={WHATSAPP_URL}
-              target="_blank"
-              rel="noreferrer"
-            >
-              WhatsApp <ArrowUpRight aria-hidden="true" size={13} />
-            </TrackedAnchor>
-          </div>
-        </nav>
-        <nav className="footer-link-group" aria-label="Legal">
-          <span className="footer-link-label">Legal</span>
-          <div className="footer-link-list">
-            <Link href={LEGAL_PAGES.privacy.path}>Privacidad</Link>
-            <Link href={LEGAL_PAGES.terms.path}>Términos</Link>
-          </div>
-        </nav>
+      <div className="footer-columns">
+        <section className="footer-visits" aria-label="Visitas">
+          <span className="footer-visits-label">Visitas · {BUSINESS_VISIT_POLICY}</span>
+          <ul>
+            <li>{`${BUSINESS_AREA.locality}, ${BUSINESS_AREA.region}`}</li>
+            {BUSINESS_HOURS.map((hours) => <li key={hours}>{hours}</li>)}
+          </ul>
+          <TrackedAnchor
+            analyticsEvent={{ name: 'contact_intent_clicked', properties: { channel: 'whatsapp', placement: 'footer' } }}
+            href={getWhatsAppUrl(WHATSAPP_APPOINTMENT_MESSAGE)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Pedí tu cita <ArrowUpRight aria-hidden="true" size={13} />
+          </TrackedAnchor>
+        </section>
+
+        <div className="footer-navigation">
+          <nav className="footer-link-group" aria-label="Secciones">
+            <span className="footer-link-label">Secciones</span>
+            <div className="footer-link-list">
+              <Link href={home ? '#vehiculos' : '/vehiculos'}>Vehículos</Link>
+              <Link href="/vender">Vendé tu auto</Link>
+              <Link href={home ? '#servicios' : '/#servicios'}>Servicios</Link>
+              <Link href={home ? '#preguntas' : '/#preguntas'}>FAQ</Link>
+            </div>
+          </nav>
+          <nav className="footer-link-group" aria-label="Contacto">
+            <span className="footer-link-label">Contacto</span>
+            <div className="footer-link-list">
+              <TrackedAnchor
+                analyticsEvent={{ name: 'contact_intent_clicked', properties: { channel: 'whatsapp', placement: 'footer' } }}
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                WhatsApp <ArrowUpRight aria-hidden="true" size={13} />
+              </TrackedAnchor>
+            </div>
+          </nav>
+        </div>
       </div>
-      <Link className="footer-back-to-top" href={topHref}>
-        Volver arriba <ArrowUp aria-hidden="true" size={13} />
-      </Link>
+      <div className="footer-legal">
+        <nav className="footer-legal-links" aria-label="Legal">
+          <Link href={LEGAL_PAGES.privacy.path}>Política de privacidad</Link>
+          <Link href={LEGAL_PAGES.terms.path}>Términos y condiciones</Link>
+        </nav>
+        <Link className="footer-back-to-top" href={topHref}>
+          Volver arriba <ArrowUp aria-hidden="true" size={13} />
+        </Link>
+      </div>
       {note && <small className="footer-note">{note}</small>}
     </footer>
   );
