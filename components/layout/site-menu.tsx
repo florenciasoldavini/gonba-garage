@@ -9,6 +9,7 @@ import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { INSTAGRAM_URL } from '@/constants/contact';
+import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { siteNavigation, type NavigationKey } from './navigation';
 
 type SiteMenuProps = {
@@ -120,7 +121,12 @@ export function SiteMenu({ active, contactHref }: SiteMenuProps) {
           </nav>
 
           <div className="site-menu-contact">
-            <ButtonAnchor href={contactHref} target="_blank" rel="noreferrer">
+            <ButtonAnchor
+              href={contactHref}
+              onClick={() => captureAnalyticsEvent('contact_intent_clicked', { channel: 'whatsapp', placement: 'menu' })}
+              target="_blank"
+              rel="noreferrer"
+            >
               Escribinos por WhatsApp
               <ArrowUpRight aria-hidden="true" size={17} strokeWidth={1.8} />
             </ButtonAnchor>

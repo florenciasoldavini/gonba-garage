@@ -5,11 +5,20 @@ import posthog from 'posthog-js';
 /** Catalog toolbar, catalog empty state, or the page of a car that is no longer for sale. */
 type InventoryAlertPlacement = 'toolbar' | 'empty' | 'vehicle';
 
+/** General contact actions. Vehicle pages report `vehicle_contact_clicked` instead. */
+type ContactPlacement = 'header' | 'menu' | 'footer' | 'home_contact' | 'catalog_contact';
+
 type AnalyticsEventProperties = {
   contact_intent_clicked: {
     channel: 'email' | 'whatsapp' | 'internal';
-    placement: string;
-    vehicle_slug?: string;
+    placement: ContactPlacement;
+  };
+  vehicle_contact_clicked: {
+    channel: 'whatsapp';
+    /** The purchase card's main button, or the contact section at the end of the page. */
+    placement: 'hero' | 'callout';
+    vehicle_slug: string;
+    vehicle_status: 'available' | 'reserved' | 'sold';
   };
   inventory_filtered: {
     active_filter_count: number;
@@ -55,8 +64,14 @@ type AnalyticsEventProperties = {
   price_alert_failed: { vehicle_slug: string };
   valuation_started: Record<string, never>;
   valuation_step_completed: { step: number };
-  valuation_demo_completed: { total_steps: number };
+  /** Make and model are empty when typed by hand rather than picked from the catalog: free text stays out. */
+  valuation_sent_to_whatsapp: { has_photos: boolean; make: string; model: string; total_steps: number; year: number };
 };
+
+/** An event as plain data, so a server component can hand it to a client link. */
+export type AnalyticsEvent = {
+  [EventName in keyof AnalyticsEventProperties]: { name: EventName; properties: AnalyticsEventProperties[EventName] };
+}[keyof AnalyticsEventProperties];
 
 export function captureAnalyticsEvent<EventName extends keyof AnalyticsEventProperties>(
   eventName: EventName,

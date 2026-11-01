@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ArrowUp, ArrowUpRight } from 'lucide-react';
 
+import { TrackedAnchor } from '@/components/analytics/tracked-anchor';
 import { Wordmark } from '@/components/brand/wordmark';
 import { INSTAGRAM_URL, WHATSAPP_URL } from '@/constants/contact';
 
@@ -59,9 +60,14 @@ export function SiteFooter({
         <nav className="footer-link-group" aria-label="Contacto">
           <span className="footer-link-label">Contacto</span>
           <div className="footer-link-list">
-            <a href={WHATSAPP_URL} target="_blank" rel="noreferrer">
+            <TrackedAnchor
+              analyticsEvent={{ name: 'contact_intent_clicked', properties: { channel: 'whatsapp', placement: 'footer' } }}
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
               WhatsApp <ArrowUpRight aria-hidden="true" size={13} />
-            </a>
+            </TrackedAnchor>
           </div>
         </nav>
       </div>
