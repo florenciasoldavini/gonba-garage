@@ -34,6 +34,8 @@ const routes = [
   { path: '/', title: "Gonba's Garage | Autos usados seleccionados" },
   { path: '/vehiculos', title: "Vehículos disponibles | Gonba's Garage" },
   { path: '/vender', title: "Vendé tu auto | Gonba's Garage" },
+  { path: '/privacidad', title: "Política de privacidad | Gonba's Garage" },
+  { path: '/terminos', title: "Términos y condiciones | Gonba's Garage" },
   {
     path: '/vehiculos/bmw-330i-m-sport-2021',
     title: "BMW 330i 2021 | Gonba's Garage",
@@ -233,9 +235,10 @@ for (const route of routes) {
 }
 
 assert.equal(new Set(results.map(({ canonical }) => canonical)).size, routes.length, 'Canonicals should be unique');
+const vehicleResults = results.filter(({ route }) => route.startsWith('/vehiculos/'));
 assert.equal(
-  new Set(results.slice(3).map(({ image }) => image)).size,
-  routes.length - 3,
+  new Set(vehicleResults.map(({ image }) => image)).size,
+  vehicleResults.length,
   'Each vehicle should have a distinct social image',
 );
 
@@ -362,6 +365,33 @@ for (const fixture of [
   const imageBytes = Buffer.from(await image.arrayBuffer());
   assert.equal(imageBytes.readUInt32BE(16), 1200);
   assert.equal(imageBytes.readUInt32BE(20), 630);
+}
+
+// The legal pages are public and indexable, linked from every footer and from both alert forms.
+const legalPaths = ['/privacidad', '/terminos'];
+const visibleText = (html) => decodeHtml((html.match(/<main\b[\s\S]*<\/main>/)?.[0] ?? '').replace(/<[^>]+>/g, ''));
+for (const path of legalPaths) {
+  if (indexingEnabled) {
+    assert.ok(lifecycleSitemap.includes(`<loc>${new URL(path, canonicalOrigin)}</loc>`), `${path} is in the sitemap`);
+  }
+  const html = await (await fetch(new URL(path, targetOrigin))).text();
+  const text = visibleText(html);
+  // The owner's identity is published, never a placeholder.
+  assert.match(text, /CUIT \d{2}-\d{8}-\d/, `${path} identifies the owner`);
+  assert.doesNotMatch(text, /\b(?:TODO|TBD|placeholder)\b|\[[^\]]*\]/i, `${path} has no placeholders`);
+  assert.match(html, /<time dateTime="\d{4}-\d{2}-\d{2}">/i, `${path} shows its last update`);
+}
+const privacyHtml = await (await fetch(new URL('/privacidad', targetOrigin))).text();
+for (const required of ['Ley 25.326', 'Agencia de Acceso a la Información Pública', 'PostHog', 'Resend', 'Neon', 'Vercel', 'Cancelar alerta']) {
+  assert.ok(visibleText(privacyHtml).includes(required), `/privacidad mentions ${required}`);
+}
+for (const [label, html] of [['Home', homeHtml], ['Catalog', catalogHtml], ['Vehicle', activeDetail], ['/privacidad', privacyHtml]]) {
+  const footer = html.match(/<footer\b[\s\S]*<\/footer>/)?.[0] ?? '';
+  for (const path of legalPaths) assert.ok(footer.includes(`href="${path}"`), `${label} footer links ${path}`);
+}
+// Both alert forms state that subscribing accepts the privacy policy (price on detail, search on catalog).
+for (const [label, html] of [['Price alert', activeDetail], ['Inventory alert', catalogHtml]]) {
+  assert.match(html, /class="price-alert-privacy">[^<]*Al suscribirte aceptás la (?:<!-- -->)?<a [^>]*href="\/privacidad"/, `${label} links the privacy policy`);
 }
 
 console.table(results);

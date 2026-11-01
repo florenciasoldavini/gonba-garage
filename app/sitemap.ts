@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 
+import { LEGAL_PAGES } from '@/constants/legal';
 import { activeMockVehicles } from '@/features/vehicles/data/mock-vehicles';
 import { isSiteIndexingEnabled } from '@/lib/site-indexing';
 import { getSiteUrl } from '@/lib/site-url';
@@ -15,6 +16,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: new URL('/vehiculos', siteUrl).toString(), priority: 0.9, changeFrequency: 'daily' },
     { url: new URL('/vender', siteUrl).toString(), priority: 0.8, changeFrequency: 'monthly' },
   ];
+  const legalRoutes: MetadataRoute.Sitemap = Object.values(LEGAL_PAGES).map((page) => ({
+    url: new URL(page.path, siteUrl).toString(),
+    lastModified: new Date(page.updatedAt),
+    priority: 0.3,
+    changeFrequency: 'yearly',
+  }));
   const vehicleRoutes: MetadataRoute.Sitemap = activeMockVehicles.map((vehicle) => ({
     url: new URL(`/vehiculos/${vehicle.slug}`, siteUrl).toString(),
     lastModified: new Date(vehicle.updatedAt),
@@ -22,5 +29,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: 'daily',
   }));
 
-  return [...staticRoutes, ...vehicleRoutes];
+  return [...staticRoutes, ...legalRoutes, ...vehicleRoutes];
 }

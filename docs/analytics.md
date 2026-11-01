@@ -25,6 +25,9 @@ price-alert forms are explicitly excluded from autocapture.
 No analytics event may include a name, email address, phone number, free-text notes, uploaded photo,
 or full search query. Vehicle slugs and catalog attributes are permitted.
 
+The privacy policy at `/privacidad` describes this collection, including the anonymous cookie and
+optional session replay. Update it whenever events, replay settings or the analytics provider change.
+
 ## Event taxonomy
 
 | Event | Meaning |

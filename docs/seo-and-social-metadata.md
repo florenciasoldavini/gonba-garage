@@ -237,3 +237,17 @@ The homepage selection uses up to three active vehicles from the same catalog so
 request time. An unavailable or empty catalog shows an explicit message and never falls
 back to example vehicle links. Decorative photography and shared homepage metadata are
 unchanged.
+
+## Legal pages
+
+`/privacidad` (privacy policy under Ley 25.326) and `/terminos` (terms of use) are static public
+pages built with `createPageMetadata()`, the branded default card and the environment-wide indexing
+gate. They are indexable in production mode and listed in the sitemap with `lastModified` taken
+from `LEGAL_PAGES` in `constants/legal.ts`, the same date each page shows. Change that date with
+every revision. The owner's name, CUIT and location live in the same file. Every footer links both
+pages, and both alert forms link the privacy policy next to the email field.
+
+The privacy policy describes what the code actually does. Update it in the same change whenever
+alert storage or retention, the sell-your-car flow, analytics or session replay, or a data
+processor (Vercel, Neon, Resend, PostHog) changes. The metadata check asserts the owner's
+identity, the required Ley 25.326 and AAIP wording, the named processors and every link.

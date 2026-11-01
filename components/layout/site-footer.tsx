@@ -4,6 +4,7 @@ import { ArrowUp, ArrowUpRight } from 'lucide-react';
 import { TrackedAnchor } from '@/components/analytics/tracked-anchor';
 import { Wordmark } from '@/components/brand/wordmark';
 import { INSTAGRAM_URL, WHATSAPP_URL } from '@/constants/contact';
+import { LEGAL_PAGES } from '@/constants/legal';
 
 type SiteFooterProps = {
   topHref: string;
@@ -68,6 +69,13 @@ export function SiteFooter({
             >
               WhatsApp <ArrowUpRight aria-hidden="true" size={13} />
             </TrackedAnchor>
+          </div>
+        </nav>
+        <nav className="footer-link-group" aria-label="Legal">
+          <span className="footer-link-label">Legal</span>
+          <div className="footer-link-list">
+            <Link href={LEGAL_PAGES.privacy.path}>Privacidad</Link>
+            <Link href={LEGAL_PAGES.terms.path}>Términos</Link>
           </div>
         </nav>
       </div>
