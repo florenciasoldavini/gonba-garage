@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test:attributes": "node scripts/check-vehicle-attributes.mjs",
     "test:catalog-url": "node scripts/check-catalog-url-state.mjs",
+    "test:lifecycle": "node scripts/check-vehicle-lifecycle.mjs",
     "db:migrate": "node scripts/migrate-alerts.mjs",
     "test:alerts": "node scripts/check-alert-storage.mjs",
     "test:integration": "node scripts/check-refresh-token-store.mjs && node scripts/check-integration-diagnostics.mjs && node scripts/check-inventory-sync.mjs",

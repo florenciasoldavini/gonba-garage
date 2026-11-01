@@ -311,6 +311,59 @@ const missingVehicle = await fetch(new URL('/vehiculos/vehiculo-inexistente-2000
 assert.equal(missingVehicle.status, 404, 'A missing vehicle should return 404');
 assert.equal(getMetadata(await missingVehicle.text()).canonical, undefined, 'A missing vehicle should not claim a canonical URL');
 
+// Cars that are no longer for sale keep their page, out of search results and listings. Mercado Libre
+// paused reads as reserved for a while, then as sold; closed reads as sold (status.ts).
+const catalogHtml = await (await fetch(new URL('/vehiculos', targetOrigin))).text();
+const homeHtml = await (await fetch(targetOrigin)).text();
+const lifecycleSitemap = await (await fetch(new URL('/sitemap.xml', targetOrigin))).text();
+const activeDetail = await (await fetch(new URL('/vehiculos/bmw-330i-m-sport-2021', targetOrigin))).text();
+assert.doesNotMatch(activeDetail, /id="similares"/, 'An available car does not show the similar-cars rail');
+assert.match(activeDetail, /Consultar por este auto/, 'An available car keeps its contact action');
+for (const fixture of [
+  { path: '/vehiculos/bmw-m340i-xdrive-2022', label: 'Reservado', availability: 'https://schema.org/Reserved', reason: 'Está reservado' },
+  { path: '/vehiculos/mercedes-benz-280-sl-1969', label: 'Vendido', availability: 'https://schema.org/SoldOut', reason: 'Ya se vendió' },
+  { path: '/vehiculos/porsche-911-sc-1980', label: 'Vendido', availability: 'https://schema.org/SoldOut', reason: 'Ya se vendió' },
+]) {
+  const response = await fetch(new URL(fixture.path, targetOrigin));
+  assert.equal(response.status, 200, `${fixture.path} keeps its page`);
+  assert.match(response.headers.get('cache-control') || '', /no-store/);
+  const html = await response.text();
+  const metadata = getMetadata(html);
+  const label = decodeHtml(html.match(/class="detail-availability"[^>]*><span><\/span> ?(?:<!-- -->)?([^<]*)</)?.[1] ?? '');
+  const offer = getJsonLd(html).flatMap((entry) => entry['@graph'] || [])
+    .find((entry) => Array.isArray(entry['@type']) && entry['@type'].includes('Product'))?.offers;
+  assert.equal(label, fixture.label, `${fixture.path} label`);
+  assert.equal(offer?.availability, fixture.availability, `${fixture.path} Offer availability`);
+  assert.ok(offer?.price > 0, `${fixture.path} Offer keeps the price shown on the page`);
+  assert.ok(metadata.description.includes(fixture.reason), `${fixture.path} description states the status`);
+  assert.doesNotMatch(metadata.description, /Consultá disponibilidad/, `${fixture.path} must not imply availability`);
+  assert.equal(metadata.openGraph.description, metadata.description);
+  assert.equal(metadata.twitter.description, metadata.description);
+  assert.equal(new URL(metadata.canonical).pathname, fixture.path, `${fixture.path} keeps its canonical`);
+  if (indexingEnabled) {
+    assert.match(metadata.robots || '', /noindex/, `${fixture.path} stays out of search results`);
+    assert.doesNotMatch(metadata.robots || '', /nofollow/, `${fixture.path} links to available cars are followed`);
+  } else {
+    assert.match(metadata.robots || '', /noindex/);
+    assert.match(metadata.robots || '', /nofollow/);
+  }
+  assert.doesNotMatch(html, /Consultar por este auto|comparar=|Ver publicación en Mercado Libre/, `${fixture.path} must not offer the car`);
+  assert.match(html, /id="similares"/, `${fixture.path} shows available alternatives`);
+  const railLinks = [...html.slice(html.indexOf('id="similares"')).matchAll(/<a\b[^>]*class="catalog-card-image-link"[^>]*>/g)]
+    .map(([tag]) => getAttributes(tag).href);
+  assert.ok(railLinks.length > 0 && railLinks.length <= 3, `${fixture.path} rail shows up to three cars`);
+  assert.ok(!railLinks.includes(fixture.path), `${fixture.path} rail never suggests the car itself`);
+  assert.ok(!html.slice(html.indexOf('id="similares"')).match(/data-status="(?!active)/), `${fixture.path} rail only suggests available cars`);
+  for (const listing of [catalogHtml, homeHtml, lifecycleSitemap]) {
+    assert.ok(!listing.includes(fixture.path), `${fixture.path} is not listed`);
+  }
+  const image = await fetch(new URL(new URL(metadata.openGraph.image).pathname, targetOrigin));
+  assert.equal(image.status, 200, `${fixture.path} social card`);
+  const imageBytes = Buffer.from(await image.arrayBuffer());
+  assert.equal(imageBytes.readUInt32BE(16), 1200);
+  assert.equal(imageBytes.readUInt32BE(20), 630);
+}
+
 console.table(results);
 console.log(
   `\nSocial metadata and ${indexingEnabled ? 'production' : 'demo'} indexing verification passed for ${routes.length} public routes.`,

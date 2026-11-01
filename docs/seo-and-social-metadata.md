@@ -103,14 +103,26 @@ seller identity, canonical URL, or breadcrumbs change.
 Inventory status controls visible labels, Offer availability, sitemap membership, and sometimes page
 robots metadata. Keep the mapping centralized in `features/vehicles/presentation/status.ts`.
 
-| Status | Page behavior | Sitemap | Offer availability |
-| --- | --- | --- | --- |
-| `active` | Available and eligible for indexing | Included | `InStock` |
-| `paused` | Temporarily unavailable and `noindex, follow` in production mode | Excluded | `OutOfStock` |
-| `sold` | Retain a useful stable page when possible; do not imply availability | Excluded | `SoldOut` |
+Mercado Libre has no reserved or sold status. The seller pauses a publication when a buyer reserves
+the car in person and usually leaves it paused after the sale until it expires and closes. The page
+therefore shows a paused car as reserved only for `RESERVATION_WINDOW_DAYS` (14) after the pause,
+measured from `updatedAt`, and as sold afterwards. A closed publication always shows as sold.
 
-If a sold page has no enduring value or replacement, return an intentional 404 or redirect to the
-closest legitimate equivalent. Never redirect every removed vehicle to the homepage.
+| Stored status | Shown as | Page behavior | Sitemap | Offer availability |
+| --- | --- | --- | --- | --- |
+| `active` | Disponible | Available and eligible for indexing | Included | `InStock` |
+| `paused`, within the window | Reservado | Kept; `noindex, follow` in production mode | Excluded | `Reserved` |
+| `paused`, past the window | Vendido | Kept; `noindex, follow` in production mode | Excluded | `SoldOut` |
+| `closed` or `sold` | Vendido | Kept; `noindex, follow` in production mode | Excluded | `SoldOut` |
+
+Reserved and sold pages never imply availability: no contact-to-buy action, comparison or Mercado
+Libre link. They keep the published price as a visible reference (so the Offer stays truthful), offer
+an email alert, and link to up to three similar available cars. Those links give the page enduring
+value, so it stays reachable rather than returning 404. It stays out of search results because the
+seller often relists the same car under a new publication, which would otherwise compete with it.
+Their description states the status instead of inviting an availability query, and the share card
+omits a sold car's price because it is no longer current. Never redirect every removed vehicle to the
+homepage.
 
 Each inventory record must provide a reliable `updatedAt`; sitemap `lastModified` must reflect a real
 content or availability update, not the build time.
@@ -190,7 +202,8 @@ indexing gate are unchanged.
 Each live vehicle keeps the slug assigned at its first sync, even when the seller edits the listing
 title. Any other slug ending in the same Mercado Libre ID returns a permanent redirect to the
 canonical URL. Paused and closed publications keep their page with the lifecycle label from
-`features/vehicles/presentation/status.ts`; only active ones are listed. `updatedAt` is the last real
+`features/vehicles/presentation/status.ts` (see the table above); only active ones are listed. The
+demo catalog includes unlisted reserved and sold vehicles so the metadata check covers each state. `updatedAt` is the last real
 content or availability change recorded by the sync, never a provider-side touch or the sync time.
 
 When the live catalog backend fails, a vehicle detail page shows a "Catálogo no disponible"
