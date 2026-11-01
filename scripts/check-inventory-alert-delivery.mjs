@@ -43,7 +43,7 @@ const fresh = () => new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString();
 const items = new Map();
 const item = (id, { make = 'Toyota', model = 'Corolla', version = 'XEi', year = 2021, km = 45000, transmission = 'Automática',
   fuel = 'Nafta', body = 'Sedán', ...changes } = {}) => ({
-  id, seller_id: Number(SELLER), title: `${make} ${model} ${version}`, price: 20000, currency_id: 'USD', status: 'active',
+  id, seller_id: Number(SELLER), category_id: 'MLA1744', title: `${make} ${model} ${version}`, price: 20000, currency_id: 'USD', status: 'active',
   permalink: `https://auto.mercadolibre.com.ar/${id}`, pictures: [],
   attributes: [
     { id: 'BRAND', value_name: make }, { id: 'MODEL', value_name: model }, { id: 'TRIM', value_name: version },
@@ -93,8 +93,11 @@ overrides['./oauth'] = {
     return mapMercadoLibreItemToVehicle(items.get(id));
   },
   async readMercadoLibrePublications() {
-    const active = [...items.values()].filter(({ status }) => status === 'active');
-    return { seller: { id: Number(SELLER) }, publications: { items: active.map(entry => mapMercadoLibreItemToVehicle(entry)) } };
+    return { seller: { id: Number(SELLER) }, publications: { items: [...items.values()].map(entry => mapMercadoLibreItemToVehicle(entry)) } };
+  },
+  async readMercadoLibreCategoryPath(id) {
+    assert.equal(id, 'MLA1744');
+    return ['MLA1743', 'MLA1744'];
   },
 };
 

@@ -46,15 +46,22 @@ that a sync worker keeps current. Sync is one-way; nothing is edited on the site
 3. After the response, the worker leases the job and reads the item and description again with the
    seller token. The notification payload is never trusted, so duplicate, forged or out-of-order
    notifications cannot write wrong data.
-4. Items of the configured seller are saved in `catalog_publications` (public presentation fields
-   only). Items that no longer exist are marked `closed`. Other sellers' items are ignored.
+4. Vehicles of the configured seller are saved in `catalog_publications` (public presentation
+   fields only) in any status: active, paused or closed. Items that no longer exist are marked
+   `closed`. Other sellers' items and items that are not vehicles are never stored. A vehicle is an
+   item whose Mercado Libre category sits under "Autos, Motos y Otros" (`MLA1743`), except savings
+   plans (`MLA1784`): cars and pickups mostly, motorcycles occasionally. The seller's scale models
+   and accessories live in other categories and stay out. Categories are looked up once per
+   category; an item without a readable category is retried, never guessed.
 5. Pages and the share-image route read the copy at request time, so a change is visible on the next
    request. There is no page cache to invalidate. The price alert signup reads the copy only while
    alert delivery is disabled (see below).
-6. `/api/mercado-libre/sync` (Vercel cron, `CRON_SECRET`) reconciles: it lists the seller's active
-   items and queues every item that is new, changed, no longer active or not refreshed for a day,
-   then drains the queue. It never closes or edits a vehicle from the listing alone, so a partial or
-   empty provider response cannot remove vehicles from the site.
+6. `/api/mercado-libre/sync` (Vercel cron, `CRON_SECRET`) reconciles: it scans every publication of
+   the seller in any status, keeps the vehicles, and queues each one that is missing from the copy,
+   changed (status or last update), no longer listed or not refreshed for a day, then drains the
+   queue. This also backfills vehicles that were paused or closed before the copy existed, so every
+   car the seller ever listed keeps its page. It never closes or edits a vehicle from the listing
+   alone, so a partial or empty provider response cannot remove vehicles from the site.
 
 Ownership of fields: Mercado Libre owns price, currency, status, title, attributes, pictures and
 description. The copy owns the slug (fixed at the first sync, so URLs survive title edits; other slugs

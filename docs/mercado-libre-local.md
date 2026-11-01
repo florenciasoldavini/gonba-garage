@@ -9,7 +9,7 @@
 5. Configurar el servidor local como se explica en «Desarrollo local» y abrir `http://localhost:3000/vehiculos`.
 7. Antes de desplegar este cambio, con el `DATABASE_URL` de producción, ejecutar `npm run db:migrate` (crea las tablas `catalog_*`). Sin ellas el webhook responde 503 y Mercado Libre reintenta. Repetir con el branch de desarrollo. Configurar en Vercel `CRON_SECRET` (al menos 32 caracteres aleatorios) si todavía no existe.
 8. En la aplicación de Mercado Libre, configurar la URL de notificaciones `https://gonba-garage.vercel.app/api/mercado-libre/webhook` con los tópicos `items` e `items_prices`.
-9. Hacer la primera sincronización sin esperar al cron: `curl -H "Authorization: Bearer $CRON_SECRET" https://gonba-garage.vercel.app/api/mercado-libre/sync`. Revisar `GET /api/mercado-libre/diagnostics?sync=1` (clave Bearer del catálogo): `jobs.pending` en 0 y `publications.active` igual a las publicaciones activas.
+9. Hacer la primera sincronización sin esperar al cron: `curl -H "Authorization: Bearer $CRON_SECRET" https://gonba-garage.vercel.app/api/mercado-libre/sync`. Revisar `GET /api/mercado-libre/diagnostics?sync=1` (clave Bearer del catálogo): `jobs.pending` en 0 y la suma de `publications` (activas, pausadas y cerradas) igual a `reconciliation.lastListed`, que cuenta todos los vehículos del vendedor en Mercado Libre, en cualquier estado.
 10. En Vercel no se configura `MERCADO_LIBRE_BACKEND_URL`: el sitio lee su propia copia en Neon.
 
 ## Desarrollo local
@@ -50,7 +50,7 @@ No cambiar la clave de cifrado sin migrar el ciphertext o reautorizar. No expone
 
 ## Copia sincronizada y endpoint
 
-Las páginas nunca consultan Mercado Libre. Leen la copia en Neon (`catalog_publications`), que mantienen el webhook y el cron de reconciliación; el diseño completo está en `docs/architecture.md` («Mercado Libre sync»). Un cambio en Mercado Libre aparece en el sitio en segundos cuando llega la notificación. Si una notificación se pierde, la reconciliación diaria la repara (cada 15 minutos con un plan Pro de Vercel, cambiando `vercel.json`). La copia guarda solo datos públicos de presentación, nunca el payload privado del vendedor.
+Las páginas nunca consultan Mercado Libre. Leen la copia en Neon (`catalog_publications`), que mantienen el webhook y el cron de reconciliación; el diseño completo está en `docs/architecture.md` («Mercado Libre sync»). Un cambio en Mercado Libre aparece en el sitio en segundos cuando llega la notificación. Si una notificación se pierde, la reconciliación diaria la repara (cada 15 minutos con un plan Pro de Vercel, cambiando `vercel.json`). La copia guarda solo datos públicos de presentación, nunca el payload privado del vendedor. Contiene todas las publicaciones del vendedor que son vehículos (autos y camionetas, y alguna moto), en cualquier estado, para que cada auto reservado o vendido conserve su página; las publicaciones que no son vehículos (maquetas a escala, accesorios) nunca se guardan.
 
 `GET /api/mercado-libre/catalog` requiere `Authorization: Bearer <clave>`, enviado desde el servidor local, y lee la misma copia. Sin `item` devuelve las publicaciones activas. `?item=MLA...` entrega la ficha sincronizada en cualquier estado (activa, pausada o cerrada), para que su página conserve la URL. Devuelve datos de presentación, fotos, descripción y atributos, con `private, no-store` y `noindex`. No habilita CORS. Verificación: `node scripts/check-inventory-sync.mjs`.
 
