@@ -115,9 +115,9 @@ measured from `updatedAt`, and as sold afterwards. A closed publication always s
 | `paused`, past the window | Vendido | Kept; `noindex, follow` in production mode | Excluded | `SoldOut` |
 | `closed` or `sold` | Vendido | Kept; `noindex, follow` in production mode | Excluded | `SoldOut` |
 
-Reserved and sold pages never imply availability: no contact-to-buy action, comparison or Mercado
-Libre link. They keep the published price as a visible reference (so the Offer stays truthful), offer
-an email alert, and link to up to three similar available cars. Those links give the page enduring
+Reserved and sold pages never imply availability: no contact-to-buy action or comparison. They keep
+the published price as a visible reference (so the Offer stays truthful), offer an email alert, and
+link to up to three similar available cars. Those links give the page enduring
 value, so it stays reachable rather than returning 404. It stays out of search results because the
 seller often relists the same car under a new publication, which would otherwise compete with it.
 Their description states the status instead of inviting an availability query, and the share card

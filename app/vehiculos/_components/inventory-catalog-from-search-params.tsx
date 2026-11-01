@@ -3,12 +3,12 @@
 import { useSearchParams } from 'next/navigation';
 
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
-import type { MepQuote } from '@/features/vehicles/domain/catalog-pricing';
+import type { CatalogMepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import { InventoryCatalog } from './inventory-catalog';
 
 type InventoryCatalogFromSearchParamsProps = {
   vehicles: Vehicle[];
-  quote: MepQuote | null;
+  quote: CatalogMepQuote | null;
 };
 
 export function InventoryCatalogFromSearchParams({
