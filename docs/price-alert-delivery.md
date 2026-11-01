@@ -219,9 +219,9 @@ availability events, which expire after 72 hours.
    Keep the email configuration off previews by default and never point a preview worker at
    production subscriptions.
 5. The catalog page reads the configuration at build time, so redeploy after changing it. The frontend uses its local database for signup
-   storage, so the worker and signup route must use the same intended database/environment. A frontend
-   in live mode can use the deployed catalog backend as before. Alert activation on the backend
-   resolves the real publication directly, even if that deployment's public frontend is in demo mode.
+   storage, so the worker and signup route must use the same intended database/environment. A local
+   frontend can read the deployed catalog backend as before. Alert activation resolves the real
+   publication directly through Mercado Libre.
 6. Test a signup, confirmation mail and link, activation mail, cancellation, repeated price reductions with synthetic observations
    against development, provider acceptance, then an authenticated daily invocation. Do not edit
    Mercado Libre prices or expose the cron secret in a URL. Inspect the pending/failed/blocked counts.

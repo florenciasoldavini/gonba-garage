@@ -6,15 +6,15 @@ import ts from 'typescript';
 import { PGlite } from '@electric-sql/pglite';
 
 // Search-alert delivery against real PostgreSQL (PGlite), the real catalog sync, matcher, outbox
-// and routes. Mercado Libre, the MEP quote and Resend are fakes. Fixtures live here, not in the
-// demo catalog.
+// and routes. Mercado Libre, the MEP quote and Resend are fakes. Fixtures live here; the app ships
+// no vehicle data.
 const require = createRequire(import.meta.url);
 const SELLER = '123';
 Object.assign(process.env, {
   ALERTS_SIGNING_SECRET: 'test-secret-never-used-outside-tests-123456',
   ALERTS_PUBLIC_URL: 'https://example.test', ALERTS_EMAIL_FROM: 'Gonba <test@example.test>', RESEND_API_KEY: 'test',
   DATABASE_URL: 'test', MERCADO_LIBRE_SELLER_ID: SELLER, MERCADO_LIBRE_CLIENT_ID: '456',
-  CRON_SECRET: 'test-cron-secret-never-used-outside-tests', VEHICLE_DATA_SOURCE: 'mercado-libre',
+  CRON_SECRET: 'test-cron-secret-never-used-outside-tests',
 });
 delete process.env.ALERTS_TEST_RECIPIENT;
 delete process.env.MERCADO_LIBRE_BACKEND_URL;

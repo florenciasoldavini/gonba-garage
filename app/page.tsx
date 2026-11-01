@@ -14,7 +14,7 @@ import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { HomeGsapMotion } from '@/app/_components/home-gsap-motion';
 import { FaqAccordion } from '@/app/_components/faq-accordion';
-import { isLiveCatalog, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
+import { listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { formatVehicleMileage } from '@/features/vehicles/presentation/formatters';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
@@ -30,7 +30,7 @@ const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8}
 
 export default async function Home() {
   // Live inventory must be read at request time, outside the provider error handler.
-  if (isLiveCatalog()) await connection();
+  await connection();
   let vehicles: Vehicle[] = [];
   let inventoryUnavailable = false;
   try {

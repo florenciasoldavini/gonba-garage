@@ -13,12 +13,12 @@ price, description, and contact action must remain usable without WebGL or clien
 - Mercado Libre is the source of truth for inventory. The site reads a synced copy in Neon.
 - Server-rendered vehicle detail routes will own metadata, canonical URLs, and structured data.
 - `lib/integrations/mercado-libre/catalog.ts` is the catalog read boundary. `listCatalogVehicles`,
-  `findCatalogPublication` and `findCatalogVehicle` return demo data from
-  `features/vehicles/data/mock-vehicles.ts` unless `VEHICLE_DATA_SOURCE=mercado-libre`. In live mode
-  they read the synced copy through `lib/catalog/store.ts`, or the deployed backend's copy when
-  `MERCADO_LIBRE_BACKEND_URL` is set. Pages and the share-image route read inventory only through
-  this module. The sitemap reads the demo data directly and is empty in live mode. The price alert
-  signup is described under the sync section.
+  `findCatalogPublication` and `findCatalogVehicle` read the synced copy through
+  `lib/catalog/store.ts`, or the deployed backend's copy when `MERCADO_LIBRE_BACKEND_URL` is set
+  (local development). There is no demo catalog: every environment shows the real Mercado Libre
+  inventory, and the codebase ships no placeholder vehicles. Pages and the share-image route read
+  inventory only through this module. The sitemap is empty until the indexing launch
+  (`docs/seo-and-social-metadata.md`). The price alert signup is described under the sync section.
 
 The experimental work should happen at the edge of the interface, not in the data or routing
 foundation. Do not introduce a motion or 3D dependency until a specific interaction justifies it.
@@ -75,10 +75,9 @@ Webhooks carry real-time changes; on a Pro plan, change the schedule in `vercel.
 Price alerts keep their own queue and read Mercado Libre directly before sending, for an
 authoritative price. Where alert emails are configured, the signup route
 (`app/api/price-alerts/route.ts`) does not use the copy either: it reads the item from Mercado Libre
-with the seller token, rejects items of other sellers and takes the starting price from that read, so
-it works even on a backend whose public frontend is in demo mode. Without that configuration the signup
-resolves the vehicle with `findCatalogVehicle` (demo data or the synced copy) and only stores the
-subscription. See [the Mercado Libre setup notes](mercado-libre-local.md).
+with the seller token, rejects items of other sellers and takes the starting price from that read.
+Without that configuration the signup resolves the vehicle from the synced copy with
+`findCatalogVehicle` and only stores the subscription. See [the Mercado Libre setup notes](mercado-libre-local.md).
 
 Search alerts work from the copy instead. When a save turns an item active (a new listing, or a
 reserved one released), the same statement records an `inventory_alert_events` row; the alert worker

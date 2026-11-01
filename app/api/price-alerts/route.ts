@@ -61,7 +61,7 @@ export async function POST(request: Request) {
     const deliveryEnabled = alertEmailsConfigured();
     const id = vehicleSlug.match(/-(MLA\d+)$/i)?.[1]?.toUpperCase();
     if (deliveryEnabled && !id) return NextResponse.json({ message: 'El vehículo ya no está disponible.' }, { status: 400 });
-    // The backend may serve a demo frontend. Resolve real subscriptions directly through Mercado Libre.
+    // Resolve real subscriptions directly through Mercado Libre, not through the synced copy.
     const publication = deliveryEnabled ? await readMercadoLibrePublication(id!, await catalogAccessToken()) : null;
     if (publication && String(publication.source.seller_id) !== process.env.MERCADO_LIBRE_SELLER_ID) {
       return NextResponse.json({ message: 'El vehículo ya no está disponible.' }, { status: 400 });

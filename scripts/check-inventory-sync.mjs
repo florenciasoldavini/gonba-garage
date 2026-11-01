@@ -11,7 +11,6 @@ const apiKey = 'catalog-api-key-for-tests';
 process.env.MERCADO_LIBRE_SELLER_ID = SELLER;
 process.env.MERCADO_LIBRE_CLIENT_ID = '456';
 process.env.CRON_SECRET = 'test-cron-secret-never-used-outside-tests';
-process.env.VEHICLE_DATA_SOURCE = 'mercado-libre';
 delete process.env.MERCADO_LIBRE_BACKEND_URL;
 // Without the alert email configuration no alert work runs (lib/alerts/config.ts).
 delete process.env.RESEND_API_KEY;

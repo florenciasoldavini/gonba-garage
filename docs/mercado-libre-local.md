@@ -4,22 +4,35 @@
 
 1. En Vercel, crear un Blob store **Private** y conectarlo al proyecto backend Gonba Garage, solo al entorno de producción. Usar las credenciales OIDC y `BLOB_STORE_ID` que configura Vercel; el SDK también admite `BLOB_READ_WRITE_TOKEN` privado si la conexión usa ese mecanismo. No crear un store público ni conectar previews al store de producción.
 2. Configurar como secretos del backend `MERCADO_LIBRE_CLIENT_ID`, `MERCADO_LIBRE_CLIENT_SECRET`, `MERCADO_LIBRE_CATALOG_API_KEY` (al menos 32 bytes aleatorios) y `MERCADO_LIBRE_TOKEN_ENCRYPTION_KEY` (otros 32 bytes aleatorios, codificados en base64). La clave de cifrado debe estar respaldada fuera de Blob.
-3. Configurar `MERCADO_LIBRE_SELLER_ID=322618227` y `MERCADO_LIBRE_REDIRECT_URI=https://gonba-garage.vercel.app/api/mercado-libre/callback`. Mantener `VEHICLE_DATA_SOURCE=demo` en Vercel hasta completar la primera sincronización (pasos 7 a 9). Mantener la indexación desactivada. Redeployar para recibir la configuración.
+3. Configurar `MERCADO_LIBRE_SELLER_ID=322618227` y `MERCADO_LIBRE_REDIRECT_URI=https://gonba-garage.vercel.app/api/mercado-libre/callback`. Mantener la indexación desactivada. Redeployar para recibir la configuración.
 4. Abrir `https://gonba-garage.vercel.app/api/mercado-libre/connect`. El navegador pide usuario y contraseña: usar `admin` y la clave privada `MERCADO_LIBRE_CATALOG_API_KEY`. Autorizar Gonba Garage. El callback valida state/PKCE y seller; guarda el refresh token cifrado en `mercado-libre/322618227/refresh-token.json`, siempre privado. Nunca devuelve el token ni la URL del blob al cliente.
-5. En `.env.local` del servidor local configurar:
-
-```dotenv
-VEHICLE_DATA_SOURCE=mercado-libre
-SITE_INDEXING_ENABLED=false
-MERCADO_LIBRE_BACKEND_URL=https://gonba-garage.vercel.app
-MERCADO_LIBRE_CATALOG_API_KEY=<misma clave privada que Vercel>
-```
-
-6. Reiniciar `npm run dev` y abrir `http://localhost:3000/vehiculos`. No hacen falta túneles, credenciales de Blob ni tokens de Mercado Libre en localhost.
+5. Configurar el servidor local como se explica en «Desarrollo local» y abrir `http://localhost:3000/vehiculos`.
 7. Antes de desplegar este cambio, con el `DATABASE_URL` de producción, ejecutar `npm run db:migrate` (crea las tablas `catalog_*`). Sin ellas el webhook responde 503 y Mercado Libre reintenta. Repetir con el branch de desarrollo. Configurar en Vercel `CRON_SECRET` (al menos 32 caracteres aleatorios) si todavía no existe.
 8. En la aplicación de Mercado Libre, configurar la URL de notificaciones `https://gonba-garage.vercel.app/api/mercado-libre/webhook` con los tópicos `items` e `items_prices`.
 9. Hacer la primera sincronización sin esperar al cron: `curl -H "Authorization: Bearer $CRON_SECRET" https://gonba-garage.vercel.app/api/mercado-libre/sync`. Revisar `GET /api/mercado-libre/diagnostics?sync=1` (clave Bearer del catálogo): `jobs.pending` en 0 y `publications.active` igual a las publicaciones activas.
-10. Para publicar el catálogo real en Vercel, cambiar a `VEHICLE_DATA_SOURCE=mercado-libre` sin `MERCADO_LIBRE_BACKEND_URL` y redeployar: el sitio lee su propia copia en Neon.
+10. En Vercel no se configura `MERCADO_LIBRE_BACKEND_URL`: el sitio lee su propia copia en Neon.
+
+## Desarrollo local
+
+El sitio no tiene autos de demostración ni un modo demo de catálogo: en todos los entornos muestra el catálogo real de Mercado Libre, igual que producción. Nunca agregar autos falsos al código. Si hace falta un auto inventado para un mockup o una prueba, crearlo de forma temporal y borrarlo antes del PR; los tests usan sus propios fixtures, que la aplicación nunca importa.
+
+Hay dos formas de leer datos reales en localhost:
+
+1. **A través del backend desplegado (recomendada).** En `.env.local`:
+
+   ```dotenv
+   SITE_INDEXING_ENABLED=false
+   MERCADO_LIBRE_BACKEND_URL=https://gonba-garage.vercel.app
+   MERCADO_LIBRE_CATALOG_API_KEY=<misma clave privada que Vercel>
+   ```
+
+   El servidor local pide el catálogo a `GET /api/mercado-libre/catalog` de producción, que lee la copia sincronizada en Neon. No hacen falta túneles, credenciales de Blob ni tokens de Mercado Libre en localhost. `DATABASE_URL` puede seguir apuntando al branch de desarrollo para las alertas: el catálogo no lo usa mientras `MERCADO_LIBRE_BACKEND_URL` esté definido.
+
+2. **Desde una copia en Neon.** Dejar `MERCADO_LIBRE_BACKEND_URL` vacío y apuntar `DATABASE_URL` a un branch de Neon que tenga `catalog_publications` con datos, por ejemplo un branch hijo creado desde producción (copia los datos al momento de crearlo y no los actualiza). El sitio lo lee igual que en Vercel. El branch de desarrollo habitual no tiene publicaciones, así que muestra el catálogo vacío. No sincronizar ese branch desde localhost con credenciales de Mercado Libre: usarlas fuera del backend rota el refresh token de producción.
+
+Reiniciar `npm run dev` después de cambiar estas variables. `VEHICLE_DATA_SOURCE` ya no existe; si quedó en un `.env.local` o en Vercel, se ignora y se puede borrar.
+
+`npm run test:metadata` necesita un servidor configurado así y con al menos un auto publicado: toma los autos a revisar de la página `/vehiculos` del servidor (ver `docs/seo-and-social-metadata.md`, «Verification»).
 
 ## Almacenamiento y concurrencia
 
@@ -43,7 +56,7 @@ Las páginas nunca consultan Mercado Libre. Leen la copia en Neon (`catalog_publ
 
 Las alertas de precio no usan la copia: leen Mercado Libre directamente antes de enviar, para tener el precio vigente.
 
-Pruebas locales: `node scripts/check-refresh-token-store.mjs`, typecheck, lint, build y `test:metadata` en modo demo y producción. El test de almacenamiento simula escrituras condicionales e incluye dos renovaciones concurrentes, reutilización del access token guardado, espera durante una renovación en curso, rotación, timeout ambiguo, bloqueos interrumpidos que nunca se reclaman, recuperación y rechazo de escrituras obsoletas. La prueba real del store privado y de la cuenta requiere crearlo, configurar secretos, desplegar y autorizar después de revisar el PR. Probar también acceso denegado al blob sin credenciales, acceso desde localhost tras reiniciarlo y recuperación tras una revocación.
+Pruebas locales: `node scripts/check-refresh-token-store.mjs`, typecheck, lint, build y `test:metadata` con `SITE_INDEXING_ENABLED=false` y `true`. El test de almacenamiento simula escrituras condicionales e incluye dos renovaciones concurrentes, reutilización del access token guardado, espera durante una renovación en curso, rotación, timeout ambiguo, bloqueos interrumpidos que nunca se reclaman, recuperación y rechazo de escrituras obsoletas. La prueba real del store privado y de la cuenta requiere crearlo, configurar secretos, desplegar y autorizar después de revisar el PR. Probar también acceso denegado al blob sin credenciales, acceso desde localhost tras reiniciarlo y recuperación tras una revocación.
 
 La copia del catálogo usa la migración de Neon `20261031_catalog_sync.sql` (`npm run db:migrate`).
 

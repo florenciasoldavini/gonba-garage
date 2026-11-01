@@ -12,10 +12,9 @@ import { JsonLd } from '@/components/seo/json-ld';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { ButtonAnchor, ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { findCatalogPublication, findCatalogVehicle, isLiveCatalog, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
+import { findCatalogPublication, findCatalogVehicle, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { fullSizeMercadoLibreImageUrl } from '@/lib/integrations/mercado-libre/pictures';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
-import { getVehicleSpecification, vehicleSpecificationLabels, type VehicleSpecificationKey } from '@/features/vehicles/presentation/specifications';
 import { publicVehicleAttributes } from '@/features/vehicles/presentation/public-attributes';
 import { VehicleSpecificationGroups } from './_components/vehicle-specification-groups';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
@@ -24,7 +23,6 @@ import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { CatalogVehicleCard } from '../_components/catalog-vehicle-card';
 import { InventoryAlert, type InventoryAlertCriteria } from '../_components/inventory-alert';
 import { createPageMetadata } from '@/lib/metadata';
-import { isSiteIndexingEnabled } from '@/lib/site-indexing';
 import { getSiteUrl } from '@/lib/site-url';
 import { ORGANIZATION_SCHEMA_ID } from '@/lib/structured-data';
 import type { AnalyticsEvent } from '@/lib/analytics/client';
@@ -71,34 +69,31 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
     imageAlt: `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}`,
   });
 
-  if (isLiveCatalog()) return { ...metadata, robots: { index: false, follow: false } };
-  // Reserved and sold pages stay reachable but out of search results: the seller often relists the
-  // same car under a new publication, and its links to available cars are still worth following.
-  return !status.isAvailable && isSiteIndexingEnabled()
-    ? { ...metadata, robots: { index: false, follow: true } }
-    : metadata;
+  // Car pages stay out of search results until the final version of the site, whatever
+  // SITE_INDEXING_ENABLED says (docs/seo-and-social-metadata.md).
+  return { ...metadata, robots: { index: false, follow: false } };
 }
 
 export default async function VehicleDetailPage({ params }: VehicleDetailPageProps) {
   const { slug } = await params;
-  let vehicle, publication;
+  let publication;
   try {
     publication = await findCatalogPublication(slug);
-    vehicle = publication ? publication.vehicle : await findCatalogVehicle(slug);
   } catch {
     // A backend failure is not a missing vehicle: keep notFound() for real 404s only.
     return <div className="section-shell"><SiteHeader active="vehicles" /><main><h1>Catálogo no disponible</h1><p>No pudimos consultar esta publicación. Volvé a intentar en unos minutos.</p></main></div>;
   }
 
   // The slug is fixed at the first sync. Older or edited slugs for the same publication redirect.
-  if (publication && publication.vehicle.slug !== slug) permanentRedirect(`/vehiculos/${publication.vehicle.slug}`);
-  if (!vehicle) notFound();
-  const pictures = publication?.source.pictures ?? [];
+  if (!publication) notFound();
+  if (publication.vehicle.slug !== slug) permanentRedirect(`/vehiculos/${publication.vehicle.slug}`);
+  const { vehicle } = publication;
+  const pictures = publication.source.pictures ?? [];
   const photos = pictures.map(picture => fullSizeMercadoLibreImageUrl(picture.secure_url || picture.url))
     .filter((src): src is string => Boolean(src));
   if (!photos.length) photos.push(vehicle.image);
   const attributes = publicVehicleAttributes(
-    publication?.source.attributes ?? [],
+    publication.source.attributes ?? [],
     `${vehicle.make} ${vehicle.model} ${vehicle.version}`,
   );
 
@@ -222,14 +217,6 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       },
     ],
   };
-
-  const detailSpecificationKeys: VehicleSpecificationKey[] = [
-    'year', 'mileage', 'engine', 'transmission', 'fuel', 'traction', 'body', 'color',
-  ];
-  const specs = detailSpecificationKeys.map((key) => [
-    vehicleSpecificationLabels[key],
-    getVehicleSpecification(vehicle, key),
-  ]);
 
   return (
     <InnerPageMotion className="vehicle-detail-page" variant="detail">
@@ -415,11 +402,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             <p>Ficha técnica</p>
             <span>{vehicle.stockCode}</span>
           </div>
-          {publication ? <VehicleSpecificationGroups attributes={attributes} /> : <dl>
-            {specs.map(([label, value], index) => (
-              <div key={`${label}-${index}`}><dt>{label}</dt><dd>{value || 'No especificado'}</dd></div>
-            ))}
-          </dl>}
+          <VehicleSpecificationGroups attributes={attributes} />
         </div>
       </section>
 
