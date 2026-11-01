@@ -61,6 +61,11 @@ with exponential eligibility delay. Permanent HTTP failures are marked `failed`,
 addresses, tokens, raw responses or payloads. Provider acceptance plus price-reference update are
 recorded atomically in PostgreSQL. Acceptance is not proof of inbox delivery.
 
+Every email carries the GG logo as an inline attachment referenced with `cid:` (about 2 KB,
+`lib/alerts/email-logo.ts`, generated from `public/brand/gonba-garage-email-logo.png`). Emails load
+nothing from the site, and the logo is part of the frozen request. Resend's batch endpoint does not
+accept attachments, so keep sending one email per request.
+
 If acceptance was ambiguous, the same request can be retried within 23 hours. After that it becomes
 `blocked` for manual reconciliation against the provider, because Resend's idempotency lasts 24h.
 Do not reset that state or create a fresh key without checking whether the original mail was sent.

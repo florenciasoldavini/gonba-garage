@@ -40,7 +40,7 @@ export function SiteHeader({ active }: SiteHeaderProps) {
 
   return (
     <header className="site-header" ref={headerRef}>
-      <Wordmark href="/" />
+      <Wordmark href="/" preload />
       <nav className="main-nav" aria-label="Navegación principal">
         {siteNavigation.map((item) => {
           const isCurrent = item.key !== undefined && item.key === active;

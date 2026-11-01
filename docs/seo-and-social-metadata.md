@@ -38,6 +38,7 @@ check when applicable.
 | Crawler rules | `app/robots.ts` |
 | Discoverable URLs and freshness | `app/sitemap.ts` |
 | Favicon, Apple icon, and manifest | `public/favicon.svg`, `app/apple-icon.tsx`, and `app/manifest.ts` |
+| Brand logo files (header, footer, share cards, dealer `logo`) | `public/brand/` |
 | End-to-end metadata contract | `scripts/check-social-metadata.mjs` |
 
 Keep shared policy in these files instead of duplicating URL construction or metadata objects across

@@ -327,6 +327,11 @@ try {
   const malicious = email.buildAlertEmail({ id, generation, email: 'person@example.invalid', kind: 'drop', title: '<script>bad</script>', vehicle_slug: 'a', price: 100, previous_price: 200, currency: 'USD' });
   assert.equal(malicious.html.includes('<script>'), false);
   assert.ok(malicious.text.includes('Cancelar alerta'));
+  for (const message of [malicious, email.buildConfirmationEmail({ scope: 'inventory', email: 'person@example.invalid', url: 'https://example.test/x' })]) {
+    const [logo] = message.attachments;
+    assert.ok(message.html.includes(`src="cid:${logo.content_id}"`), 'The logo is embedded inline');
+    assert.equal(/src="https?:/.test(message.html), false, 'Emails load no external images');
+  }
 
   // Subscriptions created before double opt-in keep receiving alerts after the migration.
   await db.close();

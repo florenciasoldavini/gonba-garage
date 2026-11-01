@@ -28,7 +28,7 @@ export function getSiteStructuredData() {
         url: homeUrl,
         name: SITE_NAME,
         description: 'Compra y venta de autos usados seleccionados con atención personalizada.',
-        logo: new URL('/favicon.svg', siteUrl).toString(),
+        logo: new URL('/brand/gonba-garage-logo-512.png', siteUrl).toString(),
         telephone: `+${WHATSAPP_NUMBER}`,
         // Locality only: there is no public street address. Opening hours are omitted on purpose
         // because visits are by appointment and schema hours would read as walk-in hours.
