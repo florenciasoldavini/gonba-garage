@@ -241,8 +241,6 @@ export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, v
                 </>
               ) : null}
             </div>
-
-            <p className="share-dialog-signature">GONBA&apos;S <span>GARAGE</span></p>
           </div>
         </div>
       </dialog>

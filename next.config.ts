@@ -19,8 +19,11 @@ const contentSecurityPolicy = "frame-ancestors 'none'; base-uri 'self'; object-s
 
 const nextConfig: NextConfig = {
   images: { remotePatterns: [{ protocol: 'https', hostname: 'http2.mlstatic.com' }] },
-  // The vehicle social card reads local catalog photos from disk; ship them with the function.
-  outputFileTracingIncludes: { '/og/vehiculos/*': ['./public/*.{jpg,jpeg}'] },
+  // The vehicle social card and Apple icon read local images from disk; ship them with the function.
+  outputFileTracingIncludes: {
+    '/og/vehiculos/*': ['./public/*.{jpg,jpeg}', './public/brand/gonba-garage-logo-mark.png'],
+    '/apple-icon': ['./public/brand/gonba-garage-apple-icon.png'],
+  },
   async headers() {
     return [
       {

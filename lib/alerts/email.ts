@@ -1,14 +1,17 @@
 import 'server-only';
 import { alertOrigin, confirmationLifetimeHours } from './config';
 import { cancellationUrl } from './cancellation';
+import { EMAIL_LOGO_CONTENT_ID, EMAIL_LOGO_PNG_BASE64 } from './email-logo';
 
 export type AlertEmail = {
   id: string; generation: string; email: string; kind: 'welcome' | 'drop';
   title: string; vehicle_slug: string; price: number; previous_price: number; currency: string;
 };
 const escape = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-const shell = (subject: string, content: string) => `<!doctype html><html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(subject)}</title></head><body style="margin:0;background:#f4f5f0;color:#171a16;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:32px 16px"><table role="presentation" width="560" style="width:100%;max-width:560px" cellspacing="0" cellpadding="0"><tr><td style="padding:28px;background:#11150f;color:#ffffff;font-size:20px;font-weight:bold">GONBA'S <span style="color:#dcff00">GARAGE</span></td></tr><tr><td style="padding:32px;background:#ffffff">${content}</td></tr></table></td></tr></table></body></html>`;
+const shell = (subject: string, content: string) => `<!doctype html><html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(subject)}</title></head><body style="margin:0;background:#f4f5f0;color:#171a16;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:32px 16px"><table role="presentation" width="560" style="width:100%;max-width:560px" cellspacing="0" cellpadding="0"><tr><td style="padding:24px 28px;background:#11150f;color:#ffffff;font-size:20px;font-weight:bold"><img src="cid:${EMAIL_LOGO_CONTENT_ID}" width="49" height="36" alt="Gonba's Garage" style="display:block;border:0;outline:none;color:#ffffff"></td></tr><tr><td style="padding:32px;background:#ffffff">${content}</td></tr></table></td></tr></table></body></html>`;
 const button = (url: string, label: string) => `<p style="margin:28px 0"><a href="${escape(url)}" style="display:inline-block;padding:15px 22px;background:#dcff00;color:#171a16;font-weight:bold;text-decoration:none;border-radius:8px">${label}</a></p>`;
+// Sent inline with each email (cid:), so the logo shows without loading anything from the site.
+const logoAttachment = { filename: 'gonba-garage.png', content: EMAIL_LOGO_PNG_BASE64, content_type: 'image/png', content_id: EMAIL_LOGO_CONTENT_ID };
 const money = (price: number, currency: string) => `${currency === 'USD' ? 'USD' : 'ARS'} ${Number(price).toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
 
 /** Shared by the worker and the sample sender. No tracking pixels or external assets. */
@@ -25,7 +28,7 @@ export function buildAlertEmail(input: AlertEmail) {
   const footer = welcome ? '¿No solicitaste esta alerta? Podés cancelarla acá.' : 'Podés dejar de recibir esta alerta cuando quieras.';
   const text = `GONBA'S GARAGE\n\n${subject}\n\n${detail}\n\nVer vehículo: ${url}\n\n${footer}\nCancelar alerta: ${cancel}`;
   const html = shell(subject, `<h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">${escape(subject)}</h1><p style="font-size:16px;line-height:1.7">${escape(detail)}</p>${button(url, 'Ver vehículo')}<p style="font-size:14px;line-height:1.6;color:#4a5145">${escape(footer)} <a href="${escape(cancel)}" style="color:#171a16">Cancelar alerta</a></p>`);
-  return { from: process.env.ALERTS_EMAIL_FROM || '', to: [input.email], subject, html, text,
+  return { from: process.env.ALERTS_EMAIL_FROM || '', to: [input.email], subject, html, text, attachments: [logoAttachment],
     headers: { 'List-Unsubscribe': `<${cancel}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } };
 }
 
@@ -45,7 +48,7 @@ export function buildConfirmationEmail(input: ConfirmationEmail) {
   const footer = `El enlace vence en ${confirmationLifetimeHours} horas. Si no lo pediste, ignorá este correo: no te enviaremos alertas.`;
   const text = `GONBA'S GARAGE\n\n${subject}\n\n${detail}\n\nConfirmar alerta: ${input.url}\n\n${footer}`;
   const html = shell(subject, `<h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">${escape(subject)}</h1><p style="font-size:16px;line-height:1.7">${escape(detail)}</p>${button(input.url, 'Confirmar alerta')}<p style="font-size:14px;line-height:1.6;color:#4a5145">${escape(footer)}</p>`);
-  return { from: process.env.ALERTS_EMAIL_FROM || '', to: [input.email], subject, html, text };
+  return { from: process.env.ALERTS_EMAIL_FROM || '', to: [input.email], subject, html, text, attachments: [logoAttachment] };
 }
 
 export class EmailFailure extends Error {

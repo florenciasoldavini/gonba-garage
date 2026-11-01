@@ -67,12 +67,10 @@ a:focus-visible, button:focus-visible, summary:focus-visible {
 
 .wordmark {
   width: max-content;
-  font-size: 1rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
+  display: block;
 }
 
-.wordmark span { color: var(--accent); }
+.wordmark img { display: block; width: auto; height: 30px; }
 
 .main-nav { display: flex; align-items: center; gap: clamp(20px, 3vw, 44px); }
 
@@ -732,7 +730,7 @@ h3 { letter-spacing: -0.04em; }
 .share-dialog-close { position: absolute; top: 16px; right: 16px; width: 44px; height: 44px; display: grid; place-items: center; color: #cdd0c9; border: 1px solid var(--line); border-radius: 50%; background: rgba(255, 255, 255, 0.05); cursor: pointer; }
 .share-dialog-close:hover, .price-alert-close:hover { color: var(--text); border-color: rgba(255, 255, 255, 0.28); background: rgba(255, 255, 255, 0.09); }
 .share-dialog-content > h2 { max-width: 410px; margin: 0 0 15px; font-size: clamp(2.2rem, 4.4vw, 3.65rem); line-height: .94; }
-.share-dialog-content > p:not(.eyebrow, .share-dialog-signature) { max-width: 390px; margin: 0; color: var(--muted); font-size: .82rem; line-height: 1.6; }
+.share-dialog-content > p:not(.eyebrow) { max-width: 390px; margin: 0; color: var(--muted); font-size: .82rem; line-height: 1.6; }
 .share-dialog-routes { margin-top: 30px; display: grid; gap: 9px; }
 .share-dialog-route { min-height: 68px; padding: 12px 14px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 13px; color: var(--text); border: 1px solid var(--line); border-radius: 12px; background: rgba(255, 255, 255, .035); cursor: pointer; font-family: inherit; text-align: left; transition: transform var(--duration-default) var(--ease-standard), border-color var(--duration-default) ease, background var(--duration-default) ease; }
 @media (hover: hover) {
@@ -747,8 +745,6 @@ h3 { letter-spacing: -0.04em; }
 .share-dialog-route-primary small { color: rgba(21, 26, 0, .62); }
 .share-dialog-secondary-routes { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .share-dialog-secondary-routes .share-dialog-route { grid-template-columns: auto minmax(0, 1fr); }
-.share-dialog-signature { margin: auto 0 0; padding-top: 28px; color: var(--color-text-tertiary); font-size: .66rem; font-weight: 900; letter-spacing: -.03em; }
-.share-dialog-signature span { color: var(--accent); }
 .share-dialog-secondary-routes-single { grid-template-columns: 1fr; }
 .share-dialog-link { margin-top: 3px; display: grid; gap: 7px; }
 .share-dialog-link label { padding-left: 2px; color: #7f847b; font: 600 .55rem var(--font-mono); letter-spacing: .07em; text-transform: uppercase; }
@@ -1222,7 +1218,7 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 
 .site-footer { min-height: 260px; padding-block: 70px 35px; display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: start; }
 .footer-intro { display: grid; gap: 10px; }
-.footer-wordmark { font-size: 1.35rem; }
+.footer-wordmark img { height: 44px; }
 .footer-intro > p { margin: 0; color: var(--muted); font-size: 0.78rem; }
 .site-footer .footer-instagram {
   grid-column: 1 / -1;
@@ -1440,6 +1436,7 @@ html:has(.compare-selection-dialog[open]) { overflow: hidden; }
   .valuation-form-heading strong { text-wrap: pretty; }
   .section-shell, .site-header { width: min(100% - 24px, 1380px); }
   .site-header { top: 8px; margin-top: 8px; min-height: 60px; padding: 8px 8px 8px 16px; }
+  .wordmark img { height: 26px; }
   .site-menu-panel { --site-menu-width: min(100% - 24px, 1380px); }
   .site-menu-top { min-height: 60px; margin-top: 8px; padding: 8px 8px 8px 16px; }
   .hero { min-height: 720px; margin-top: 12px; padding: 28px 22px; align-items: flex-end; }
@@ -1492,7 +1489,6 @@ html:has(.compare-selection-dialog[open]) { overflow: hidden; }
   .share-dialog-close { top: 12px; right: 12px; }
   .share-dialog-content > h2 { padding-right: 34px; font-size: clamp(2rem, 10vw, 2.8rem); }
   .share-dialog-routes { margin-top: 22px; }
-  .share-dialog-signature { display: none; }
   .site-footer { grid-template-columns: 1fr; }
   .footer-note { justify-self: start; }
   .site-footer .footer-instagram { grid-column: auto; grid-template-columns: auto 1fr; }

@@ -12,6 +12,7 @@ type VehicleSocialImageRouteProps = {
 };
 
 const publicDirectory = join(process.cwd(), 'public');
+const logoMarkPath = join(publicDirectory, 'brand', 'gonba-garage-logo-mark.png');
 const localImageContentTypes: Record<string, string> = {
   '.jpeg': 'image/jpeg',
   '.jpg': 'image/jpeg',
@@ -41,6 +42,7 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
   // A sold car's last price is not current, so the card leaves it out.
   const isSold = status.status === 'sold';
   const imageUrl = await resolveVehicleImageSource(vehicle.image, request.url);
+  const logoSource = `data:image/png;base64,${(await readFile(logoMarkPath)).toString('base64')}`;
 
   const image = createElement(
     'div',
@@ -94,12 +96,13 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
       createElement(
         'div',
         { style: { alignItems: 'center', display: 'flex', justifyContent: 'space-between' } },
-        createElement(
-          'div',
-          { style: { display: 'flex', fontSize: 30, fontWeight: 900, letterSpacing: '-1.5px' } },
-          "GONBA'S ",
-          createElement('span', { style: { color: '#dcff00', marginLeft: 8 } }, 'GARAGE'),
-        ),
+        createElement('img', {
+          alt: "Gonba's Garage",
+          src: logoSource,
+          height: 52,
+          width: 71,
+          style: { height: 52, width: 71 },
+        }),
         createElement(
           'div',
           {
