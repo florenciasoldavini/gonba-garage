@@ -5,6 +5,7 @@ import { ArrowRight, ArrowUpRight, BellRing, CircleAlert, RotateCw, TrendingDown
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { PrivacyPolicyLink } from '@/components/ui/privacy-policy-link';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { postJson, type RequestFailure } from '@/lib/json-request';
@@ -148,7 +149,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
                   <p><strong>{shownFailure.title}</strong>{shownFailure.detail && <span>{shownFailure.detail}</span>}</p>
                 </div>
               )}
-              <p className="price-alert-privacy">Te avisaremos de cada nueva baja de esta unidad. Podés cancelar la alerta desde cualquier correo.</p>
+              <p className="price-alert-privacy">Te avisaremos de cada nueva baja de esta unidad. Podés cancelar la alerta desde cualquier correo. Al suscribirte aceptás la <PrivacyPolicyLink />.</p>
             </form>
           )}
         </div>

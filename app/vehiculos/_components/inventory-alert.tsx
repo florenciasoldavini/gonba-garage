@@ -5,6 +5,7 @@ import { ArrowRight, ArrowUpRight, BellRing, CircleAlert, RotateCw, WifiOff, X }
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { PrivacyPolicyLink } from '@/components/ui/privacy-policy-link';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
@@ -209,7 +210,7 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
                   <p><strong>{shownFailure.title}</strong>{shownFailure.detail && <span>{shownFailure.detail}</span>}</p>
                 </div>
               )}
-              <p className="price-alert-privacy">Usaremos tu email únicamente para avisarte sobre esta búsqueda.</p>
+              <p className="price-alert-privacy">Usaremos tu email únicamente para avisarte sobre esta búsqueda. Al suscribirte aceptás la <PrivacyPolicyLink />.</p>
             </form>
           )}
         </div>
