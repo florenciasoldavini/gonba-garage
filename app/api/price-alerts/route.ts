@@ -5,7 +5,7 @@ import { catalogAccessToken } from '@/lib/integrations/mercado-libre/access-toke
 import { readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/oauth';
 import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
 import { savePriceSubscription } from '@/lib/alerts/subscriptions';
-import { alertDeliveryEnabled } from '@/lib/alerts/config';
+import { alertEmailsConfigured } from '@/lib/alerts/config';
 import { reserveAlertSignup } from '@/lib/alerts/signup-limit';
 import { requestPriceAlert } from '@/lib/alerts/price-delivery';
 import { sendSignupConfirmationSafely } from '@/lib/alerts/confirmation';
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: 'Recibimos demasiadas solicitudes. Probá más tarde.' }, { status: 429 });
     }
     // Price/currency come from our catalog, never from client-supplied amounts.
-    const deliveryEnabled = alertDeliveryEnabled();
+    const deliveryEnabled = alertEmailsConfigured();
     const id = vehicleSlug.match(/-(MLA\d+)$/i)?.[1]?.toUpperCase();
     if (deliveryEnabled && !id) return NextResponse.json({ message: 'El vehículo ya no está disponible.' }, { status: 400 });
     // The backend may serve a demo frontend. Resolve real subscriptions directly through Mercado Libre.
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
     if (!vehicle || vehicle.status !== 'active') {
       return NextResponse.json({ message: 'El vehículo ya no está disponible.' }, { status: 400 });
     }
-    if (alertDeliveryEnabled()) {
+    if (alertEmailsConfigured()) {
       // Pending until the owner confirms by email. The response does not reveal which case applied.
       const alert = await requestPriceAlert(email, vehicle);
       if (alert.status === 'pending') after(() => sendSignupConfirmationSafely({ scope: 'price', id: alert.id, generation: alert.generation, email, title: alert.vehicle_title }));

@@ -13,7 +13,8 @@ process.env.MERCADO_LIBRE_CLIENT_ID = '456';
 process.env.CRON_SECRET = 'test-cron-secret-never-used-outside-tests';
 process.env.VEHICLE_DATA_SOURCE = 'mercado-libre';
 delete process.env.MERCADO_LIBRE_BACKEND_URL;
-delete process.env.PRICE_ALERT_DELIVERY_ENABLED;
+// Without the alert email configuration no alert work runs (lib/alerts/config.ts).
+delete process.env.RESEND_API_KEY;
 
 // Every migration, applied twice: the runner expects rerunnable DDL.
 const db = new PGlite();
@@ -48,6 +49,7 @@ const overrides = {
   'react': { cache: fn => fn },
   'next/server': { NextResponse: { json: (body, init) => Response.json(body, init) }, after: fn => deferred.push(fn) },
   '@/lib/alerts/database': { getAlertsSql: () => sql, isAlertsDatabaseConfigured: () => true },
+  './database': { getAlertsSql: () => sql, isAlertsDatabaseConfigured: () => true },
   '@/lib/alerts/price-delivery': { enqueuePriceItem: async () => assert.fail('Price alerts are disabled'), runPriceAlertWorkSafely: async () => {} },
   '@/lib/integrations/mercado-libre/credentials': { authorized: request => request.headers.get('authorization') === `Bearer ${apiKey}` },
   './access-token': { catalogAccessToken: async () => 'access-token' },
@@ -191,6 +193,7 @@ try {
   await query("UPDATE public.catalog_sync_jobs SET lease_id = '00000000-0000-4000-8000-000000000002' WHERE publication_id = 'MLA3'");
   const stale = await store.savePublication(mapMercadoLibreItemToVehicle(item('MLA3')), lease);
   assert.equal(stale.saved, false);
+  assert.equal(stale.becameAvailable, false, 'A stale write records no availability');
   assert.equal(await row('MLA3'), undefined);
   await query("UPDATE public.catalog_sync_jobs SET lease_id = NULL, lease_until = NULL WHERE publication_id = 'MLA3'");
 
@@ -285,8 +288,30 @@ try {
   const health = await store.readSyncHealth();
   assert.equal(health.publications.active, 1);
   assert.ok(health.reconciliation.lastCompletedAt);
+
+  // Search alerts: a car becoming available is recorded in the same statement as its save, once
+  // per transition. previous_status is null for a new listing.
+  const events = async id => (await query('SELECT previous_status FROM public.inventory_alert_events WHERE publication_id = $1 ORDER BY created_at, id', [id]))
+    .map(({ previous_status }) => previous_status);
+  assert.deepEqual(await events('MLA4'), [], 'Stock first seen weeks after it was listed is not news');
+  const fresh = new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString();
+  const sync6 = async (changes = {}) => { items.set('MLA6', item('MLA6', { start_time: fresh, ...changes })); await notify('MLA6'); await runDeferred(); };
+  await sync6();
+  assert.deepEqual(await events('MLA6'), [null], 'A new listing is recorded');
+  await sync6();
+  await sync6({ price: 19000 });
+  assert.deepEqual(await events('MLA6'), [null], 'Re-reads and price changes of an available car are not new availability');
+  await sync6({ status: 'paused' });
+  assert.deepEqual(await events('MLA6'), [null], 'A reservation is not availability');
+  await sync6();
+  assert.deepEqual(await events('MLA6'), [null, 'paused'], 'A reservation that falls through is recorded');
+  items.set('MLA1', item('MLA1'));
+  await notify('MLA1'); await runDeferred();
+  assert.deepEqual(await events('MLA1'), ['closed'], 'A closed listing that comes back is recorded, however old');
+  assert.ok((await query("SELECT * FROM public.inventory_alert_events")).every(({ state }) => state === 'pending'),
+    'Without alert email configuration nothing is matched');
 } finally {
   console.error = previousError;
   await db.close();
 }
-console.log('Inventory sync: rerunnable migrations, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, stale-lease protection, revisions, backoff, safe reconciliation, cron auth and database-only reads passed.');
+console.log('Inventory sync: rerunnable migrations, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, cron auth and database-only reads passed.');

@@ -27,7 +27,7 @@ let deferred = [];
 const dependencies = {
   'next/server': { NextResponse: { json: (body, options) => Response.json(body, options) }, after: fn => deferred.push(fn) },
   '@/lib/alerts/database': { isAlertsDatabaseConfigured: () => configured },
-  '@/lib/alerts/config': { alertDeliveryEnabled: () => false },
+  '@/lib/alerts/config': { alertEmailsConfigured: () => false },
   '@/lib/alerts/price-delivery': {},
   '@/lib/alerts/signup-limit': { reserveAlertSignup: async () => true },
   '@/lib/alerts/confirmation': { sendSignupConfirmationSafely: async () => assert.fail('Demo mode sends no confirmation') },

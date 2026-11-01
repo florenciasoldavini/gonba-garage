@@ -10,6 +10,7 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { WHATSAPP_CATALOG_MESSAGE } from '@/constants/contact';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { comparableUsdPrice, type CatalogMepQuote } from '@/features/vehicles/domain/catalog-pricing';
+import { matchesSearchText, vehicleBodyType, vehicleTransmissionType } from '@/features/vehicles/domain/inventory-search';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { CatalogEmptyState } from './catalog-empty-state';
@@ -30,6 +31,8 @@ if (typeof window !== 'undefined') {
 type InventoryCatalogProps = {
   vehicles: Vehicle[];
   quote: CatalogMepQuote | null;
+  // Alert emails can be sent here. Without them (an unconfigured preview) the catalog offers no alert.
+  alertsEnabled: boolean;
   // The request query string. When present, the catalog starts from it and keeps it in sync.
   searchParams?: string;
 };
@@ -41,7 +44,7 @@ const MIN_MILEAGE = 0;
 const MILEAGE_STEP = 5000;
 const URL_SYNC_DELAY_MS = 300;
 
-export function InventoryCatalog({ vehicles, quote, searchParams }: InventoryCatalogProps) {
+export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams }: InventoryCatalogProps) {
   const resultsRef = useRef<HTMLDivElement>(null);
   const priceEnabled = quote !== null || vehicles.every(v => v.currency === 'USD');
   const comparisonPrices = useMemo(() => new Map(vehicles.map(v => [v.slug, comparableUsdPrice(v, quote)])), [vehicles, quote]);
@@ -87,16 +90,13 @@ export function InventoryCatalog({ vehicles, quote, searchParams }: InventoryCat
   const lastAnalyticsPayloadRef = useRef('');
 
   const filteredVehicles = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase('es');
+    // Same text, transmission and body rules as saved search alerts (inventory-search.ts).
     const result = vehicles.filter((vehicle) => {
-      const searchable = `${vehicle.make} ${vehicle.model} ${vehicle.version} ${vehicle.year}`.toLocaleLowerCase('es');
-      const transmissionType = vehicle.transmission.toLocaleLowerCase('es').startsWith('autom') ? 'automatic' : 'manual';
-
       return (
-        (!normalizedQuery || searchable.includes(normalizedQuery)) &&
+        matchesSearchText(vehicle, query) &&
         (make === 'all' || vehicle.make === make) &&
-        (transmission === 'all' || transmissionType === transmission) &&
-        (bodyType === 'all' || vehicle.body.split(' · ')[0] === bodyType) &&
+        (transmission === 'all' || vehicleTransmissionType(vehicle) === transmission) &&
+        (bodyType === 'all' || vehicleBodyType(vehicle) === bodyType) &&
         (fuel === 'all' || vehicle.fuel === fuel) &&
         (!priceEnabled || ((comparisonPrices.get(vehicle.slug) ?? 0) >= minPrice && (comparisonPrices.get(vehicle.slug) ?? 0) <= maxPrice)) &&
         vehicle.mileageKm >= minMileage && vehicle.mileageKm <= maxMileage
@@ -340,14 +340,14 @@ export function InventoryCatalog({ vehicles, quote, searchParams }: InventoryCat
     maxMileage: maxMileage === mileageCeiling ? null : maxMileage,
   };
 
-  const toolbarAlert = (
+  const toolbarAlert = alertsEnabled ? (
     <InventoryAlert
       activeFilterCount={activeFilterCount}
       criteria={alertCriteria}
       placement="toolbar"
       resultCount={filteredVehicles.length}
     />
-  );
+  ) : null;
 
   return (
     <>
@@ -384,14 +384,14 @@ export function InventoryCatalog({ vehicles, quote, searchParams }: InventoryCat
             </div>
           ) : (
             <CatalogEmptyState
-              alertAction={(
+              alertAction={alertsEnabled ? (
                 <InventoryAlert
                   activeFilterCount={activeFilterCount}
                   criteria={alertCriteria}
                   placement="empty"
                   resultCount={0}
                 />
-              )}
+              ) : null}
               onReset={resetFilters}
             />
           )}

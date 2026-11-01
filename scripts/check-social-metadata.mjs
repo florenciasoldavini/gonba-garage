@@ -2,6 +2,16 @@ import assert from 'node:assert/strict';
 
 const targetOrigin = new URL(process.argv[2] || 'http://localhost:3100');
 const indexingEnabled = process.env.SITE_INDEXING_ENABLED === 'true';
+// Run with the same environment as the server. Alerts are offered only where alert emails can be
+// sent: the same check as alertEmailsConfigured() in lib/alerts/config.ts.
+const alertsEnabled = (() => {
+  try {
+    const origin = new URL(process.env.ALERTS_PUBLIC_URL || '');
+    return origin.protocol === 'https:' && origin.pathname === '/' && !origin.search && !origin.hash && !origin.username
+      && Boolean(process.env.DATABASE_URL && process.env.RESEND_API_KEY && process.env.ALERTS_EMAIL_FROM)
+      && (process.env.ALERTS_SIGNING_SECRET?.length ?? 0) >= 32;
+  } catch { return false; }
+})();
 for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect', '/api/mercado-libre/diagnostics']) {
   const response = await fetch(new URL(path, targetOrigin));
   assert.equal(response.status, 401, `${path} must reject unauthenticated requests`);
@@ -9,7 +19,8 @@ for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect', 
   assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
 }
 // Alert management and catalog sync are never indexable, even when production indexing is enabled.
-for (const [path, status] of [['/api/alerts/daily', 401], ['/api/mercado-libre/sync', 401], ['/api/price-alerts/cancel', 400], ['/api/alerts/confirm', 303]]) {
+for (const [path, status] of [['/api/alerts/daily', 401], ['/api/mercado-libre/sync', 401], ['/api/price-alerts/cancel', 400],
+  ['/api/inventory-alerts/cancel', 400], ['/api/alerts/confirm', 303]]) {
   const response = await fetch(new URL(path, targetOrigin), { redirect: 'manual' });
   assert.equal(response.status, status, path);
   assert.match(response.headers.get('cache-control') ?? '', /no-store/);
@@ -24,9 +35,11 @@ assert.equal(confirmLink.headers.get('location'), '/alertas/confirmacion?estado=
 const sitePage = await fetch(new URL('/', targetOrigin));
 assert.equal(sitePage.headers.get('x-frame-options'), 'DENY');
 assert.match(sitePage.headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/);
-const alertLinkPage = await fetch(new URL('/api/price-alerts/cancel?token=invalid', targetOrigin));
-assert.match(alertLinkPage.headers.get('content-security-policy') ?? '', /^default-src 'none';/);
-assert.equal(alertLinkPage.headers.get('referrer-policy'), 'no-referrer');
+for (const path of ['/api/price-alerts/cancel', '/api/inventory-alerts/cancel']) {
+  const alertLinkPage = await fetch(new URL(`${path}?token=invalid`, targetOrigin));
+  assert.match(alertLinkPage.headers.get('content-security-policy') ?? '', /^default-src 'none';/, path);
+  assert.equal(alertLinkPage.headers.get('referrer-policy'), 'no-referrer', path);
+}
 assert.notEqual(process.env.VEHICLE_DATA_SOURCE, 'mercado-libre',
   'Run the permanent/demo metadata contract without the temporary local session. Live preview must remain noindex with an empty sitemap.');
 
@@ -368,6 +381,17 @@ for (const fixture of [
     assert.match(metadata.robots || '', /nofollow/);
   }
   assert.doesNotMatch(html, /Consultar por este auto|comparar=|Ver publicación en Mercado Libre/, `${fixture.path} must not offer the car`);
+  // The email alert is offered only where alert emails can be sent; otherwise WhatsApp is.
+  const statusCard = decodeHtml(html.slice(html.indexOf('detail-status-title'), html.indexOf('detail-disclaimer')).replace(/<[^>]+>/g, ''));
+  if (alertsEnabled) {
+    assert.match(statusCard, /dejanos tu email/, `${fixture.path} offers the email alert`);
+    assert.match(html, /class="detail-alert-card"/, `${fixture.path} shows the alert card`);
+  } else {
+    assert.doesNotMatch(statusCard, /email/i, `${fixture.path} promises no email`);
+    assert.doesNotMatch(html, /class="detail-alert-card"|inventory-alert-dialog/, `${fixture.path} offers no alert`);
+    assert.match(statusCard, /escribinos por WhatsApp/, `${fixture.path} points to WhatsApp instead`);
+    assert.match(html, /href="https:\/\/wa\.me\/[^"]*"[^>]*>(?:Avisame por WhatsApp|Contanos qué buscás)/, `${fixture.path} links WhatsApp`);
+  }
   assert.match(html, /id="similares"/, `${fixture.path} shows available alternatives`);
   const railLinks = [...html.slice(html.indexOf('id="similares"')).matchAll(/<a\b[^>]*class="catalog-card-image-link"[^>]*>/g)]
     .map(([tag]) => getAttributes(tag).href);
@@ -406,12 +430,18 @@ for (const [label, html] of [['Home', homeHtml], ['Catalog', catalogHtml], ['Veh
   const footer = html.match(/<footer\b[\s\S]*<\/footer>/)?.[0] ?? '';
   for (const path of legalPaths) assert.ok(footer.includes(`href="${path}"`), `${label} footer links ${path}`);
 }
-// Both alert forms state that subscribing accepts the privacy policy (price on detail, search on catalog).
-for (const [label, html] of [['Price alert', activeDetail], ['Inventory alert', catalogHtml]]) {
-  assert.match(html, /class="price-alert-privacy">[^<]*Al suscribirte aceptás la (?:<!-- -->)?<a [^>]*href="\/privacidad"/, `${label} links the privacy policy`);
+// Each alert form is offered only where alert emails can be sent, and then states that subscribing
+// accepts the privacy policy (price on detail, search on catalog).
+for (const [label, html, enabled] of [['Price alert', activeDetail, alertsEnabled], ['Inventory alert', catalogHtml, alertsEnabled]]) {
+  if (enabled) {
+    assert.match(html, /class="price-alert-privacy">[^<]*Al suscribirte aceptás la (?:<!-- -->)?<a [^>]*href="\/privacidad"/, `${label} links the privacy policy`);
+  } else {
+    assert.doesNotMatch(html, /price-alert-dialog|price-alert-privacy|detail-alert-card|inventory-alert-trigger/, `${label} is not offered without the email configuration`);
+  }
 }
 
 console.table(results);
 console.log(
-  `\nSocial metadata and ${indexingEnabled ? 'production' : 'demo'} indexing verification passed for ${routes.length} public routes.`,
+  `\nSocial metadata and ${indexingEnabled ? 'production' : 'demo'} indexing verification passed for ${routes.length} public routes`
+    + ` (alert emails ${alertsEnabled ? 'configured' : 'not configured'}).`,
 );

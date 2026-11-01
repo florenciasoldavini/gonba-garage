@@ -29,7 +29,7 @@ import { getSiteUrl } from '@/lib/site-url';
 import { ORGANIZATION_SCHEMA_ID } from '@/lib/structured-data';
 import type { AnalyticsEvent } from '@/lib/analytics/client';
 import { PriceAlert } from './_components/price-alert';
-import { alertDeliveryEnabled } from '@/lib/alerts/config';
+import { alertEmailsConfigured } from '@/lib/alerts/config';
 import { ShareButton } from './_components/share-button';
 import { VehicleAnalytics } from './_components/vehicle-analytics';
 import { VehiclePhotoViewer } from './_components/vehicle-photo-viewer';
@@ -111,6 +111,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const vehicleName = `${vehicle.make} ${vehicle.model}`;
   const bodyType = vehicle.body.split(' · ')[0];
   const formattedPrice = formatVehiclePrice(vehicle.price, vehicle.currency);
+  // Alerts are offered only where their emails can be sent (production, not previews).
+  const alertsEnabled = alertEmailsConfigured();
 
   let similarVehicles: Vehicle[] = [];
   let availableCount = 0;
@@ -300,7 +302,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
               <p className="detail-price-label">Precio publicado</p>
               <p className="detail-price">{formattedPrice}</p>
               <p className="detail-location">{vehicle.location}</p>
-              {!publication || alertDeliveryEnabled() ? (
+              {alertsEnabled ? (
                 <PriceAlert
                   vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
                   vehicleSlug={vehicle.slug}
@@ -318,9 +320,12 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             <>
               <h2 className="detail-status-title">{isReserved ? 'Este auto está reservado.' : 'Este auto ya se vendió.'}</h2>
               <p className="detail-status-copy">
-                {isReserved
+                {alertsEnabled ? (isReserved
                   ? 'Alguien lo reservó, pero a veces las reservas se caen: dejanos tu email y te avisamos si se libera o si entra otro igual.'
-                  : 'Si buscás algo así, dejanos tu email y te avisamos cuando entre uno parecido.'}
+                  : 'Si buscás algo así, dejanos tu email y te avisamos cuando entre uno parecido.')
+                  : (isReserved
+                    ? 'Alguien lo reservó, pero a veces las reservas se caen: escribinos por WhatsApp y te avisamos si se libera.'
+                    : 'Si buscás algo así, escribinos por WhatsApp y te avisamos cuando entre uno parecido.')}
                 {similarVehicles.length > 0 && (isReserved
                   ? ' Mientras tanto, abajo tenés autos parecidos disponibles.'
                   : ' Abajo tenés autos parecidos que siguen en el garage.')}
@@ -329,7 +334,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
                 <dt>{isReserved ? 'Precio publicado' : 'Último precio publicado'}</dt>
                 <dd>{formattedPrice}</dd>
               </dl>
-              <InventoryAlert
+              {alertsEnabled ? <InventoryAlert
                 activeFilterCount={2}
                 criteria={alertCriteria}
                 placement="vehicle"
@@ -345,12 +350,17 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
                   title: 'Avisame si entra uno parecido.',
                   description: `Te avisamos por email cuando entre otro ${vehicle.make} ${bodyType.toLocaleLowerCase('es')}.`,
                 }}
-              />
+              /> : null}
               <div className="detail-actions">
+                {!alertsEnabled && (
+                  <TrackedButtonAnchor analyticsEvent={contactEvent('hero')} href={contact.href} rel="noreferrer" target="_blank">
+                    {isReserved ? 'Avisame por WhatsApp' : 'Contanos qué buscás'} <Arrow />
+                  </TrackedButtonAnchor>
+                )}
                 {similarVehicles.length > 0 ? (
-                  <ButtonAnchor href="#similares">Ver autos similares <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
+                  <ButtonAnchor href="#similares" variant={alertsEnabled ? 'accent' : 'glass'}>Ver autos similares <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
                 ) : (
-                  <ButtonLink href="/vehiculos">Ver todo el inventario <Arrow /></ButtonLink>
+                  <ButtonLink href="/vehiculos" variant={alertsEnabled ? 'accent' : 'glass'}>Ver todo el inventario <Arrow /></ButtonLink>
                 )}
               </div>
             </>

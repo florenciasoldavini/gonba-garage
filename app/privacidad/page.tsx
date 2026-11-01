@@ -46,9 +46,10 @@ export default function PrivacyPage() {
         <p>
           Si creás una alerta de precio o de búsqueda, guardamos tu email, el vehículo o los criterios que elegiste (texto
           buscado, marca, transmisión, carrocería, combustible y rangos de precio y kilometraje), el estado de la alerta y las
-          fechas en que la creaste y la confirmaste. También registramos los emails que te enviamos. Usamos estos datos solo
-          para confirmar la alerta y avisarte: no te mandamos publicidad ni otros mensajes. Darnos tu email es optativo, pero
-          sin él no podemos enviarte alertas.
+          fechas en que la creaste y la confirmaste. También registramos los emails que te enviamos y, en las alertas de
+          búsqueda, qué autos te avisamos, para no avisarte dos veces del mismo. Usamos estos datos solo para confirmar la
+          alerta y avisarte: no te mandamos publicidad ni otros mensajes. Darnos tu email es optativo, pero sin él no podemos
+          enviarte alertas.
         </p>
         <p>
           La alerta se activa recién cuando la confirmás desde el enlace que te enviamos por email. Hasta entonces no recibís
@@ -144,13 +145,14 @@ export default function PrivacyPage() {
         <h2>Cómo dejar de recibir alertas</h2>
         <ul>
           <li>
-            Cada aviso de baja de precio incluye un enlace «Cancelar alerta». Tu programa de correo también puede ofrecerte la
-            opción de cancelar la suscripción.
+            Cada aviso por email, tanto de baja de precio como de autos que coinciden con tu búsqueda, incluye un enlace
+            «Cancelar alerta» que cancela esa alerta. Tu programa de correo también puede ofrecerte la opción de cancelar la
+            suscripción.
           </li>
           <li>Si no confirmaste una alerta, no tenés que hacer nada: sin confirmación no te enviamos avisos.</li>
           <li>
-            Para cancelar una alerta de búsqueda, o todas tus alertas a la vez, escribinos por {whatsapp}. Si además querés que
-            borremos tu email, pedilo en el mismo mensaje.
+            Para cancelar una alerta que todavía no te mandó ningún aviso, o todas tus alertas a la vez, escribinos por
+            {' '}{whatsapp}. Si además querés que borremos tu email, pedilo en el mismo mensaje.
           </li>
         </ul>
       </section>

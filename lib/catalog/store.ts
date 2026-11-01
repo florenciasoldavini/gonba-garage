@@ -19,6 +19,7 @@ type Row = Record<string, unknown>;
 
 const PUBLICATION_ID = /^MLA\d+$/;
 const MAX_JOB_ATTEMPTS = 8;
+const NEW_LISTING_DAYS = 7;
 
 function toVehicle(row: Row): Vehicle {
   return {
@@ -58,7 +59,13 @@ export async function findCatalogPublication(id: string): Promise<CatalogPublica
 /**
  * Saves an authoritative read while the caller still holds the item's job lease, so a worker whose
  * lease expired cannot overwrite a newer read. The slug is kept from the first sync. Returns
- * whether the row was written and whether a new price was recorded.
+ * whether the row was written, whether a new price was recorded and whether the car became
+ * available.
+ *
+ * Becoming available (a new active listing, or a paused, closed or sold one turning active) is
+ * recorded for search alerts in the same statement, so it can never be lost between the save and
+ * the alert work. A listing first seen more than NEW_LISTING_DAYS after it was published (a
+ * backfill or a fresh database) is old stock, not news, and records nothing.
  */
 export async function savePublication(publication: MercadoLibrePublication, lease: string) {
   const { source, description } = publication;
@@ -70,7 +77,7 @@ export async function savePublication(publication: MercadoLibrePublication, leas
   const rows = await getAlertsSql()`WITH lease AS (
       SELECT 1 FROM public.catalog_sync_jobs WHERE publication_id = ${source.id}::text AND lease_id = ${lease}::uuid
     ), previous AS (
-      SELECT price, currency FROM public.catalog_publications WHERE publication_id = ${source.id}::text
+      SELECT price, currency, status FROM public.catalog_publications WHERE publication_id = ${source.id}::text
     ), saved AS (
       INSERT INTO public.catalog_publications (publication_id, slug, status, price, currency, vehicle, source, description,
         listed_at, source_updated_at, published_at, closed_at)
@@ -91,15 +98,23 @@ export async function savePublication(publication: MercadoLibrePublication, leas
         published_at = COALESCE(catalog_publications.published_at, EXCLUDED.published_at),
         closed_at = CASE WHEN EXCLUDED.status IN ('closed', 'sold') THEN COALESCE(catalog_publications.closed_at, now()) END,
         synced_at = now()
-      RETURNING publication_id, price, currency
+      RETURNING publication_id, price, currency, status, listed_at
     ), history AS (
       INSERT INTO public.catalog_price_history (publication_id, price, currency)
       SELECT publication_id, price, currency FROM saved
       WHERE NOT EXISTS (SELECT 1 FROM previous WHERE previous.price = saved.price AND previous.currency = saved.currency)
       RETURNING 1
+    ), available AS (
+      INSERT INTO public.inventory_alert_events (publication_id, previous_status)
+      SELECT saved.publication_id, (SELECT status FROM previous) FROM saved
+      WHERE saved.status = 'active' AND NOT EXISTS (SELECT 1 FROM previous WHERE previous.status = 'active')
+        AND (EXISTS (SELECT 1 FROM previous) OR saved.listed_at IS NULL
+          OR saved.listed_at > now() - ${NEW_LISTING_DAYS}::int * interval '1 day')
+      RETURNING 1
     )
-    SELECT (SELECT count(*) FROM saved)::int AS saved, (SELECT count(*) FROM history)::int AS price_changes`;
-  return { saved: rows[0].saved === 1, priceChanged: rows[0].price_changes === 1 };
+    SELECT (SELECT count(*) FROM saved)::int AS saved, (SELECT count(*) FROM history)::int AS price_changes,
+      (SELECT count(*) FROM available)::int AS available`;
+  return { saved: rows[0].saved === 1, priceChanged: rows[0].price_changes === 1, becameAvailable: rows[0].available === 1 };
 }
 
 /** The item no longer exists on Mercado Libre. Its page stays, marked as no longer available. */

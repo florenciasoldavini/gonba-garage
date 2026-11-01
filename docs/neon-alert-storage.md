@@ -21,7 +21,8 @@ Set `DATABASE_URL` to the appropriate pooled Neon connection string with SSL ena
 
 With the target `DATABASE_URL` set, run `npm run db:migrate`. The script loads `.env.local`
 when present, but preserves an already set environment variable. It applies the plain SQL
-in `database/migrations/` (subscriptions, price delivery, signup confirmation and catalog sync) in one transaction. It is safe
+in `database/migrations/` (subscriptions, price delivery, signup confirmation, catalog sync and
+search-alert delivery) in one transaction. It is safe
 to rerun on these new databases. For migrations, it resolves the direct (non-pooled)
 endpoint of the same branch. Apply to both branches; schema changes on production do
 not automatically propagate to an existing development branch.
@@ -35,9 +36,11 @@ requests for the same email and criteria update one subscription.
 Both tables use double opt-in: new signups are `pending` until the owner confirms the emailed link
 at `/api/alerts/confirm`, which sets `active` and `confirmed_at`. Only `active` rows may receive
 alerts. Rows that existed before the confirmation migration stay active, with `confirmed_at` empty.
-With email delivery disabled (`PRICE_ALERT_DELIVERY_ENABLED=false`, the demo), signups are stored as
-pending and no confirmation email is sent. Signup rate limits are described in
-`docs/price-alert-delivery.md`.
+There is no delivery switch: alerts are offered and emailed wherever the alert email configuration
+is complete (`alertEmailsConfigured()` in `lib/alerts/config.ts`). Where it is not (local runs and
+previews), the site does not offer alerts, and a direct signup request is stored as pending with no
+confirmation email. Signup rate limits are
+described in `docs/price-alert-delivery.md`.
 
 `vehicle_price_alerts` stores email, vehicle slug, original price/currency, status and
 notification reference fields. The server resolves the vehicle using the current catalog,
@@ -59,5 +62,11 @@ injection, constraints and repeat migration. It needs no credentials.
 `npm run test:alerts -- --live` tests the same storage on the selected Neon database and
 removes its own uniquely named synthetic test rows afterward. Run locally against development.
 
-Inventory-search email delivery is still separate work; when it is added it must select only
-`active` rows. Price-alert delivery is documented in `docs/price-alert-delivery.md`.
+Search-alert delivery adds three tables (`20261101_inventory_alert_delivery.sql`):
+`inventory_alert_events` (cars that became available, written by the catalog sync),
+`inventory_alert_matches` (which car was announced to which alert generation, so none is announced
+twice) and `inventory_alert_deliveries` (the email outbox). It only ever selects `active` alerts.
+Matches and emails reference their alert with `ON DELETE CASCADE`, so deleting an alert on request
+also deletes its email history. Apply this migration before deploying the code: the catalog sync
+always writes events. Both deliveries are documented in
+`docs/price-alert-delivery.md`.

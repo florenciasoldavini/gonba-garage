@@ -7,7 +7,7 @@ import ts from 'typescript';
 import { PGlite } from '@electric-sql/pglite';
 
 const require = createRequire(import.meta.url);
-process.env.PRICE_ALERT_DELIVERY_ENABLED = 'true';
+// Alert emails are on wherever this configuration is complete (lib/alerts/config.ts).
 process.env.ALERTS_SIGNING_SECRET = 'test-secret-never-used-outside-tests-123456';
 process.env.ALERTS_PUBLIC_URL = 'https://example.test';
 process.env.ALERTS_EMAIL_FROM = 'Gonba <test@example.test>';
@@ -44,6 +44,8 @@ const overrides = {
   '@/lib/integrations/mercado-libre/access-token': { catalogAccessToken: async () => 'fake' },
   '@/lib/integrations/mercado-libre/oauth': { readMercadoLibrePublication: async id => ({ vehicle: id === 'MLA777' ? legacyVehicle : vehicle, source: { id, seller_id: 123 } }) },
   'next/server': { NextResponse: { json: (value, options) => Response.json(value, options) }, after: fn => deferred.push(fn) },
+  // Search-alert work has its own suite (check-inventory-alert-delivery.mjs).
+  '@/lib/alerts/inventory-delivery': { runInventoryAlertWork: async () => {}, runInventoryAlertWorkSafely: async () => {} },
 };
 const cache = new Map();
 function load(file) {

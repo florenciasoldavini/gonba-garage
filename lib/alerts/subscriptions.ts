@@ -56,7 +56,7 @@ export type PriceSubscription = {
   currency: string;
 };
 
-/** Demo-mode storage (delivery disabled): stored as pending, no email is sent. */
+/** Storage where alert emails are not configured: stored as pending, no email is sent. */
 export async function savePriceSubscription(input: PriceSubscription) {
   const sql = getAlertsSql();
   await sql`
