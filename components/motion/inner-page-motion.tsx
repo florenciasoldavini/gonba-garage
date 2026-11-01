@@ -189,19 +189,6 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
                 duration: 0.86,
               }, 0.52);
           }
-
-          gsap.from('.site-footer > *', {
-            y: 24,
-            autoAlpha: 0,
-            stagger: 0.07,
-            duration: 0.58,
-            ease: 'power3.out',
-            scrollTrigger: {
-              trigger: '.site-footer',
-              start: 'top 90%',
-              once: true,
-            },
-          });
         },
       );
 

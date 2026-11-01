@@ -3,6 +3,7 @@ import { ArrowUp, ArrowUpRight } from 'lucide-react';
 
 import { TrackedAnchor } from '@/components/analytics/tracked-anchor';
 import { Wordmark } from '@/components/brand/wordmark';
+import { FooterMotion } from '@/components/motion/footer-motion';
 import {
   BUSINESS_AREA,
   BUSINESS_HOURS,
@@ -13,6 +14,7 @@ import {
 } from '@/constants/contact';
 import { LEGAL_PAGES } from '@/constants/legal';
 import { getWhatsAppUrl } from '@/lib/contact';
+import { siteNavigation } from './navigation';
 
 type SiteFooterProps = {
   topHref: string;
@@ -26,7 +28,7 @@ export function SiteFooter({
   home = false,
 }: SiteFooterProps) {
   return (
-    <footer className="site-footer section-shell">
+    <FooterMotion className="site-footer section-shell">
       <div className="footer-intro">
         <Wordmark className="footer-wordmark" href={home ? '#inicio' : '/'} />
         <p>Autos usados seleccionados · Buenos Aires, Argentina</p>
@@ -77,10 +79,9 @@ export function SiteFooter({
           <nav className="footer-link-group" aria-label="Secciones">
             <span className="footer-link-label">Secciones</span>
             <div className="footer-link-list">
-              <Link href={home ? '#vehiculos' : '/vehiculos'}>Vehículos</Link>
-              <Link href="/vender">Vendé tu auto</Link>
-              <Link href={home ? '#servicios' : '/#servicios'}>Servicios</Link>
-              <Link href={home ? '#preguntas' : '/#preguntas'}>FAQ</Link>
+              {siteNavigation.map((item) => (
+                <Link href={item.path} key={item.label}>{item.label}</Link>
+              ))}
             </div>
           </nav>
           <nav className="footer-link-group" aria-label="Contacto">
@@ -108,6 +109,6 @@ export function SiteFooter({
         </Link>
       </div>
       {note && <small className="footer-note">{note}</small>}
-    </footer>
+    </FooterMotion>
   );
 }

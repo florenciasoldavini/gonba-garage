@@ -6,7 +6,7 @@ export type NavigationItem = {
   path: string;
 };
 
-// Shared by the desktop header nav and the compact menu so both list the same destinations.
+// Shared by the desktop header nav, the compact menu and the footer so all list the same destinations.
 export const siteNavigation: readonly NavigationItem[] = [
   { key: 'vehicles', label: 'Vehículos', path: '/vehiculos' },
   { key: 'sell', label: 'Vendé tu auto', path: '/vender' },
