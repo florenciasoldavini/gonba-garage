@@ -46,13 +46,16 @@ that a sync worker keeps current. Sync is one-way; nothing is edited on the site
 3. After the response, the worker leases the job and reads the item and description again with the
    seller token. The notification payload is never trusted, so duplicate, forged or out-of-order
    notifications cannot write wrong data.
-4. Vehicles of the configured seller are saved in `catalog_publications` (public presentation
-   fields only) in any status: active, paused or closed. Items that no longer exist are marked
-   `closed`. Other sellers' items and items that are not vehicles are never stored. A vehicle is an
-   item whose Mercado Libre category sits under "Autos, Motos y Otros" (`MLA1743`), except savings
-   plans (`MLA1784`): cars and pickups mostly, motorcycles occasionally. The seller's scale models
-   and accessories live in other categories and stay out. Categories are looked up once per
-   category; an item without a readable category is retried, never guessed.
+4. Cars, pickups and motorcycles of the configured seller are saved in `catalog_publications`
+   (public presentation fields only) in any status: active, paused or closed. Items that no longer
+   exist are marked `closed`. Other sellers' items and anything else (trucks, boats, savings plans,
+   the seller's scale models and accessories) are never stored. The Mercado Libre category decides:
+   it must be, or sit below, one of the categories in
+   `lib/integrations/mercado-libre/vehicle-categories.ts` (Autos y Camionetas, new, classic and
+   damaged cars, and Motos). Categories are looked up once each; an item without a readable category
+   is retried, never guessed. Each row records its qualifying category in `vehicle_category`, and
+   the database rejects any insert or update without one of those categories
+   (`catalog_publications_vehicle_category_check`), so no other code path can store anything else.
 5. Pages and the share-image route read the copy at request time, so a change is visible on the next
    request. There is no page cache to invalidate. The price alert signup reads the copy only while
    alert delivery is disabled (see below).

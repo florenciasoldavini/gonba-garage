@@ -8,28 +8,26 @@ import { catalogAccessToken } from './access-token';
 import { failure, IntegrationFailure, safeFailure, type IntegrationIncident } from './failures';
 import { readMercadoLibreCategoryPath, readMercadoLibrePublication, readMercadoLibrePublications } from './oauth';
 import type { MercadoLibreItem } from './types';
+import { vehicleCategoryOf, type VehicleCategory } from './vehicle-categories';
 
 /** Rows not refreshed for a day are read again, which also picks up description-only edits. */
 const REFRESH_AFTER_MS = 24 * 60 * 60 * 1000;
 
-/**
- * Every vehicle category on Mercado Libre Argentina sits under "Autos, Motos y Otros": cars, pickups
- * and motorcycles, but also trucks, boats and the like. Savings plans sit there too and are not
- * vehicles. Anything elsewhere (scale models, accessories, parts) is never stored.
- */
-const VEHICLE_ROOT_CATEGORY = 'MLA1743';
-const SAVINGS_PLANS_CATEGORY = 'MLA1784';
-const vehicleCategories = new Map<string, Promise<boolean>>();
+const vehicleCategories = new Map<string, Promise<VehicleCategory | null>>();
 
-/** Cached per category. An item without a category is an unexpected response, retried later. */
-async function isVehicle(item: MercadoLibreItem) {
+/**
+ * The car, pickup or motorcycle category that qualifies the item (vehicle-categories.ts), or null
+ * when it is anything else. Cached per category. An item without a category is an unexpected
+ * response, retried later rather than guessed.
+ */
+async function vehicleCategory(item: MercadoLibreItem) {
   const categoryId = item.category_id;
   if (typeof categoryId !== 'string' || !/^MLA\d+$/.test(categoryId)) throw failure('catalog_query', 'invalid_response');
   let result = vehicleCategories.get(categoryId);
   if (!result) {
     result = catalogAccessToken()
       .then(token => readMercadoLibreCategoryPath(categoryId, token))
-      .then(path => path.includes(VEHICLE_ROOT_CATEGORY) && !path.includes(SAVINGS_PLANS_CATEGORY));
+      .then(vehicleCategoryOf);
     vehicleCategories.set(categoryId, result);
     result.catch(() => vehicleCategories.delete(categoryId));
   }
@@ -79,9 +77,9 @@ export async function processNextCatalogJob() {
     const publication = await readCurrentPublication(job.id);
     if (!publication) {
       await markPublicationRemoved(job.id, lease);
-    } else if (String(publication.source.seller_id) === seller && publication.source.id === job.id
-      && await isVehicle(publication.source)) {
-      await savePublication(publication, lease);
+    } else if (String(publication.source.seller_id) === seller && publication.source.id === job.id) {
+      const category = await vehicleCategory(publication.source);
+      if (category) await savePublication(publication, category, lease);
     }
     // Items of other sellers and items that are not vehicles are never stored. The job is done either way.
     await completeCatalogJob(job.id, lease, job.revision);
@@ -123,14 +121,15 @@ export async function reconcileCatalog() {
     for (const { source, vehicle } of catalog.publications.items) {
       if (String(source.seller_id) !== seller) continue;
       // An unresolved category is compared anyway: the item's own job decides, and retries.
-      if (await isVehicle(source).catch(() => true) === false) continue;
+      if (await vehicleCategory(source).catch(() => undefined) === null) continue;
       listed.set(source.id, { status: vehicle.status, lastUpdated: lastUpdatedTime(source.last_updated) });
     }
     const stored = await readStoredSyncState();
     const due = new Set<string>();
     for (const [id, { status, lastUpdated }] of listed) {
       const row = stored.get(id);
-      if (!row || row.status !== status || row.sourceUpdatedAt !== lastUpdated) due.add(id);
+      // A row saved before categories were recorded is read again once to record its category.
+      if (!row || row.status !== status || row.sourceUpdatedAt !== lastUpdated || !row.vehicleCategory) due.add(id);
     }
     const staleBefore = Date.now() - REFRESH_AFTER_MS;
     for (const [id, row] of stored) {

@@ -88,11 +88,12 @@ overrides['./oauth'] = {
     // Every status, as the real scan returns it.
     return { seller: { id: Number(SELLER) }, publications: { items: [...items.values()].map(entry => mapMercadoLibreItemToVehicle(entry)) } };
   },
-  // Real Mercado Libre Argentina ancestries: cars, motorcycles, savings plans and a toy category.
+  // Real Mercado Libre Argentina ancestries (cars, motorcycles, trucks, savings plans and a toy
+  // category), plus a hypothetical future subcategory of cars.
   async readMercadoLibreCategoryPath(id) {
     calls.category.push(id);
     const paths = { MLA1744: ['MLA1743', 'MLA1744'], MLA1763: ['MLA1743', 'MLA1763'], MLA1784: ['MLA1743', 'MLA1784'],
-      MLA3422: ['MLA1132', 'MLA3422'] };
+      MLA58254: ['MLA1743', 'MLA58254'], MLA3422: ['MLA1132', 'MLA3422'], MLA900001: ['MLA1743', 'MLA1744', 'MLA900001'] };
     if (!paths[id]) throw failures.failure('catalog_query', 'http_error', { httpStatus: 503 });
     return paths[id];
   },
@@ -198,7 +199,7 @@ try {
   const leased = await store.leaseCatalogJob(lease);
   assert.equal(leased.id, 'MLA3');
   await query("UPDATE public.catalog_sync_jobs SET lease_id = '00000000-0000-4000-8000-000000000002' WHERE publication_id = 'MLA3'");
-  const stale = await store.savePublication(mapMercadoLibreItemToVehicle(item('MLA3')), lease);
+  const stale = await store.savePublication(mapMercadoLibreItemToVehicle(item('MLA3')), 'MLA1744', lease);
   assert.equal(stale.saved, false);
   assert.equal(stale.becameAvailable, false, 'A stale write records no availability');
   assert.equal(await row('MLA3'), undefined);
@@ -262,21 +263,28 @@ try {
   assert.equal(run.lease_id, null, 'A failed run releases its lease');
   listFails = false;
 
-  // Backfill: every vehicle of the seller reaches the copy in any status, motorcycles included,
-  // so cars sold or reserved before the copy existed keep a page. Items that are not vehicles
-  // (a scale model, a savings plan) never do, whatever their status or however they arrive.
+  // Backfill: every car, pickup and motorcycle of the seller reaches the copy in any status, so cars
+  // sold or reserved before the copy existed keep a page. Anything else (a scale model, a savings
+  // plan, a truck) never does, whatever its status or however it arrives. Each row records the
+  // category that qualified it.
   items.set('MLA7', item('MLA7', { status: 'closed' }));
   items.set('MLA8', item('MLA8', { status: 'paused', category_id: 'MLA1763', title: 'KTM 790 Adventure R',
     attributes: [{ id: 'BRAND', name: 'Marca', value_name: 'KTM' }, { id: 'MODEL', name: 'Modelo', value_name: '790 Adventure' }] }));
   items.set('MLA9', item('MLA9', { status: 'paused', category_id: 'MLA3422', title: 'Dodge Polara RT 1:43' }));
   items.set('MLA10', item('MLA10', { category_id: 'MLA1784', title: 'Plan de ahorro' }));
+  items.set('MLA13', item('MLA13', { category_id: 'MLA58254', title: 'Mercedes-Benz Atego 1726' }));
+  items.set('MLA14', item('MLA14', { category_id: 'MLA900001' }));
   result = await sync.reconcileCatalog();
-  assert.deepEqual(result, { skipped: false, listed: 4, enqueued: 2 }, 'Only vehicles are listed and queued');
+  assert.deepEqual(result, { skipped: false, listed: 5, enqueued: 3 }, 'Only cars, pickups and motorcycles are listed and queued');
   await sync.runCatalogSyncWork();
   assert.equal((await row('MLA7')).status, 'closed', 'A car closed before the copy existed is stored');
-  assert.equal((await row('MLA8')).status, 'paused', 'A motorcycle is a vehicle');
-  assert.equal(await row('MLA9'), undefined, 'A scale model is not a vehicle');
-  assert.equal(await row('MLA10'), undefined, 'A savings plan is not a vehicle');
+  assert.equal((await row('MLA7')).vehicle_category, 'MLA1744');
+  assert.equal((await row('MLA8')).status, 'paused', 'A motorcycle is stored');
+  assert.equal((await row('MLA8')).vehicle_category, 'MLA1763');
+  assert.equal((await row('MLA14')).vehicle_category, 'MLA1744', 'A subcategory of cars qualifies through its parent');
+  assert.equal(await row('MLA9'), undefined, 'A scale model is not stored');
+  assert.equal(await row('MLA10'), undefined, 'A savings plan is not stored');
+  assert.equal(await row('MLA13'), undefined, 'A truck is not stored');
   await notify('MLA9'); await notify('MLA10'); await runDeferred();
   assert.equal(await row('MLA9'), undefined, 'A notification does not store a non-vehicle either');
   assert.equal(await row('MLA10'), undefined);
@@ -293,7 +301,36 @@ try {
   assert.equal((await job('MLA12')).last_error, 'catalog_query:http_error:503');
   assert.equal(await row('MLA11'), undefined);
   assert.equal(await row('MLA12'), undefined);
-  for (const id of ['MLA7', 'MLA8', 'MLA9', 'MLA10', 'MLA11', 'MLA12']) items.delete(id);
+  for (const id of ['MLA7', 'MLA8', 'MLA9', 'MLA10', 'MLA11', 'MLA12', 'MLA13', 'MLA14']) items.delete(id);
+  await sync.reconcileCatalog(); await sync.runCatalogSyncWork();
+  assert.equal((await row('MLA14')).status, 'closed', 'A deleted car keeps its category when closed');
+
+  // The database itself rejects any write without a car, pickup or motorcycle category, so no other
+  // code path can store something else. The SQL list matches vehicle-categories.ts.
+  const { VEHICLE_CATEGORIES } = load('lib/integrations/mercado-libre/vehicle-categories.ts');
+  const categoryMigration = readFileSync('database/migrations/20261102_catalog_vehicle_category.sql', 'utf8');
+  assert.deepEqual([...categoryMigration.matchAll(/'(MLA\d+)'/g)].map(([, id]) => id).sort(), Object.keys(VEHICLE_CATEGORIES).sort());
+  const directInsert = category => query(`INSERT INTO public.catalog_publications (publication_id, slug, status, price, currency,
+    vehicle, source${category === undefined ? '' : ', vehicle_category'}) VALUES ('MLA15', 'direct-mla15', 'active', 1, 'USD', '{}', '{}'
+    ${category === undefined ? '' : ', $1'})`, category === undefined ? [] : [category]);
+  for (const category of [undefined, null, 'MLA58254', 'MLA3422']) {
+    await assert.rejects(directInsert(category), /vehicle_category_check/, `A direct write with category ${category} is rejected`);
+  }
+  await assert.rejects(query("UPDATE public.catalog_publications SET vehicle_category = NULL WHERE publication_id = 'MLA7'"),
+    /vehicle_category_check/, 'A stored car cannot lose its category');
+  // Rows saved before categories were recorded stay readable, and reconciliation reads each one
+  // still listed again to record its category.
+  await query("ALTER TABLE public.catalog_publications DROP CONSTRAINT catalog_publications_vehicle_category_check");
+  await query("UPDATE public.catalog_publications SET vehicle_category = NULL WHERE publication_id IN ('MLA3', 'MLA4')");
+  await db.exec(categoryMigration);
+  assert.equal((await row('MLA4')).vehicle_category, null, 'Existing rows are not checked by the migration');
+  assert.deepEqual((await catalog.listCatalogVehicles()).map(({ slug }) => slug), ['toyota-corolla-xei-mla4'], 'They stay on the site');
+  result = await sync.reconcileCatalog();
+  assert.equal(result.enqueued, 2, 'Uncategorised rows still listed are read again');
+  await sync.runCatalogSyncWork();
+  assert.equal((await row('MLA3')).vehicle_category, 'MLA1744');
+  assert.equal((await row('MLA4')).vehicle_category, 'MLA1744');
+  assert.equal((await sync.reconcileCatalog()).enqueued, 0, 'Once recorded, nothing is read again');
 
   // The real client lists every status through scan pages, and reads a category's ancestry.
   const client = load('lib/integrations/mercado-libre/oauth.ts');
@@ -386,4 +423,4 @@ try {
   console.error = previousError;
   await db.close();
 }
-console.log('Inventory sync: rerunnable migrations, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status vehicle backfill, cron auth and database-only reads passed.');
+console.log('Inventory sync: rerunnable migrations, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, cron auth and database-only reads passed.');
