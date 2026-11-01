@@ -66,6 +66,10 @@ export default function PrivacyPage() {
           WhatsApp con un mensaje que incluye tu nombre, tu teléfono y los datos del auto, y vos decidís si lo mandás. Las
           fotos que agregás solo se muestran como vista previa en tu dispositivo: no se suben ni se incluyen en el mensaje.
         </p>
+        <p>
+          En las estadísticas de uso solo registramos que enviaste el formulario, si agregaste fotos, el año del auto y su
+          marca y modelo cuando los elegís de la lista. Nunca tu nombre, tu teléfono ni lo que escribís a mano.
+        </p>
         <h3>Consultas por WhatsApp</h3>
         <p>
           Si nos escribís por WhatsApp, recibimos tu número y lo que nos envíes, y lo usamos para responderte, evaluar tu auto
