@@ -1,6 +1,7 @@
 import { after, NextResponse } from 'next/server';
-import { alertDeliveryEnabled, privateHeaders, requireAlertConfig } from '@/lib/alerts/config';
+import { alertEmailsConfigured, privateHeaders, requireAlertConfig } from '@/lib/alerts/config';
 import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
+import { runInventoryAlertWorkSafely } from '@/lib/alerts/inventory-delivery';
 import { enqueuePriceItem, runPriceAlertWorkSafely } from '@/lib/alerts/price-delivery';
 import { enqueueCatalogSync, runCatalogSyncWorkSafely } from '@/lib/integrations/mercado-libre/inventory-sync';
 
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true }, { headers: privateHeaders });
   }
   const catalogSync = isAlertsDatabaseConfigured();
-  const priceAlerts = alertDeliveryEnabled();
+  const priceAlerts = alertEmailsConfigured();
   if (!catalogSync && !priceAlerts) return NextResponse.json({ ok: true }, { headers: privateHeaders });
   try {
     // The payload is only a hint: both queues read the item again from Mercado Libre.
@@ -39,8 +40,12 @@ export async function POST(request: Request) {
     console.error('mercado_libre_webhook_enqueue_failed');
     return NextResponse.json({ ok: false }, { status: 503, headers: privateHeaders });
   }
+  // Search alerts match what the sync just saved, so they run after it, within the same function.
+  const searchAlerts = catalogSync && alertEmailsConfigured();
+  const deadline = Date.now() + 270_000;
   after(() => Promise.all([
-    catalogSync && runCatalogSyncWorkSafely(),
+    catalogSync && runCatalogSyncWorkSafely()
+      .then(() => searchAlerts ? runInventoryAlertWorkSafely({ budgetMs: deadline - Date.now() }) : undefined),
     priceAlerts && runPriceAlertWorkSafely(),
   ]));
   return NextResponse.json({ ok: true }, { headers: privateHeaders });

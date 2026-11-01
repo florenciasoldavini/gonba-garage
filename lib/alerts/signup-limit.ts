@@ -2,7 +2,7 @@ import 'server-only';
 import { createHmac } from 'node:crypto';
 import { isIP } from 'node:net';
 import { getAlertsSql } from './database';
-import { alertDeliveryEnabled, requireAlertConfig } from './config';
+import { requireAlertConfig } from './config';
 
 export type AlertScope = 'price' | 'inventory';
 type Bucket = { key: string; limit: number; windowSeconds: number };
@@ -68,11 +68,10 @@ async function reserve(buckets: Bucket[]) {
 
 /**
  * Applies whenever the alerts database is configured, including demo mode, because demo signups
- * still write rows. Without a signing secret (possible only while delivery is disabled) the
+ * still write rows. Without a signing secret (possible only where alert emails are not configured) the
  * per-IP and per-address buckets cannot be keyed safely, so only the global bucket applies.
  */
 export async function reserveAlertSignup(scope: AlertScope, email: string, request: Request) {
-  if (alertDeliveryEnabled()) requireAlertConfig();
   const secret = signingSecret();
   const buckets: Bucket[] = secret ? [
     { key: `${scope}:ip:${hashed(secret, 'ip', clientIp(request))}`, limit: signupLimits.ip, windowSeconds: hour },

@@ -73,12 +73,17 @@ Webhooks carry real-time changes; on a Pro plan, change the schedule in `vercel.
 `*/15 * * * *` to repair missed notifications within 15 minutes.
 
 Price alerts keep their own queue and read Mercado Libre directly before sending, for an
-authoritative price. With `PRICE_ALERT_DELIVERY_ENABLED=true` the signup route
+authoritative price. Where alert emails are configured, the signup route
 (`app/api/price-alerts/route.ts`) does not use the copy either: it reads the item from Mercado Libre
 with the seller token, rejects items of other sellers and takes the starting price from that read, so
-it works even on a backend whose public frontend is in demo mode. With delivery disabled the signup
+it works even on a backend whose public frontend is in demo mode. Without that configuration the signup
 resolves the vehicle with `findCatalogVehicle` (demo data or the synced copy) and only stores the
 subscription. See [the Mercado Libre setup notes](mercado-libre-local.md).
+
+Search alerts work from the copy instead. When a save turns an item active (a new listing, or a
+reserved one released), the same statement records an `inventory_alert_events` row; the alert worker
+then matches it against active search alerts with the catalog's own filter predicate and emails the
+matches through an outbox. See "Search alerts" in [price-alert-delivery.md](price-alert-delivery.md).
 
 OAuth tokens and client secrets are server-only. The current access token is stored encrypted next to
 the refresh token and shared by every server instance until it expires, so the one-use refresh

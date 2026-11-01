@@ -18,7 +18,8 @@
     "db:migrate": "node scripts/migrate-alerts.mjs",
     "test:alerts": "node scripts/check-alert-storage.mjs",
     "test:integration": "node scripts/check-refresh-token-store.mjs && node scripts/check-integration-diagnostics.mjs && node scripts/check-inventory-sync.mjs",
-    "test:price-alert-delivery": "node scripts/check-price-alert-delivery.mjs"
+    "test:price-alert-delivery": "node scripts/check-price-alert-delivery.mjs",
+    "test:inventory-alert-delivery": "node scripts/check-inventory-alert-delivery.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

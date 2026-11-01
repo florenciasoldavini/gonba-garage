@@ -4,7 +4,7 @@ import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { catalogAccessToken } from '@/lib/integrations/mercado-libre/access-token';
 import { readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/oauth';
 import { getAlertsSql } from './database';
-import { alertDeliveryEnabled, requireAlertConfig } from './config';
+import { alertEmailsConfigured, requireAlertConfig } from './config';
 import { buildAlertEmail, EmailFailure, sendAlertEmail } from './email';
 
 type Delivery = {
@@ -178,8 +178,7 @@ export async function processPriceDelivery() {
 }
 
 export async function runPriceAlertWork() {
-  if (!alertDeliveryEnabled()) return;
-  requireAlertConfig();
+  if (!alertEmailsConfigured()) return;
   const deadline = Date.now() + 200_000;
   let items = 0, deliveries = 0;
   while (Date.now() < deadline && items < 50 && deliveries < 150) {

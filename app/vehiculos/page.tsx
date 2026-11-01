@@ -5,6 +5,7 @@ import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { InnerPageMotion } from '@/components/motion/inner-page-motion';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { alertEmailsConfigured } from '@/lib/alerts/config';
 import { isLiveCatalog, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { createPageMetadata } from '@/lib/metadata';
 import { getMepQuote } from '@/lib/integrations/mep-quote';
@@ -30,6 +31,7 @@ export default async function VehiclesPage() {
     return <div className="section-shell"><SiteHeader active="vehicles" /><main><h1>Catálogo no disponible</h1><p>No pudimos consultar las publicaciones. Revisá la conexión del backend y volvé a intentar.</p></main></div>;
   }
   const quote = await quotePromise;
+  const alertsEnabled = alertEmailsConfigured();
   return (
     <InnerPageMotion className="catalog-page" id="catalog-top" variant="catalog">
       <SiteHeader active="vehicles" />
@@ -48,8 +50,8 @@ export default async function VehiclesPage() {
           </div>
         </section>
 
-        <Suspense fallback={<InventoryCatalog vehicles={vehicles} quote={quote} />}>
-          <InventoryCatalogFromSearchParams vehicles={vehicles} quote={quote} />
+        <Suspense fallback={<InventoryCatalog vehicles={vehicles} quote={quote} alertsEnabled={alertsEnabled} />}>
+          <InventoryCatalogFromSearchParams vehicles={vehicles} quote={quote} alertsEnabled={alertsEnabled} />
         </Suspense>
       </CatalogResultCountProvider>
       </main>

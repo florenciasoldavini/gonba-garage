@@ -97,7 +97,8 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
             <div className="price-alert-success" data-dialog-view aria-live="polite">
               <Eyebrow>Revisá tu email</Eyebrow>
               <h2 id={successTitleId}>Confirmá la alerta desde tu correo.</h2>
-              <p>Te enviamos un enlace para activar la alerta del {vehicleName}. Hasta que la confirmes no recibirás avisos. El precio actual es {formattedPrice}.</p>
+              {/* The API answers the same whether or not it sent an email (an active alert gets none). */}
+              <p>Si es una alerta nueva, te enviamos un enlace para activar la alerta del {vehicleName}. Hasta que la confirmes no recibirás avisos. El precio actual es {formattedPrice}.</p>
               <div className="status-actions">
                 <Button type="button" onClick={closeDialog}>Seguir viendo el auto <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} /></Button>
               </div>

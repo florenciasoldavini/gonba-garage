@@ -152,7 +152,8 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
             <div className="price-alert-success" data-dialog-view aria-live="polite">
               <Eyebrow>Revisá tu email</Eyebrow>
               <h2 id={successTitleId}>Confirmá la alerta desde tu correo.</h2>
-              <p>Te enviamos un enlace para activarla. Después te escribiremos cuando ingrese una unidad que coincida con estos criterios.</p>
+              {/* The API answers the same whether or not it sent an email (an active alert gets none). */}
+              <p>Si es una alerta nueva, te enviamos un enlace para activarla. Después te escribiremos cuando ingrese una unidad que coincida con estos criterios.</p>
               <div className="status-actions">
                 <Button type="button" onClick={closeDialog}>Seguir viendo vehículos <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} /></Button>
               </div>
@@ -210,7 +211,7 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
                   <p><strong>{shownFailure.title}</strong>{shownFailure.detail && <span>{shownFailure.detail}</span>}</p>
                 </div>
               )}
-              <p className="price-alert-privacy">Usaremos tu email únicamente para avisarte sobre esta búsqueda. Al suscribirte aceptás la <PrivacyPolicyLink />.</p>
+              <p className="price-alert-privacy">Usaremos tu email únicamente para avisarte sobre esta búsqueda, una vez por auto. Podés cancelar la alerta desde cualquier aviso. Al suscribirte aceptás la <PrivacyPolicyLink />.</p>
             </form>
           )}
         </div>

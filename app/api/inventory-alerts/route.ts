@@ -2,7 +2,7 @@ import { after, NextResponse } from 'next/server';
 
 import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
 import { saveInventorySubscription } from '@/lib/alerts/subscriptions';
-import { alertDeliveryEnabled } from '@/lib/alerts/config';
+import { alertEmailsConfigured } from '@/lib/alerts/config';
 import { reserveAlertSignup } from '@/lib/alerts/signup-limit';
 import { sendSignupConfirmationSafely } from '@/lib/alerts/confirmation';
 import { rejectCrossSiteJson } from '@/lib/alerts/request-guard';
@@ -104,8 +104,9 @@ export async function POST(request: Request) {
     }
     const alert = await saveInventorySubscription({ email, query, make, transmission, bodyType, fuel,
       minPrice, maxPrice, minMileage, maxMileage });
-    // Pending until confirmed. Without email delivery (demo mode) it is stored and nothing is sent.
-    if (alert.status === 'pending' && alertDeliveryEnabled()) after(() => sendSignupConfirmationSafely({ scope: 'inventory', id: alert.id, generation: alert.generation, email }));
+    // Pending until confirmed. Without the alert email configuration it is stored and nothing is
+    // sent: the site hides the signup then, and could not deliver alerts anyway.
+    if (alert.status === 'pending' && alertEmailsConfigured()) after(() => sendSignupConfirmationSafely({ scope: 'inventory', id: alert.id, generation: alert.generation, email }));
   } catch {
     console.error('Unable to create inventory alert');
     return NextResponse.json(

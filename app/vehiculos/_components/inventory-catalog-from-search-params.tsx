@@ -9,13 +9,15 @@ import { InventoryCatalog } from './inventory-catalog';
 type InventoryCatalogFromSearchParamsProps = {
   vehicles: Vehicle[];
   quote: CatalogMepQuote | null;
+  alertsEnabled: boolean;
 };
 
 export function InventoryCatalogFromSearchParams({
   vehicles,
   quote,
+  alertsEnabled,
 }: InventoryCatalogFromSearchParamsProps) {
   const searchParams = useSearchParams();
 
-  return <InventoryCatalog key={quote?.updatedAt ?? 'no-quote'} vehicles={vehicles} quote={quote} searchParams={searchParams.toString()} />;
+  return <InventoryCatalog key={quote?.updatedAt ?? 'no-quote'} vehicles={vehicles} quote={quote} alertsEnabled={alertsEnabled} searchParams={searchParams.toString()} />;
 }
