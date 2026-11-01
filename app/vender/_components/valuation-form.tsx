@@ -167,10 +167,9 @@ export function ValuationForm() {
     >
       <div className="valuation-form-heading">
         <div>
-          <span>Formulario de tasación · Paso {step} de {TOTAL_STEPS}</span>
-          <strong>Completalo en aproximadamente 3 minutos.</strong>
+          <span>Formulario de tasación · 3 min</span>
+          <strong>Te pedimos el auto, su estado y cómo contactarte.</strong>
         </div>
-        <span className="valuation-form-time">3 min</span>
       </div>
 
       <ValuationStepper currentStep={step} />

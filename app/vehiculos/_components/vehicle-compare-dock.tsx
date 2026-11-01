@@ -36,7 +36,7 @@ function getSelectionHint(count: number, maximum: number) {
 function getStatusMessage(vehicles: Vehicle[], maximum: number) {
   if (vehicles.length === 0) return '';
   const names = vehicleList.format(vehicles.map(getVehicleName));
-  return `${vehicles.length} de ${maximum} seleccionados: ${names}. ${getSelectionHint(vehicles.length, maximum)}.`;
+  return `${vehicles.length} de ${maximum} ${vehicles.length === 1 ? 'seleccionado' : 'seleccionados'}: ${names}. ${getSelectionHint(vehicles.length, maximum)}.`;
 }
 
 /** The dock is fixed to the viewport, so it steps aside while the page footer is on screen. */
@@ -143,7 +143,7 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
         <div className="compare-dock compare-dock-wide glass-panel">
           <div className="compare-dock-heading">
             <span><Scale aria-hidden="true" size={17} strokeWidth={1.8} /></span>
-            <div><strong>Comparar vehículos</strong><small>{count} de {maximum} seleccionados</small></div>
+            <div><strong>Comparar vehículos</strong><small>{count} de {maximum} {count === 1 ? 'seleccionado' : 'seleccionados'}</small></div>
           </div>
           <div className="compare-dock-slots">
             {vehicles.map((vehicle) => (

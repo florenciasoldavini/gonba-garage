@@ -2,12 +2,13 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useId, useMemo, useState, type CSSProperties } from 'react';
+import { useId, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ArrowUpRight, Check, Scale, X } from 'lucide-react';
 
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
+import { Button } from '@/components/ui/button';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import {
   getVehicleSpecification,
@@ -33,11 +34,12 @@ const comparisonKeys: VehicleSpecificationKey[] = [
 
 export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onClear }: VehicleCompareDialogProps) {
   const [differencesOnly, setDifferencesOnly] = useState(true);
+  const differencesToggleRef = useRef<HTMLInputElement>(null);
   const titleId = useId();
   const vehicleKey = vehicles.map(({ slug }) => slug).join('|');
   const { closeDialog, closeDialogAfter, dialogRef } = useDialogMotion({
     isOpen,
-    itemSelector: '.vehicle-compare-modal-header, .vehicle-compare-controls, .vehicle-compare-card, .vehicle-compare-row',
+    itemSelector: '.vehicle-compare-modal-header, .vehicle-compare-controls, .vehicle-compare-card, .vehicle-compare-row, .vehicle-compare-empty > div',
     panelSelector: '.vehicle-compare-modal',
     variant: 'compare',
   });
@@ -52,6 +54,13 @@ export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onCl
       ? allRows.filter(([, ...values]) => new Set(values).size > 1)
       : allRows;
   }, [differencesOnly, vehicles]);
+  const hidesEveryRow = differencesOnly && rows.length === 0 && vehicles.length >= 2;
+
+  const showAllSpecifications = () => {
+    setDifferencesOnly(false);
+    // The button unmounts with the message, so hand focus to the toggle it just switched off.
+    differencesToggleRef.current?.focus();
+  };
 
   const removeVehicle = (slug: string) => {
     if (vehicles.length <= 2) {
@@ -110,7 +119,7 @@ export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onCl
 
         <div className="vehicle-compare-controls">
           <label>
-            <input type="checkbox" checked={differencesOnly} onChange={(event) => setDifferencesOnly(event.target.checked)} />
+            <input ref={differencesToggleRef} type="checkbox" checked={differencesOnly} onChange={(event) => setDifferencesOnly(event.target.checked)} />
             <span><Check aria-hidden="true" size={12} /></span>
             Mostrar solo diferencias
           </label>
@@ -134,14 +143,27 @@ export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onCl
               ))}
             </div>
 
-            <div className="vehicle-compare-table" role="table" aria-label="Especificaciones comparadas">
-              {rows.map(([label, ...values]) => (
-                <div className="vehicle-compare-row" role="row" key={label}>
-                  <div role="rowheader">{label}</div>
-                  {values.map((value, index) => <div role="cell" key={`${label}-${vehicles[index]?.slug}`}>{value}</div>)}
-                </div>
-              ))}
-            </div>
+            {rows.length > 0 ? (
+              <div className="vehicle-compare-table" role="table" aria-label="Especificaciones comparadas">
+                {rows.map(([label, ...values]) => (
+                  <div className="vehicle-compare-row" role="row" key={label}>
+                    <div role="rowheader">{label}</div>
+                    {values.map((value, index) => <div role="cell" key={`${label}-${vehicles[index]?.slug}`}>{value}</div>)}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          {/* Outside the content so it spans the visible width and stays put while the cards scroll sideways. */}
+          <div className="vehicle-compare-empty" role="status">
+            {hidesEveryRow ? (
+              <div>
+                <span aria-hidden="true"><Scale size={18} strokeWidth={1.8} /></span>
+                <h3>Sin diferencias</h3>
+                <p>Estos autos coinciden en las {comparisonKeys.length} especificaciones que comparamos.</p>
+                <Button type="button" variant="ghost" onClick={showAllSpecifications}>Ver todas las especificaciones</Button>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

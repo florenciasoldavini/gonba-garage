@@ -6,6 +6,11 @@ import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { Button } from '@/components/ui/button';
 import { InventoryFilters, type InventoryFiltersProps } from './inventory-filters';
 
+function getActiveFilterLabel(count: number) {
+  if (count === 0) return 'Sin filtros activos';
+  return count === 1 ? '1 filtro activo' : `${count} filtros activos`;
+}
+
 type MobileInventoryFiltersProps = {
   filters: InventoryFiltersProps;
   isOpen: boolean;
@@ -35,7 +40,7 @@ export function MobileInventoryFilters({ filters, isOpen, onClose, resultCount }
         <header className="mobile-filter-header">
           <div>
             <span><SlidersHorizontal aria-hidden="true" size={15} /></span>
-            <div><strong id="mobile-filter-title">Filtrar vehículos</strong><small>{filters.activeFilterCount} filtros activos</small></div>
+            <div><strong id="mobile-filter-title">Filtrar vehículos</strong><small>{getActiveFilterLabel(filters.activeFilterCount)}</small></div>
           </div>
           <div className="mobile-filter-header-actions">
             {filters.activeFilterCount > 0 ? (
