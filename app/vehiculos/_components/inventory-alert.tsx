@@ -22,16 +22,27 @@ export type InventoryAlertCriteria = {
   maxMileage: number | null;
 };
 
+/** Trigger and dialog copy for the alert card on a vehicle that is no longer for sale. */
+export type VehicleInventoryAlertCopy = {
+  trigger: string;
+  /** Second line of the trigger: what else the alert covers, and the channel. */
+  hint: string;
+  title: string;
+  description: string;
+};
+
 type InventoryAlertProps = {
   activeFilterCount: number;
   criteria: InventoryAlertCriteria;
-  placement: 'toolbar' | 'empty';
   resultCount: number;
-};
+} & (
+  | { placement: 'toolbar' | 'empty'; vehicleCopy?: never }
+  | { placement: 'vehicle'; vehicleCopy: VehicleInventoryAlertCopy }
+);
 
 type SubmissionState = 'idle' | 'submitting' | 'success' | 'error';
 
-export function InventoryAlert({ activeFilterCount, criteria, placement, resultCount }: InventoryAlertProps) {
+export function InventoryAlert({ activeFilterCount, criteria, placement, resultCount, vehicleCopy }: InventoryAlertProps) {
   const titleId = useId();
   const successTitleId = useId();
   const emailErrorId = useId();
@@ -62,6 +73,7 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
     setFailure(null);
     captureAnalyticsEvent('inventory_alert_opened', {
       active_filter_count: activeFilterCount,
+      placement,
       result_count: resultCount,
     });
     requestAnimationFrame(animateDialogOpen);
@@ -84,12 +96,13 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
       setState('success');
       captureAnalyticsEvent('inventory_alert_created', {
         active_filter_count: activeFilterCount,
+        placement,
         result_count: resultCount,
       });
     } else {
       setState('error');
       setFailure(result.failure);
-      captureAnalyticsEvent('inventory_alert_failed', { active_filter_count: activeFilterCount });
+      captureAnalyticsEvent('inventory_alert_failed', { active_filter_count: activeFilterCount, placement });
     }
   };
 
@@ -99,15 +112,26 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
 
   return (
     <>
-      <Button
-        className={`inventory-alert-trigger inventory-alert-trigger-${placement}`}
-        type="button"
-        variant={placement === 'toolbar' ? 'glass' : 'accent'}
-        onClick={openDialog}
-      >
-        <BellRing aria-hidden="true" size={15} strokeWidth={1.9} />
-        <span className="inventory-alert-trigger-label">{triggerCopy}</span>
-      </Button>
+      {vehicleCopy ? (
+        <button className="detail-alert-card" type="button" onClick={openDialog}>
+          <span className="detail-alert-symbol" aria-hidden="true"><BellRing size={20} strokeWidth={2} /></span>
+          <span className="detail-alert-copy">
+            <strong>{vehicleCopy.trigger}</strong>
+            <small>{vehicleCopy.hint}</small>
+          </span>
+          <span className="detail-alert-arrow" aria-hidden="true"><ArrowRight size={18} strokeWidth={1.8} /></span>
+        </button>
+      ) : (
+        <Button
+          className={`inventory-alert-trigger inventory-alert-trigger-${placement}`}
+          type="button"
+          variant={placement === 'toolbar' ? 'glass' : 'accent'}
+          onClick={openDialog}
+        >
+          <BellRing aria-hidden="true" size={15} strokeWidth={1.9} />
+          <span className="inventory-alert-trigger-label">{triggerCopy}</span>
+        </Button>
+      )}
 
       <dialog
         className="price-alert-dialog inventory-alert-dialog"
@@ -135,8 +159,8 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
           ) : (
             <form className="price-alert-form ph-no-capture" data-dialog-view data-private onSubmit={handleSubmit}>
               <Eyebrow>Alerta de inventario</Eyebrow>
-              <h2 id={titleId}>Avisame cuando aparezca.</h2>
-              <p>Guardamos tu búsqueda y te avisamos por email cuando ingrese una unidad compatible.</p>
+              <h2 id={titleId}>{vehicleCopy?.title ?? 'Avisame cuando aparezca.'}</h2>
+              <p>{vehicleCopy?.description ?? 'Guardamos tu búsqueda y te avisamos por email cuando ingrese una unidad compatible.'}</p>
 
               <div className="inventory-alert-criteria" aria-label="Criterios de la alerta">
                 {criteriaLabels.length > 0

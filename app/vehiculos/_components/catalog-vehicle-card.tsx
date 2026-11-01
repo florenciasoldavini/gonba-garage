@@ -16,24 +16,28 @@ if (typeof window !== 'undefined') {
 }
 
 type CatalogVehicleCardProps = {
-  compareDisabled: boolean;
+  compareDisabled?: boolean;
+  /** h3 when the card sits under another section heading, as in the similar-cars rail. */
+  headingLevel?: 'h2' | 'h3';
   index: number;
-  isSelected: boolean;
-  onToggleComparison: (vehicle: Vehicle) => void;
+  isSelected?: boolean;
+  /** Without it the card has no compare button. */
+  onToggleComparison?: (vehicle: Vehicle) => void;
   vehicle: Vehicle;
 };
 
 export function CatalogVehicleCard({
-  compareDisabled,
+  compareDisabled = false,
+  headingLevel: Heading = 'h2',
   index,
-  isSelected,
+  isSelected = false,
   onToggleComparison,
   vehicle,
 }: CatalogVehicleCardProps) {
   const cardRef = useRef<HTMLElement>(null);
   const vehicleName = `${vehicle.make} ${vehicle.model}`;
   const href = `/vehiculos/${vehicle.slug}`;
-  const status = getVehicleStatusPresentation(vehicle.status);
+  const status = getVehicleStatusPresentation(vehicle);
 
   useGSAP(
     () => {
@@ -52,7 +56,7 @@ export function CatalogVehicleCard({
   );
 
   return (
-    <article className={`catalog-card glass-panel${isSelected ? ' catalog-card-selected' : ''}`} data-status={vehicle.status} ref={cardRef}>
+    <article className={`catalog-card glass-panel${isSelected ? ' catalog-card-selected' : ''}`} data-status={status.status} ref={cardRef}>
       <div className="catalog-card-image">
         <Link className="catalog-card-image-link" href={href} aria-hidden="true" tabIndex={-1}>
           <Image
@@ -65,21 +69,23 @@ export function CatalogVehicleCard({
         </Link>
         <span className="catalog-card-index">{String(index + 1).padStart(2, '0')}</span>
         <span className="catalog-card-status">{status.label}</span>
-        <button
-          className="catalog-card-compare"
-          type="button"
-          aria-pressed={isSelected}
-          disabled={compareDisabled}
-          onClick={() => onToggleComparison(vehicle)}
-        >
-          {isSelected ? <Check aria-hidden="true" size={14} /> : <Scale aria-hidden="true" size={14} />}
-          {isSelected ? 'Seleccionado' : 'Comparar'}
-        </button>
+        {onToggleComparison && (
+          <button
+            className="catalog-card-compare"
+            type="button"
+            aria-pressed={isSelected}
+            disabled={compareDisabled}
+            onClick={() => onToggleComparison(vehicle)}
+          >
+            {isSelected ? <Check aria-hidden="true" size={14} /> : <Scale aria-hidden="true" size={14} />}
+            {isSelected ? 'Seleccionado' : 'Comparar'}
+          </button>
+        )}
       </div>
       <div className="catalog-card-copy">
         <div className="catalog-card-title">
           <p>{vehicle.year} · {vehicle.body.split(' · ')[0]}</p>
-          <h2><Link href={href} aria-label={`${vehicleName} ${vehicle.year}`}>{vehicleName}</Link></h2>
+          <Heading><Link href={href} aria-label={`${vehicleName} ${vehicle.year}`}>{vehicleName}</Link></Heading>
           <span>{vehicle.version}</span>
         </div>
         <Link className="catalog-card-arrow" href={href} aria-hidden="true" tabIndex={-1}>

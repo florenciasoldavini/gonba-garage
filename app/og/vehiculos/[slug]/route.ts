@@ -37,7 +37,9 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
 
   if (!vehicle) return new Response('Vehicle not found', { status: 404 });
 
-  const status = getVehicleStatusPresentation(vehicle.status);
+  const status = getVehicleStatusPresentation(vehicle);
+  // A sold car's last price is not current, so the card leaves it out.
+  const isSold = status.status === 'sold';
   const imageUrl = await resolveVehicleImageSource(vehicle.image, request.url);
 
   const image = createElement(
@@ -103,9 +105,10 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
           {
             style: {
               alignItems: 'center',
-              background: 'rgba(8,10,9,0.72)',
-              border: '1px solid rgba(220,255,0,0.55)',
+              background: isSold ? '#f5f6f2' : 'rgba(8,10,9,0.72)',
+              border: isSold ? '1px solid #f5f6f2' : '1px solid rgba(220,255,0,0.55)',
               borderRadius: 999,
+              color: isSold ? '#080a09' : '#f5f6f2',
               display: 'flex',
               fontSize: 18,
               letterSpacing: '1px',
@@ -132,14 +135,14 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
         createElement(
           'div',
           { style: { alignItems: 'center', display: 'flex', marginTop: 30 } },
-          createElement(
+          isSold ? null : createElement(
             'div',
-            { style: { borderTop: '5px solid #dcff00', display: 'flex', fontSize: 30, fontWeight: 700, paddingTop: 16 } },
+            { style: { borderTop: '5px solid #dcff00', display: 'flex', fontSize: 30, fontWeight: 700, marginRight: 28, paddingTop: 16 } },
             formatVehiclePrice(vehicle.price, vehicle.currency),
           ),
           createElement(
             'div',
-            { style: { color: 'rgba(245,246,242,0.76)', display: 'flex', fontSize: 18, marginLeft: 28, paddingTop: 16 } },
+            { style: { color: 'rgba(245,246,242,0.76)', display: 'flex', fontSize: 18, paddingTop: 16 } },
             vehicle.location,
           ),
         ),

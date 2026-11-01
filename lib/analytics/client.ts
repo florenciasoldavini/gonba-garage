@@ -2,6 +2,9 @@
 
 import posthog from 'posthog-js';
 
+/** Catalog toolbar, catalog empty state, or the page of a car that is no longer for sale. */
+type InventoryAlertPlacement = 'toolbar' | 'empty' | 'vehicle';
+
 type AnalyticsEventProperties = {
   contact_intent_clicked: {
     channel: 'email' | 'whatsapp' | 'internal';
@@ -31,9 +34,9 @@ type AnalyticsEventProperties = {
     search_used: boolean;
     transmission: string;
   };
-  inventory_alert_opened: { active_filter_count: number; result_count: number };
-  inventory_alert_created: { active_filter_count: number; result_count: number };
-  inventory_alert_failed: { active_filter_count: number };
+  inventory_alert_opened: { active_filter_count: number; placement: InventoryAlertPlacement; result_count: number };
+  inventory_alert_created: { active_filter_count: number; placement: InventoryAlertPlacement; result_count: number };
+  inventory_alert_failed: { active_filter_count: number; placement: InventoryAlertPlacement };
   comparison_vehicle_added: { vehicle_slug: string; selection_count: number };
   comparison_vehicle_removed: { vehicle_slug: string; selection_count: number };
   comparison_opened: { vehicle_slugs: string[]; vehicle_count: number };

@@ -9,15 +9,19 @@ import { ContactCallout } from '@/components/marketing/contact-callout';
 import { InnerPageMotion } from '@/components/motion/inner-page-motion';
 import { JsonLd } from '@/components/seo/json-ld';
 import { getWhatsAppUrl } from '@/lib/contact';
-import { ButtonAnchor } from '@/components/ui/button';
+import { ButtonAnchor, ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { findCatalogPublication, findCatalogVehicle, isLiveCatalog } from '@/lib/integrations/mercado-libre/catalog';
+import { findCatalogPublication, findCatalogVehicle, isLiveCatalog, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { fullSizeMercadoLibreImageUrl } from '@/lib/integrations/mercado-libre/pictures';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleSpecification, vehicleSpecificationLabels, type VehicleSpecificationKey } from '@/features/vehicles/presentation/specifications';
 import { publicVehicleAttributes } from '@/features/vehicles/presentation/public-attributes';
 import { VehicleSpecificationGroups } from './_components/vehicle-specification-groups';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
+import { pickSimilarVehicles } from '@/features/vehicles/domain/similar-vehicles';
+import type { Vehicle } from '@/features/vehicles/domain/vehicle';
+import { CatalogVehicleCard } from '../_components/catalog-vehicle-card';
+import { InventoryAlert, type InventoryAlertCriteria } from '../_components/inventory-alert';
 import { createPageMetadata } from '@/lib/metadata';
 import { isSiteIndexingEnabled } from '@/lib/site-indexing';
 import { getSiteUrl } from '@/lib/site-url';
@@ -50,8 +54,12 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
     return { title: "Vehículo no encontrado | Gonba's Garage" };
   }
 
+  const status = getVehicleStatusPresentation(vehicle);
   const title = `${vehicle.make} ${vehicle.model} ${vehicle.year} | Gonba's Garage`;
-  const description = `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}, ${formatVehicleMileage(vehicle.mileageKm)}. Consultá disponibilidad en Gonba's Garage.`;
+  const summary = `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}, ${formatVehicleMileage(vehicle.mileageKm)}.`;
+  const description = status.isAvailable
+    ? `${summary} Consultá disponibilidad en Gonba's Garage.`
+    : `${summary} ${status.status === 'paused' ? 'Está reservado' : 'Ya se vendió'}: mirá autos parecidos disponibles en Gonba's Garage.`;
 
   const metadata = createPageMetadata({
     title,
@@ -62,7 +70,9 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
   });
 
   if (isLiveCatalog()) return { ...metadata, robots: { index: false, follow: false } };
-  return vehicle.status === 'paused' && isSiteIndexingEnabled()
+  // Reserved and sold pages stay reachable but out of search results: the seller often relists the
+  // same car under a new publication, and its links to available cars are still worth following.
+  return !status.isAvailable && isSiteIndexingEnabled()
     ? { ...metadata, robots: { index: false, follow: true } }
     : metadata;
 }
@@ -94,7 +104,49 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const vehicleUrl = new URL(`/vehiculos/${vehicle.slug}`, siteUrl).toString();
   const compareHref = `/vehiculos?comparar=${vehicle.slug}#inventario`;
   const vehicleContactHref = getWhatsAppUrl(`Hola, quiero consultar por el ${vehicle.make} ${vehicle.model}.`);
-  const status = getVehicleStatusPresentation(vehicle.status);
+  const status = getVehicleStatusPresentation(vehicle);
+  const isReserved = status.status === 'paused';
+  const vehicleName = `${vehicle.make} ${vehicle.model}`;
+  const bodyType = vehicle.body.split(' · ')[0];
+  const formattedPrice = formatVehiclePrice(vehicle.price, vehicle.currency);
+
+  let similarVehicles: Vehicle[] = [];
+  let availableCount = 0;
+  if (!status.isAvailable) {
+    // The rail is a bonus: a catalog failure must not take down the page of a car that is not for sale.
+    const catalog = await listCatalogVehicles().catch(() => []);
+    similarVehicles = pickSimilarVehicles(vehicle, catalog);
+    availableCount = catalog.length;
+  }
+  // Reserved: the same model coming back (the reservation fell through, or a relisting). Sold: the
+  // same make and body type.
+  const alertCriteria: InventoryAlertCriteria = {
+    query: isReserved ? vehicle.model : '',
+    make: vehicle.make,
+    transmission: '',
+    bodyType: isReserved ? '' : bodyType,
+    fuel: '',
+    minPrice: null,
+    maxPrice: null,
+    minMileage: null,
+    maxMileage: null,
+  };
+  const contact = status.isAvailable ? {
+    href: vehicleContactHref,
+    label: 'Consultar ahora',
+    eyebrow: 'Coordiná una visita',
+    title: 'Conocelo en persona. El resto se entiende manejando.',
+  } : isReserved ? {
+    href: getWhatsAppUrl(`Hola, vi que el ${vehicleName} está reservado. Si se libera, avisame.`),
+    label: 'Escribinos por WhatsApp',
+    eyebrow: '¿Te interesaba este?',
+    title: 'Escribinos. Si la reserva se cae, sos el primero en saberlo.',
+  } : {
+    href: getWhatsAppUrl(`Hola, vi que el ${vehicleName} ya se vendió. Estoy buscando algo parecido.`),
+    label: 'Escribinos por WhatsApp',
+    eyebrow: '¿Buscás algo parecido?',
+    title: 'Contanos qué auto buscás. Te avisamos cuando entre.',
+  };
   const organizationId = new URL(ORGANIZATION_SCHEMA_ID, siteUrl).toString();
   const vehicleSchemaId = `${vehicleUrl}#vehicle`;
   const vehicleStructuredData = {
@@ -202,21 +254,29 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         </div>
       </section>
 
-      <section className="section-shell detail-showcase" aria-label="Presentación del vehículo">
+      <section className="section-shell detail-showcase" data-status={status.status} aria-label="Presentación del vehículo">
         <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} stockCode={vehicle.stockCode} />
+        {!status.isAvailable && (
+          <p className="detail-status-banner" data-status={status.status}>
+            <b>{status.label}</b>
+            <span>{isReserved ? 'Ya tiene una reserva.' : 'Esta unidad ya tiene dueño.'}</span>
+          </p>
+        )}
 
-        <aside className="detail-purchase-card glass-panel" aria-label="Precio y consulta">
+        <aside className="detail-purchase-card glass-panel" aria-label={status.isAvailable ? 'Precio y consulta' : 'Estado de la publicación'}>
           <div className="detail-purchase-top">
-            <div className="detail-availability" data-status={vehicle.status}><span /> {status.label}</div>
+            <div className="detail-availability" data-status={status.status}><span /> {status.label}</div>
             <div className="detail-utility-actions">
-              <Link className="detail-compare-button" href={compareHref}>
-                <span>Comparar</span>
-                <Scale aria-hidden="true" size={14} strokeWidth={1.8} />
-              </Link>
+              {status.isAvailable && (
+                <Link className="detail-compare-button" href={compareHref}>
+                  <span>Comparar</span>
+                  <Scale aria-hidden="true" size={14} strokeWidth={1.8} />
+                </Link>
+              )}
               <ShareButton
                 fallbackUrl={vehicleUrl}
                 imageSrc={vehicle.image}
-                text={`Mirá este ${vehicle.make} ${vehicle.model} ${vehicle.version} publicado por Gonba's Garage.`}
+                text={`Mirá este ${vehicle.make} ${vehicle.model} ${vehicle.version} ${status.isAvailable ? 'publicado por' : 'en'} Gonba's Garage.`}
                 title={`${vehicle.make} ${vehicle.model}`}
                 vehicleMeta={`${vehicle.year} · ${vehicle.version}`}
                 vehicleSlug={vehicle.slug}
@@ -224,25 +284,98 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
               />
             </div>
           </div>
-          <p className="detail-price-label">Precio publicado</p>
-          <p className="detail-price">{formatVehiclePrice(vehicle.price, vehicle.currency)}</p>
-          <p className="detail-location">{vehicle.location}</p>
-          {status.isAvailable && (!publication || alertDeliveryEnabled()) ? (
-            <PriceAlert
-              vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
-              vehicleSlug={vehicle.slug}
-              formattedPrice={formatVehiclePrice(vehicle.price, vehicle.currency)}
-            />
-          ) : null}
-          <div className="detail-actions">
-            <ButtonAnchor href={vehicleContactHref} rel="noreferrer" target="_blank">
-              Consultar por este auto <Arrow />
-            </ButtonAnchor>
-            <ButtonAnchor href="#ficha" variant="glass">Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
-          </div>
-          <p className="detail-disclaimer">Precio y disponibilidad sujetos a confirmación.</p>
+          {status.isAvailable ? (
+            <>
+              <p className="detail-price-label">Precio publicado</p>
+              <p className="detail-price">{formattedPrice}</p>
+              <p className="detail-location">{vehicle.location}</p>
+              {!publication || alertDeliveryEnabled() ? (
+                <PriceAlert
+                  vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
+                  vehicleSlug={vehicle.slug}
+                  formattedPrice={formattedPrice}
+                />
+              ) : null}
+              <div className="detail-actions">
+                <ButtonAnchor href={vehicleContactHref} rel="noreferrer" target="_blank">
+                  Consultar por este auto <Arrow />
+                </ButtonAnchor>
+                <ButtonAnchor href="#ficha" variant="glass">Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
+              </div>
+            </>
+          ) : (
+            <>
+              <h2 className="detail-status-title">{isReserved ? 'Este auto está reservado.' : 'Este auto ya se vendió.'}</h2>
+              <p className="detail-status-copy">
+                {isReserved
+                  ? 'Alguien lo reservó, pero a veces las reservas se caen: dejanos tu email y te avisamos si se libera o si entra otro igual.'
+                  : 'Si buscás algo así, dejanos tu email y te avisamos cuando entre uno parecido.'}
+                {similarVehicles.length > 0 && (isReserved
+                  ? ' Mientras tanto, abajo tenés autos parecidos disponibles.'
+                  : ' Abajo tenés autos parecidos que siguen en el garage.')}
+              </p>
+              <dl className="detail-last-price">
+                <dt>{isReserved ? 'Precio publicado' : 'Último precio publicado'}</dt>
+                <dd>{formattedPrice}</dd>
+              </dl>
+              <InventoryAlert
+                activeFilterCount={2}
+                criteria={alertCriteria}
+                placement="vehicle"
+                resultCount={similarVehicles.length}
+                vehicleCopy={isReserved ? {
+                  trigger: 'Avisame si se libera',
+                  hint: 'O si entra otro igual. Por email.',
+                  title: 'Avisame si se libera.',
+                  description: `Te avisamos por email si la reserva se cae o si entra otro ${vehicleName}.`,
+                } : {
+                  trigger: 'Avisame si entra uno parecido',
+                  hint: 'Recibí una alerta por email',
+                  title: 'Avisame si entra uno parecido.',
+                  description: `Te avisamos por email cuando entre otro ${vehicle.make} ${bodyType.toLocaleLowerCase('es')}.`,
+                }}
+              />
+              <div className="detail-actions">
+                {similarVehicles.length > 0 ? (
+                  <ButtonAnchor href="#similares">Ver autos similares <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
+                ) : (
+                  <ButtonLink href="/vehiculos">Ver todo el inventario <Arrow /></ButtonLink>
+                )}
+              </div>
+            </>
+          )}
+          <p className="detail-disclaimer">
+            {status.isAvailable ? 'Precio y disponibilidad sujetos a confirmación.'
+              : isReserved ? 'Precio sujeto a confirmación.'
+              : 'Datos de la última publicación, solo como referencia.'}
+          </p>
         </aside>
       </section>
+
+      {similarVehicles.length > 0 && (
+        <section className="section-shell detail-similar" id="similares" aria-labelledby="similar-title">
+          <div className="detail-similar-heading">
+            <div>
+              <Eyebrow>Disponibles ahora</Eyebrow>
+              <h2 id="similar-title">Parecidos, y todavía en el garage.</h2>
+            </div>
+            <Link className="text-link" href="/vehiculos">Ver inventario completo <Arrow /></Link>
+          </div>
+          <div className="detail-similar-grid">
+            {similarVehicles.map((similar, index) => (
+              <CatalogVehicleCard headingLevel="h3" index={index} key={similar.slug} vehicle={similar} />
+            ))}
+            {similarVehicles.length < 3 && (
+              <Link className="detail-similar-more glass-panel" href="/vehiculos">
+                <span>Inventario</span>
+                <span className="catalog-card-arrow" aria-hidden="true"><ArrowUpRight size={17} strokeWidth={1.8} /></span>
+                <strong>Ver todo el inventario</strong>
+                <p>{String(availableCount).padStart(2, '0')} {availableCount === 1 ? 'auto disponible' : 'autos disponibles'} hoy. Filtrá por marca, carrocería, precio y kilometraje.</p>
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="section-shell detail-overview" id="ficha" aria-labelledby="overview-title">
         <div className="detail-story">
@@ -278,13 +411,13 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       </section>
 
       <ContactCallout
-        actionHref={vehicleContactHref}
-        actionLabel="Consultar ahora"
+        actionHref={contact.href}
+        actionLabel={contact.label}
         analytics={{ channel: 'whatsapp', placement: 'vehicle_detail', vehicleSlug: vehicle.slug }}
         className="detail-contact"
-        eyebrow="Coordiná una visita"
+        eyebrow={contact.eyebrow}
         id="consulta"
-        title="Conocelo en persona. El resto se entiende manejando."
+        title={contact.title}
         titleId="contact-title"
       />
       </main>
