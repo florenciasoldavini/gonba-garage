@@ -12,7 +12,13 @@ price, description, and contact action must remain usable without WebGL or clien
 - Cloudflare-compatible Vinext runtime for the current local and hosting foundation.
 - Mercado Libre is the source of truth for inventory. The site reads a synced copy in Neon.
 - Server-rendered vehicle detail routes will own metadata, canonical URLs, and structured data.
-- A repository boundary in `features/vehicles/domain` keeps Mercado Libre transport details out of pages.
+- `lib/integrations/mercado-libre/catalog.ts` is the catalog read boundary. `listCatalogVehicles`,
+  `findCatalogPublication` and `findCatalogVehicle` return demo data from
+  `features/vehicles/data/mock-vehicles.ts` unless `VEHICLE_DATA_SOURCE=mercado-libre`. In live mode
+  they read the synced copy through `lib/catalog/store.ts`, or the deployed backend's copy when
+  `MERCADO_LIBRE_BACKEND_URL` is set. Pages and the share-image route read inventory only through
+  this module. The sitemap reads the demo data directly and is empty in live mode. The price alert
+  signup is described under the sync section.
 
 The experimental work should happen at the edge of the interface, not in the data or routing
 foundation. Do not introduce a motion or 3D dependency until a specific interaction justifies it.
@@ -42,8 +48,9 @@ that a sync worker keeps current. Sync is one-way; nothing is edited on the site
    notifications cannot write wrong data.
 4. Items of the configured seller are saved in `catalog_publications` (public presentation fields
    only). Items that no longer exist are marked `closed`. Other sellers' items are ignored.
-5. Pages, the share-image route and the alert signup read the copy at request time, so a change is
-   visible on the next request. There is no page cache to invalidate.
+5. Pages and the share-image route read the copy at request time, so a change is visible on the next
+   request. There is no page cache to invalidate. The price alert signup reads the copy only while
+   alert delivery is disabled (see below).
 6. `/api/mercado-libre/sync` (Vercel cron, `CRON_SECRET`) reconciles: it lists the seller's active
    items and queues every item that is new, changed, no longer active or not refreshed for a day,
    then drains the queue. It never closes or edits a vehicle from the listing alone, so a partial or
@@ -66,7 +73,12 @@ Webhooks carry real-time changes; on a Pro plan, change the schedule in `vercel.
 `*/15 * * * *` to repair missed notifications within 15 minutes.
 
 Price alerts keep their own queue and read Mercado Libre directly before sending, for an
-authoritative price. See [the Mercado Libre setup notes](mercado-libre-local.md).
+authoritative price. With `PRICE_ALERT_DELIVERY_ENABLED=true` the signup route
+(`app/api/price-alerts/route.ts`) does not use the copy either: it reads the item from Mercado Libre
+with the seller token, rejects items of other sellers and takes the starting price from that read, so
+it works even on a backend whose public frontend is in demo mode. With delivery disabled the signup
+resolves the vehicle with `findCatalogVehicle` (demo data or the synced copy) and only stores the
+subscription. See [the Mercado Libre setup notes](mercado-libre-local.md).
 
 OAuth tokens and client secrets are server-only. The current access token is stored encrypted next to
 the refresh token and shared by every server instance until it expires, so the one-use refresh
