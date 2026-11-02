@@ -143,8 +143,9 @@ export async function runCatalogSyncWorkSafely({ budgetMs = 200_000, maxItems = 
 /**
  * Repairs missed notifications and backfills the copy. Compares every vehicle the seller has on
  * Mercado Libre, in any status, with the local copy and queues each one that is missing, changed,
- * no longer listed, or not refreshed for a day. It never closes or edits rows itself: each queued
- * item is read again on its own, so a partial or empty listing response cannot remove vehicles.
+ * no longer listed, or not refreshed for a day, and each one the bulk read could not return. It never
+ * closes or edits rows itself: each queued item is read again on its own, so a partial or empty
+ * listing response cannot remove vehicles.
  */
 export async function reconcileCatalog() {
   const lease = randomUUID();
@@ -153,10 +154,12 @@ export async function reconcileCatalog() {
     const seller = sellerId();
     const catalog = await readMercadoLibrePublications(await catalogAccessToken());
     if (String(catalog.seller.id) !== seller) throw failure('catalog_sync', 'unexpected_seller');
-    // A scan that stopped early (see readAllItemIds) must not count as proof that an item is not listed.
-    const listingComplete = catalog.publications.items.length >= catalog.publications.total;
+    const { items, total, unread } = catalog.publications;
+    // A scan that stopped early (see readAllItemIds), or an item the bulk read did not return, must
+    // not count as proof that an item is not listed.
+    const listingComplete = !unread.length && items.length >= total;
     const listed = new Map<string, { status: string; lastUpdated: number | null }>();
-    for (const { source, vehicle } of catalog.publications.items) {
+    for (const { source, vehicle } of items) {
       if (String(source.seller_id) !== seller) continue;
       // An unresolved category is compared anyway: the item's own job decides, and retries.
       if (await vehicleCategory(source).catch(() => undefined) === null) continue;
@@ -164,6 +167,11 @@ export async function reconcileCatalog() {
     }
     const stored = await readStoredSyncState();
     const due = new Set<string>();
+    // Its own job reads it again, and decides whether it is gone, of another seller or not a vehicle.
+    for (const { id, incident } of unread) {
+      due.add(id);
+      console.error(JSON.stringify({ event: 'catalog_reconciliation_unread', publicationId: id, ...incident }));
+    }
     for (const [id, { status, lastUpdated }] of listed) {
       const row = stored.get(id);
       // A row saved before categories were recorded is read again once to record its category.
@@ -178,7 +186,7 @@ export async function reconcileCatalog() {
     await enqueueCatalogJobs([...due]);
     const pruned = await pruneCatalogJobs(lease, { listingComplete });
     await finishReconciliation(lease, { listed: listed.size });
-    return { skipped: false as const, listed: listed.size, enqueued: due.size, pruned };
+    return { skipped: false as const, listed: listed.size, unread: unread.length, enqueued: due.size, pruned };
   } catch (error) {
     const incident = safeFailure(error, 'catalog_sync').incident;
     await finishReconciliation(lease, { failure: incidentCode(incident) }).catch(() => {});

@@ -89,7 +89,10 @@ that a sync worker keeps current. Sync is one-way; nothing is edited on the site
 6. `/api/mercado-libre/sync` (Vercel cron, `CRON_SECRET`) reconciles: it scans every publication of
    the seller in any status, keeps the vehicles, and queues each one that is missing from the copy,
    changed (status or last update), no longer listed or not refreshed for a day, then drains the
-   queue. This also backfills vehicles that were paused or closed before the copy existed, so every
+   queue. Items are read in `/items/bulk` batches of 20, at most four requests at a time. An item a
+   batch does not return (deleted since the scan, or a per-item error) is queued and logged
+   (`catalog_reconciliation_unread`) instead of failing the run; a failed batch request still fails
+   it. This also backfills vehicles that were paused or closed before the copy existed, so every
    car the seller ever listed keeps its page. It never closes or edits a vehicle from the listing
    alone, so a partial or empty provider response cannot remove vehicles from the site.
 
@@ -142,7 +145,8 @@ be delayed but never lost.
   address look unlisted.
 - **Bounded queue** (`pruneCatalogJobs`). Each successful reconciliation deletes jobs of items never
   stored that are not leased and were last touched before it started: finished jobs once any skip has
-  expired, given-up jobs after 14 days, and deferred jobs when the listing was complete (a genuine
+  expired, given-up jobs after 14 days, and deferred jobs when the listing was complete, meaning the
+  scan reached its total and the bulk read returned every item (a genuine
   one is a seller vehicle missing from the copy, which the same reconciliation queued again). Jobs of
   stored vehicles are never deleted, since their lease and revision guard every write, and nothing
   touches `catalog_publications`.
