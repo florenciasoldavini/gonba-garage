@@ -9,6 +9,7 @@ import { SiteHeader } from '@/components/layout/site-header';
 import { ContactCallout } from '@/components/marketing/contact-callout';
 import { InnerPageMotion } from '@/components/motion/inner-page-motion';
 import { JsonLd } from '@/components/seo/json-ld';
+import { BUSINESS_AREA_LABEL, BUSINESS_VISIT_POLICY } from '@/constants/contact';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { ButtonAnchor, ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
@@ -298,7 +299,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
               <p className="detail-price-label">Precio publicado</p>
               <p className="detail-price">{formattedPrice}</p>
               <ApproximateUsdPrice className="detail-price-usd" quote={quote} vehicle={vehicle} />
-              <p className="detail-location">{vehicle.location}</p>
+              {/* The business area, not Mercado Libre's seller address, which is the same for every car. */}
+              <p className="detail-location">{`${BUSINESS_AREA_LABEL} · ${BUSINESS_VISIT_POLICY}`}</p>
               {alertsEnabled ? (
                 <PriceAlert
                   vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}

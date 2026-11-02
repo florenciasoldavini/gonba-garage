@@ -18,6 +18,8 @@ export const BUSINESS_AREA = {
   regionName: 'Ciudad Autónoma de Buenos Aires',
   country: 'AR',
 } as const;
+/** What the site shows wherever it says where the cars are, instead of Mercado Libre's seller address. */
+export const BUSINESS_AREA_LABEL = `${BUSINESS_AREA.locality}, ${BUSINESS_AREA.region}`;
 // `days` is a range (first and last day) or a single weekday, in plural.
 export const BUSINESS_SCHEDULE = [
   { days: ['lunes', 'viernes'], opens: 10, closes: 18 },

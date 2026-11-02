@@ -5,7 +5,7 @@ import { TrackedAnchor } from '@/components/analytics/tracked-anchor';
 import { Wordmark } from '@/components/brand/wordmark';
 import { FooterMotion } from '@/components/motion/footer-motion';
 import {
-  BUSINESS_AREA,
+  BUSINESS_AREA_LABEL,
   BUSINESS_HOURS,
   BUSINESS_VISIT_POLICY,
   INSTAGRAM_URL,
@@ -63,7 +63,7 @@ export function SiteFooter({
         <section className="footer-visits" aria-label="Visitas">
           <span className="footer-visits-label">Visitas · {BUSINESS_VISIT_POLICY}</span>
           <ul>
-            <li>{`${BUSINESS_AREA.locality}, ${BUSINESS_AREA.region}`}</li>
+            <li>{BUSINESS_AREA_LABEL}</li>
             {BUSINESS_HOURS.map((hours) => <li key={hours}>{hours}</li>)}
           </ul>
           <TrackedAnchor

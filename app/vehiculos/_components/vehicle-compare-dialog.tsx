@@ -33,7 +33,7 @@ type VehicleCompareDialogProps = {
 };
 
 const comparisonKeys: VehicleSpecificationKey[] = [
-  'price', 'year', 'mileage', 'transmission', 'engine', 'fuel', 'traction', 'body', 'color', 'location',
+  'price', 'year', 'mileage', 'transmission', 'engine', 'fuel', 'traction', 'body', 'color',
 ];
 
 export function VehicleCompareDialog({ quote, vehicles, isOpen, onClose, onRemove, onClear }: VehicleCompareDialogProps) {
