@@ -1,6 +1,6 @@
 import { after, NextResponse } from 'next/server';
 import { alertEmailsConfigured, privateHeaders, requireAlertConfig } from '@/lib/alerts/config';
-import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
+import { isDatabaseConfigured } from '@/lib/database';
 import { runInventoryAlertWorkSafely } from '@/lib/alerts/inventory-delivery';
 import { enqueuePriceItem, runPriceAlertWorkSafely } from '@/lib/alerts/price-delivery';
 import { enqueueCatalogSync, runCatalogSyncWorkSafely } from '@/lib/integrations/mercado-libre/inventory-sync';
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     || !process.env.MERCADO_LIBRE_CLIENT_ID || String(notification.application_id) !== process.env.MERCADO_LIBRE_CLIENT_ID) {
     return NextResponse.json({ ok: true }, { headers: privateHeaders });
   }
-  const catalogSync = isAlertsDatabaseConfigured();
+  const catalogSync = isDatabaseConfigured();
   const priceAlerts = alertEmailsConfigured();
   if (!catalogSync && !priceAlerts) return NextResponse.json({ ok: true }, { headers: privateHeaders });
   // An unlisted address is still queued, so an outdated list delays a genuine notification until the

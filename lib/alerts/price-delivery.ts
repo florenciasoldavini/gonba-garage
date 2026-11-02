@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { catalogAccessToken } from '@/lib/integrations/mercado-libre/access-token';
 import { readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/oauth';
-import { getAlertsSql } from './database';
+import { getSql } from '@/lib/database';
 import { alertEmailsConfigured, requireAlertConfig } from './config';
 import { buildAlertEmail, EmailFailure, sendAlertEmail } from './email';
 
@@ -22,7 +22,7 @@ export async function requestPriceAlert(email: string, vehicle: Vehicle) {
   requireAlertConfig();
   if (!vehicle.mercadoLibreId || !/^MLA\d+$/.test(vehicle.mercadoLibreId)) throw new Error('Missing publication ID');
   if (!Number.isFinite(vehicle.price) || vehicle.price <= 0 || !['ARS', 'USD'].includes(vehicle.currency)) throw new Error('Invalid publication price');
-  const sql = getAlertsSql();
+  const sql = getSql();
   const title = [vehicle.make, vehicle.model, vehicle.version, vehicle.year].filter(Boolean).join(' ');
   const rows = await sql`INSERT INTO public.vehicle_price_alerts (email, vehicle_slug, publication_id, vehicle_title, current_price, currency, source, status)
     VALUES (${email}, ${vehicle.slug}, ${vehicle.mercadoLibreId}, ${title}, ${vehicle.price}, ${vehicle.currency}, 'mercado_libre', 'pending')
@@ -44,7 +44,7 @@ export async function requestPriceAlert(email: string, vehicle: Vehicle) {
  * Returns the vehicle slug when that generation is active now, otherwise null.
  */
 export async function confirmPriceAlert(id: string, generation: string) {
-  const sql = getAlertsSql();
+  const sql = getSql();
   await sql`WITH confirmed AS (
     UPDATE public.vehicle_price_alerts SET status = 'active', confirmed_at = now(), updated_at = now()
     WHERE id = ${id} AND generation = ${generation} AND status = 'pending'
@@ -62,7 +62,7 @@ export async function confirmPriceAlert(id: string, generation: string) {
  * picked it up for two minutes.
  */
 export async function enqueuePriceItem(id: string) {
-  const sql = getAlertsSql();
+  const sql = getSql();
   const rows = await sql`INSERT INTO public.price_alert_item_jobs AS job (publication_id)
     SELECT ${id} WHERE EXISTS (SELECT 1 FROM public.vehicle_price_alerts WHERE publication_id = ${id} AND status = 'active')
     ON CONFLICT (publication_id) DO UPDATE SET revision = job.revision + 1,
@@ -74,7 +74,7 @@ export async function enqueuePriceItem(id: string) {
 }
 
 export async function enqueueDailyPriceReview() {
-  const sql = getAlertsSql();
+  const sql = getSql();
   await sql`INSERT INTO public.price_alert_item_jobs (publication_id)
     SELECT DISTINCT publication_id FROM public.vehicle_price_alerts WHERE status = 'active' AND publication_id IS NOT NULL
     ON CONFLICT (publication_id) DO UPDATE SET revision = price_alert_item_jobs.revision + 1,
@@ -83,7 +83,7 @@ export async function enqueueDailyPriceReview() {
 
 /** Price and currency from an authoritative, seller-checked publication only. */
 export async function recordPriceObservation(id: string, vehicle: Vehicle) {
-  const sql = getAlertsSql();
+  const sql = getSql();
   if (vehicle.status !== 'active' || !Number.isFinite(vehicle.price) || vehicle.price <= 0) return;
   await sql`INSERT INTO public.price_alert_deliveries (alert_id, generation, kind, price, previous_price, currency, title, vehicle_slug)
     SELECT id, generation, 'drop', ${vehicle.price}, COALESCE(last_notified_price, current_price), currency,
@@ -99,7 +99,7 @@ export async function recordPriceObservation(id: string, vehicle: Vehicle) {
 }
 
 async function processItem() {
-  const sql = getAlertsSql(), lease = randomUUID();
+  const sql = getSql(), lease = randomUUID();
   const jobs = await sql`UPDATE public.price_alert_item_jobs SET lease_id = ${lease}, lease_until = now() + interval '90 seconds', attempts = attempts + 1
     WHERE publication_id = (SELECT publication_id FROM public.price_alert_item_jobs
       WHERE revision > processed_revision AND next_attempt_at <= now() AND (lease_until IS NULL OR lease_until < now())
@@ -127,7 +127,7 @@ async function processItem() {
 }
 
 export async function processPriceDelivery() {
-  const sql = getAlertsSql(), lease = randomUUID();
+  const sql = getSql(), lease = randomUUID();
   // A stable idempotency key protects only 24h at the provider. Never blind-retry an ambiguous send beyond 23h.
   await sql`UPDATE public.price_alert_deliveries SET state = 'blocked', failure_code = 'ambiguous_send_window_expired'
     WHERE state IN ('pending','sending') AND first_attempt_at < now() - interval '23 hours'
@@ -194,7 +194,7 @@ export async function runPriceAlertWork() {
     // Clear durable outbox work before observing fresh prices.
     if (await processPriceDelivery()) { deliveries++; continue; }
     if (await processItem()) { items++; continue; }
-    const sql = getAlertsSql();
+    const sql = getSql();
     const due = await sql`SELECT min(next_attempt_at) AS next FROM (
       SELECT next_attempt_at FROM public.price_alert_deliveries WHERE state = 'pending'
       UNION ALL SELECT next_attempt_at FROM public.price_alert_item_jobs WHERE revision > processed_revision

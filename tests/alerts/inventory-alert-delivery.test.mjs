@@ -24,7 +24,7 @@ const state = vi.hoisted(() => ({ sql: null, deferred: [], quote: null }));
 // Fake Mercado Libre, mapped by the real mapper.
 const mercadoLibre = vi.hoisted(() => ({ items: new Map() }));
 vi.mock('next/server', async importOriginal => ({ ...await importOriginal(), after: task => { state.deferred.push(task); } }));
-vi.mock('@/lib/alerts/database', () => ({ getAlertsSql: () => state.sql, isAlertsDatabaseConfigured: () => true }));
+vi.mock('@/lib/database', () => ({ getSql: () => state.sql, isDatabaseConfigured: () => true }));
 vi.mock('@/lib/integrations/mep-quote', () => ({ getMepQuote: async () => state.quote }));
 // Price alerts run alongside (same configuration) and have their own suite.
 vi.mock('@/lib/alerts/price-delivery', () => ({ enqueuePriceItem: async () => {}, runPriceAlertWorkSafely: async () => {},

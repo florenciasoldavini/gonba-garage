@@ -3,7 +3,7 @@ import { after, NextResponse } from 'next/server';
 import { findCatalogVehicle } from '@/lib/integrations/mercado-libre/catalog';
 import { catalogAccessToken } from '@/lib/integrations/mercado-libre/access-token';
 import { readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/oauth';
-import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
+import { isDatabaseConfigured } from '@/lib/database';
 import { savePriceSubscription } from '@/lib/alerts/subscriptions';
 import { alertEmailsConfigured } from '@/lib/alerts/config';
 import { reserveAlertSignup } from '@/lib/alerts/signup-limit';
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!isAlertsDatabaseConfigured()) {
+  if (!isDatabaseConfigured()) {
     return NextResponse.json({ message: 'Las alertas no están disponibles por el momento.' }, { status: 503 });
   }
 

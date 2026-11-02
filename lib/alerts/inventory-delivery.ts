@@ -4,7 +4,7 @@ import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { comparableUsdPrice } from '@/features/vehicles/domain/catalog-pricing';
 import { hasPriceBounds, matchesInventorySearch, type InventorySearchCriteria } from '@/features/vehicles/domain/inventory-search';
 import { getMepQuote } from '@/lib/integrations/mep-quote';
-import { getAlertsSql } from './database';
+import { getSql } from '@/lib/database';
 import { alertEmailsConfigured } from './config';
 import { buildSearchMatchEmail, EmailFailure, sendAlertEmail, type SearchMatchVehicle } from './email';
 
@@ -46,7 +46,7 @@ function criteriaOf(row: Row): InventorySearchCriteria {
 
 /** Returns the IDs and generations of the active alerts that match a car that just became available. */
 export async function matchingAlerts(vehicle: Omit<Vehicle, 'slug' | 'status' | 'updatedAt'>, eventId: string) {
-  const sql = getAlertsSql();
+  const sql = getSql();
   // Only alerts already active when the car became available: for a later one it is not news.
   const alerts = await sql`SELECT id, generation, search_query, make, transmission, body_type, fuel,
       min_price, max_price, min_mileage, max_mileage
@@ -64,7 +64,7 @@ export async function matchingAlerts(vehicle: Omit<Vehicle, 'slug' | 'status' | 
 
 /** Matches one due event. Returns false when nothing is due. */
 export async function processNextEvent() {
-  const sql = getAlertsSql(), lease = randomUUID();
+  const sql = getSql(), lease = randomUUID();
   const events = await sql`UPDATE public.inventory_alert_events SET lease_id = ${lease}::uuid,
       lease_until = now() + interval '90 seconds', attempts = attempts + 1
     WHERE id = (SELECT id FROM public.inventory_alert_events
@@ -108,7 +108,7 @@ export async function processNextEvent() {
  * turns the second insert into a no-op.
  */
 export async function batchMatches() {
-  const sql = getAlertsSql();
+  const sql = getSql();
   await sql`WITH due AS (
       SELECT a.id, a.generation FROM public.vehicle_inventory_alerts a
       WHERE a.status = 'active'
@@ -137,7 +137,7 @@ export async function batchMatches() {
  *   key and rebuilt content.
  */
 async function maintainDeliveries() {
-  const sql = getAlertsSql();
+  const sql = getSql();
   await sql`UPDATE public.inventory_alert_deliveries SET state = 'expired', failure_code = 'ambiguous_send_window_expired'
     WHERE state IN ('pending', 'sending') AND uncertain
       AND series_started_at < now() - ${IDEMPOTENCY_WINDOW_HOURS}::int * interval '1 hour'
@@ -167,7 +167,7 @@ function emailVehicle(row: Row): SearchMatchVehicle {
 
 /** Sends one due email. Returns false when nothing is due. */
 export async function processNextDelivery() {
-  const sql = getAlertsSql(), lease = randomUUID();
+  const sql = getSql(), lease = randomUUID();
   await maintainDeliveries();
   const rows = await sql`UPDATE public.inventory_alert_deliveries SET state = 'sending', lease_id = ${lease}::uuid,
       lease_until = now() + interval '2 minutes', attempts = attempts + 1
@@ -239,7 +239,7 @@ export async function processNextDelivery() {
 }
 
 async function expireEvents() {
-  const sql = getAlertsSql();
+  const sql = getSql();
   await sql`UPDATE public.inventory_alert_events SET state = 'expired', processed_at = now()
     WHERE state = 'pending' AND created_at < now() - ${EVENT_LIFETIME_HOURS}::int * interval '1 hour'
       AND (lease_until IS NULL OR lease_until < now())`;
@@ -269,7 +269,7 @@ export async function runInventoryAlertWorkSafely(options?: { budgetMs?: number 
 
 /** Cancels one alert generation. Unsent emails are dropped. A send already in progress may finish. */
 export async function cancelInventoryAlert(id: string, generation: string) {
-  const sql = getAlertsSql();
+  const sql = getSql();
   await sql`UPDATE public.vehicle_inventory_alerts SET status = 'cancelled', updated_at = now()
     WHERE id = ${id}::uuid AND generation = ${generation}::uuid`;
   await sql`UPDATE public.inventory_alert_deliveries SET state = 'cancelled'

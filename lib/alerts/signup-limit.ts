@@ -1,7 +1,7 @@
 import 'server-only';
 import { createHmac } from 'node:crypto';
 import { isIP } from 'node:net';
-import { getAlertsSql } from './database';
+import { getSql } from '@/lib/database';
 import { requireAlertConfig } from './config';
 
 export type AlertScope = 'price' | 'inventory';
@@ -51,7 +51,7 @@ export function clientIp(request: Request) {
 }
 
 async function reserve(buckets: Bucket[]) {
-  const sql = getAlertsSql();
+  const sql = getSql();
   // Opportunistic pruning: no window is longer than a day, so older rows are already expired.
   if (Math.random() < 0.02) await sql`DELETE FROM public.price_alert_signup_windows WHERE started_at < now() - interval '2 days'`;
   for (const { key, limit, windowSeconds } of buckets) {

@@ -23,7 +23,7 @@ const mercadoLibre = vi.hoisted(() => ({
   bulkFails: new Set(),
 }));
 vi.mock('next/server', async importOriginal => ({ ...await importOriginal(), after: task => { state.deferred.push(task); } }));
-vi.mock('@/lib/alerts/database', () => ({ getAlertsSql: () => state.sql, isAlertsDatabaseConfigured: () => true }));
+vi.mock('@/lib/database', () => ({ getSql: () => state.sql, isDatabaseConfigured: () => true }));
 vi.mock('@/lib/alerts/price-delivery', () => ({
   enqueuePriceItem: async () => assert.fail('Price alerts are disabled'), runPriceAlertWorkSafely: async () => {},
 }));

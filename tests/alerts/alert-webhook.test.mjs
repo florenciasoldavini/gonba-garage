@@ -6,7 +6,7 @@ import { POST } from '@/app/api/mercado-libre/webhook/route';
 // acknowledging it. The queues themselves have their own suites.
 const queues = vi.hoisted(() => ({ price: [], sync: [], deferred: [], enqueueFail: false, newWork: true }));
 vi.mock('next/server', async importOriginal => ({ ...await importOriginal(), after: task => { queues.deferred.push(task); } }));
-vi.mock('@/lib/alerts/database', () => ({ getAlertsSql: () => assert.fail('The webhook only queues'), isAlertsDatabaseConfigured: () => true }));
+vi.mock('@/lib/database', () => ({ getSql: () => assert.fail('The webhook only queues'), isDatabaseConfigured: () => true }));
 vi.mock('@/lib/alerts/price-delivery', () => ({
   // Each queue answers whether the notification is new work to drain.
   enqueuePriceItem: async id => { if (queues.enqueueFail) throw Error(); queues.price.push(id); return queues.newWork; },

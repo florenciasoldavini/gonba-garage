@@ -1,4 +1,4 @@
-import { getAlertsSql } from '@/lib/alerts/database';
+import { getSql } from '@/lib/database';
 import { parseCancellationToken } from '@/lib/alerts/cancellation';
 import { alertPage as page, alertPageButton } from '@/lib/alerts/page';
 
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   const token = readToken(request);
   if (!token) return page('Enlace no válido', '<p>No pudimos validar este enlace de cancelación.</p>', 400);
   try {
-    const sql = getAlertsSql();
+    const sql = getSql();
     await sql`UPDATE public.vehicle_price_alerts SET status = 'cancelled', updated_at = now()
       WHERE id = ${token.id} AND generation = ${token.generation}`;
     await sql`UPDATE public.price_alert_deliveries SET state = 'cancelled'

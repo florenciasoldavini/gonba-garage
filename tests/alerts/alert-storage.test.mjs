@@ -12,7 +12,7 @@ import { checkInventoryStorage, checkPriceStorage } from './storage-scenarios.mj
 // emails not configured (demo mode).
 const state = vi.hoisted(() => ({ db: null }));
 vi.mock('next/server', async importOriginal => ({ ...await importOriginal(), after: () => {} }));
-vi.mock('@/lib/alerts/database', () => ({ getAlertsSql: () => state.sql, isAlertsDatabaseConfigured: () => true }));
+vi.mock('@/lib/database', () => ({ getSql: () => state.sql, isDatabaseConfigured: () => true }));
 vi.mock('@/lib/alerts/price-delivery', () => ({}));
 vi.mock('@/lib/alerts/confirmation', () => ({ sendSignupConfirmationSafely: async () => assert.fail('Demo mode sends no confirmation') }));
 vi.mock('@/lib/integrations/mercado-libre/access-token', () => ({}));
