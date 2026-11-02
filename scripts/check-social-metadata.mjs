@@ -345,7 +345,7 @@ for (const query of [`?estado=confirmada&tipo=precio&vehiculo=${listedVehicleSlu
   assert.equal(new URL(metadata.canonical).search, '');
 }
 // Catalog filters, sort and comparison live in the query string; they never create a canonical.
-const filteredCatalog = await fetch(new URL(`/vehiculos?marca=BMW&orden=recientes&comparar=${listedVehicleSlug}`, targetOrigin));
+const filteredCatalog = await fetch(new URL(`/vehiculos?marca=BMW&orden=anio&comparar=${listedVehicleSlug}`, targetOrigin));
 assert.equal(filteredCatalog.status, 200);
 assert.equal(
   normalizeUrl(getMetadata(await filteredCatalog.text()).canonical),

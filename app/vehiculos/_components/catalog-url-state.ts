@@ -34,7 +34,9 @@ type SearchParamsLike = { get(name: string): string | null };
 
 const transmissionParams: Record<string, string> = { automatica: 'automatic', manual: 'manual' };
 const sortParams: Record<string, InventorySort> = {
-  recientes: 'newest',
+  anio: 'year',
+  // Links shared while this sort was labeled "Más recientes". Serializing uses the first key.
+  recientes: 'year',
   'menor-precio': 'price-asc',
   'mayor-precio': 'price-desc',
   'menor-km': 'mileage',

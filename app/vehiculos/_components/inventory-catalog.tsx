@@ -104,7 +104,7 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
     });
 
     return result.toSorted((a, b) => {
-      if (sort === 'newest') return b.year - a.year;
+      if (sort === 'year') return b.year - a.year;
       if (priceEnabled && sort === 'price-asc') return (comparisonPrices.get(a.slug) ?? 0) - (comparisonPrices.get(b.slug) ?? 0);
       if (priceEnabled && sort === 'price-desc') return (comparisonPrices.get(b.slug) ?? 0) - (comparisonPrices.get(a.slug) ?? 0);
       if (sort === 'mileage') return a.mileageKm - b.mileageKm;
