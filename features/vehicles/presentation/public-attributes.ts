@@ -5,6 +5,7 @@ import {
   VEHICLE_ATTRIBUTE_SECTIONS,
   type VehicleAttributeRule,
 } from './mercado-libre-attribute-policy';
+import { formatVehicleVersion } from './listing-cleanup';
 
 function normalizedWords(value: string) {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -20,12 +21,22 @@ export function vehicleAttributeDisplayRule(attribute: MercadoLibreAttribute, ti
     const value = attribute.value_name
       ?? attribute.values?.map(candidate => candidate.name).filter(Boolean).join(' ')
       ?? '';
-    const versionWords = normalizedWords(value);
+    // The title carries the cleaned-up version, so the attribute is compared the same way.
+    const versionWords = normalizedWords(formatVehicleVersion(value));
     if (versionWords && ` ${normalizedWords(title)} `.includes(` ${versionWords} `)) {
       return { action: 'exclude', reason: 'duplicate_in_title' };
     }
   }
   return rule;
+}
+
+/** The displayed value. Distances get the Argentine thousands separator, as everywhere else: 83000 km → 83.000 km. */
+export function formatVehicleAttributeValue(attribute: MercadoLibreAttribute) {
+  const value = attribute.value_name
+    ?? attribute.values?.map(candidate => candidate.name).filter(Boolean).join(', ')
+    ?? '';
+  const kilometers = value.trim().match(/^(\d+)\s*km$/i);
+  return kilometers ? `${new Intl.NumberFormat('es-AR').format(Number(kilometers[1]))} km` : value;
 }
 
 /** Filter only the public view; never change the original publication or its attributes. */

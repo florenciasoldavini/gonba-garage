@@ -8,7 +8,10 @@ const compiled = path => ts.transpileModule(readFileSync(new URL(path, import.me
 }).outputText;
 new Function('exports', compiled('../features/vehicles/presentation/mercado-libre-attribute-policy.ts'))(policy);
 const presentation = {};
+const cleanup = {};
+new Function('exports', compiled('../features/vehicles/presentation/listing-cleanup.ts'))(cleanup);
 new Function('exports', 'require', compiled('../features/vehicles/presentation/public-attributes.ts'))(presentation, id => {
+  if (id === './listing-cleanup') return cleanup;
   assert.equal(id, './mercado-libre-attribute-policy');
   return policy;
 });

@@ -16,6 +16,7 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { findCatalogPublication, findCatalogVehicle, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { fullSizeMercadoLibreImageUrl } from '@/lib/integrations/mercado-libre/pictures';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
+import { unbreakableVersionSegments } from '@/features/vehicles/presentation/listing-cleanup';
 import { publicVehicleAttributes } from '@/features/vehicles/presentation/public-attributes';
 import { VehicleSpecificationGroups } from './_components/vehicle-specification-groups';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
@@ -255,7 +256,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       <section className="section-shell detail-title" aria-labelledby="vehicle-title">
         <div>
           <Eyebrow>{status.label}</Eyebrow>
-          <h1 id="vehicle-title">{`${vehicle.make} ${vehicle.model}`}{' '}<em>{vehicle.version}</em></h1>
+          <h1 id="vehicle-title">{`${vehicle.make} ${vehicle.model}`}{' '}<em>{unbreakableVersionSegments(vehicle.version)}</em></h1>
         </div>
         <div className="detail-title-meta">
           <span>{vehicle.year}</span>

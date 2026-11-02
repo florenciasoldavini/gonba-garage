@@ -13,6 +13,7 @@
     "test:metadata": "node scripts/check-social-metadata.mjs",
     "typecheck": "tsc --noEmit",
     "test:attributes": "node scripts/check-vehicle-attributes.mjs",
+    "test:listing-cleanup": "node scripts/check-listing-cleanup.mjs",
     "test:catalog-url": "node scripts/check-catalog-url-state.mjs",
     "test:lifecycle": "node scripts/check-vehicle-lifecycle.mjs",
     "db:migrate": "node scripts/migrate-alerts.mjs",
