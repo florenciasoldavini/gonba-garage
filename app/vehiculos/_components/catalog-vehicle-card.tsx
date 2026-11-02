@@ -8,7 +8,7 @@ import gsap from 'gsap';
 import { ArrowUpRight, Check, Scale } from 'lucide-react';
 
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
-import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
+import { formatVehicleImageAlt, formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 
 if (typeof window !== 'undefined') {
@@ -61,7 +61,7 @@ export function CatalogVehicleCard({
         <Link className="catalog-card-image-link" href={href} aria-hidden="true" tabIndex={-1}>
           <Image
             src={vehicle.image}
-            alt={vehicle.imageAlt}
+            alt={formatVehicleImageAlt(vehicle)}
             fill
             sizes="(max-width: 760px) 100vw, (max-width: 1080px) 50vw, 38vw"
             className="cover-image"

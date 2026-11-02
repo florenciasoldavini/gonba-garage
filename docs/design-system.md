@@ -111,6 +111,10 @@ Deliberate differences:
 - Availability, reserved, and sold states must have distinct text in addition to color.
 - Photography uses `4:3` for catalog cards and `16:9` for editorial or detail views unless the
   composition requires an intentional exception.
+- A publication without photos shows `public/vehicle-photo-placeholder.jpg` (the GG mark at 12 %
+  on the canvas, 1600×1200) instead of a photo, never another car. Its alt text says "foto no
+  disponible", and the car page offers nothing to enlarge or count. It stays a JPG because the
+  share-image route only embeds local JPGs.
 
 ## Motion
 

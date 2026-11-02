@@ -88,7 +88,8 @@ cache behavior rather than creating arbitrary versioned URLs.
 
 The root layout publishes a `WebSite` and `AutoDealer` graph. Vehicle detail pages publish:
 
-- a combined `Product` and `Vehicle` entity;
+- a combined `Product` and `Vehicle` entity, whose `image` is left out when the publication has no
+  photo (the placeholder is not a photo of the car);
 - an `Offer` with price, currency, used condition, seller, URL, and lifecycle-derived availability;
 - a three-level `BreadcrumbList`: Inicio → Vehículos → current vehicle.
 
