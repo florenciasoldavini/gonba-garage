@@ -234,9 +234,10 @@ components/               Shared UI primitives, layout, brand, motion and SEO co
 features/vehicles/        Vehicle domain model, Mercado Libre mapper, presentation rules
 lib/env.ts                Server environment, grouped by feature and read lazily
 lib/database.ts           The Neon connection shared by the catalog store and alerts
+lib/database-rows.ts      Row parsing helpers shared by the catalog and alert row parsers
 lib/integrations/         Server-only adapters: Mercado Libre (OAuth, read API), Arg Autos, MEP quote
-lib/catalog/              Synced catalog store and sync job queue (SQL)
-lib/alerts/               Alert subscriptions, signed tokens, rate limits, outbox workers, email
+lib/catalog/              Synced catalog store, sync job queue (SQL) and their row parsers
+lib/alerts/               Alert subscriptions, signed tokens, rate limits, outbox workers, email, row parsers
 database/migrations/      Versioned SQL migrations, tracked in schema_migrations
 scripts/                  Migration runner and the metadata contract check
 tests/                    Vitest suites, helpers and test fixtures

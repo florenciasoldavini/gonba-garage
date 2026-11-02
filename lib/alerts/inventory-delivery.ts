@@ -1,12 +1,17 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
-import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { comparableUsdPrice } from '@/features/vehicles/domain/catalog-pricing';
-import { hasPriceBounds, matchesInventorySearch, type InventorySearchCriteria } from '@/features/vehicles/domain/inventory-search';
+import { hasPriceBounds, matchesInventorySearch } from '@/features/vehicles/domain/inventory-search';
+import { parseStoredVehicle, type StoredVehicle } from '@/lib/catalog/rows';
+import { parseRow, parseRows } from '@/lib/database-rows';
 import { getMepQuote } from '@/lib/integrations/mep-quote';
 import { getSql } from '@/lib/database';
 import { alertEmailsConfigured } from './config';
 import { buildSearchMatchEmail, EmailFailure, sendAlertEmail, type SearchMatchVehicle } from './email';
+import {
+  parseAlertEmail, parseFrozenInventoryDelivery, parseInventoryAlert, parseInventoryDelivery, parseInventoryEvent,
+  parseMatchedPublication,
+} from './rows';
 
 /**
  * Search-alert delivery, in three durable steps (docs/price-alert-delivery.md, "Search alerts"):
@@ -31,21 +36,9 @@ const MAX_EVENTS_PER_RUN = 100;
 const MAX_DELIVERIES_PER_RUN = 100;
 
 const backoffSeconds = (attempts: number) => Math.min(3600, 30 * 2 ** Math.min(attempts, 7));
-type Row = Record<string, unknown>;
-
-function criteriaOf(row: Row): InventorySearchCriteria {
-  // Stored zeros mean "no bound", as in the signup route.
-  const bound = (value: unknown) => Number(value) > 0 ? Number(value) : null;
-  return {
-    query: String(row.search_query), make: String(row.make), transmission: String(row.transmission),
-    bodyType: String(row.body_type), fuel: String(row.fuel),
-    minPrice: bound(row.min_price), maxPrice: bound(row.max_price),
-    minMileage: bound(row.min_mileage), maxMileage: bound(row.max_mileage),
-  };
-}
 
 /** Returns the IDs and generations of the active alerts that match a car that just became available. */
-export async function matchingAlerts(vehicle: Omit<Vehicle, 'slug' | 'status' | 'updatedAt'>, eventId: string) {
+export async function matchingAlerts(vehicle: StoredVehicle, eventId: string) {
   const sql = getSql();
   // Only alerts already active when the car became available: for a later one it is not news.
   const alerts = await sql`SELECT id, generation, search_query, make, transmission, body_type, fuel,
@@ -53,13 +46,13 @@ export async function matchingAlerts(vehicle: Omit<Vehicle, 'slug' | 'status' | 
     FROM public.vehicle_inventory_alerts
     WHERE status = 'active'
       AND COALESCE(confirmed_at, created_at) <= (SELECT created_at FROM public.inventory_alert_events WHERE id = ${eventId}::uuid)`;
-  const candidates = alerts.map(alert => ({ alert, criteria: criteriaOf(alert) }));
+  const candidates = parseRows('vehicle_inventory_alerts', alerts, parseInventoryAlert);
   const needsPrice = candidates.some(({ criteria }) => hasPriceBounds(criteria));
   // Price bounds are USD comparison amounts, so an ARS listing needs the MEP quote, as in the catalog.
   const usdPrice = comparableUsdPrice(vehicle, vehicle.currency === 'ARS' && needsPrice ? await getMepQuote() : null);
   if (needsPrice && usdPrice === null) throw new Error('mep_quote_unavailable');
   return candidates.filter(({ criteria }) => matchesInventorySearch(vehicle, criteria, usdPrice))
-    .map(({ alert }) => ({ id: String(alert.id), generation: String(alert.generation) }));
+    .map(({ id, generation }) => ({ id, generation }));
 }
 
 /** Matches one due event. Returns false when nothing is due. */
@@ -72,11 +65,12 @@ export async function processNextEvent() {
       ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
     RETURNING id, publication_id, previous_status, attempts`;
   if (!events.length) return false;
-  const event = events[0];
+  const event = parseRow('inventory_alert_events', events[0], parseInventoryEvent);
   try {
-    const rows = await sql`SELECT status, vehicle FROM public.catalog_publications WHERE publication_id = ${event.publication_id}`;
+    const rows = await sql`SELECT publication_id, status, vehicle FROM public.catalog_publications WHERE publication_id = ${event.publication_id}`;
     // Reserved or sold again before matching: nothing to announce.
-    const matched = rows[0]?.status === 'active' ? await matchingAlerts(rows[0].vehicle as Vehicle, String(event.id)) : null;
+    const matched = rows[0]?.status === 'active'
+      ? await matchingAlerts(parseRow('catalog_publications', rows[0], row => parseStoredVehicle(row.vehicle)), event.id) : null;
     // The insert and the completion happen only while this worker still holds the event's lease.
     await sql`WITH lease AS (
         SELECT 1 FROM public.inventory_alert_events WHERE id = ${event.id}::uuid AND lease_id = ${lease}::uuid
@@ -156,8 +150,8 @@ async function maintainDeliveries() {
       WHERE a.id = d.alert_id AND a.generation = d.generation AND a.status = 'active')`;
 }
 
-function emailVehicle(row: Row): SearchMatchVehicle {
-  const vehicle = row.vehicle as Vehicle;
+function emailVehicle(row: ReturnType<typeof parseMatchedPublication>): SearchMatchVehicle {
+  const { vehicle } = row;
   return {
     slug: String(row.slug), title: [vehicle.make, vehicle.model, vehicle.version, vehicle.year].filter(Boolean).join(' '),
     mileageKm: vehicle.mileageKm, transmission: vehicle.transmission, fuel: vehicle.fuel,
@@ -177,7 +171,7 @@ export async function processNextDelivery() {
       ORDER BY d.created_at LIMIT 1 FOR UPDATE OF d SKIP LOCKED)
     RETURNING id, alert_id, generation, attempts, uncertain, request_payload`;
   if (!rows.length) return false;
-  const row = rows[0];
+  const row = parseRow('inventory_alert_deliveries', rows[0], parseInventoryDelivery);
   try {
     const alerts = await sql`SELECT email FROM public.vehicle_inventory_alerts
       WHERE id = ${row.alert_id}::uuid AND generation = ${row.generation}::uuid AND status = 'active'`;
@@ -193,18 +187,20 @@ export async function processNextDelivery() {
         WHERE m.delivery_id = ${row.id}::uuid
           AND EXISTS (SELECT 1 FROM public.inventory_alert_deliveries WHERE id = ${row.id}::uuid AND lease_id = ${lease}::uuid)
           AND NOT EXISTS (SELECT 1 FROM public.catalog_publications p WHERE p.publication_id = m.publication_id AND p.status = 'active')`;
-      const matches = await sql`SELECT p.slug, p.vehicle, m.previous_status FROM public.inventory_alert_matches m
+      const matches = await sql`SELECT p.publication_id, p.slug, p.vehicle, m.previous_status FROM public.inventory_alert_matches m
         JOIN public.catalog_publications p ON p.publication_id = m.publication_id
         WHERE m.delivery_id = ${row.id}::uuid AND p.status = 'active'
         ORDER BY m.created_at, m.publication_id`;
-      if (!matches.length) {
+      // A car whose stored row is invalid is left out of the email.
+      const vehicles = parseRows('catalog_publications', matches, parseMatchedPublication).map(emailVehicle);
+      if (!vehicles.length) {
         await sql`UPDATE public.inventory_alert_deliveries SET state = 'cancelled', failure_code = 'no_longer_available'
           WHERE id = ${row.id}::uuid AND lease_id = ${lease}::uuid`;
         return true;
       }
-      const vehicles = matches.map(emailVehicle);
       count = vehicles.length;
-      payload = buildSearchMatchEmail({ id: String(row.alert_id), generation: String(row.generation), email: String(alerts[0].email),
+      payload = buildSearchMatchEmail({ id: row.alert_id, generation: row.generation,
+        email: parseRow('vehicle_inventory_alerts', alerts[0], parseAlertEmail),
         vehicles: vehicles.slice(0, MAX_VEHICLES_PER_EMAIL), more: Math.max(0, vehicles.length - MAX_VEHICLES_PER_EMAIL) });
     }
     // Immutable bytes before the first send of a series, and `uncertain` before every send: a crash
@@ -215,7 +211,8 @@ export async function processNextDelivery() {
         series_started_at = COALESCE(series_started_at, now()), uncertain = true
       WHERE id = ${row.id}::uuid AND lease_id = ${lease}::uuid RETURNING request_payload, key_series`;
     if (!frozen.length) return true;
-    const providerId = await sendAlertEmail(frozen[0].request_payload as { to: string[] }, `gonba-search-${row.id}-${frozen[0].key_series}`);
+    const { request_payload: frozenPayload, key_series: series } = parseRow('inventory_alert_deliveries', frozen[0], parseFrozenInventoryDelivery);
+    const providerId = await sendAlertEmail(frozenPayload, `gonba-search-${row.id}-${series}`);
     await sql.transaction([
       sql`UPDATE public.inventory_alert_deliveries SET state = 'accepted', provider_id = ${providerId}, accepted_at = now(),
           lease_until = NULL, failure_code = NULL

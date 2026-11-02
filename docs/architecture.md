@@ -108,6 +108,14 @@ up after eight attempts with the error kept for diagnostics; a single-row lease 
 reconciliation at a time. `GET /api/mercado-libre/diagnostics?sync=1` reports the last reconciliation,
 queue backlog (`jobs.deferred` counts jobs from unlisted addresses) and row counts.
 
+Row validation: every query result is checked by a row parser (`lib/database-rows.ts`, with the
+table parsers in `lib/catalog/rows.ts` and `lib/alerts/rows.ts`) before it becomes a domain type.
+List reads (the catalog listing, the reconciliation's view of the copy, alert matching and the cars of
+a search-alert email) leave an invalid row out; single-item reads and job, lease or outbox bookkeeping
+fail. Both log `invalid_database_row` with the table, the field and only the row's ID. Rows are
+rewritten only when their item is read again, and closed publications never are, so the parsers keep
+every shape ever saved readable: a field added to `Vehicle` must be read there with a default.
+
 ### Forged and repeated notifications
 
 Mercado Libre does not sign notifications, and the seller ID is public, so anyone can post a

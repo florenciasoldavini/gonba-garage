@@ -4,15 +4,14 @@ import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { catalogAccessToken } from '@/lib/integrations/mercado-libre/access-token';
 import { readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/api';
 import { getSql } from '@/lib/database';
+import { parseJobLease, parseRow } from '@/lib/database-rows';
 import { mercadoLibreEnv } from '@/lib/env';
 import { alertEmailsConfigured, requireAlertConfig } from './config';
 import { buildAlertEmail, EmailFailure, sendAlertEmail } from './email';
-
-type Delivery = {
-  id: string; alert_id: string; generation: string; kind: 'welcome' | 'drop';
-  price: number; previous_price: number; currency: string; title: string; vehicle_slug: string;
-  email: string; attempts: number; first_attempt_at: string; request_payload: ReturnType<typeof buildAlertEmail> | null;
-};
+import {
+  parseAlertEmail, parseAlertPublication, parseAlertSlug, parseFrozenPriceDelivery, parseNextPriceAttempt, parsePriceDelivery,
+  parsePriceSignup,
+} from './rows';
 
 /**
  * Signup stores a pending subscription; nothing is delivered until `confirmPriceAlert`. Active
@@ -36,7 +35,7 @@ export async function requestPriceAlert(email: string, vehicle: Vehicle) {
       status = CASE WHEN vehicle_price_alerts.status = 'active' THEN 'active' ELSE 'pending' END,
       updated_at = now()
     RETURNING id, generation, status, vehicle_title`;
-  return rows[0] as { id: string; generation: string; status: 'pending' | 'active'; vehicle_title: string };
+  return parseRow('vehicle_price_alerts', rows[0], parsePriceSignup);
 }
 
 /**
@@ -54,7 +53,7 @@ export async function confirmPriceAlert(id: string, generation: string) {
     SELECT id, generation, 'welcome', current_price, current_price, currency, vehicle_title, vehicle_slug FROM confirmed
     ON CONFLICT DO NOTHING`;
   const rows = await sql`SELECT vehicle_slug FROM public.vehicle_price_alerts WHERE id = ${id} AND generation = ${generation} AND status = 'active'`;
-  return rows.length ? String(rows[0].vehicle_slug) : null;
+  return rows.length ? parseRow('vehicle_price_alerts', rows[0], parseAlertSlug) : null;
 }
 
 /**
@@ -106,7 +105,7 @@ async function processItem() {
       WHERE revision > processed_revision AND next_attempt_at <= now() AND (lease_until IS NULL OR lease_until < now())
       ORDER BY updated_at LIMIT 1 FOR UPDATE SKIP LOCKED) RETURNING publication_id, revision, attempts`;
   if (!jobs.length) return false;
-  const job = jobs[0];
+  const job = parseRow('price_alert_item_jobs', jobs[0], parseJobLease);
   try {
     const subscriptions = await sql`SELECT id FROM public.vehicle_price_alerts WHERE publication_id = ${job.publication_id} AND status = 'active' LIMIT 1`;
     if (subscriptions.length) {
@@ -143,7 +142,7 @@ export async function processPriceDelivery() {
       AND a.status = 'active' AND a.generation = d.generation
       ORDER BY d.created_at LIMIT 1 FOR UPDATE OF d SKIP LOCKED) RETURNING *`;
   if (!rows.length) return false;
-  const row = rows[0] as Delivery;
+  const row = parseRow('price_alert_deliveries', rows[0], parsePriceDelivery);
   try {
     const alerts = await sql`SELECT email FROM public.vehicle_price_alerts WHERE id = ${row.alert_id} AND status = 'active' AND generation = ${row.generation}`;
     if (!alerts.length) {
@@ -152,8 +151,9 @@ export async function processPriceDelivery() {
     }
     if (row.kind === 'drop' && !row.request_payload) {
       const subscription = await sql`SELECT publication_id FROM public.vehicle_price_alerts WHERE id = ${row.alert_id}`;
-      const publication = await readMercadoLibrePublication(subscription[0].publication_id, await catalogAccessToken());
-      if (String(publication.source.seller_id) !== mercadoLibreEnv.sellerId() || publication.source.id !== subscription[0].publication_id) throw new Error('Publication ownership mismatch');
+      const publicationId = parseRow('vehicle_price_alerts', subscription[0], parseAlertPublication);
+      const publication = await readMercadoLibrePublication(publicationId, await catalogAccessToken());
+      if (String(publication.source.seller_id) !== mercadoLibreEnv.sellerId() || publication.source.id !== publicationId) throw new Error('Publication ownership mismatch');
       const current = publication.vehicle;
       if (current.status !== 'active' || current.currency !== row.currency || current.price > Number(row.price)) {
         await sql`UPDATE public.price_alert_deliveries SET state = 'cancelled', failure_code = 'price_no_longer_available'
@@ -161,12 +161,12 @@ export async function processPriceDelivery() {
         return true;
       }
     }
-    const payload = row.request_payload || buildAlertEmail({ ...row, id: row.alert_id, email: alerts[0].email });
+    const payload = row.request_payload || buildAlertEmail({ ...row, id: row.alert_id, email: parseRow('vehicle_price_alerts', alerts[0], parseAlertEmail) });
     // Persist immutable bytes before the first send. Retries use the same payload and key.
     const frozen = await sql`UPDATE public.price_alert_deliveries SET request_payload = ${JSON.stringify(payload)}::jsonb, first_attempt_at = COALESCE(first_attempt_at, now())
       WHERE id = ${row.id} AND lease_id = ${lease} RETURNING request_payload`;
     if (!frozen.length) return true;
-    const providerId = await sendAlertEmail(frozen[0].request_payload, `gonba-price-${row.id}`);
+    const providerId = await sendAlertEmail(parseRow('price_alert_deliveries', frozen[0], parseFrozenPriceDelivery).request_payload, `gonba-price-${row.id}`);
     await sql.transaction([
       sql`UPDATE public.price_alert_deliveries SET state = 'accepted', provider_id = ${providerId}, lease_until = NULL, failure_code = NULL
         WHERE id = ${row.id} AND lease_id = ${lease}`,
@@ -201,7 +201,7 @@ export async function runPriceAlertWork() {
       UNION ALL SELECT next_attempt_at FROM public.price_alert_item_jobs WHERE revision > processed_revision
         AND (lease_until IS NULL OR lease_until < now())
     ) pending`;
-    const next = due[0]?.next ? new Date(due[0].next).getTime() : Infinity;
+    const next = parseRow('price_alert_queues', due[0], parseNextPriceAttempt)?.getTime() ?? Infinity;
     if (next <= Date.now() || next >= deadline) break;
     // Short, bounded waits allow prompt transient retries within this function's lifetime.
     await new Promise(resolve => setTimeout(resolve, Math.min(30_000, next - Date.now() + 50)));

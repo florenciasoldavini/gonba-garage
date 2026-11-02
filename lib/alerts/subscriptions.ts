@@ -1,5 +1,7 @@
 import 'server-only';
+import { parseRow } from '@/lib/database-rows';
 import { getSql } from '@/lib/database';
+import { parseSignup } from './rows';
 
 export type InventorySubscription = {
   email: string;
@@ -36,7 +38,7 @@ export async function saveInventorySubscription(input: InventorySubscription) {
       updated_at = now()
     RETURNING id, generation, status
   `;
-  return rows[0] as { id: string; generation: string; status: 'pending' | 'active' };
+  return parseRow('vehicle_inventory_alerts', rows[0], parseSignup);
 }
 
 /** Idempotent. Returns whether that generation is active now. */
