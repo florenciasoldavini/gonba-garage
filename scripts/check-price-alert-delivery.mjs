@@ -168,6 +168,19 @@ try {
   await engine.enqueueDailyPriceReview();
   await engine.runPriceAlertWork();
   assert.equal(accepted.size, acceptedAfterDaily, 'Repeated daily review sends no duplicates');
+  // Notifications: a finished job is made due again, a duplicate of due work changes nothing.
+  const priceJob = async () => (await db.query("SELECT * FROM price_alert_item_jobs WHERE publication_id='MLA123'")).rows[0];
+  assert.equal(await engine.enqueuePriceItem('MLA999'), false, 'An unsubscribed ID is not work');
+  assert.equal(await engine.enqueuePriceItem('MLA123'), true);
+  const armed = await priceJob();
+  assert.equal(await engine.enqueuePriceItem('MLA123'), false, 'A duplicate needs no drain');
+  assert.equal(Number((await priceJob()).revision), Number(armed.revision), 'and does not bump the revision');
+  await db.exec("UPDATE price_alert_item_jobs SET lease_until = now() + interval '1 minute' WHERE publication_id='MLA123'");
+  assert.equal(await engine.enqueuePriceItem('MLA123'), true, 'A job being read is read again afterwards');
+  await db.exec("UPDATE price_alert_item_jobs SET lease_until = NULL, next_attempt_at = now() - interval '3 minutes' WHERE publication_id='MLA123'");
+  assert.equal(await engine.enqueuePriceItem('MLA123'), true, 'Due work no worker picked up gets a drain');
+  await engine.runPriceAlertWork();
+  assert.equal(accepted.size, acceptedAfterDaily);
   const limiter = load('lib/alerts/signup-limit.ts');
   const from = ip => new Request('https://example.test/api/price-alerts', { method: 'POST', headers: { 'X-Forwarded-For': ip } });
   for (let i = 0; i < 5; i++) assert.equal(await limiter.reserveAlertSignup('price', 'limited@example.invalid', from(`192.0.2.${i}`)), true);
@@ -308,9 +321,9 @@ try {
   await db.exec("UPDATE vehicle_inventory_alerts SET status='cancelled' WHERE email='search@example.invalid'");
   assert.deepEqual(await outcome(searchUrl), { estado: 'no-valido' }, 'A cancelled alert is not reactivated by an old link');
   deferred = [];
-  overrides['@/lib/alerts/price-delivery'] = { enqueuePriceItem: async id => { if (enqueueFail) throw Error(); queued.push(id); }, runPriceAlertWorkSafely: async () => {} };
+  overrides['@/lib/alerts/price-delivery'] = { enqueuePriceItem: async id => { if (enqueueFail) throw Error(); queued.push(id); return true; }, runPriceAlertWorkSafely: async () => {} };
   const syncQueued = [];
-  overrides['@/lib/integrations/mercado-libre/inventory-sync'] = { enqueueCatalogSync: async id => { syncQueued.push(id); }, runCatalogSyncWorkSafely: async () => {} };
+  overrides['@/lib/integrations/mercado-libre/inventory-sync'] = { enqueueCatalogSync: async id => { syncQueued.push(id); return true; }, runCatalogSyncWorkSafely: async () => {} };
   const webhook = load('app/api/mercado-libre/webhook/route.ts');
   const post = body => new Request('https://example.test/api/mercado-libre/webhook', { method: 'POST', body: JSON.stringify(body) });
   const notification = { topic: 'items', resource: '/items/MLA123', user_id: 123, application_id: 456 };
@@ -321,6 +334,13 @@ try {
   assert.deepEqual(queued, ['MLA123']);
   assert.deepEqual(syncQueued, ['MLA123'], 'The same notification also queues a catalog sync');
   assert.equal(deferred.length, 1);
+  // A duplicate of queued price work needs no drain of its own.
+  deferred = [];
+  overrides['@/lib/alerts/price-delivery'].enqueuePriceItem = async id => { queued.push(id); return false; };
+  overrides['@/lib/integrations/mercado-libre/inventory-sync'].enqueueCatalogSync = async () => false;
+  assert.equal((await webhook.POST(post(notification))).status, 200);
+  assert.equal(deferred.length, 0, 'Nothing new to drain, no drain');
+  overrides['@/lib/alerts/price-delivery'].enqueuePriceItem = async () => { if (enqueueFail) throw Error(); return true; };
   enqueueFail = true;
   assert.equal((await webhook.POST(post(notification))).status, 503, 'Failed persistence must request provider retry');
   const cron = load('app/api/alerts/daily/route.ts');
@@ -349,5 +369,5 @@ try {
   await engine.recordPriceObservation('MLA777', legacyVehicle);
   assert.equal(await engine.processPriceDelivery(), true);
   assert.equal(sentTo('legacy@example.invalid', 'Bajó de precio').length, 1, 'Grandfathered alerts still deliver price drops');
-  console.log('Price alert delivery: real PostgreSQL migration, stable publication IDs, recurring drops, concurrent deduplication, frozen idempotent retries, ambiguous send recovery, cancellation generations, double opt-in (pending, capped confirmation emails, scoped expiring tokens, idempotent confirmation), grandfathered alerts, webhook persistence and cron auth passed.');
+  console.log('Price alert delivery: real PostgreSQL migration, stable publication IDs, recurring drops, concurrent deduplication, frozen idempotent retries, ambiguous send recovery, cancellation generations, double opt-in (pending, capped confirmation emails, scoped expiring tokens, idempotent confirmation), grandfathered alerts, webhook persistence, coalesced price jobs and cron auth passed.');
 } finally { globalThis.fetch = realFetch; await db.close(); }

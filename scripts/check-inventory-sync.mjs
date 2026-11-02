@@ -20,9 +20,12 @@ delete process.env.RESEND_API_KEY;
 const db = new PGlite();
 await migrate(pgliteSession(db));
 let failQueries = false;
+// Runs before each application query, to interleave work at an exact point.
+let beforeQuery = null;
 async function sql(strings, ...values) {
   if (failQueries) throw Error('Simulated database outage');
   const text = strings.reduce((result, part, i) => result + part + (i < values.length ? `$${i + 1}` : ''), '');
+  if (beforeQuery) await beforeQuery(text);
   return (await db.query(text, values)).rows;
 }
 const query = async (text, values = []) => (await db.query(text, values)).rows;
@@ -262,7 +265,7 @@ try {
   assert.equal((await row('MLA4')).status, 'active');
   listFails = true;
   await assert.rejects(sync.reconcileCatalog());
-  const run = (await query("SELECT * FROM public.catalog_sync_runs"))[0];
+  const run = (await query("SELECT * FROM public.catalog_sync_runs WHERE id = 'reconciliation'"))[0];
   assert.equal(run.last_failure, 'catalog_query:http_error:503');
   assert.equal(run.lease_id, null, 'A failed run releases its lease');
   listFails = false;
@@ -369,9 +372,9 @@ try {
   }
 
   // Only one reconciliation at a time.
-  await query("UPDATE public.catalog_sync_runs SET lease_id = '00000000-0000-4000-8000-000000000003', lease_until = now() + interval '1 minute'");
+  await query("UPDATE public.catalog_sync_runs SET lease_id = '00000000-0000-4000-8000-000000000003', lease_until = now() + interval '1 minute' WHERE id = 'reconciliation'");
   assert.deepEqual(await sync.reconcileCatalog(), { skipped: true });
-  await query("UPDATE public.catalog_sync_runs SET lease_id = NULL, lease_until = NULL");
+  await query("UPDATE public.catalog_sync_runs SET lease_id = NULL, lease_until = NULL WHERE id = 'reconciliation'");
 
   // Cron route: CRON_SECRET only.
   const cron = (auth) => syncRoute.GET(new Request('https://example.test/api/mercado-libre/sync', auth ? { headers: { Authorization: auth } } : {}));
@@ -434,8 +437,65 @@ try {
   assert.equal(mapped([]).mileageKm, 0);
   assert.equal(mapped([{ id: 'VEHICLE_YEAR', name: 'Año', value_name: '2019' }]).year, 2019);
   assert.equal(mapped([{ id: 'KILOMETERS', name: 'Kilómetros', value_struct: { number: 85000, unit: 'km' } }]).mileageKm, 85000);
+
+  // Forged and repeated notifications. Mercado Libre sends many copies of one change: a copy of work
+  // already queued costs one statement, with no new revision, drain or read.
+  deferred = []; calls.item.length = 0;
+  items.set('MLA30', item('MLA30'));
+  for (let i = 0; i < 5; i++) assert.equal((await notify('MLA30')).status, 200);
+  assert.equal(deferred.length, 1, 'Five copies start one drain');
+  assert.equal(Number((await job('MLA30')).revision), 1, 'Copies of due work add no revision');
+  await runDeferred();
+  assert.deepEqual(calls.item, ['MLA30'], 'and one read');
+  assert.equal((await row('MLA30')).status, 'active');
+  // A copy arriving during the read still makes the item due again afterwards.
+  await query("UPDATE public.catalog_sync_jobs SET revision = revision + 1, lease_id = $1, lease_until = now() + interval '1 minute' WHERE publication_id = 'MLA30'",
+    ['00000000-0000-4000-8000-000000000004']);
+  const reading = Number((await job('MLA30')).revision);
+  await notify('MLA30');
+  assert.equal(Number((await job('MLA30')).revision), reading + 1, 'A notification during a read adds a revision');
+  assert.equal(deferred.length, 1);
+  await query("UPDATE public.catalog_sync_jobs SET lease_id = NULL, lease_until = NULL WHERE publication_id = 'MLA30'");
+  await runDeferred();
+  assert.equal(Number((await job('MLA30')).processed_revision), reading + 1);
+  // Due work that no worker picked up (an interrupted drain) gets a new drain; backoff is kept.
+  await store.enqueueCatalogJobs(['MLA30']);
+  await notify('MLA30');
+  assert.equal(deferred.length, 0, 'A drain is already on its way');
+  await query("UPDATE public.catalog_sync_jobs SET next_attempt_at = now() - interval '3 minutes' WHERE publication_id = 'MLA30'");
+  await notify('MLA30');
+  assert.equal(deferred.length, 1, 'Overdue work gets a drain');
+  deferred = [];
+  await query("UPDATE public.catalog_sync_jobs SET next_attempt_at = now() + interval '10 minutes' WHERE publication_id = 'MLA30'");
+  await notify('MLA30');
+  assert.equal(deferred.length, 0, 'A notification does not cut a backoff short');
+  assert.ok((await job('MLA30')).next_attempt_at > new Date());
+  await query("UPDATE public.catalog_sync_jobs SET next_attempt_at = now() WHERE publication_id = 'MLA30'");
+
+  // One webhook drain at a time. A drain finds work queued while it held the lease before stopping.
+  const otherDrain = '00000000-0000-4000-8000-000000000005';
+  assert.equal(await store.acquireNotificationDrain(otherDrain), true);
+  assert.equal(await store.acquireNotificationDrain('00000000-0000-4000-8000-000000000006'), false);
+  calls.item.length = 0;
+  await sync.runCatalogSyncWorkSafely();
+  assert.deepEqual(calls.item, [], 'While another drain runs, a second one reads nothing');
+  await query("UPDATE public.catalog_sync_runs SET lease_until = now() - interval '1 second' WHERE id = 'notification_drain'");
+  items.set('MLA31', item('MLA31'));
+  beforeQuery = async text => {
+    if (!text.includes("id = 'notification_drain'") || !text.includes('last_completed_at')) return;
+    beforeQuery = null;
+    // Arrives after the drain found nothing more, just before it lets go: its own drain would find
+    // the lease taken.
+    await notify('MLA31');
+  };
+  await sync.runCatalogSyncWorkSafely();
+  deferred = [];
+  assert.deepEqual(calls.item, ['MLA30', 'MLA31'], 'An expired lease is taken over, and late work is still drained');
+  assert.equal((await row('MLA31')).status, 'active');
+  assert.equal((await query("SELECT lease_id FROM public.catalog_sync_runs WHERE id = 'notification_drain'"))[0].lease_id, null);
+
 } finally {
   console.error = previousError;
   await db.close();
 }
-console.log('Inventory sync: migrations, photo placeholder, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth and database-only reads passed.');
+console.log('Inventory sync: migrations, photo placeholder, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth, database-only reads, coalesced notifications with a single drain passed.');

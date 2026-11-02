@@ -28,25 +28,28 @@ export async function POST(request: Request) {
   const catalogSync = isAlertsDatabaseConfigured();
   const priceAlerts = alertEmailsConfigured();
   if (!catalogSync && !priceAlerts) return NextResponse.json({ ok: true }, { headers: privateHeaders });
+  let drainCatalog = false, drainPrices = false;
   try {
     // The payload is only a hint: both queues read the item again from Mercado Libre.
-    if (catalogSync) await enqueueCatalogSync(match[1]);
+    if (catalogSync) drainCatalog = await enqueueCatalogSync(match[1]);
     if (priceAlerts) {
       requireAlertConfig();
-      await enqueuePriceItem(match[1]);
+      drainPrices = await enqueuePriceItem(match[1]);
     }
   } catch {
     // Never acknowledge a relevant event before it is durable. Mercado Libre can retry.
     console.error('mercado_libre_webhook_enqueue_failed');
     return NextResponse.json({ ok: false }, { status: 503, headers: privateHeaders });
   }
+  // A duplicate of work already queued (Mercado Libre sends many) needs no drain of its own.
+  if (!drainCatalog && !drainPrices) return NextResponse.json({ ok: true }, { headers: privateHeaders });
   // Search alerts match what the sync just saved, so they run after it, within the same function.
   const searchAlerts = catalogSync && alertEmailsConfigured();
   const deadline = Date.now() + 270_000;
   after(() => Promise.all([
-    catalogSync && runCatalogSyncWorkSafely()
+    drainCatalog && runCatalogSyncWorkSafely()
       .then(() => searchAlerts ? runInventoryAlertWorkSafely({ budgetMs: deadline - Date.now() }) : undefined),
-    priceAlerts && runPriceAlertWorkSafely(),
+    drainPrices && runPriceAlertWorkSafely(),
   ]));
   return NextResponse.json({ ok: true }, { headers: privateHeaders });
 }

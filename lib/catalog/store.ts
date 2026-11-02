@@ -20,6 +20,8 @@ type Row = Record<string, unknown>;
 
 const PUBLICATION_ID = /^MLA\d+$/;
 const MAX_JOB_ATTEMPTS = 8;
+/** A due job no worker has picked up for this long gets a new drain from the next notification. */
+const OVERDUE_JOB = '2 minutes';
 const NEW_LISTING_DAYS = 7;
 
 function toVehicle(row: Row): Vehicle {
@@ -128,7 +130,7 @@ export async function markPublicationRemoved(id: string, lease: string) {
       WHERE publication_id = ${id} AND lease_id = ${lease}::uuid)`;
 }
 
-/** Idempotent: a repeated notification bumps the revision so the item is read once more. */
+/** Reconciliation (and tests): always makes each item due. */
 export async function enqueueCatalogJobs(ids: string[]) {
   const valid = [...new Set(ids)].filter(id => PUBLICATION_ID.test(id));
   if (!valid.length) return;
@@ -136,6 +138,28 @@ export async function enqueueCatalogJobs(ids: string[]) {
     SELECT unnest(${valid}::text[])
     ON CONFLICT (publication_id) DO UPDATE SET revision = catalog_sync_jobs.revision + 1,
       next_attempt_at = now(), updated_at = now()`;
+}
+
+/**
+ * Queues a notification and returns whether it needs a drain. Duplicates cost one statement:
+ * - a finished job is made due again;
+ * - a job being read gets a new revision, so the item is read again afterwards;
+ * - a job already due is left alone (and keeps its backoff); it only asks for a drain when no worker
+ *   has picked it up for OVERDUE_JOB.
+ */
+export async function enqueueCatalogNotification(id: string) {
+  if (!PUBLICATION_ID.test(id)) return false;
+  const rows = await getAlertsSql()`INSERT INTO public.catalog_sync_jobs AS job (publication_id) VALUES (${id})
+    ON CONFLICT (publication_id) DO UPDATE SET
+      revision = CASE WHEN job.revision > job.processed_revision AND NOT COALESCE(job.lease_until >= now(), false)
+        THEN job.revision ELSE job.revision + 1 END,
+      next_attempt_at = CASE WHEN job.revision > job.processed_revision AND NOT COALESCE(job.lease_until >= now(), false)
+        THEN job.next_attempt_at ELSE now() END,
+      updated_at = now()
+    WHERE job.revision <= job.processed_revision OR COALESCE(job.lease_until >= now(), false)
+      OR job.next_attempt_at < now() - ${OVERDUE_JOB}::interval
+    RETURNING 1`;
+  return rows.length === 1;
 }
 
 export async function leaseCatalogJob(lease: string) {
@@ -189,6 +213,39 @@ export async function acquireReconciliation(lease: string) {
       lease_until = now() + interval '5 minutes', last_started_at = now()
     WHERE id = 'reconciliation' AND (lease_until IS NULL OR lease_until < now()) RETURNING id`;
   return rows.length === 1;
+}
+
+/**
+ * One webhook drain at a time: concurrent notifications would otherwise each read the queue in
+ * parallel. The lease is short and renewed per item, so an interrupted drain blocks others briefly.
+ */
+export async function acquireNotificationDrain(lease: string) {
+  const rows = await getAlertsSql()`INSERT INTO public.catalog_sync_runs AS run (id, lease_id, lease_until, last_started_at)
+    VALUES ('notification_drain', ${lease}::uuid, now() + interval '90 seconds', now())
+    ON CONFLICT (id) DO UPDATE SET lease_id = EXCLUDED.lease_id, lease_until = EXCLUDED.lease_until,
+      last_started_at = EXCLUDED.last_started_at
+    WHERE run.lease_until IS NULL OR run.lease_until < now()
+    RETURNING id`;
+  return rows.length === 1;
+}
+
+export async function renewNotificationDrain(lease: string) {
+  const rows = await getAlertsSql()`UPDATE public.catalog_sync_runs SET lease_until = now() + interval '90 seconds'
+    WHERE id = 'notification_drain' AND lease_id = ${lease}::uuid RETURNING id`;
+  return rows.length === 1;
+}
+
+export async function releaseNotificationDrain(lease: string) {
+  await getAlertsSql()`UPDATE public.catalog_sync_runs SET lease_id = NULL, lease_until = NULL, last_completed_at = now()
+    WHERE id = 'notification_drain' AND lease_id = ${lease}::uuid`;
+}
+
+/** Whether a webhook drain would find a job now. */
+export async function hasDueNotificationJobs() {
+  const rows = await getAlertsSql()`SELECT EXISTS (SELECT 1 FROM public.catalog_sync_jobs
+    WHERE revision > processed_revision AND next_attempt_at <= now()
+      AND (lease_until IS NULL OR lease_until < now())) AS due`;
+  return rows[0].due === true;
 }
 
 export async function finishReconciliation(lease: string, result: { listed: number } | { failure: string }) {
