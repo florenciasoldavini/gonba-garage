@@ -114,7 +114,7 @@ PostgreSQL (PGlite), including concurrent duplicates, original-price preservatio
 injection, constraints and migrating a database created before signup confirmation. It needs no
 credentials. `npm run test:migrations` covers the runner itself, including the baseline.
 
-`npm run test:alerts -- --live` tests the same storage on the selected Neon database and
+`TEST_LIVE=1 npm run test:alerts` tests the same storage on the selected Neon database and
 removes its own uniquely named synthetic test rows afterward. Run locally against development.
 
 Search-alert delivery adds three tables (`20261101_inventory_alert_delivery.sql`):

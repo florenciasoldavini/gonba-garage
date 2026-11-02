@@ -240,12 +240,12 @@ illustrative prices and non-functional preview cancellation links, not real subs
 
 ## Verification
 
-`npm run test:price-alert-delivery` applies the schema twice to real local PostgreSQL (PGlite),
+`npm run test:price-alert-delivery` migrates real local PostgreSQL (PGlite) with the migration runner,
 exercises recurring price baselines, parallel claims, immutable retries, provider acceptance followed
 by DB failure, expired idempotency windows, signed cancellation generations, HTML escaping, notification
 persistence and cron authorization. It never calls real Mercado Libre or sends email.
 
-`npm run test:inventory-alert-delivery` applies every migration twice to PGlite and drives the real
+`npm run test:inventory-alert-delivery` migrates PGlite with the migration runner and drives the real
 catalog sync, webhook, crons, matcher, outbox and routes against fake Mercado Libre, MEP and Resend
 endpoints: the shared search predicate, reserved-car release and the same model, cooldown batching,
 the six-car cap, MEP conversion and missing quotes, once-per-car deduplication under concurrent
