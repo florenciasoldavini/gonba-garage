@@ -419,8 +419,19 @@ try {
   assert.deepEqual(await events('MLA1'), ['closed'], 'A closed listing that comes back is recorded, however old');
   assert.ok((await query("SELECT * FROM public.inventory_alert_events")).every(({ state }) => state === 'pending'),
     'Without alert email configuration nothing is matched');
+
+  // Whole-number attributes sent only as text: the Argentine thousands dot is not a decimal point.
+  const mapped = attributes => mapMercadoLibreItemToVehicle(item('MLA9', { attributes })).vehicle;
+  const kilometers = value_name => mapped([{ id: 'KILOMETERS', name: 'Kilómetros', value_name }]).mileageKm;
+  assert.equal(kilometers('120.000 km'), 120000);
+  assert.equal(kilometers('120,000 km'), 120000);
+  assert.equal(kilometers('120000 km'), 120000);
+  assert.equal(kilometers('sin dato'), 0);
+  assert.equal(mapped([]).mileageKm, 0);
+  assert.equal(mapped([{ id: 'VEHICLE_YEAR', name: 'Año', value_name: '2019' }]).year, 2019);
+  assert.equal(mapped([{ id: 'KILOMETERS', name: 'Kilómetros', value_struct: { number: 85000, unit: 'km' } }]).mileageKm, 85000);
 } finally {
   console.error = previousError;
   await db.close();
 }
-console.log('Inventory sync: rerunnable migrations, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, cron auth and database-only reads passed.');
+console.log('Inventory sync: rerunnable migrations, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth and database-only reads passed.');
