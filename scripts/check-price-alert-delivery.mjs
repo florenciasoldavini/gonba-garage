@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import { resolve, dirname } from 'node:path';
 import ts from 'typescript';
 import { PGlite } from '@electric-sql/pglite';
+import { migrate, pgliteSession, readMigrations } from './migration-runner.mjs';
 
 const require = createRequire(import.meta.url);
 // Alert emails are on wherever this configuration is complete (lib/alerts/config.ts).
@@ -16,10 +17,9 @@ process.env.DATABASE_URL = 'test';
 process.env.MERCADO_LIBRE_SELLER_ID = '123';
 process.env.MERCADO_LIBRE_CLIENT_ID = '456';
 process.env.CRON_SECRET = 'test-cron-secret-never-used-outside-tests';
-const migrations = ['20261028_alert_subscriptions.sql', '20261029_price_alert_delivery.sql', '20261030_alert_signup_confirmation.sql']
-  .map(file => readFileSync(`database/migrations/${file}`, 'utf8'));
+const migrations = readMigrations();
 let db = new PGlite();
-for (let i = 0; i < 2; i++) for (const migration of migrations) await db.exec(migration);
+await migrate(pgliteSession(db), migrations);
 let failCommit = false;
 function sql(strings, ...values) {
   const text = strings.reduce((result, part, i) => result + part + (i < values.length ? `$${i + 1}` : ''), '');
@@ -338,10 +338,10 @@ try {
   // Subscriptions created before double opt-in keep receiving alerts after the migration.
   await db.close();
   db = new PGlite();
-  for (const migration of migrations.slice(0, 2)) await db.exec(migration);
+  await migrate(pgliteSession(db), migrations.slice(0, 2));
   await db.exec(`INSERT INTO vehicle_price_alerts (email, vehicle_slug, publication_id, vehicle_title, current_price, currency, source)
     VALUES ('legacy@example.invalid', 'ford-ka-mla777', 'MLA777', 'Ford Ka 2019', 10000, 'USD', 'mercado_libre')`);
-  for (let i = 0; i < 2; i++) for (const migration of migrations) await db.exec(migration);
+  await migrate(pgliteSession(db), migrations);
   assert.equal((await db.query('SELECT status FROM vehicle_price_alerts')).rows[0].status, 'active', 'Existing alerts are grandfathered as confirmed');
   await engine.enqueueDailyPriceReview();
   assert.deepEqual((await db.query('SELECT publication_id FROM price_alert_item_jobs')).rows, [{ publication_id: 'MLA777' }]);

@@ -35,7 +35,9 @@ npm run build
 - `lib/integrations/` contains server-only adapters for external services.
 - `lib/catalog/` and `lib/alerts/` contain the server-only database access for the synced catalog and
   alerts (Neon PostgreSQL).
-- `database/migrations/` contains versioned database migrations, applied with `npm run db:migrate`.
+- `database/migrations/` contains versioned database migrations, applied in file-name order with
+  `npm run db:migrate`, which records each one in `schema_migrations`
+  ([adding a migration](docs/neon-alert-storage.md#adding-a-migration)).
 
 Copy `.env.example` to `.env.local` and fill in the environment values that are available. The
 database is reached only from server code through the server-only `DATABASE_URL`; never expose it to

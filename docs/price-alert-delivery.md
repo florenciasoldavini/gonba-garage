@@ -196,7 +196,9 @@ availability events, which expire after 72 hours.
 ## Activation after PR review
 
 1. Apply `npm run db:migrate` to the development branch, test, and then production. It applies all
-   migrations and is rerunnable. The new tables and columns are not applied to production by this PR.
+   pending migrations and skips applied ones; a database migrated before the migration history existed
+   needs the one-time baseline first (`docs/neon-alert-storage.md`, "Migrations"). The new tables
+   and columns are not applied to production by this PR.
    Apply the search-alert delivery migration (`20261101`) **before** deploying the code that uses
    it: the catalog sync always records availability events, and its saves fail
    without the new table. The migration only adds tables, so already deployed code is unaffected.

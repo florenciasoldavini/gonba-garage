@@ -3,6 +3,7 @@ import * as crypto from 'node:crypto';
 import * as net from 'node:net';
 import { existsSync, readFileSync } from 'node:fs';
 import ts from 'typescript';
+import { migrate, pgliteSession, readMigrations } from './migration-runner.mjs';
 
 function load(path, dependencies) {
   const result = {};
@@ -170,13 +171,12 @@ if (process.argv.includes('--live')) {
   const { PGlite } = await import('@electric-sql/pglite');
   const db = new PGlite();
   try {
-    const migrations = ['20261028_alert_subscriptions.sql', '20261029_price_alert_delivery.sql', '20261030_alert_signup_confirmation.sql']
-      .map(file => readFileSync(new URL(`../database/migrations/${file}`, import.meta.url), 'utf8'));
+    const migrations = readMigrations();
     // Subscriptions created before double opt-in must stay active (grandfathered as confirmed).
-    for (const migration of migrations.slice(0, 2)) await db.exec(migration);
+    await migrate(pgliteSession(db), migrations.slice(0, 2));
     await db.exec(`INSERT INTO public.vehicle_inventory_alerts (email) VALUES ('legacy@example.invalid');
       INSERT INTO public.vehicle_price_alerts (email, vehicle_slug, current_price, currency) VALUES ('legacy@example.invalid', 'legacy-mla1', 1, 'USD')`);
-    for (let i = 0; i < 2; i++) for (const migration of migrations) await db.exec(migration);
+    await migrate(pgliteSession(db), migrations);
     const sql = async (strings, ...values) => {
       const text = strings.reduce((result, part, index) => result + part + (index < values.length ? '$' + (index + 1) : ''), '');
       return (await db.query(text, values)).rows;
@@ -203,7 +203,7 @@ if (process.argv.includes('--live')) {
       VALUES ('invalid-bounds@example.invalid', 100, 10)`, /check constraint/);
     await assert.rejects(sql`INSERT INTO public.vehicle_price_alerts (email, vehicle_slug, current_price, currency, status)
       VALUES ('invalid-status@example.invalid', 'a', 1, 'USD', 'confirmed')`, /check constraint/);
-    console.log('Local PostgreSQL: rerunnable migrations, grandfathered active rows, real SQL, injection safety and database constraints passed.');
+    console.log('Local PostgreSQL: migrations, grandfathered active rows, real SQL, injection safety and database constraints passed.');
 
     // Real limiter and storage behind both routes, in demo mode (delivery disabled).
     process.env.ALERTS_SIGNING_SECRET = 'test-secret-never-used-outside-tests-123456';
