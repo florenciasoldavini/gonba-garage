@@ -15,13 +15,27 @@ npm install
 npm run dev
 ```
 
-Quality checks:
+Quality checks (CI runs all four on every pull request):
 
 ```bash
 npm run lint
 npm run typecheck
+npm test
 npm run build
 ```
+
+`npm test` runs the Vitest suites in `tests/`. They need no credentials or network: database code
+runs against real PostgreSQL in memory (PGlite) with every migration applied twice, and Mercado
+Libre, the MEP quote and Resend are replaced with fakes. Test fixtures live in the test files and
+`tests/fixtures/`; the application never imports them. `npm run test:watch` reruns them on change,
+and `npm run test:live` adds the checks against the live Mercado Libre category schema and the
+Neon database in `.env.local`.
+
+`npm run test:metadata` checks the SEO and social metadata contract against a running production
+server that reads the real catalog (see
+[Verification](docs/seo-and-social-metadata.md#verification)). CI runs it in both indexing modes
+when the `MERCADO_LIBRE_CATALOG_API_KEY` repository secret is set, and skips it with a notice
+otherwise.
 
 ## Project structure
 
