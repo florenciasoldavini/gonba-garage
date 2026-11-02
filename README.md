@@ -6,11 +6,11 @@ compare cars, sign up for price-drop and saved-search email alerts, and ask for 
 they want to sell.
 Each car keeps a stable page after it is reserved or sold.
 
-**Live:** [gonba-garage.vercel.app](https://gonba-garage.vercel.app) (temporary Vercel host until
-the permanent domain is connected; see the [launch checklist](docs/custom-domain-launch-checklist.md))
+**Live:** [gonbagarage.com.ar](https://gonbagarage.com.ar)
 
 <!--
-TODO(screenshots): add real captures of the production site, then uncomment.
+TODO(screenshots): add real captures of the production site once the final version launches, then
+uncomment.
 Suggested files: docs/screenshots/home.png, docs/screenshots/catalog.png,
 docs/screenshots/vehicle.png, docs/screenshots/alert-email.png. Do not use mock vehicles.
 
