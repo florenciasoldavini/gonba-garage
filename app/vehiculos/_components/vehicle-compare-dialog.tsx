@@ -18,6 +18,7 @@ import {
   type VehicleSpecificationKey,
 } from '@/features/vehicles/presentation/specifications';
 import { ApproximateUsdPrice } from './approximate-usd-price';
+import './vehicle-compare-dialog.css';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP);

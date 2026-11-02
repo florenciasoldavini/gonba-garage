@@ -4,6 +4,7 @@ import { useRef, type ReactNode } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 
 import { CustomSelect } from '@/components/ui/custom-select';
+import './inventory-toolbar.css';
 
 export type InventorySort = 'featured' | 'year' | 'price-asc' | 'price-desc' | 'mileage';
 

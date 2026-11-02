@@ -1,4 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
+import './valuation-step-heading.css';
 
 type ValuationStepHeadingProps = {
   description: string;

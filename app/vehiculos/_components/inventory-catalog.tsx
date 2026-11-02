@@ -23,6 +23,7 @@ import { InventoryToolbar, type InventorySort } from './inventory-toolbar';
 import { MobileInventoryFilters } from './mobile-inventory-filters';
 import { VehicleCompareDialog } from './vehicle-compare-dialog';
 import { VehicleCompareDock } from './vehicle-compare-dock';
+import './inventory-catalog.css';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP);

@@ -5,6 +5,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { captureAnalyticsEvent, type AnalyticsEvent } from '@/lib/analytics/client';
+import './contact-callout.css';
 
 type ContactCalloutProps = {
   actionHref: string;

@@ -10,6 +10,7 @@ import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { siteNavigation, type NavigationKey } from './navigation';
 import { SiteMenu } from './site-menu';
+import './site-header.css';
 
 type SiteHeaderProps = {
   active?: NavigationKey;

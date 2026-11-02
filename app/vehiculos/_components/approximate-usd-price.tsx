@@ -1,6 +1,7 @@
 import type { MepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { formatApproximateUsdPrice } from '@/features/vehicles/presentation/formatters';
+import './approximate-usd-price.css';
 
 type ApproximateUsdPriceProps = {
   className?: string;

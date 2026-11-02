@@ -35,6 +35,7 @@ import { ShareButton } from './_components/share-button';
 import { SimilarVehicleLink } from './_components/similar-vehicle-link';
 import { VehicleAnalytics } from './_components/vehicle-analytics';
 import { VehiclePhotoViewer } from './_components/vehicle-photo-viewer';
+import './page.css';
 
 type VehicleDetailPageProps = {
   params: Promise<{ slug: string }>;

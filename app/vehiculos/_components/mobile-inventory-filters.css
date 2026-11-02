@@ -1,0 +1,18 @@
+.mobile-filter-dialog { width: min(520px, calc(100% - 20px)); max-width: none; height: calc(100dvh - 20px); max-height: none; margin: 10px auto; padding: 0; overflow: hidden; color: var(--text); border: 1px solid var(--line); border-radius: 22px; background: rgba(12, 15, 13, .99); box-shadow: 0 30px 100px rgba(0, 0, 0, .6); }
+.mobile-filter-dialog::backdrop { background: rgba(2, 4, 3, .82); backdrop-filter: blur(10px); }
+.mobile-filter-sheet { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; will-change: transform, opacity; }
+.mobile-filter-header { min-height: 76px; padding: 14px 16px 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--line); }
+.mobile-filter-header > div:first-child { display: flex; align-items: center; gap: 11px; }
+.mobile-filter-header > div:first-child > span { width: 34px; height: 34px; display: grid; place-items: center; color: var(--accent-dark); border-radius: 9px; background: var(--accent); }
+.mobile-filter-header > div:first-child > div { display: grid; gap: 3px; }
+.mobile-filter-header strong { font-size: .86rem; }
+.mobile-filter-header small { color: var(--muted); font-size: var(--text-caption); }
+.mobile-filter-header-actions { display: flex; align-items: center; gap: 8px; }
+.mobile-filter-header-actions > button { min-width: 36px; height: 36px; padding: 0; display: grid; place-items: center; color: #c8cbc4; border: 1px solid var(--line); border-radius: 9px; background: rgba(255, 255, 255, .045); cursor: pointer; transition: color var(--duration-default) ease, border-color var(--duration-default) ease, background var(--duration-default) ease; }
+.mobile-filter-header-actions > .mobile-filter-clear { padding-inline: 10px; font: 600 var(--text-caption) var(--font-sans); }
+.mobile-filter-scroll { min-height: 0; padding: 8px 20px 24px; overflow-y: auto; overscroll-behavior: contain; }
+.mobile-filter-dialog .catalog-filters { position: static; padding: 0; border: 0; background: transparent; box-shadow: none; }
+.mobile-filter-dialog .catalog-filter-heading { display: none; }
+.mobile-filter-footer { padding: 14px 20px max(14px, env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: rgba(12, 15, 13, .98); }
+.mobile-filter-footer .button { width: 100%; }
+.mobile-filter-clear:hover { color: var(--accent); background: rgba(220, 255, 0, .07); }

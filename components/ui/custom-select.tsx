@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { Check, ChevronDown, Search, X } from 'lucide-react';
+import './custom-select.css';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP);

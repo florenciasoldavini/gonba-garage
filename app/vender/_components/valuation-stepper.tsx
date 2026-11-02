@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react';
+import './valuation-stepper.css';
 
 const steps = ['Vehículo', 'Estado', 'Contacto'];
 

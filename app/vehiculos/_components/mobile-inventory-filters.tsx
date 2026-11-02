@@ -5,6 +5,7 @@ import { SlidersHorizontal, X } from 'lucide-react';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { Button } from '@/components/ui/button';
 import { InventoryFilters, type InventoryFiltersProps } from './inventory-filters';
+import './mobile-inventory-filters.css';
 
 function getActiveFilterLabel(count: number) {
   if (count === 0) return 'Sin filtros activos';

@@ -11,6 +11,7 @@ import { confirmationLifetimeHours, alertEmailsConfigured } from '@/lib/alerts/c
 import { getWhatsAppUrl } from '@/lib/contact';
 import { createPageMetadata } from '@/lib/metadata';
 import { AlertResultMotion } from './_components/alert-result-motion';
+import './page.css';
 
 // Where /api/alerts/confirm sends people after the emailed link. Never indexed in any mode.
 export const metadata: Metadata = {

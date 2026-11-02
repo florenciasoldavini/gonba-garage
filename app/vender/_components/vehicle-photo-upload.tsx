@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { ImagePlus, X } from 'lucide-react';
+import './vehicle-photo-upload.css';
 
 type SelectedPhoto = {
   file: File;

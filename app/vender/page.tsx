@@ -8,6 +8,7 @@ import { InnerPageMotion } from '@/components/motion/inner-page-motion';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { createPageMetadata } from '@/lib/metadata';
 import { ValuationForm } from './_components/valuation-form';
+import './page.css';
 
 export const metadata: Metadata = createPageMetadata({
   title: "Vendé tu auto | Gonba's Garage",

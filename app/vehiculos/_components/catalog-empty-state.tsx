@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import './catalog-empty-state.css';
 
 /** Without `alertAction` (alert emails not configured) the copy promises no alert. */
 export function CatalogEmptyState({ alertAction, onReset }: { alertAction: ReactNode; onReset: () => void }) {
