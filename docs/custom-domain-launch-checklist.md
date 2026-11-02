@@ -11,13 +11,22 @@ preferred public hostname.
 > set the final `NEXT_PUBLIC_SITE_URL`, change `SITE_INDEXING_ENABLED=true` in Production, then
 > redeploy and verify both values before submitting the sitemap.
 
-## Current temporary setup
+## Current setup
 
-- Public URL: `https://gonba-garage.vercel.app`
+- Public URL: `https://gonbagarage.com.ar`, connected on Vercel. `www.gonbagarage.com.ar`
+  redirects permanently to it, and production pages already use it as their canonical URL.
 - Hosting: Vercel
 - Canonical URL source: `NEXT_PUBLIC_SITE_URL`
-- Search Console: temporary URL-prefix property for the Vercel URL
+- Temporary hostname: `https://gonba-garage.vercel.app` still serves the site without a redirect
+  and is still the fallback in `lib/site-url.ts`.
+- Indexing: still off (`robots.txt` advertises no sitemap), as intended until the final launch.
+- Search Console: temporary URL-prefix property for the Vercel URL; not yet reviewed for the new
+  domain.
 - Analytics: the existing PostHog project named **Gonba's Garage**
+
+The domain is connected, but the unticked items below have not been confirmed since. Review each
+one at the final launch, in particular the Mercado Libre callback and webhook URLs and
+`ALERTS_PUBLIC_URL`.
 
 Before making changes, record the exact final domain, who controls its DNS, and which hostname is
 canonical. Vercel recommends using `www` as the primary hostname and redirecting the apex domain to
