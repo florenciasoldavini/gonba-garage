@@ -9,20 +9,24 @@ import { SiteHeader } from '@/components/layout/site-header';
 import { ContactCallout } from '@/components/marketing/contact-callout';
 import { InnerPageMotion } from '@/components/motion/inner-page-motion';
 import { JsonLd } from '@/components/seo/json-ld';
+import { BUSINESS_AREA_LABEL, BUSINESS_VISIT_POLICY } from '@/constants/contact';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { ButtonAnchor, ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { findCatalogPublication, findCatalogVehicle, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { fullSizeMercadoLibreImageUrl } from '@/lib/integrations/mercado-libre/pictures';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
+import { unbreakableVersionSegments } from '@/features/vehicles/presentation/listing-cleanup';
 import { publicVehicleAttributes } from '@/features/vehicles/presentation/public-attributes';
 import { VehicleSpecificationGroups } from './_components/vehicle-specification-groups';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 import { pickSimilarVehicles } from '@/features/vehicles/domain/similar-vehicles';
 import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle } from '@/features/vehicles/domain/vehicle';
+import { ApproximateUsdPrice } from '../_components/approximate-usd-price';
 import { CatalogVehicleCard } from '../_components/catalog-vehicle-card';
 import { InventoryAlert, type InventoryAlertCriteria } from '../_components/inventory-alert';
 import { createPageMetadata } from '@/lib/metadata';
+import { getMepQuote } from '@/lib/integrations/mep-quote';
 import { getSiteUrl } from '@/lib/site-url';
 import { ORGANIZATION_SCHEMA_ID } from '@/lib/structured-data';
 import type { AnalyticsEvent } from '@/lib/analytics/client';
@@ -101,12 +105,14 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const siteUrl = getSiteUrl();
   const vehicleUrl = new URL(`/vehiculos/${vehicle.slug}`, siteUrl).toString();
   const compareHref = `/vehiculos?comparar=${vehicle.slug}#inventario`;
-  const vehicleContactHref = getWhatsAppUrl(`Hola, quiero consultar por el ${vehicle.make} ${vehicle.model}.`);
   const status = getVehicleStatusPresentation(vehicle);
   const isReserved = status.status === 'paused';
   const vehicleName = `${vehicle.make} ${vehicle.model}`;
   const bodyType = vehicle.body.split(' · ')[0];
   const formattedPrice = formatVehiclePrice(vehicle.price, vehicle.currency);
+  // The seller has several cars of the same model, so every message names the exact publication.
+  const vehicleReference = [vehicle.make, vehicle.model, vehicle.version, vehicle.year].filter(Boolean).join(' ');
+  const vehicleContactHref = getWhatsAppUrl(`Hola, quiero consultar por el ${vehicleReference}, publicado a ${formattedPrice}. ${vehicleUrl}`);
   // Alerts are offered only where their emails can be sent (production, not previews).
   const alertsEnabled = alertEmailsConfigured();
 
@@ -118,6 +124,10 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
     similarVehicles = pickSimilarVehicles(vehicle, catalog);
     availableCount = catalog.length;
   }
+  // Only peso prices get the approximate dollar line, so the quote is fetched only when one is shown.
+  const quote = vehicle.currency === 'ARS' || similarVehicles.some(({ currency }) => currency === 'ARS')
+    ? await getMepQuote()
+    : null;
   // Reserved: the same model coming back (the reservation fell through, or a relisting). Sold: the
   // same make and body type.
   const alertCriteria: InventoryAlertCriteria = {
@@ -137,12 +147,12 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
     eyebrow: 'Coordiná una visita',
     title: 'Conocelo en persona. El resto se entiende manejando.',
   } : isReserved ? {
-    href: getWhatsAppUrl(`Hola, vi que el ${vehicleName} está reservado. Si se libera, avisame.`),
+    href: getWhatsAppUrl(`Hola, vi que el ${vehicleReference}, publicado a ${formattedPrice}, está reservado. Si se libera, avisame. ${vehicleUrl}`),
     label: 'Escribinos por WhatsApp',
     eyebrow: '¿Te interesaba este?',
     title: 'Escribinos. Si la reserva se cae, sos el primero en saberlo.',
   } : {
-    href: getWhatsAppUrl(`Hola, vi que el ${vehicleName} ya se vendió. Estoy buscando algo parecido.`),
+    href: getWhatsAppUrl(`Hola, vi que el ${vehicleReference}, último precio publicado ${formattedPrice}, ya se vendió. Estoy buscando algo parecido. ${vehicleUrl}`),
     label: 'Escribinos por WhatsApp',
     eyebrow: '¿Buscás algo parecido?',
     title: 'Contanos qué auto buscás. Te avisamos cuando entre.',
@@ -246,7 +256,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       <section className="section-shell detail-title" aria-labelledby="vehicle-title">
         <div>
           <Eyebrow>{status.label}</Eyebrow>
-          <h1 id="vehicle-title">{`${vehicle.make} ${vehicle.model}`}{' '}<em>{vehicle.version}</em></h1>
+          <h1 id="vehicle-title">{`${vehicle.make} ${vehicle.model}`}{' '}<em>{unbreakableVersionSegments(vehicle.version)}</em></h1>
         </div>
         <div className="detail-title-meta">
           <span>{vehicle.year}</span>
@@ -256,7 +266,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       </section>
 
       <section className="section-shell detail-showcase" data-status={status.status} aria-label="Presentación del vehículo">
-        <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} stockCode={vehicle.stockCode} />
+        <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} />
         {!status.isAvailable && (
           <p className="detail-status-banner" data-status={status.status}>
             <b>{status.label}</b>
@@ -289,7 +299,9 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             <>
               <p className="detail-price-label">Precio publicado</p>
               <p className="detail-price">{formattedPrice}</p>
-              <p className="detail-location">{vehicle.location}</p>
+              <ApproximateUsdPrice className="detail-price-usd" quote={quote} vehicle={vehicle} />
+              {/* The business area, not Mercado Libre's seller address, which is the same for every car. */}
+              <p className="detail-location">{`${BUSINESS_AREA_LABEL} · ${BUSINESS_VISIT_POLICY}`}</p>
               {alertsEnabled ? (
                 <PriceAlert
                   vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
@@ -320,7 +332,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
               </p>
               <dl className="detail-last-price">
                 <dt>{isReserved ? 'Precio publicado' : 'Último precio publicado'}</dt>
-                <dd>{formattedPrice}</dd>
+                <dd>{formattedPrice}{isReserved && <ApproximateUsdPrice quote={quote} vehicle={vehicle} />}</dd>
               </dl>
               {alertsEnabled ? <InventoryAlert
                 activeFilterCount={2}
@@ -371,8 +383,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             <Link className="text-link" href="/vehiculos">Ver inventario completo <Arrow /></Link>
           </div>
           <div className="detail-similar-grid">
-            {similarVehicles.map((similar, index) => (
-              <CatalogVehicleCard headingLevel="h3" index={index} key={similar.slug} vehicle={similar} />
+            {similarVehicles.map((similar) => (
+              <CatalogVehicleCard headingLevel="h3" key={similar.slug} quote={quote} vehicle={similar} />
             ))}
             {similarVehicles.length < 3 && (
               <Link className="detail-similar-more glass-panel" href="/vehiculos">
@@ -401,7 +413,6 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         <div className="detail-specs glass-panel">
           <div className="detail-specs-heading">
             <p>Ficha técnica</p>
-            <span>{vehicle.stockCode}</span>
           </div>
           <VehicleSpecificationGroups attributes={attributes} />
         </div>

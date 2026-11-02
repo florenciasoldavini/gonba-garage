@@ -7,9 +7,11 @@ import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ArrowUpRight, Check, Scale } from 'lucide-react';
 
+import type { MepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { formatVehicleImageAlt, formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
+import { ApproximateUsdPrice } from './approximate-usd-price';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP);
@@ -19,19 +21,20 @@ type CatalogVehicleCardProps = {
   compareDisabled?: boolean;
   /** h3 when the card sits under another section heading, as in the similar-cars rail. */
   headingLevel?: 'h2' | 'h3';
-  index: number;
   isSelected?: boolean;
   /** Without it the card has no compare button. */
   onToggleComparison?: (vehicle: Vehicle) => void;
+  /** Adds the approximate dollar line under a peso price. */
+  quote?: MepQuote | null;
   vehicle: Vehicle;
 };
 
 export function CatalogVehicleCard({
   compareDisabled = false,
   headingLevel: Heading = 'h2',
-  index,
   isSelected = false,
   onToggleComparison,
+  quote = null,
   vehicle,
 }: CatalogVehicleCardProps) {
   const cardRef = useRef<HTMLElement>(null);
@@ -67,7 +70,6 @@ export function CatalogVehicleCard({
             className="cover-image"
           />
         </Link>
-        <span className="catalog-card-index">{String(index + 1).padStart(2, '0')}</span>
         <span className="catalog-card-status">{status.label}</span>
         {onToggleComparison && (
           <button
@@ -95,7 +97,10 @@ export function CatalogVehicleCard({
       <div className="catalog-card-facts">
         <span>{formatVehicleMileage(vehicle.mileageKm)}</span>
         <span>{vehicle.transmission.split(',')[0]}</span>
-        <strong>{formatVehiclePrice(vehicle.price, vehicle.currency)}</strong>
+        <div className="catalog-card-price">
+          <strong>{formatVehiclePrice(vehicle.price, vehicle.currency)}</strong>
+          <ApproximateUsdPrice quote={quote} vehicle={vehicle} />
+        </div>
       </div>
     </article>
   );

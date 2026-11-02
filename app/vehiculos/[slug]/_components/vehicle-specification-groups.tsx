@@ -1,13 +1,11 @@
 import { ChevronDown } from 'lucide-react';
 import type { MercadoLibreAttribute } from '@/lib/integrations/mercado-libre/types';
-import { groupPublicVehicleAttributes } from '@/features/vehicles/presentation/public-attributes';
+import { formatVehicleAttributeValue, groupPublicVehicleAttributes } from '@/features/vehicles/presentation/public-attributes';
 import { SpecificationAccordionMotion } from './specification-accordion-motion';
 
 function AttributeList({ attributes }: { attributes: MercadoLibreAttribute[] }) {
   return <dl>{attributes.map(attribute => {
-    const value = attribute.value_name
-      ?? attribute.values?.map(candidate => candidate.name).filter(Boolean).join(', ')
-      ?? 'No especificado';
+    const value = formatVehicleAttributeValue(attribute);
     return <div key={attribute.id}><dt>{attribute.name}</dt><dd>{value || 'No especificado'}</dd></div>;
   })}</dl>;
 }

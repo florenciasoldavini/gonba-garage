@@ -81,12 +81,11 @@ export default async function Home() {
           </div>
         </div>
         {vehicles.length > 0 ? <div className="vehicle-grid">
-          {vehicles.map((vehicle, index) => (
+          {vehicles.map((vehicle) => (
             <Link className="vehicle-card-link" href={`/vehiculos/${vehicle.slug}`} key={vehicle.slug}>
               <article className="vehicle-card glass-panel" data-status={getVehicleStatusPresentation(vehicle).status}>
                 <div className="vehicle-image">
                   <Image src={vehicle.image} alt={formatVehicleImageAlt(vehicle)} fill sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw" className="cover-image" />
-                  <span className="vehicle-index">0{index + 1}</span>
                   <span className="vehicle-status">{getVehicleStatusPresentation(vehicle).label}</span>
                 </div>
                 <div className="vehicle-copy">

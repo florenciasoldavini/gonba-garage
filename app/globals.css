@@ -344,9 +344,7 @@ h3 { letter-spacing: -0.04em; }
 .vehicle-card { height: 100%; min-width: 0; padding: 10px 10px 20px; border-radius: var(--radius); overflow: hidden; }
 .vehicle-image { position: relative; height: clamp(280px, 34vw, 470px); overflow: hidden; border-radius: 11px; }
 .vehicle-card:hover .cover-image { transform: scale(1.035); }
-.vehicle-index, .vehicle-status { position: absolute; top: 12px; padding: 8px 10px; border-radius: 7px; font: 600 var(--text-label) var(--font-mono); }
-.vehicle-index { left: 12px; color: var(--accent); background: rgba(6, 8, 6, 0.77); backdrop-filter: blur(12px); }
-.vehicle-status { right: 12px; color: var(--accent-dark); background: var(--accent); text-transform: uppercase; }
+.vehicle-status { position: absolute; top: 12px; right: 12px; padding: 8px 10px; border-radius: 7px; font: 600 var(--text-label) var(--font-mono); color: var(--accent-dark); background: var(--accent); text-transform: uppercase; }
 .vehicle-copy { padding: 20px 8px 0; display: flex; justify-content: space-between; gap: 20px; align-items: center; }
 .vehicle-copy p { margin-bottom: 5px; color: var(--accent); font: 500 var(--text-micro) var(--font-mono); }
 .vehicle-copy h3 { margin: 0; font-size: clamp(1.15rem, 2vw, 1.5rem); }
@@ -524,15 +522,17 @@ h3 { letter-spacing: -0.04em; }
 .catalog-card-image { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 11px; background: #111411; }
 .catalog-card-image-link { position: absolute; inset: 0; }
 .catalog-card:hover .cover-image { transform: scale(1.035); }
-.catalog-card-index, .catalog-card-status {
+.catalog-card-status {
   position: absolute;
   top: 12px;
+  right: 12px;
   padding: 8px 10px;
   border-radius: 7px;
   font: 600 var(--text-label) var(--font-mono);
+  color: var(--accent-dark);
+  background: var(--accent);
+  text-transform: uppercase;
 }
-.catalog-card-index { left: 12px; color: var(--accent); background: rgba(6, 8, 6, 0.76); backdrop-filter: blur(12px); }
-.catalog-card-status { right: 12px; color: var(--accent-dark); background: var(--accent); text-transform: uppercase; }
 /* Solid lime means available. Other statuses keep a distinct badge and a muted photo. */
 :is(.vehicle-card, .catalog-card)[data-status='paused'] :is(.vehicle-status, .catalog-card-status) { color: var(--accent); background: rgba(6, 8, 6, 0.77); box-shadow: inset 0 0 0 1px rgba(220, 255, 0, 0.7); backdrop-filter: blur(12px); }
 :is(.vehicle-card, .catalog-card)[data-status='sold'] :is(.vehicle-status, .catalog-card-status) { color: var(--background); background: var(--text); }
@@ -568,6 +568,7 @@ h3 { letter-spacing: -0.04em; }
 .catalog-card-facts { min-height: 60px; padding: 16px 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 13px; border-top: 1px solid var(--line); }
 .catalog-card-facts span { color: var(--muted); font-size: var(--text-caption); }
 .catalog-card-facts strong { margin-left: auto; font-size: 0.86rem; }
+.catalog-card-price { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 .catalog-empty { min-height: 510px; justify-content: center; }
 .catalog-contact {
   min-height: 340px;
@@ -651,7 +652,7 @@ h3 { letter-spacing: -0.04em; }
   border-radius: 24px;
   background: #111411;
 }
-.detail-image-count, .detail-stock {
+.detail-image-count {
   position: absolute;
   bottom: 18px;
   padding: 9px 11px;
@@ -661,7 +662,6 @@ h3 { letter-spacing: -0.04em; }
   font: 600 var(--text-label) var(--font-mono);
 }
 .detail-image-count { left: 18px; color: var(--accent); }
-.detail-stock { right: 18px; color: #dfe1dc; }
 .detail-purchase-card {
   min-height: 0;
   padding: clamp(26px, 3vw, 42px);
@@ -685,6 +685,11 @@ h3 { letter-spacing: -0.04em; }
 .detail-price-label { margin: clamp(48px, 5vw, 76px) 0 8px; color: var(--muted); font-size: var(--text-caption); }
 .detail-price { margin-bottom: 7px; font-size: clamp(2.35rem, 3.3vw, 3.5rem); font-weight: 800; letter-spacing: -0.07em; white-space: nowrap; }
 .detail-location { color: var(--muted); font-size: 0.78rem; }
+/* The approximate dollar line under a peso price: always quieter than the seller's price above it. */
+.price-usd-approx { display: block; color: var(--muted); font: 500 var(--text-fine) var(--font-mono); letter-spacing: 0; white-space: nowrap; }
+.price-usd-approx > span { color: inherit; font-size: inherit; }
+.detail-price-usd { margin: -2px 0 9px; font-size: var(--text-caption); }
+.detail-last-price dd .price-usd-approx { margin-top: 4px; text-align: right; }
 .detail-actions { margin-top: 12px; display: grid; gap: 9px; }
 .detail-actions .button { width: 100%; gap: 18px; }
 .detail-share-button, .detail-compare-button {
@@ -918,7 +923,6 @@ h3 { letter-spacing: -0.04em; }
 .detail-specs { position: sticky; top: 28px; border-radius: var(--radius); overflow: hidden; }
 .detail-specs-heading { padding: 24px; display: flex; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--line); }
 .detail-specs-heading p { margin: 0; font-weight: 800; }
-.detail-specs-heading span { color: var(--accent); font: 500 var(--text-micro) var(--font-mono); }
 .detail-specs dl { margin: 0; }
 .detail-specs dl div { padding: 17px 24px; display: grid; grid-template-columns: 0.8fr 1.2fr; gap: 20px; border-bottom: 1px solid var(--line); }
 .detail-specs dl div:last-child { border-bottom: 0; }
@@ -1253,6 +1257,7 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 .footer-columns .footer-link-group { gap: 15px; }
 .footer-columns .footer-link-list a { color: var(--text); font-size: 0.85rem; }
 .footer-columns .footer-link-list a:hover { color: var(--accent); }
+.footer-contact-number { white-space: nowrap; }
 .footer-visits-label { color: var(--accent); font: 700 var(--text-label) var(--font-mono); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
 .footer-visits ul { margin: 0; padding: 0; display: grid; gap: 6px; color: var(--text); font-size: 0.85rem; list-style: none; }
 .footer-visits a { margin-top: var(--space-1); }
@@ -1380,6 +1385,7 @@ html:has(.compare-selection-dialog[open]) { overflow: hidden; }
 .vehicle-compare-card > a:hover svg { transform: translate(3px, -2px); }
 .vehicle-compare-row { min-height: 70px; border-top: 1px solid var(--line); }
 .vehicle-compare-row > div { min-width: 0; padding: 17px 18px; display: flex; align-items: center; border-left: 1px solid var(--line); font-size: 0.75rem; line-height: 1.4; }
+.vehicle-compare-price { display: flex; flex-direction: column; gap: 3px; }
 .vehicle-compare-row > div:first-child { padding-left: 0; color: #858a82; border-left: 0; font: 500 var(--text-label) var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; }
 .vehicle-compare-content:has(+ .vehicle-compare-empty > div) { padding-bottom: 0; }
 .vehicle-compare-empty { position: sticky; left: 0; padding-inline: clamp(18px, 3vw, 36px); }

@@ -3,6 +3,7 @@ import { extname, join, sep } from 'node:path';
 import { createElement } from 'react';
 import { ImageResponse } from 'next/og';
 
+import { BUSINESS_AREA_LABEL } from '@/constants/contact';
 import { findCatalogVehicle } from '@/lib/integrations/mercado-libre/catalog';
 import { formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
@@ -146,7 +147,7 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
           createElement(
             'div',
             { style: { color: 'rgba(245,246,242,0.76)', display: 'flex', fontSize: 18, paddingTop: 16 } },
-            vehicle.location,
+            BUSINESS_AREA_LABEL,
           ),
         ),
       ),

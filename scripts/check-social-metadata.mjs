@@ -164,9 +164,10 @@ for (const route of routes) {
     const dealerLogoBytes = Buffer.from(await dealerLogo.arrayBuffer());
     assert.equal(dealerLogoBytes.readUInt32BE(16), dealerLogoBytes.readUInt32BE(20), 'The AutoDealer logo should be square');
     assert.ok(dealerLogoBytes.readUInt32BE(16) >= 112, 'The AutoDealer logo should be at least 112px');
-    // The address is a visible fact: the footer shows the same area beside the appointment-only hours.
+    // The address and the telephone are visible facts: the footer shows the same area beside the
+    // appointment-only hours, and the WhatsApp number behind the dealer telephone.
     const footerText = decodeHtml(html.match(/<footer\b.*?<\/footer>/s)?.[0].replace(/<!--.*?-->/g, '').replace(/<[^>]+>/g, ' ') ?? '').replace(/\s+/g, ' ');
-    for (const fact of ['Villa Pueyrredón, CABA', 'Lunes a viernes de 10 a 18 h', 'Sábados de 10 a 13 h', 'Siempre con cita previa', 'Pedí tu cita']) {
+    for (const fact of ['Villa Pueyrredón, CABA', 'Lunes a viernes de 10 a 18 h', 'Sábados de 10 a 13 h', 'Siempre con cita previa', 'Pedí tu cita', '+54 9 11 4414-8316']) {
       assert.ok(footerText.includes(fact), `Footer must show "${fact}"`);
     }
     assert.ok(metadata.icon, 'Home should link the branded favicon');

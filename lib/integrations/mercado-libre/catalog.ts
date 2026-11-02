@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle } from '@/features/vehicles/domain/vehicle';
+import { cleanCatalogVehicle } from '@/features/vehicles/presentation/listing-cleanup';
 import {
   findCatalogPublication as findStoredPublication,
   listActiveCatalogVehicles,
@@ -42,11 +43,16 @@ function withFullSizeImage(vehicle: Vehicle): Vehicle {
   return { ...vehicle, image: fullSizeMercadoLibreImageUrl(vehicle.image) ?? vehicle.image };
 }
 
+/** The vehicle as every page shows it: full-size image and the automatic cleanup of the listing text. */
+function presentVehicle(vehicle: Vehicle, attributes?: CatalogPublication['source']['attributes']): Vehicle {
+  return cleanCatalogVehicle(withFullSizeImage(vehicle), attributes);
+}
+
 export const listCatalogVehicles = cache(async () => {
-  if (!readsRemoteBackend()) return (await listActiveCatalogVehicles()).map(withFullSizeImage);
+  if (!readsRemoteBackend()) return (await listActiveCatalogVehicles()).map(vehicle => presentVehicle(vehicle));
   const result = await remoteCatalog<{ vehicles: Vehicle[] }>();
   if (!result) throw new Error('Missing catalog');
-  return result.vehicles.map(withFullSizeImage);
+  return result.vehicles.map(vehicle => presentVehicle(vehicle));
 });
 
 /**
@@ -57,7 +63,7 @@ export const findCatalogPublication = cache(async (slug: string): Promise<Catalo
   const id = slug.match(/-(mla\d+)$/i)?.[1]?.toUpperCase();
   if (!id) return null;
   const result = readsRemoteBackend() ? await remoteCatalog<CatalogPublication>(id) : await findStoredPublication(id);
-  return result ? { ...result, vehicle: withFullSizeImage(result.vehicle) } : null;
+  return result ? { ...result, vehicle: presentVehicle(result.vehicle, result.source.attributes) } : null;
 });
 
 /** Only an exact canonical slug resolves to a vehicle. */

@@ -69,7 +69,8 @@ Do not add `keywords` metadata: it is not part of this project's SEO strategy.
 - Use one share-card URL per vehicle slug so different vehicles do not collapse into the same social
   preview cache entry.
 - Include the vehicle identity, year/version, price, location, and lifecycle label only when those
-  values are current and visible to users.
+  values are current and visible to users. The location is the business area (`BUSINESS_AREA_LABEL`
+  in `constants/contact.ts`), as on the car page, never the seller address Mercado Libre returns.
 - Use descriptive alt text. Alt text describes the card or vehicle; it is not a list of keywords.
 - Preserve safe margins and legibility at small preview sizes. Do not place critical text against the
   image edges.

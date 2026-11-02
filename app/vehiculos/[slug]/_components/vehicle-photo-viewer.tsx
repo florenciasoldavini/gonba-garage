@@ -9,7 +9,6 @@ import { VEHICLE_PHOTO_PLACEHOLDER } from '@/features/vehicles/domain/vehicle';
 type Props = {
   photos: string[];
   title: string;
-  stockCode?: string;
   layout?: 'primary' | 'grid';
 };
 
@@ -29,7 +28,7 @@ function Photo({ src, alt, expanded = false, eager = false }: {
     </>;
 }
 
-export function VehiclePhotoViewer({ photos, title, stockCode, layout = 'primary' }: Props) {
+export function VehiclePhotoViewer({ photos, title, layout = 'primary' }: Props) {
   const [index, setIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -49,7 +48,6 @@ export function VehiclePhotoViewer({ photos, title, stockCode, layout = 'primary
   if (!count) return layout === 'primary'
     ? <div className="detail-primary-image">
       <Photo src={VEHICLE_PHOTO_PLACEHOLDER} alt={`${title}: foto no disponible`} eager />
-      {stockCode && <span className="detail-stock">Stock {stockCode}</span>}
     </div>
     : null;
   const move = (direction: number) => setIndex(current => (current + direction + count) % count);
@@ -102,7 +100,6 @@ export function VehiclePhotoViewer({ photos, title, stockCode, layout = 'primary
         <button type="button" className="detail-photo-arrow detail-photo-arrow-next" onClick={() => move(1)} aria-label="Foto siguiente"><ChevronRight aria-hidden="true" size={20} strokeWidth={1.8} /></button>
       </>}
       <span className="detail-image-count" role="status" aria-live="polite" aria-atomic="true">{String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}</span>
-      {stockCode && <span className="detail-stock">Stock {stockCode}</span>}
     </div> : <section className="section-shell detail-gallery" aria-label="Galería del vehículo">
       {photos.map((src, photoIndex) => <button type="button" className="detail-gallery-image" key={`${src}-${photoIndex}`} onClick={event => open(photoIndex, event.timeStamp)} aria-label={`Ampliar foto ${photoIndex + 1} de ${count}`}>
         <Photo src={src} alt={`${title} · Foto ${photoIndex + 1}`} />
