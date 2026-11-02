@@ -1,26 +1,39 @@
-import { readFileSync, existsSync } from 'node:fs';
-import { neon } from '@neondatabase/serverless';
+import { existsSync } from 'node:fs';
+import { Client } from '@neondatabase/serverless';
+import { migrate } from './migration-runner.mjs';
+
+// npm run db:migrate                  apply pending migrations
+// npm run db:migrate -- --status      list what would be applied, change nothing
+// npm run db:migrate -- --baseline    once per existing database: record the migrations it already has
+// See docs/neon-alert-storage.md, "Migrations".
+const args = process.argv.slice(2);
+const unknown = args.filter(arg => !['--status', '--baseline'].includes(arg));
+if (unknown.length > 0) throw Error(`Unknown option ${unknown.join(' ')}. Use --status or --baseline.`);
 
 if (existsSync('.env.local')) process.loadEnvFile('.env.local');
 if (!process.env.DATABASE_URL) throw new Error('Set the server-only DATABASE_URL before migrating.');
 // Use the same branch credentials with a direct endpoint for schema work.
 const migrationUrl = new URL(process.env.DATABASE_URL);
 migrationUrl.hostname = migrationUrl.hostname.replace('-pooler.', '.');
-const sql = neon(migrationUrl.toString());
-// This migration deliberately contains plain DDL only, without functions or embedded semicolons.
-const migration = ['20261028_alert_subscriptions.sql', '20261029_price_alert_delivery.sql', '20261030_alert_signup_confirmation.sql', '20261031_catalog_sync.sql',
-  '20261101_inventory_alert_delivery.sql', '20261102_catalog_vehicle_category.sql']
-  .map(file => readFileSync(new URL('../database/migrations/' + file, import.meta.url), 'utf8')).join('\n');
-const statements = migration.split(';').map(statement => statement.trim()).filter(Boolean);
-await sql.transaction(statements.map(statement => sql.query(statement)));
-const tables = await sql`SELECT tablename FROM pg_tables WHERE schemaname = 'public'
-  AND tablename IN ('vehicle_price_alerts', 'vehicle_inventory_alerts', 'price_alert_item_jobs', 'price_alert_deliveries', 'price_alert_signup_windows',
-    'catalog_publications', 'catalog_price_history', 'catalog_sync_jobs', 'catalog_sync_runs',
-    'inventory_alert_events', 'inventory_alert_deliveries', 'inventory_alert_matches') ORDER BY tablename`;
-if (tables.length !== 12) throw new Error('Alert or catalog tables are incomplete.');
-const confirmation = await sql`SELECT table_name FROM information_schema.columns WHERE table_schema = 'public'
-  AND column_name = 'confirmed_at' AND table_name IN ('vehicle_price_alerts', 'vehicle_inventory_alerts')`;
-if (confirmation.length !== 2) throw new Error('Alert confirmation columns are incomplete.');
-const vehicleCategory = await sql`SELECT 1 FROM pg_constraint WHERE conname = 'catalog_publications_vehicle_category_check'`;
-if (vehicleCategory.length !== 1) throw new Error('The catalog vehicle category constraint is missing.');
-console.log('Alert subscription, delivery, confirmation, catalog sync and search-alert delivery schema applied and verified (12 tables).');
+// A WebSocket session, not the HTTP `neon()` driver: HTTP queries are single prepared statements,
+// while a migration file is several statements run as one batch inside an explicit transaction.
+// Node 22 provides the global WebSocket the driver uses.
+const client = new Client(migrationUrl.toString());
+client.on('error', error => console.error('Database connection error:', error.message));
+await client.connect();
+try {
+  console.log(`Database: ${migrationUrl.hostname}${migrationUrl.pathname}`);
+  const session = { exec: text => client.query(text), query: async (text, params) => (await client.query(text, params)).rows };
+  const status = args.includes('--status');
+  const { applied, skipped, baselined } = await migrate(session, undefined,
+    { baseline: args.includes('--baseline'), dryRun: status, log: message => console.log(message) });
+  if (baselined.length > 0) {
+    console.log(`${status ? 'Would record' : 'Recorded'} a baseline of ${baselined.length} migration(s). Then run npm run db:migrate.`);
+  } else if (status) {
+    console.log(`Status only, nothing was changed: ${applied.length} pending, ${skipped.length} already applied.`);
+  } else {
+    console.log(`Applied ${applied.length} migration(s); ${skipped.length} already applied.`);
+  }
+} finally {
+  await client.end();
+}
