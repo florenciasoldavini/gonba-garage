@@ -10,6 +10,7 @@ import {
   BUSINESS_VISIT_POLICY,
   INSTAGRAM_URL,
   WHATSAPP_APPOINTMENT_MESSAGE,
+  WHATSAPP_DISPLAY_NUMBER,
   WHATSAPP_URL,
 } from '@/constants/contact';
 import { LEGAL_PAGES } from '@/constants/legal';
@@ -90,10 +91,12 @@ export function SiteFooter({
               <TrackedAnchor
                 analyticsEvent={{ name: 'contact_intent_clicked', properties: { channel: 'whatsapp', placement: 'footer' } }}
                 href={WHATSAPP_URL}
+                aria-label={`WhatsApp ${WHATSAPP_DISPLAY_NUMBER}`}
                 target="_blank"
                 rel="noreferrer"
               >
-                WhatsApp <ArrowUpRight aria-hidden="true" size={13} />
+                <span className="footer-contact-number">{WHATSAPP_DISPLAY_NUMBER}</span>
+                <ArrowUpRight aria-hidden="true" size={13} />
               </TrackedAnchor>
             </div>
           </nav>
