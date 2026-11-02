@@ -33,7 +33,7 @@ const query = async (text, values = []) => (await db.query(text, values)).rows;
 // Fake Mercado Libre. Items are mapped by the real mapper, as the real client does.
 const items = new Map();
 const calls = { item: [], list: 0, category: [] };
-let listFails = false, itemFails = false;
+let listFails = false, itemFails = false, listTotal = null;
 const item = (id, changes = {}) => ({
   id, seller_id: Number(SELLER), category_id: 'MLA1744', title: 'Toyota Corolla XEi', price: 20000, currency_id: 'USD', status: 'active',
   permalink: `https://auto.mercadolibre.com.ar/${id}`,
@@ -90,7 +90,8 @@ overrides['./oauth'] = {
     calls.list++;
     if (listFails) throw failures.failure('catalog_query', 'http_error', { httpStatus: 503 });
     // Every status, as the real scan returns it.
-    return { seller: { id: Number(SELLER) }, publications: { items: [...items.values()].map(entry => mapMercadoLibreItemToVehicle(entry)) } };
+    return { seller: { id: Number(SELLER) }, publications: { total: listTotal ?? items.size,
+      items: [...items.values()].map(entry => mapMercadoLibreItemToVehicle(entry)) } };
   },
   // Real Mercado Libre Argentina ancestries (cars, motorcycles, trucks, savings plans and a toy
   // category), plus a hypothetical future subcategory of cars.
@@ -244,7 +245,7 @@ try {
   items.set('MLA4', item('MLA4'));
   items.set('MLA3', item('MLA3', { status: 'paused' }));
   let result = await sync.reconcileCatalog();
-  assert.deepEqual(result, { skipped: false, listed: 2, enqueued: 2 }, 'Every status is listed, not only active');
+  assert.deepEqual(result, { skipped: false, listed: 2, enqueued: 2, pruned: 0 }, 'Every status is listed, not only active');
   assert.equal((await row('MLA3')).status, 'active', 'Reconciliation alone does not change a vehicle');
   await sync.runCatalogSyncWork();
   assert.equal((await row('MLA3')).status, 'paused');
@@ -282,7 +283,7 @@ try {
   items.set('MLA13', item('MLA13', { category_id: 'MLA58254', title: 'Mercedes-Benz Atego 1726' }));
   items.set('MLA14', item('MLA14', { category_id: 'MLA900001' }));
   result = await sync.reconcileCatalog();
-  assert.deepEqual(result, { skipped: false, listed: 5, enqueued: 3 }, 'Only cars, pickups and motorcycles are listed and queued');
+  assert.deepEqual(result, { skipped: false, listed: 5, enqueued: 3, pruned: 0 }, 'Only cars, pickups and motorcycles are listed and queued');
   await sync.runCatalogSyncWork();
   assert.equal((await row('MLA7')).status, 'closed', 'A car closed before the copy existed is stored');
   assert.equal((await row('MLA7')).vehicle_category, 'MLA1744');
@@ -566,8 +567,50 @@ try {
     delete process.env.MERCADO_LIBRE_WEBHOOK_IPS;
   }
 
+  // The daily reconciliation bounds the queue. It deletes only jobs of items never stored, never one
+  // being read or touched since it started, and never a catalog row.
+  const old = "now() - interval '2 hours'";
+  await query(`INSERT INTO public.catalog_sync_jobs (publication_id, revision, processed_revision, last_error, skip_until, deferred,
+      lease_id, lease_until, updated_at) VALUES
+    ('MLA40', 1, 1, NULL, NULL, false, NULL, NULL, ${old}),
+    ('MLA41', 1, 1, NULL, now() + interval '1 hour', false, NULL, NULL, ${old}),
+    ('MLA42', 1, 1, 'catalog_query:http_error:500', NULL, false, NULL, NULL, ${old}),
+    ('MLA43', 1, 1, 'catalog_query:http_error:500', NULL, false, NULL, NULL, now() - interval '15 days'),
+    ('MLA44', 2, 1, NULL, NULL, false, NULL, NULL, ${old}),
+    ('MLA45', 2, 1, NULL, NULL, true, NULL, NULL, ${old}),
+    ('MLA46', 2, 1, NULL, NULL, true, NULL, NULL, ${old}),
+    ('MLA47', 2, 1, NULL, NULL, false, '00000000-0000-4000-8000-000000000007', now() + interval '1 minute', ${old}),
+    ('MLA48', 1, 1, NULL, NULL, false, NULL, NULL, now() + interval '1 minute')`);
+  await query(`UPDATE public.catalog_sync_jobs SET processed_revision = revision, last_error = 'catalog_query:http_error:500',
+    updated_at = now() - interval '30 days' WHERE publication_id = 'MLA4'`);
+  items.set('MLA46', item('MLA46'));
+  const jobIds = async () => new Set((await query('SELECT publication_id FROM public.catalog_sync_jobs')).map(({ publication_id }) => publication_id));
+  const storedRows = async () => (await query('SELECT publication_id, status, synced_at FROM public.catalog_publications ORDER BY publication_id')).length;
+  const storedBefore = await storedRows();
+  // A scan that stopped early proves nothing about deferred items.
+  listTotal = items.size + 1;
+  await sync.reconcileCatalog();
+  listTotal = null;
+  assert.ok((await jobIds()).has('MLA45'), 'An incomplete listing keeps deferred jobs');
+  assert.equal((await jobIds()).has('MLA40'), false, 'A finished job of an item never stored goes regardless');
+  assert.equal((await jobIds()).has('MLA43'), false, 'So does one given up more than two weeks ago');
+  await query(`UPDATE public.catalog_sync_jobs SET updated_at = ${old} WHERE publication_id = 'MLA46'`);
+  await query(`UPDATE public.catalog_sync_jobs SET deferred = true WHERE publication_id = 'MLA46'`);
+  const jobsBefore = await jobIds();
+  result = await sync.reconcileCatalog();
+  const jobsAfter = await jobIds();
+  const deleted = [...jobsBefore].filter(id => !jobsAfter.has(id));
+  assert.equal(result.pruned, deleted.length);
+  assert.ok(deleted.includes('MLA45'), 'A deferred job the seller does not list is deleted');
+  for (const id of ['MLA41', 'MLA42', 'MLA44', 'MLA46', 'MLA47', 'MLA48', 'MLA4', 'MLA32']) assert.ok(jobsAfter.has(id), `${id} is kept`);
+  assert.equal((await job('MLA46')).deferred, false, 'A deferred item the seller lists is queued by the reconciliation');
+  const stored = new Set((await query('SELECT publication_id FROM public.catalog_publications')).map(({ publication_id }) => publication_id));
+  assert.equal(deleted.some(id => stored.has(id)), false, 'No job of a stored vehicle is ever deleted');
+  assert.equal(await storedRows(), storedBefore, 'Pruning never touches the catalog copy');
+  await sync.runCatalogSyncWork();
+  assert.equal((await row('MLA46')).status, 'active');
 } finally {
   console.error = previousError;
   await db.close();
 }
-console.log('Inventory sync: migrations, photo placeholder, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth, database-only reads, coalesced notifications with a single drain, skipped foreign and missing items, deferred unlisted sources passed.');
+console.log('Inventory sync: migrations, photo placeholder, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth, database-only reads, coalesced notifications with a single drain, skipped foreign and missing items, deferred unlisted sources and queue pruning passed.');

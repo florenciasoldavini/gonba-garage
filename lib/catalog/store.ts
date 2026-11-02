@@ -22,6 +22,8 @@ const PUBLICATION_ID = /^MLA\d+$/;
 const MAX_JOB_ATTEMPTS = 8;
 /** A due job no worker has picked up for this long gets a new drain from the next notification. */
 const OVERDUE_JOB = '2 minutes';
+/** Given-up jobs of items never stored stay this long for diagnostics, then are deleted. */
+const GIVEN_UP_RETENTION_DAYS = 14;
 const NEW_LISTING_DAYS = 7;
 
 function toVehicle(row: Row): Vehicle {
@@ -233,6 +235,29 @@ export async function acquireReconciliation(lease: string) {
       lease_until = now() + interval '5 minutes', last_started_at = now()
     WHERE id = 'reconciliation' AND (lease_until IS NULL OR lease_until < now()) RETURNING id`;
   return rows.length === 1;
+}
+
+/**
+ * Deletes jobs nothing needs any more, during a reconciliation that holds `lease`, and returns how
+ * many. Only jobs of items never stored, not leased, and untouched since this reconciliation started:
+ * - finished, once any skip has expired;
+ * - given up, after GIVEN_UP_RETENTION_DAYS;
+ * - still deferred, when the listing was complete: a genuine one is a vehicle of the seller, which
+ *   this reconciliation found missing from the copy and queued again, clearing the deferral.
+ * Jobs of stored items are never deleted: their revisions and leases guard every write.
+ */
+export async function pruneCatalogJobs(lease: string, { listingComplete }: { listingComplete: boolean }) {
+  const rows = await getAlertsSql()`DELETE FROM public.catalog_sync_jobs job USING public.catalog_sync_runs run
+    WHERE run.id = 'reconciliation' AND run.lease_id = ${lease}::uuid AND job.updated_at < run.last_started_at
+      AND (job.lease_until IS NULL OR job.lease_until < now())
+      AND NOT EXISTS (SELECT 1 FROM public.catalog_publications WHERE publication_id = job.publication_id)
+      AND CASE WHEN job.revision <= job.processed_revision
+        THEN (job.skip_until IS NULL OR job.skip_until <= now())
+          AND (job.last_error IS NULL OR job.updated_at < now() - ${GIVEN_UP_RETENTION_DAYS}::int * interval '1 day')
+        ELSE job.deferred AND ${listingComplete}::boolean
+        END
+    RETURNING 1`;
+  return rows.length;
 }
 
 /**

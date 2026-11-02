@@ -2,7 +2,7 @@ import 'server-only';
 import { randomUUID } from 'node:crypto';
 import {
   acquireNotificationDrain, acquireReconciliation, completeCatalogJob, enqueueCatalogJobs, enqueueCatalogNotification,
-  failCatalogJob, finishReconciliation, hasDueNotificationJobs, leaseCatalogJob, markPublicationRemoved,
+  failCatalogJob, finishReconciliation, hasDueNotificationJobs, leaseCatalogJob, markPublicationRemoved, pruneCatalogJobs,
   readStoredSyncState, releaseNotificationDrain, renewNotificationDrain, savePublication,
 } from '@/lib/catalog/store';
 import { catalogAccessToken } from './access-token';
@@ -153,6 +153,8 @@ export async function reconcileCatalog() {
     const seller = sellerId();
     const catalog = await readMercadoLibrePublications(await catalogAccessToken());
     if (String(catalog.seller.id) !== seller) throw failure('catalog_sync', 'unexpected_seller');
+    // A scan that stopped early (see readAllItemIds) must not count as proof that an item is not listed.
+    const listingComplete = catalog.publications.items.length >= catalog.publications.total;
     const listed = new Map<string, { status: string; lastUpdated: number | null }>();
     for (const { source, vehicle } of catalog.publications.items) {
       if (String(source.seller_id) !== seller) continue;
@@ -174,8 +176,9 @@ export async function reconcileCatalog() {
       if (!closed && row.syncedAt < staleBefore) due.add(id);
     }
     await enqueueCatalogJobs([...due]);
+    const pruned = await pruneCatalogJobs(lease, { listingComplete });
     await finishReconciliation(lease, { listed: listed.size });
-    return { skipped: false as const, listed: listed.size, enqueued: due.size };
+    return { skipped: false as const, listed: listed.size, enqueued: due.size, pruned };
   } catch (error) {
     const incident = safeFailure(error, 'catalog_sync').incident;
     await finishReconciliation(lease, { failure: incidentCode(incident) }).catch(() => {});
