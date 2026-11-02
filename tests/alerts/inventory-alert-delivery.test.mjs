@@ -40,7 +40,7 @@ vi.mock('@/lib/integrations/mercado-libre/oauth', async () => {
       return mapMercadoLibreItemToVehicle(items.get(id));
     },
     async readMercadoLibrePublications() {
-      return { seller: { id: 123 }, publications: { items: [...items.values()].map(entry => mapMercadoLibreItemToVehicle(entry)) } };
+      return { seller: { id: 123 }, publications: { items: [...items.values()].map(entry => mapMercadoLibreItemToVehicle(entry)), unread: [] } };
     },
     async readMercadoLibreCategoryPath(id) {
       assert.equal(id, 'MLA1744');

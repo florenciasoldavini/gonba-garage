@@ -105,7 +105,8 @@ export type MercadoLibreDescription = Record<string, unknown> & {
 export type MercadoLibreBulkItem = {
   id?: string;
   status_code: number;
-  body: MercadoLibreItem;
+  /** The item on 200, otherwise an error object. */
+  body?: MercadoLibreItem;
 };
 
 export type MercadoLibrePublication = {

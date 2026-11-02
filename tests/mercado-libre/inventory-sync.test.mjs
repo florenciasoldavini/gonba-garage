@@ -19,6 +19,8 @@ const state = vi.hoisted(() => ({ sql: null, deferred: [], beforeQuery: null }))
 // Fake Mercado Libre. Items are mapped by the real mapper, as the real client does.
 const mercadoLibre = vi.hoisted(() => ({
   items: new Map(), calls: { item: [], list: 0, category: [] }, listFails: false, itemFails: false, listTotal: null,
+  // Items the scan lists but the bulk read does not return.
+  bulkFails: new Set(),
 }));
 vi.mock('next/server', async importOriginal => ({ ...await importOriginal(), after: task => { state.deferred.push(task); } }));
 vi.mock('@/lib/alerts/database', () => ({ getAlertsSql: () => state.sql, isAlertsDatabaseConfigured: () => true }));
@@ -44,8 +46,10 @@ vi.mock('@/lib/integrations/mercado-libre/oauth', async () => {
       calls.list++;
       if (mercadoLibre.listFails) throw failures.failure('catalog_query', 'http_error', { httpStatus: 503 });
       // Every status, as the real scan returns it.
+      const read = [...items.values()].filter(({ id }) => !mercadoLibre.bulkFails.has(id));
       return { seller: { id: 123 }, publications: { total: mercadoLibre.listTotal ?? items.size,
-        items: [...items.values()].map(entry => mapMercadoLibreItemToVehicle(entry)) } };
+        items: read.map(entry => mapMercadoLibreItemToVehicle(entry)),
+        unread: [...mercadoLibre.bulkFails].map(id => ({ id, incident: failures.failure('catalog_query', 'http_error', { httpStatus: 404 }).incident })) } };
     },
     // Real Mercado Libre Argentina ancestries (cars, motorcycles, trucks, savings plans and a toy
     // category), plus a hypothetical future subcategory of cars.
@@ -128,6 +132,53 @@ describe('Mercado Libre client', () => {
     assert.ok(searches.every(path => path.includes('search_type=scan') && !path.includes('status=')), 'No status filter');
     assert.deepEqual(await client.readMercadoLibreCategoryPath('MLA1763', 'access-token'), ['MLA1743', 'MLA1763']);
     await assert.rejects(client.readMercadoLibreCategoryPath('MLA1', 'access-token'), /invalid_response/);
+  });
+
+  // A few hundred publications must not become a burst of parallel bulk requests.
+  it('reads bulk batches a few at a time, in order', async () => {
+    const client = await vi.importActual('@/lib/integrations/mercado-libre/oauth');
+    const ids = Array.from({ length: 210 }, (_, index) => `MLA${1000 + index}`);
+    let inFlight = 0, maxInFlight = 0, bulkRequests = 0;
+    vi.stubGlobal('fetch', async url => {
+      const { pathname, searchParams } = new URL(url);
+      if (pathname === '/users/me') return Response.json({ id: Number(SELLER) });
+      if (pathname === `/users/${SELLER}/items/search`) return Response.json({ paging: { total: ids.length }, results: ids });
+      bulkRequests++;
+      maxInFlight = Math.max(maxInFlight, ++inFlight);
+      await new Promise(resolve => setTimeout(resolve, 5));
+      inFlight--;
+      return Response.json(searchParams.get('ids').split(',').map(id => ({ status_code: 200, body: item(id) })));
+    });
+    const listing = await client.readMercadoLibrePublications('access-token');
+    assert.equal(bulkRequests, 11);
+    assert.ok(maxInFlight <= client.ITEMS_BULK_CONCURRENCY, `At most ${client.ITEMS_BULK_CONCURRENCY} bulk requests at once, saw ${maxInFlight}`);
+    assert.ok(maxInFlight > 1, 'Batches still run in parallel');
+    assert.deepEqual(listing.publications.items.map(({ source }) => source.id), ids);
+    assert.deepEqual(listing.publications.unread, []);
+  });
+
+  it('returns an item the bulk read missed as unread instead of failing the listing', async () => {
+    const client = await vi.importActual('@/lib/integrations/mercado-libre/oauth');
+    let bulkStatus = 200;
+    vi.stubGlobal('fetch', async url => {
+      const { pathname } = new URL(url);
+      if (pathname === '/users/me') return Response.json({ id: Number(SELLER) });
+      if (pathname === `/users/${SELLER}/items/search`) return Response.json({ paging: { total: 3 }, results: ['MLA21', 'MLA22', 'MLA23'] });
+      if (bulkStatus !== 200) return Response.json({ error: 'too_many_requests' }, { status: bulkStatus });
+      // MLA22 was deleted after the scan; MLA23 is missing from the response altogether.
+      return Response.json([{ status_code: 200, body: item('MLA21') },
+        { id: 'MLA22', status_code: 404, body: { message: 'Item with id MLA22 not found', error: 'not_found', status: 404 } }]);
+    });
+    const listing = await client.readMercadoLibrePublications('access-token');
+    assert.deepEqual(listing.publications.items.map(({ source }) => source.id), ['MLA21']);
+    assert.deepEqual(listing.publications.unread.map(({ id, incident: { stage, code, httpStatus } }) => ({ id, stage, code, httpStatus })), [
+      { id: 'MLA22', stage: 'catalog_query', code: 'http_error', httpStatus: 404 },
+      { id: 'MLA23', stage: 'catalog_query', code: 'invalid_response', httpStatus: undefined },
+    ]);
+    assert.equal(JSON.stringify(listing).includes('not found'), false, 'No provider text is kept');
+    bulkStatus = 429;
+    await assert.rejects(client.readMercadoLibrePublications('access-token'), /catalog_query: http_error/,
+      'A failed bulk request still fails the listing');
   });
 });
 
@@ -292,7 +343,7 @@ describe('catalog sync', () => {
     items.set('MLA4', item('MLA4'));
     items.set('MLA3', item('MLA3', { status: 'paused' }));
     result = await sync.reconcileCatalog();
-    assert.deepEqual(result, { skipped: false, listed: 2, enqueued: 2, pruned: 0 }, 'Every status is listed, not only active');
+    assert.deepEqual(result, { skipped: false, listed: 2, unread: 0, enqueued: 2, pruned: 0 }, 'Every status is listed, not only active');
     assert.equal((await row('MLA3')).status, 'active', 'Reconciliation alone does not change a vehicle');
     await sync.runCatalogSyncWork();
     assert.equal((await row('MLA3')).status, 'paused');
@@ -333,7 +384,7 @@ describe('catalog sync', () => {
     items.set('MLA13', item('MLA13', { category_id: 'MLA58254', title: 'Mercedes-Benz Atego 1726' }));
     items.set('MLA14', item('MLA14', { category_id: 'MLA900001' }));
     result = await sync.reconcileCatalog();
-    assert.deepEqual(result, { skipped: false, listed: 5, enqueued: 3, pruned: 0 }, 'Only cars, pickups and motorcycles are listed and queued');
+    assert.deepEqual(result, { skipped: false, listed: 5, unread: 0, enqueued: 3, pruned: 0 }, 'Only cars, pickups and motorcycles are listed and queued');
     await sync.runCatalogSyncWork();
     assert.equal((await row('MLA7')).status, 'closed', 'A car closed before the copy existed is stored');
     assert.equal((await row('MLA7')).vehicle_category, 'MLA1744');
@@ -639,5 +690,43 @@ describe('catalog sync', () => {
     assert.equal(await storedRows(), storedBefore, 'Pruning never touches the catalog copy');
     await sync.runCatalogSyncWork();
     assert.equal((await row('MLA46')).status, 'active');
+  });
+
+  // One item deleted or failing between the scan and the bulk read must not stop the daily repair.
+  it('reads again an item the bulk read missed, without failing the run', async () => {
+    items.set('MLA50', item('MLA50'));
+    mercadoLibre.bulkFails.add('MLA50');
+    result = await sync.reconcileCatalog();
+    assert.equal(result.unread, 1);
+    const job50 = await job('MLA50');
+    assert.ok(Number(job50.revision) > Number(job50.processed_revision), 'The unread item is queued, though never stored');
+    const logged = vi.mocked(console.error).mock.calls.map(([line]) => JSON.parse(line))
+      .find(({ event }) => event === 'catalog_reconciliation_unread');
+    assert.deepEqual({ ...logged, incidentId: undefined, occurredAt: undefined }, { event: 'catalog_reconciliation_unread',
+      publicationId: 'MLA50', incidentId: undefined, occurredAt: undefined, stage: 'catalog_query', code: 'http_error', httpStatus: 404 });
+    const run = (await query("SELECT * FROM public.catalog_sync_runs WHERE id = 'reconciliation'"))[0];
+    assert.ok(run.last_completed_at > run.last_failed_at, 'The run completes');
+    calls.item.length = 0;
+    await sync.runCatalogSyncWork();
+    assert.ok(calls.item.includes('MLA50'), 'Its own job reads it');
+    assert.equal((await row('MLA50')).status, 'active');
+    mercadoLibre.bulkFails.clear();
+  });
+
+  it('never prunes deferred jobs after a partial bulk read', async () => {
+    await query(`INSERT INTO public.catalog_sync_jobs (publication_id, revision, processed_revision, deferred, updated_at)
+      VALUES ('MLA51', 2, 1, true, now() - interval '2 hours')`);
+    const jobIds = async () => new Set((await query('SELECT publication_id FROM public.catalog_sync_jobs')).map(({ publication_id }) => publication_id));
+    // The scan total can be below what it listed, so the item count alone would call the listing complete.
+    mercadoLibre.bulkFails.add('MLA4');
+    mercadoLibre.listTotal = items.size - 1;
+    result = await sync.reconcileCatalog();
+    assert.equal(result.unread, 1);
+    assert.ok((await jobIds()).has('MLA51'), 'A listing with an unread item keeps deferred jobs');
+    mercadoLibre.bulkFails.clear();
+    result = await sync.reconcileCatalog();
+    mercadoLibre.listTotal = null;
+    assert.equal((await jobIds()).has('MLA51'), false, 'A complete listing still prunes them');
+    await sync.runCatalogSyncWork();
   });
 });

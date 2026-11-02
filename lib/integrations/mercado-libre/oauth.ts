@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { failure, providerFailure, safeFailure } from './failures';
+import { failure, providerFailure, safeFailure, type IntegrationIncident } from './failures';
 import { mapMercadoLibreItemToVehicle } from '@/features/vehicles/data/mercado-libre-vehicle-mapper';
 import type {
   MercadoLibreBulkItem,
@@ -57,11 +57,15 @@ export type MercadoLibreReadTest = {
     total: number;
     sampled: number;
     items: MercadoLibrePublication[];
+    /** Items the scan listed that the bulk read did not return, each with a safe incident. */
+    unread: Array<{ id: string; incident: IntegrationIncident }>;
   };
 };
 
 const ITEMS_SEARCH_LIMIT = 100;
 const ITEMS_BULK_LIMIT = 20;
+/** Bulk requests in flight at once, so a large catalog is not one burst that invites HTTP 429. */
+export const ITEMS_BULK_CONCURRENCY = 4;
 
 function requiredEnvironmentVariable(name: string) {
   const value = process.env[name]?.trim();
@@ -118,6 +122,25 @@ function chunks<T>(values: T[], size: number) {
   );
 }
 
+/** Maps every value, at most `limit` at a time, in order. No new work starts after a failure. */
+async function mapConcurrently<T, R>(values: T[], limit: number, map: (value: T) => Promise<R>) {
+  const results: R[] = [];
+  let next = 0;
+  const worker = async () => {
+    while (next < values.length) {
+      const index = next++;
+      try {
+        results[index] = await map(values[index]);
+      } catch (error) {
+        next = values.length;
+        throw error;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, values.length) }, worker));
+  return results;
+}
+
 /**
  * Every publication of the seller, in any status (active, paused, closed and so on). Scan mode has no
  * offset ceiling. A short scan only leaves items out, which reconciliation treats as "read again".
@@ -145,23 +168,32 @@ async function readAllItemIds(userId: number, accessToken: string) {
   return { itemIds: [...itemIds], total };
 }
 
-async function readItems(itemIds: string[], accessToken: string) {
-  const batches = await Promise.all(
-    chunks(itemIds, ITEMS_BULK_LIMIT).map((batch) =>
-      fetchMercadoLibre<MercadoLibreBulkItem[]>(
-        `/items/bulk?ids=${batch.map(encodeURIComponent).join(',')}&include_internal_attributes=true`,
-        accessToken,
-      ),
-    ),
-  );
+/** Why the bulk read did not return an item. Only the per-item HTTP status is kept. */
+function unreadIncident(statusCode: unknown) {
+  const httpError = typeof statusCode === 'number' && Number.isInteger(statusCode) && statusCode >= 400 && statusCode <= 599;
+  return failure('catalog_query', httpError ? 'http_error' : 'invalid_response', httpError ? { httpStatus: statusCode } : {}).incident;
+}
 
-  if (batches.flat().some(({ status_code }) => status_code !== 200)) {
-    throw new Error('Mercado Libre returned an incomplete batch of publications.');
+/**
+ * An item deleted since the scan, or a per-item error, is returned as unread rather than failing the
+ * whole read, so the caller can read it again on its own. A failed bulk request still fails it.
+ */
+async function readItems(itemIds: string[], accessToken: string) {
+  const batches = await mapConcurrently(chunks(itemIds, ITEMS_BULK_LIMIT), ITEMS_BULK_CONCURRENCY, async batch => {
+    const entries = await fetchMercadoLibre<MercadoLibreBulkItem[]>(
+      `/items/bulk?ids=${batch.map(encodeURIComponent).join(',')}&include_internal_attributes=true`,
+      accessToken,
+    );
+    const byId = new Map(entries.map(entry => [entry.body?.id ?? entry.id, entry]));
+    return batch.map(id => ({ id, entry: byId.get(id) }));
+  });
+  const items: MercadoLibreItem[] = [];
+  const unread: MercadoLibreReadTest['publications']['unread'] = [];
+  for (const { id, entry } of batches.flat()) {
+    if (entry?.status_code === 200 && entry.body?.id === id) items.push(entry.body);
+    else unread.push({ id, incident: unreadIncident(entry?.status_code) });
   }
-  return batches
-    .flat()
-    .filter(({ status_code }) => status_code === 200)
-    .map(({ body }) => body);
+  return { items, unread };
 }
 
 export function createMercadoLibreOAuthAttempt() {
@@ -215,7 +247,7 @@ export async function exchangeMercadoLibreAuthorizationCode(code: string, verifi
       redirect_uri: redirectUri,
       code_verifier: verifier,
     }),
-    cache: 'no-store',
+    cache: 'no-store', signal: AbortSignal.timeout(20_000),
   }).catch(error => { throw safeFailure(error, 'authorization_exchange'); });
 
   return parseMercadoLibreResponse<MercadoLibreTokenResponse>(
@@ -227,7 +259,7 @@ export async function exchangeMercadoLibreAuthorizationCode(code: string, verifi
 export async function readMercadoLibrePublications(accessToken: string) {
   const user = await fetchMercadoLibre<MercadoLibreUser>('/users/me', accessToken);
   const { itemIds, total } = await readAllItemIds(user.id, accessToken);
-  const items = await readItems(itemIds, accessToken);
+  const { items, unread } = await readItems(itemIds, accessToken);
   const publications = items.map((item) => mapMercadoLibreItemToVehicle(item));
 
   return {
@@ -241,6 +273,7 @@ export async function readMercadoLibrePublications(accessToken: string) {
       total,
       sampled: publications.length,
       items: publications,
+      unread,
     },
   } satisfies MercadoLibreReadTest;
 }
