@@ -31,7 +31,7 @@ vi.mock('@/lib/integrations/mercado-libre/credentials', () => ({
   authorized: request => request.headers.get('authorization') === 'Bearer catalog-api-key-for-tests',
 }));
 vi.mock('@/lib/integrations/mercado-libre/access-token', () => ({ catalogAccessToken: async () => 'access-token' }));
-vi.mock('@/lib/integrations/mercado-libre/oauth', async () => {
+vi.mock('@/lib/integrations/mercado-libre/api', async () => {
   const failures = await import('@/lib/integrations/mercado-libre/failures');
   const { mapMercadoLibreItemToVehicle } = await import('@/features/vehicles/data/mercado-libre-vehicle-mapper');
   const { items, calls } = mercadoLibre;
@@ -107,7 +107,7 @@ describe('Mercado Libre item mapper', () => {
 
 describe('Mercado Libre client', () => {
   it('lists every status through scan pages and reads a category ancestry', async () => {
-    const client = await vi.importActual('@/lib/integrations/mercado-libre/oauth');
+    const client = await vi.importActual('@/lib/integrations/mercado-libre/api');
     const requested = [];
     const pages = { '': { results: ['MLA21', 'MLA22'], scroll_id: 'next' }, next: { results: ['MLA23'], scroll_id: 'last' }, last: { results: [] } };
     vi.stubGlobal('fetch', async url => {
@@ -136,7 +136,7 @@ describe('Mercado Libre client', () => {
 
   // A few hundred publications must not become a burst of parallel bulk requests.
   it('reads bulk batches a few at a time, in order', async () => {
-    const client = await vi.importActual('@/lib/integrations/mercado-libre/oauth');
+    const client = await vi.importActual('@/lib/integrations/mercado-libre/api');
     const ids = Array.from({ length: 210 }, (_, index) => `MLA${1000 + index}`);
     let inFlight = 0, maxInFlight = 0, bulkRequests = 0;
     vi.stubGlobal('fetch', async url => {
@@ -158,7 +158,7 @@ describe('Mercado Libre client', () => {
   });
 
   it('returns an item the bulk read missed as unread instead of failing the listing', async () => {
-    const client = await vi.importActual('@/lib/integrations/mercado-libre/oauth');
+    const client = await vi.importActual('@/lib/integrations/mercado-libre/api');
     let bulkStatus = 200;
     vi.stubGlobal('fetch', async url => {
       const { pathname } = new URL(url);

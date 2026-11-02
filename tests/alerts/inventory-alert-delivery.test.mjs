@@ -30,7 +30,7 @@ vi.mock('@/lib/integrations/mep-quote', () => ({ getMepQuote: async () => state.
 vi.mock('@/lib/alerts/price-delivery', () => ({ enqueuePriceItem: async () => {}, runPriceAlertWorkSafely: async () => {},
   enqueueDailyPriceReview: async () => {}, runPriceAlertWork: async () => {} }));
 vi.mock('@/lib/integrations/mercado-libre/access-token', () => ({ catalogAccessToken: async () => 'access-token' }));
-vi.mock('@/lib/integrations/mercado-libre/oauth', async () => {
+vi.mock('@/lib/integrations/mercado-libre/api', async () => {
   const failures = await import('@/lib/integrations/mercado-libre/failures');
   const { mapMercadoLibreItemToVehicle } = await import('@/features/vehicles/data/mercado-libre-vehicle-mapper');
   const { items } = mercadoLibre;

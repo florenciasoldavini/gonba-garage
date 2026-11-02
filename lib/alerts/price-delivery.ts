@@ -2,7 +2,7 @@ import 'server-only';
 import { randomUUID } from 'node:crypto';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { catalogAccessToken } from '@/lib/integrations/mercado-libre/access-token';
-import { readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/oauth';
+import { readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/api';
 import { getSql } from '@/lib/database';
 import { alertEmailsConfigured, requireAlertConfig } from './config';
 import { buildAlertEmail, EmailFailure, sendAlertEmail } from './email';

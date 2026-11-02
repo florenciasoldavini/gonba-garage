@@ -16,7 +16,7 @@ vi.mock('@/lib/database', () => ({ getSql: () => state.sql, isDatabaseConfigured
 vi.mock('@/lib/alerts/price-delivery', () => ({}));
 vi.mock('@/lib/alerts/confirmation', () => ({ sendSignupConfirmationSafely: async () => assert.fail('Demo mode sends no confirmation') }));
 vi.mock('@/lib/integrations/mercado-libre/access-token', () => ({}));
-vi.mock('@/lib/integrations/mercado-libre/oauth', () => ({}));
+vi.mock('@/lib/integrations/mercado-libre/api', () => ({}));
 vi.mock('@/lib/integrations/mercado-libre/catalog', () => ({
   findCatalogVehicle: async slug => ({ slug, price: 100, currency: 'USD', status: 'active' }),
 }));

@@ -2,7 +2,7 @@ import { after, NextResponse } from 'next/server';
 
 import { findCatalogVehicle } from '@/lib/integrations/mercado-libre/catalog';
 import { catalogAccessToken } from '@/lib/integrations/mercado-libre/access-token';
-import { readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/oauth';
+import { readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/api';
 import { isDatabaseConfigured } from '@/lib/database';
 import { savePriceSubscription } from '@/lib/alerts/subscriptions';
 import { alertEmailsConfigured } from '@/lib/alerts/config';

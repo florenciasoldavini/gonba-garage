@@ -7,7 +7,7 @@ import {
 } from '@/lib/catalog/store';
 import { catalogAccessToken } from './access-token';
 import { failure, IntegrationFailure, safeFailure, type IntegrationIncident } from './failures';
-import { readMercadoLibreCategoryPath, readMercadoLibrePublication, readMercadoLibrePublications } from './oauth';
+import { readMercadoLibreCategoryPath, readMercadoLibrePublication, readMercadoLibrePublications } from './api';
 import type { MercadoLibreItem } from './types';
 import { vehicleCategoryOf, type VehicleCategory } from './vehicle-categories';
 
