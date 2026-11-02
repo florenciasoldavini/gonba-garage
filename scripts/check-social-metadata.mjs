@@ -157,6 +157,13 @@ for (const route of routes) {
     for (const property of ['openingHours', 'openingHoursSpecification']) {
       assert.ok(!(property in dealer), `AutoDealer must not publish ${property}`);
     }
+    // Google shows the dealer logo only from a square bitmap of at least 112px.
+    const dealerLogo = await fetch(new URL(new URL(dealer.logo).pathname, targetOrigin));
+    assert.equal(dealerLogo.status, 200, 'The AutoDealer logo should return 200');
+    assert.equal(dealerLogo.headers.get('content-type'), 'image/png', 'The AutoDealer logo should be PNG');
+    const dealerLogoBytes = Buffer.from(await dealerLogo.arrayBuffer());
+    assert.equal(dealerLogoBytes.readUInt32BE(16), dealerLogoBytes.readUInt32BE(20), 'The AutoDealer logo should be square');
+    assert.ok(dealerLogoBytes.readUInt32BE(16) >= 112, 'The AutoDealer logo should be at least 112px');
     // The address is a visible fact: the footer shows the same area beside the appointment-only hours.
     const footerText = decodeHtml(html.match(/<footer\b.*?<\/footer>/s)?.[0].replace(/<!--.*?-->/g, '').replace(/<[^>]+>/g, ' ') ?? '').replace(/\s+/g, ' ');
     for (const fact of ['Villa Pueyrredón, CABA', 'Lunes a viernes de 10 a 18 h', 'Sábados de 10 a 13 h', 'Siempre con cita previa', 'Pedí tu cita']) {
@@ -290,6 +297,18 @@ assert.match(manifestResponse.headers.get('content-type') || '', /application\/m
 const manifest = await manifestResponse.json();
 assert.equal(manifest.name, "Gonba's Garage", 'Manifest should use the brand name');
 assert.ok(manifest.icons?.some((icon) => icon.src === '/favicon.svg'), 'Manifest should include the branded icon');
+// Android Chrome only offers installation with 192 and 512 PNG icons; the maskable one survives its circular crop.
+for (const [sizes, purpose] of [['192x192', 'any'], ['512x512', 'any'], ['512x512', 'maskable']]) {
+  const icon = manifest.icons.find((entry) => entry.sizes === sizes && entry.type === 'image/png' && (entry.purpose ?? 'any') === purpose);
+  assert.ok(icon, `Manifest should list a ${sizes} ${purpose} PNG icon`);
+  const response = await fetch(new URL(icon.src, targetOrigin));
+  assert.equal(response.status, 200, `${icon.src} should return 200`);
+  assert.equal(response.headers.get('content-type'), 'image/png', `${icon.src} should be PNG`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const [width, height] = sizes.split('x').map(Number);
+  assert.equal(bytes.readUInt32BE(16), width, `${icon.src} should be ${width}px wide`);
+  assert.equal(bytes.readUInt32BE(20), height, `${icon.src} should be ${height}px tall`);
+}
 
 const faviconResponse = await fetch(new URL('/favicon.svg', targetOrigin));
 assert.equal(faviconResponse.status, 200, 'Branded favicon should return 200');
@@ -301,6 +320,9 @@ const localAppleIcon = new URL(`${linkedAppleIcon.pathname}${linkedAppleIcon.sea
 const appleIconResponse = await fetch(localAppleIcon);
 assert.equal(appleIconResponse.status, 200, 'Apple touch icon should return 200');
 assert.equal(appleIconResponse.headers.get('content-type'), 'image/png', 'Apple touch icon should be PNG');
+const appleIconBytes = Buffer.from(await appleIconResponse.arrayBuffer());
+assert.equal(appleIconBytes.readUInt32BE(16), 180, 'Apple touch icon should be 180px wide');
+assert.equal(appleIconBytes.readUInt32BE(20), 180, 'Apple touch icon should be 180px tall');
 
 // The sitemap stays empty until the final version of the site, even with indexing enabled.
 assert.doesNotMatch(sitemapText, /<url>/, 'The sitemap should stay empty');

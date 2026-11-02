@@ -18,14 +18,21 @@ export default function manifest(): MetadataRoute.Manifest {
         type: 'image/svg+xml',
       },
       {
-        src: '/brand/gonba-garage-logo-192.png',
+        src: '/brand/gonba-garage-icon-192.png',
         sizes: '192x192',
         type: 'image/png',
       },
       {
-        src: '/brand/gonba-garage-logo-512.png',
+        src: '/brand/gonba-garage-icon-512.png',
         sizes: '512x512',
         type: 'image/png',
+      },
+      {
+        // Full-bleed background with the GG inside Android's circular safe zone.
+        src: '/brand/gonba-garage-icon-maskable-512.png',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'maskable',
       },
     ],
   };
