@@ -101,12 +101,14 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const siteUrl = getSiteUrl();
   const vehicleUrl = new URL(`/vehiculos/${vehicle.slug}`, siteUrl).toString();
   const compareHref = `/vehiculos?comparar=${vehicle.slug}#inventario`;
-  const vehicleContactHref = getWhatsAppUrl(`Hola, quiero consultar por el ${vehicle.make} ${vehicle.model}.`);
   const status = getVehicleStatusPresentation(vehicle);
   const isReserved = status.status === 'paused';
   const vehicleName = `${vehicle.make} ${vehicle.model}`;
   const bodyType = vehicle.body.split(' · ')[0];
   const formattedPrice = formatVehiclePrice(vehicle.price, vehicle.currency);
+  // The seller has several cars of the same model, so every message names the exact publication.
+  const vehicleReference = [vehicle.make, vehicle.model, vehicle.version, vehicle.year].filter(Boolean).join(' ');
+  const vehicleContactHref = getWhatsAppUrl(`Hola, quiero consultar por el ${vehicleReference}, publicado a ${formattedPrice}. ${vehicleUrl}`);
   // Alerts are offered only where their emails can be sent (production, not previews).
   const alertsEnabled = alertEmailsConfigured();
 
@@ -137,12 +139,12 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
     eyebrow: 'Coordiná una visita',
     title: 'Conocelo en persona. El resto se entiende manejando.',
   } : isReserved ? {
-    href: getWhatsAppUrl(`Hola, vi que el ${vehicleName} está reservado. Si se libera, avisame.`),
+    href: getWhatsAppUrl(`Hola, vi que el ${vehicleReference}, publicado a ${formattedPrice}, está reservado. Si se libera, avisame. ${vehicleUrl}`),
     label: 'Escribinos por WhatsApp',
     eyebrow: '¿Te interesaba este?',
     title: 'Escribinos. Si la reserva se cae, sos el primero en saberlo.',
   } : {
-    href: getWhatsAppUrl(`Hola, vi que el ${vehicleName} ya se vendió. Estoy buscando algo parecido.`),
+    href: getWhatsAppUrl(`Hola, vi que el ${vehicleReference}, último precio publicado ${formattedPrice}, ya se vendió. Estoy buscando algo parecido. ${vehicleUrl}`),
     label: 'Escribinos por WhatsApp',
     eyebrow: '¿Buscás algo parecido?',
     title: 'Contanos qué auto buscás. Te avisamos cuando entre.',
