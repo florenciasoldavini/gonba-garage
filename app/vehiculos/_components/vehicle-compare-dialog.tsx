@@ -9,6 +9,7 @@ import { ArrowUpRight, Check, Scale, X } from 'lucide-react';
 
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { Button } from '@/components/ui/button';
+import type { MepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { formatVehicleImageAlt } from '@/features/vehicles/presentation/formatters';
 import {
@@ -16,12 +17,14 @@ import {
   vehicleSpecificationLabels,
   type VehicleSpecificationKey,
 } from '@/features/vehicles/presentation/specifications';
+import { ApproximateUsdPrice } from './approximate-usd-price';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP);
 }
 
 type VehicleCompareDialogProps = {
+  quote: MepQuote | null;
   vehicles: Vehicle[];
   isOpen: boolean;
   onClose: () => void;
@@ -33,7 +36,7 @@ const comparisonKeys: VehicleSpecificationKey[] = [
   'price', 'year', 'mileage', 'transmission', 'engine', 'fuel', 'traction', 'body', 'color', 'location',
 ];
 
-export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onClear }: VehicleCompareDialogProps) {
+export function VehicleCompareDialog({ quote, vehicles, isOpen, onClose, onRemove, onClear }: VehicleCompareDialogProps) {
   const [differencesOnly, setDifferencesOnly] = useState(true);
   const differencesToggleRef = useRef<HTMLInputElement>(null);
   const titleId = useId();
@@ -149,7 +152,13 @@ export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onCl
                 {rows.map(([label, ...values]) => (
                   <div className="vehicle-compare-row" role="row" key={label}>
                     <div role="rowheader">{label}</div>
-                    {values.map((value, index) => <div role="cell" key={`${label}-${vehicles[index]?.slug}`}>{value}</div>)}
+                    {values.map((value, index) => (
+                      <div role="cell" key={`${label}-${vehicles[index]?.slug}`}>
+                        {label === vehicleSpecificationLabels.price ? (
+                          <span className="vehicle-compare-price">{value}<ApproximateUsdPrice quote={quote} vehicle={vehicles[index]} /></span>
+                        ) : value}
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>

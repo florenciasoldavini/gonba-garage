@@ -376,6 +376,7 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
                     isSelected={isSelected}
                     key={vehicle.slug}
                     onToggleComparison={toggleVehicleComparison}
+                    quote={quote}
                     vehicle={vehicle}
                   />
                 );
@@ -411,6 +412,7 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
           vehicles={selectedVehicles}
         />
         <VehicleCompareDialog
+          quote={quote}
           vehicles={selectedVehicles}
           isOpen={isCompareOpen}
           onClose={() => setIsCompareOpen(false)}

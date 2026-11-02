@@ -20,9 +20,11 @@ import { VehicleSpecificationGroups } from './_components/vehicle-specification-
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 import { pickSimilarVehicles } from '@/features/vehicles/domain/similar-vehicles';
 import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle } from '@/features/vehicles/domain/vehicle';
+import { ApproximateUsdPrice } from '../_components/approximate-usd-price';
 import { CatalogVehicleCard } from '../_components/catalog-vehicle-card';
 import { InventoryAlert, type InventoryAlertCriteria } from '../_components/inventory-alert';
 import { createPageMetadata } from '@/lib/metadata';
+import { getMepQuote } from '@/lib/integrations/mep-quote';
 import { getSiteUrl } from '@/lib/site-url';
 import { ORGANIZATION_SCHEMA_ID } from '@/lib/structured-data';
 import type { AnalyticsEvent } from '@/lib/analytics/client';
@@ -120,6 +122,10 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
     similarVehicles = pickSimilarVehicles(vehicle, catalog);
     availableCount = catalog.length;
   }
+  // Only peso prices get the approximate dollar line, so the quote is fetched only when one is shown.
+  const quote = vehicle.currency === 'ARS' || similarVehicles.some(({ currency }) => currency === 'ARS')
+    ? await getMepQuote()
+    : null;
   // Reserved: the same model coming back (the reservation fell through, or a relisting). Sold: the
   // same make and body type.
   const alertCriteria: InventoryAlertCriteria = {
@@ -291,6 +297,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             <>
               <p className="detail-price-label">Precio publicado</p>
               <p className="detail-price">{formattedPrice}</p>
+              <ApproximateUsdPrice className="detail-price-usd" quote={quote} vehicle={vehicle} />
               <p className="detail-location">{vehicle.location}</p>
               {alertsEnabled ? (
                 <PriceAlert
@@ -322,7 +329,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
               </p>
               <dl className="detail-last-price">
                 <dt>{isReserved ? 'Precio publicado' : 'Último precio publicado'}</dt>
-                <dd>{formattedPrice}</dd>
+                <dd>{formattedPrice}{isReserved && <ApproximateUsdPrice quote={quote} vehicle={vehicle} />}</dd>
               </dl>
               {alertsEnabled ? <InventoryAlert
                 activeFilterCount={2}
@@ -374,7 +381,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
           </div>
           <div className="detail-similar-grid">
             {similarVehicles.map((similar) => (
-              <CatalogVehicleCard headingLevel="h3" key={similar.slug} vehicle={similar} />
+              <CatalogVehicleCard headingLevel="h3" key={similar.slug} quote={quote} vehicle={similar} />
             ))}
             {similarVehicles.length < 3 && (
               <Link className="detail-similar-more glass-panel" href="/vehiculos">

@@ -568,6 +568,7 @@ h3 { letter-spacing: -0.04em; }
 .catalog-card-facts { min-height: 60px; padding: 16px 8px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 13px; border-top: 1px solid var(--line); }
 .catalog-card-facts span { color: var(--muted); font-size: var(--text-caption); }
 .catalog-card-facts strong { margin-left: auto; font-size: 0.86rem; }
+.catalog-card-price { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
 .catalog-empty { min-height: 510px; justify-content: center; }
 .catalog-contact {
   min-height: 340px;
@@ -685,6 +686,11 @@ h3 { letter-spacing: -0.04em; }
 .detail-price-label { margin: clamp(48px, 5vw, 76px) 0 8px; color: var(--muted); font-size: var(--text-caption); }
 .detail-price { margin-bottom: 7px; font-size: clamp(2.35rem, 3.3vw, 3.5rem); font-weight: 800; letter-spacing: -0.07em; white-space: nowrap; }
 .detail-location { color: var(--muted); font-size: 0.78rem; }
+/* The approximate dollar line under a peso price: always quieter than the seller's price above it. */
+.price-usd-approx { display: block; color: var(--muted); font: 500 var(--text-fine) var(--font-mono); letter-spacing: 0; white-space: nowrap; }
+.price-usd-approx > span { color: inherit; font-size: inherit; }
+.detail-price-usd { margin: -2px 0 9px; font-size: var(--text-caption); }
+.detail-last-price dd .price-usd-approx { margin-top: 4px; text-align: right; }
 .detail-actions { margin-top: 12px; display: grid; gap: 9px; }
 .detail-actions .button { width: 100%; gap: 18px; }
 .detail-share-button, .detail-compare-button {
@@ -1380,6 +1386,7 @@ html:has(.compare-selection-dialog[open]) { overflow: hidden; }
 .vehicle-compare-card > a:hover svg { transform: translate(3px, -2px); }
 .vehicle-compare-row { min-height: 70px; border-top: 1px solid var(--line); }
 .vehicle-compare-row > div { min-width: 0; padding: 17px 18px; display: flex; align-items: center; border-left: 1px solid var(--line); font-size: 0.75rem; line-height: 1.4; }
+.vehicle-compare-price { display: flex; flex-direction: column; gap: 3px; }
 .vehicle-compare-row > div:first-child { padding-left: 0; color: #858a82; border-left: 0; font: 500 var(--text-label) var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; }
 .vehicle-compare-content:has(+ .vehicle-compare-empty > div) { padding-bottom: 0; }
 .vehicle-compare-empty { position: sticky; left: 0; padding-inline: clamp(18px, 3vw, 36px); }
