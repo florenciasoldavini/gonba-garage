@@ -122,9 +122,13 @@ export function pickVehicleHighlights(attributes: MercadoLibreAttribute[]) {
 
 /** The vehicle as pages show it. Highlights need the attributes, which only a single publication carries. */
 export function cleanCatalogVehicle(vehicle: Vehicle, attributes?: MercadoLibreAttribute[]): Vehicle {
+  const version = formatVehicleVersion(vehicle.version);
   return {
     ...vehicle,
-    version: formatVehicleVersion(vehicle.version),
+    version,
+    // Photos are named as the headings name the car, not by the publication title as typed in
+    // Mercado Libre ("Mercedes-benz Clase A", "Toyota Sw4 2.8 Tdi Gr-s").
+    imageAlt: [vehicle.make, vehicle.model, version].filter(Boolean).join(' '),
     description: cleanVehicleDescription(vehicle.description),
     ...(attributes?.length ? { highlights: pickVehicleHighlights(attributes) } : {}),
   };
