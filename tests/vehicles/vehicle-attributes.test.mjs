@@ -5,8 +5,9 @@ import {
   getVehicleAttributeRule, VEHICLE_ATTRIBUTE_POLICY_GROUPS, VEHICLE_ATTRIBUTE_SECTIONS,
 } from '@/features/vehicles/presentation/mercado-libre-attribute-policy';
 import {
-  groupPublicVehicleAttributes, publicVehicleAttributes, vehicleAttributeDisplayRule,
+  groupPublicVehicleAttributes, publicVehicleAttributes, vehicleAttributeDisplayRule, vehicleAttributeLabel,
 } from '@/features/vehicles/presentation/public-attributes';
+import { vehicleSpecificationLabels } from '@/features/vehicles/presentation/specifications';
 import { runtimeImports } from '../helpers/modules.mjs';
 
 const snapshot = JSON.parse(readFileSync(new URL('../fixtures/mercado-libre-mla1744-attributes.json', import.meta.url), 'utf8'));
@@ -85,6 +86,26 @@ describe('vehicle attribute policy', () => {
       assert.deepEqual(vehicleAttributeDisplayRule(attribute, 'Toyota SW4 GR S'), { action: 'exclude', reason: 'duplicate_in_title' });
       assert.equal(vehicleAttributeDisplayRule(attribute, 'Toyota SW4').action, 'show');
     }
+  });
+
+  // Mercado Libre calls the drivetrain "Control de tracción"; its values are Delantera, 4x4 and so on.
+  it('labels the drivetrain as the comparison does', () => {
+    const drivetrain = Object.freeze({ id: 'TRACTION_CONTROL', name: 'Control de tracción', value_name: '4x4' });
+    assert.equal(vehicleAttributeLabel(drivetrain), vehicleSpecificationLabels.traction);
+    assert.equal(vehicleAttributeLabel(drivetrain), 'Tracción');
+    assert.equal(drivetrain.name, 'Control de tracción', 'The publication keeps its own name');
+    assert.equal(vehicleAttributeLabel({ id: 'HAS_ASR_TRACTION', name: 'Tracción ASR', value_name: 'Sí' }), 'Tracción ASR', 'The safety system keeps its name');
+    assert.equal(vehicleAttributeLabel({ id: 'COLOR', name: 'Color', value_name: 'Gris' }), 'Color');
+  });
+
+  it('shows the drivetrain once when another attribute already states it', () => {
+    const drivetrain = { id: 'TRACTION_CONTROL', name: 'Control de tracción', value_name: '4x4' };
+    const legacy = { id: 'DETAILED_MODEL', name: 'Tracción', value_name: '4X4' };
+    const { primary } = groupPublicVehicleAttributes([drivetrain, legacy, { id: 'COLOR', name: 'Color', value_name: 'Gris' }]);
+    assert.deepEqual(primary.map(attribute => attribute.id), ['TRACTION_CONTROL', 'COLOR']);
+    const different = { ...legacy, value_name: 'Integral' };
+    assert.deepEqual(groupPublicVehicleAttributes([drivetrain, different]).primary.map(attribute => attribute.id),
+      ['TRACTION_CONTROL', 'DETAILED_MODEL'], 'A different value still shows');
   });
 
   it('excludes unknown attributes without changing them', () => {

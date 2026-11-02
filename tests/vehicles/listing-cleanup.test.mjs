@@ -5,6 +5,8 @@ import {
   unbreakableVersionSegments,
 } from '@/features/vehicles/presentation/listing-cleanup';
 import { formatVehicleAttributeValue, vehicleAttributeDisplayRule } from '@/features/vehicles/presentation/public-attributes';
+import { formatVehicleImageAlt } from '@/features/vehicles/presentation/formatters';
+import { VEHICLE_PHOTO_PLACEHOLDER } from '@/features/vehicles/domain/vehicle';
 
 // Fixtures here are test data only; the application never imports them.
 const body = 'Único dueño.\n\nSe puede ver por Villa Pueyrredon, CABA.';
@@ -56,9 +58,27 @@ describe('listing cleanup', () => {
   });
 
   it('cleans a stored catalog vehicle', () => {
-    const vehicle = { version: '1.4 Lounge 105cv At', description: `${body}\n\nGonba’s Garage\nCompra - venta - consignación`, highlights: ['Frenos ABS'] };
-    assert.deepEqual(cleanCatalogVehicle(vehicle), { version: '1.4 Lounge 105 CV AT', description: body, highlights: ['Frenos ABS'] }, 'Without attributes the stored highlights stay');
+    const vehicle = {
+      make: 'Fiat', model: '500', version: '1.4 Lounge 105cv At', imageAlt: 'Fiat 500 1.4 Lounge 105cv At',
+      description: `${body}\n\nGonba’s Garage\nCompra - venta - consignación`, highlights: ['Frenos ABS'],
+    };
+    assert.deepEqual(cleanCatalogVehicle(vehicle), {
+      make: 'Fiat', model: '500', version: '1.4 Lounge 105 CV AT', imageAlt: 'Fiat 500 1.4 Lounge 105 CV AT', description: body, highlights: ['Frenos ABS'],
+    }, 'Without attributes the stored highlights stay');
     assert.deepEqual(cleanCatalogVehicle(vehicle, [yes('SINGLE_OWNER')]).highlights, ['Único dueño']);
+  });
+
+  // Photo alt text: the name the headings show, never the publication title as typed in Mercado Libre.
+  it.each([
+    ['Toyota SW4 2.8 TDI GR-S 4x4 · 7 asientos · 6AT', { make: 'Toyota', model: 'SW4', version: '2.8 Tdi Gr-s 4x4 7as 6at', imageAlt: 'Toyota Sw4 2.8 Tdi Gr-s 4x4 7as 6at' }],
+    ['Mercedes-Benz Clase A 1.3 A200 163 CV Progressive Hatch', { make: 'Mercedes-Benz', model: 'Clase A', version: '1.3 A200 163cv Progressive Hatch', imageAlt: 'Mercedes-benz Clase A 1.3 A200 163cv Progressive Hatch' }],
+    ['Volkswagen Golf', { make: 'Volkswagen', model: 'Golf', version: '', imageAlt: 'Volkswagen Golf Advance' }],
+  ])('names the photos "%s" as the headings do', (alt, vehicle) => {
+    const clean = cleanCatalogVehicle({ ...vehicle, description: '', highlights: [] });
+    assert.equal(clean.imageAlt, alt);
+    assert.equal(clean.imageAlt, `${clean.make} ${clean.model} ${clean.version}`.trim(), 'Same values as the heading');
+    assert.equal(formatVehicleImageAlt({ ...clean, image: 'https://http2.mlstatic.com/D_NQ_NP_2X_photo-F.jpg' }), alt);
+    assert.equal(formatVehicleImageAlt({ ...clean, image: VEHICLE_PHOTO_PLACEHOLDER }), `${alt}: foto no disponible`);
   });
 
   // Specs: distances use the thousands separator; other values stay as published.
