@@ -5,6 +5,7 @@ import { SlidersHorizontal } from 'lucide-react';
 import { CustomSelect } from '@/components/ui/custom-select';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { DualRangeFilter } from './dual-range-filter';
+import { MepQuoteInfo } from './mep-quote-info';
 import type { CatalogMepQuote } from '@/features/vehicles/domain/catalog-pricing';
 
 export type InventoryFiltersProps = {
@@ -100,6 +101,7 @@ export function InventoryFilters({
       {priceEnabled ? <DualRangeFilter
         formatValue={formatVehiclePrice}
         label="Precio equivalente en USD"
+        labelAddon={quote ? <MepQuoteInfo quote={quote} /> : null}
         maximum={priceCeiling}
         maximumAriaLabel="Precio máximo"
         maximumValue={maxPrice}
@@ -110,7 +112,6 @@ export function InventoryFilters({
         onMinimumChange={onMinPriceChange}
         step={priceStep}
       /> : <p className="catalog-filter-note" role="status">Cotización MEP no disponible. El filtro y el orden por precio están temporalmente deshabilitados.</p>}
-      {quote ? <p className="catalog-filter-note">Referencia: dólar MEP venta, $ {new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 }).format(quote.arsPerUsd)} por USD. Fuente: <a href="https://dolarapi.com" target="_blank" rel="noreferrer">DolarAPI</a>. Actualización: {quote.updatedAtLabel} (Argentina). Conversión orientativa para filtrar y ordenar; cotización de pago a confirmar con la agencia.</p> : null}
       <DualRangeFilter
         formatValue={formatVehicleMileage}
         label="Rango de kilometraje"
