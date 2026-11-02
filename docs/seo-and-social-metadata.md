@@ -250,10 +250,11 @@ publication ID, still return 404, and that a non-canonical slug redirects.
 
 ## Private alert management
 
-`/api/alerts/daily` and `/api/mercado-libre/sync` require the cron secret. `/api/price-alerts/cancel` validates a signed,
-generation-scoped capability and serves a minimal cancellation confirmation.
+`/api/alerts/daily` and `/api/mercado-libre/sync` require the cron secret. `/api/price-alerts/cancel`
+and `/api/inventory-alerts/cancel` validate a signed, generation-scoped capability and serve a
+minimal cancellation confirmation.
 `/api/alerts/confirm` validates a signed, generation-scoped and expiring signup confirmation
-for price and inventory alerts and serves the same kind of minimal page. All three are
+for price and inventory alerts and serves the same kind of minimal page. All of them are
 `private, no-store` and `noindex, nofollow` in every indexing mode and excluded from the
 sitemap. Cancellation and confirmation GETs do not mutate data, so email scanners cannot cancel
 or activate subscriptions. POST performs the change, including RFC 8058 one-click cancellation.

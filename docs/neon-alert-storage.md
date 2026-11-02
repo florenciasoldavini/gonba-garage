@@ -21,8 +21,8 @@ Set `DATABASE_URL` to the appropriate pooled Neon connection string with SSL ena
 
 With the target `DATABASE_URL` set, run `npm run db:migrate`. The script loads `.env.local`
 when present, but preserves an already set environment variable. It applies the plain SQL
-in `database/migrations/` (subscriptions, price delivery, signup confirmation, catalog sync and
-search-alert delivery) in one transaction. It is safe
+in `database/migrations/` (subscriptions, price delivery, signup confirmation, catalog sync,
+search-alert delivery and the catalog vehicle-category constraint) in one transaction. It is safe
 to rerun on these new databases. For migrations, it resolves the direct (non-pooled)
 endpoint of the same branch. Apply to both branches; schema changes on production do
 not automatically propagate to an existing development branch.

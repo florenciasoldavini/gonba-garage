@@ -63,8 +63,9 @@ owns those facts rather than from browser clicks.
 
 ## Google Search Console setup
 
-The application exposes `/sitemap.xml` and `/robots.txt`. Both use `NEXT_PUBLIC_SITE_URL`, so replace
-the local value with the canonical production origin before launch. Until then,
+The application exposes `/sitemap.xml` and `/robots.txt`. `robots.txt` (and the sitemap, once it is
+filled at the indexing launch) uses `NEXT_PUBLIC_SITE_URL`, so replace the local value with the
+canonical production origin before launch. Until then,
 `SITE_INDEXING_ENABLED=false` keeps every page out of search results and serves an empty sitemap.
 The catalog, car pages and sitemap also stay out of search results until the final version of the
 site, even with indexing enabled.

@@ -95,8 +95,9 @@ per endpoint: 20/hour per client IP (first `X-Forwarded-For` hop or `X-Real-IP`;
 /64), 5/hour per address and 100/hour in total. Confirmation emails are capped at one per
 subscription every 10 minutes and five per recipient per day across both endpoints; a suppressed
 send still returns the same success response. IPs and addresses are HMAC'd with
-`ALERTS_SIGNING_SECRET` and never stored raw. Limits also apply in demo mode whenever the database
-is configured; without a signing secret (demo only) only the total bucket applies. The existing
+`ALERTS_SIGNING_SECRET` and never stored raw. Limits also apply where alert emails are not
+configured, whenever the database is; without a signing secret (possible only there) only the total
+bucket applies. The existing
 honeypot stays in place.
 Resend applies provider-level suppression of hard bounces/complaints. A full local delivery-events
 history or operator email alerts are not included in this PR.
@@ -218,7 +219,7 @@ availability events, which expire after 72 hours.
    for real sending: while it is set there, every confirmation and alert to a real person fails.
    Keep the email configuration off previews by default and never point a preview worker at
    production subscriptions.
-5. The catalog page reads the configuration at build time, so redeploy after changing it. The frontend uses its local database for signup
+5. Vercel applies environment changes only to new deployments, so redeploy after changing them. The frontend uses its local database for signup
    storage, so the worker and signup route must use the same intended database/environment. A local
    frontend can read the deployed catalog backend as before. Alert activation resolves the real
    publication directly through Mercado Libre.

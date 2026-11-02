@@ -7,32 +7,59 @@ price, description, and contact action must remain usable without WebGL or clien
 
 ## Stack
 
-- Next.js App Router, React Server Components, and TypeScript.
-- Tailwind is available for utilities; project-specific art direction can live in authored CSS.
-- Cloudflare-compatible Vinext runtime for the current local and hosting foundation.
+- Next.js 16 App Router, React 19 Server Components, and TypeScript.
+- Authored CSS with semantic design tokens (`styles/tokens.css`, `app/globals.css`); no CSS
+  framework. GSAP is the only animation dependency (see "Motion and 3D strategy").
+- Hosted on Vercel (Hobby plan): Node.js route handlers, the cron jobs in `vercel.json`, and a
+  private Blob store for the encrypted Mercado Libre credentials.
+- Neon PostgreSQL is the only database: the synced catalog, alert subscriptions and their queues
+  (`database/migrations/`, applied with `npm run db:migrate`).
 - Mercado Libre is the source of truth for inventory. The site reads a synced copy in Neon.
-- Server-rendered vehicle detail routes will own metadata, canonical URLs, and structured data.
+- Server-rendered vehicle detail routes own metadata, canonical URLs, and structured data.
 - `lib/integrations/mercado-libre/catalog.ts` is the catalog read boundary. `listCatalogVehicles`,
   `findCatalogPublication` and `findCatalogVehicle` read the synced copy through
   `lib/catalog/store.ts`, or the deployed backend's copy when `MERCADO_LIBRE_BACKEND_URL` is set
   (local development). There is no demo catalog: every environment shows the real Mercado Libre
   inventory, and the codebase ships no placeholder vehicles. Pages and the share-image route read
-  inventory only through this module. The sitemap is empty until the indexing launch
+  inventory only through this module. The sitemap is deliberately empty until the indexing launch
   (`docs/seo-and-social-metadata.md`). The price alert signup is described under the sync section.
 
 The experimental work should happen at the edge of the interface, not in the data or routing
-foundation. Do not introduce a motion or 3D dependency until a specific interaction justifies it.
+foundation. Do not introduce another motion or 3D dependency until a specific interaction justifies
+it.
 
-## Planned routes
+## Routes
+
+Pages (all server-rendered; client components only add interaction):
 
 | Route | Purpose | Rendering |
 | --- | --- | --- |
-| `/` | Brand story, featured stock, trust, primary conversion | Server-rendered |
-| `/vehiculos` | Filterable inventory | Server-rendered shell and URL-based filters |
-| `/vehiculos/[slug]` | Vehicle detail and conversion | Server-rendered with dynamic metadata |
-| `/vender` | Vehicle acquisition lead form | Server-rendered with progressive enhancement |
-| `/api/mercado-libre/webhook` | Listing-change notifications | Server route handler |
-| `/api/mercado-libre/callback` | OAuth callback | Server route handler |
+| `/` | Brand story, up to three available cars, FAQ, contact | Request time (`connection()`) |
+| `/vehiculos` | Catalog with URL-based filters, comparison and search alerts | Request time (`connection()`) |
+| `/vehiculos/[slug]` | Vehicle detail in any status, price alert, contact | Request time (`force-dynamic`), `generateMetadata`; other slugs for the same ID redirect permanently |
+| `/vender` | Sell-your-car valuation form that opens WhatsApp with a prefilled message | Server page, client form |
+| `/privacidad`, `/terminos` | Privacy policy and terms of use | Static |
+| `/alertas/confirmacion` | Result page after an emailed confirmation link | Request time, always `noindex` |
+
+Metadata and asset routes: `/og/vehiculos/[slug]` (1200×630 share card), `/sitemap.xml`,
+`/robots.txt`, `/manifest.webmanifest` and `/apple-icon`.
+
+Route handlers (`robots.txt` disallows `/api/`; the private ones send `no-store` and `noindex`):
+
+| Route | Method | Access | Purpose |
+| --- | --- | --- | --- |
+| `/api/mercado-libre/connect` | GET | Catalog API key (Basic or Bearer) | Starts OAuth with PKCE |
+| `/api/mercado-libre/callback` | GET | OAuth state and PKCE cookies | Exchanges the code, checks the seller, stores the encrypted token |
+| `/api/mercado-libre/webhook` | POST | Seller and application ID check | Queues the item for sync and price alerts |
+| `/api/mercado-libre/sync` | GET | `CRON_SECRET` | Daily reconciliation, then drains the queue |
+| `/api/mercado-libre/catalog` | GET | Catalog API key | Synced copy for local development servers |
+| `/api/mercado-libre/diagnostics` | GET | Catalog API key | Publication diagnostics; `?connection=1` credential state; `?sync=1` sync health |
+| `/api/price-alerts` | POST | Same-site JSON, rate limits | Price alert signup |
+| `/api/inventory-alerts` | POST | Same-site JSON, rate limits | Search alert signup |
+| `/api/alerts/confirm` | GET, POST | Signed, expiring token | GET shows a page that posts itself; POST confirms |
+| `/api/price-alerts/cancel`, `/api/inventory-alerts/cancel` | GET, POST | Signed token | GET shows a form; POST cancels (RFC 8058 one-click) |
+| `/api/alerts/daily` | GET | `CRON_SECRET` | Daily price review and pending alert email |
+| `/api/vehicle-catalog` | GET | Public, CDN-cached | Arg Autos makes, models and versions for `/vender` |
 
 ## Mercado Libre sync
 
@@ -114,11 +141,13 @@ view, is blocked.
 
 ## Motion and 3D strategy
 
-Start with CSS transforms, opacity, and native browser capabilities. Add `motion` only when a
-component needs coordinated state transitions. Reserve React Three Fiber/Three.js for one
-high-impact, isolated scene after real assets and a measurable user benefit exist.
+Motion is progressive enhancement. CSS handles control and hover transitions. GSAP (`gsap` and
+`@gsap/react`) runs the coordinated entrance, accordion, dialog and comparison-dock animations from
+client components (`components/motion/` and route `_components/`). Animations honor
+`prefers-reduced-motion`, and no content, price or contact action depends on them.
 
-The 3D scene must:
+There is no 3D scene. Reserve React Three Fiber/Three.js for one high-impact, isolated scene after
+real assets and a measurable user benefit exist. Such a scene must:
 
 - load dynamically after primary content;
 - have a designed static image fallback;
@@ -132,7 +161,8 @@ The 3D scene must:
 - One stable URL per active or sold vehicle.
 - Unique title, description, canonical URL, and social metadata per vehicle.
 - `Vehicle`/`Product`, `LocalBusiness`, and breadcrumb structured data where valid.
-- Sitemap generated from current inventory.
+- Sitemap deliberately empty until the indexing launch; from then on, generated from the public
+  pages and active inventory.
 - Sold vehicles remain useful when possible; removed URLs return an intentional status.
 - Spanish semantic HTML is rendered on the server before enhancement.
 

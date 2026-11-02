@@ -83,8 +83,8 @@ licenses. Only replace the temporary public hostname.
 
 ### Mercado Libre
 
-The OAuth callback and webhook are planned in `docs/architecture.md`; complete these items when that
-integration is enabled.
+The OAuth callback and webhook are live (see `docs/architecture.md`, "Mercado Libre sync"). Until
+these items are done, the integration keeps using the temporary hostname.
 
 - [ ] Change `MERCADO_LIBRE_REDIRECT_URI` in Vercel to
   `https://<custom-domain>/api/mercado-libre/callback`.
@@ -94,6 +94,14 @@ integration is enabled.
   `https://<custom-domain>/api/mercado-libre/webhook`.
 - [ ] Redeploy, then run a fresh OAuth authorization and a test webhook delivery.
 - [ ] Keep the client secret unchanged unless there is a separate reason to rotate it.
+
+### Alert emails
+
+- [ ] Change `ALERTS_PUBLIC_URL` to `https://<custom-domain>` and redeploy. It is the fixed origin of
+  every vehicle, confirmation and cancellation link in alert emails (`lib/alerts/config.ts`). Links
+  in emails that were already sent keep the old hostname, so keep the old hostname redirecting.
+- [ ] If `ALERTS_EMAIL_FROM` moves to an address on the new domain, verify that domain in Resend and
+  configure its SPF, DKIM and DMARC records before switching.
 
 ### Other services
 
@@ -145,11 +153,8 @@ domain does not require new analytics credentials.
 - [ ] Update email signatures, QR codes, WhatsApp templates, proposals, invoices, printed material,
   and saved response templates.
 - [ ] Ask owners of important external links to replace the Vercel URL with the custom domain.
-- [ ] Confirm whether `ventas@gonbagarage.com.ar` matches the final domain and is active. If the
-  final domain differs, update the email link in `app/vehiculos/[slug]/page.tsx` and configure the
-  new mailbox before deployment.
-- [ ] If the application starts sending email, configure and validate SPF, DKIM, and DMARC before
-  using an address on the new domain.
+- [ ] The site currently publishes no email address (contact is through WhatsApp,
+  `constants/contact.ts`). If one is added, configure the mailbox on the final domain first.
 
 There are no paid-ad destination URLs to update at present. Add that step later only if campaigns
 are created.
