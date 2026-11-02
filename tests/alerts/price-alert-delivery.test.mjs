@@ -208,6 +208,22 @@ describe('price alert delivery', () => {
     assert.equal(accepted.size, acceptedAfterDaily, 'Repeated daily review sends no duplicates');
   });
 
+  it('makes a finished price job due again, and a duplicate of due work changes nothing', async () => {
+    const priceJob = async () => (await db.query("SELECT * FROM price_alert_item_jobs WHERE publication_id='MLA123'")).rows[0];
+    const acceptedBefore = accepted.size;
+    assert.equal(await engine.enqueuePriceItem('MLA999'), false, 'An unsubscribed ID is not work');
+    assert.equal(await engine.enqueuePriceItem('MLA123'), true);
+    const armed = await priceJob();
+    assert.equal(await engine.enqueuePriceItem('MLA123'), false, 'A duplicate needs no drain');
+    assert.equal(Number((await priceJob()).revision), Number(armed.revision), 'and does not bump the revision');
+    await db.exec("UPDATE price_alert_item_jobs SET lease_until = now() + interval '1 minute' WHERE publication_id='MLA123'");
+    assert.equal(await engine.enqueuePriceItem('MLA123'), true, 'A job being read is read again afterwards');
+    await db.exec("UPDATE price_alert_item_jobs SET lease_until = NULL, next_attempt_at = now() - interval '3 minutes' WHERE publication_id='MLA123'");
+    assert.equal(await engine.enqueuePriceItem('MLA123'), true, 'Due work no worker picked up gets a drain');
+    await engine.runPriceAlertWork();
+    assert.equal(accepted.size, acceptedBefore);
+  });
+
   it('limits signups per email with delivery enabled, per endpoint', async () => {
     const from = ip => new Request('https://example.test/api/price-alerts', { method: 'POST', headers: { 'X-Forwarded-For': ip } });
     for (let i = 0; i < 5; i++) assert.equal(await limiter.reserveAlertSignup('price', 'limited@example.invalid', from(`192.0.2.${i}`)), true);

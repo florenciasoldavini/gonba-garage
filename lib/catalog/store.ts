@@ -20,6 +20,10 @@ type Row = Record<string, unknown>;
 
 const PUBLICATION_ID = /^MLA\d+$/;
 const MAX_JOB_ATTEMPTS = 8;
+/** A due job no worker has picked up for this long gets a new drain from the next notification. */
+const OVERDUE_JOB = '2 minutes';
+/** Given-up jobs of items never stored stay this long for diagnostics, then are deleted. */
+const GIVEN_UP_RETENTION_DAYS = 14;
 const NEW_LISTING_DAYS = 7;
 
 function toVehicle(row: Row): Vehicle {
@@ -118,40 +122,82 @@ export async function savePublication(publication: MercadoLibrePublication, vehi
   return { saved: rows[0].saved === 1, priceChanged: rows[0].price_changes === 1, becameAvailable: rows[0].available === 1 };
 }
 
-/** The item no longer exists on Mercado Libre. Its page stays, marked as no longer available. */
+/**
+ * The item no longer exists on Mercado Libre. Its page stays, marked as no longer available.
+ * Returns false when there is no stored row (or the lease was lost).
+ */
 export async function markPublicationRemoved(id: string, lease: string) {
-  await getAlertsSql()`UPDATE public.catalog_publications SET status = 'closed',
+  const rows = await getAlertsSql()`UPDATE public.catalog_publications SET status = 'closed',
       closed_at = COALESCE(closed_at, now()),
       content_changed_at = CASE WHEN status = 'closed' THEN content_changed_at ELSE now() END,
       synced_at = now()
     WHERE publication_id = ${id} AND EXISTS (SELECT 1 FROM public.catalog_sync_jobs
-      WHERE publication_id = ${id} AND lease_id = ${lease}::uuid)`;
+      WHERE publication_id = ${id} AND lease_id = ${lease}::uuid)
+    RETURNING 1`;
+  return rows.length === 1;
 }
 
-/** Idempotent: a repeated notification bumps the revision so the item is read once more. */
+/**
+ * Reconciliation (and tests): always makes each item due, even a skipped or deferred one, since the
+ * seller's own listing vouches for it.
+ */
 export async function enqueueCatalogJobs(ids: string[]) {
   const valid = [...new Set(ids)].filter(id => PUBLICATION_ID.test(id));
   if (!valid.length) return;
   await getAlertsSql()`INSERT INTO public.catalog_sync_jobs (publication_id)
     SELECT unnest(${valid}::text[])
     ON CONFLICT (publication_id) DO UPDATE SET revision = catalog_sync_jobs.revision + 1,
-      next_attempt_at = now(), updated_at = now()`;
+      next_attempt_at = now(), deferred = false, skip_until = NULL, updated_at = now()`;
 }
 
-export async function leaseCatalogJob(lease: string) {
+/**
+ * Queues a notification and returns whether it needs a drain. Duplicates cost one statement:
+ * - a finished job is made due again, unless a recent read found an item never stored missing or of
+ *   another seller (skip_until);
+ * - a job being read gets a new revision, so the item is read again afterwards;
+ * - a job already due is left alone (and keeps its backoff); it only asks for a drain when it
+ *   leaves the deferred state or no worker has picked it up for OVERDUE_JOB.
+ * `deferred` marks a source outside MERCADO_LIBRE_WEBHOOK_IPS: queued, never drained here.
+ */
+export async function enqueueCatalogNotification(id: string, { deferred }: { deferred: boolean }) {
+  if (!PUBLICATION_ID.test(id)) return false;
+  const rows = await getAlertsSql()`INSERT INTO public.catalog_sync_jobs AS job (publication_id, deferred)
+    VALUES (${id}, ${deferred}::boolean)
+    ON CONFLICT (publication_id) DO UPDATE SET
+      revision = CASE WHEN job.revision > job.processed_revision AND NOT COALESCE(job.lease_until >= now(), false)
+        THEN job.revision ELSE job.revision + 1 END,
+      next_attempt_at = CASE WHEN job.revision > job.processed_revision AND NOT COALESCE(job.lease_until >= now(), false)
+        THEN job.next_attempt_at ELSE now() END,
+      deferred = CASE WHEN job.revision > job.processed_revision THEN job.deferred AND EXCLUDED.deferred ELSE EXCLUDED.deferred END,
+      skip_until = NULL, updated_at = now()
+    WHERE CASE WHEN job.revision <= job.processed_revision
+      THEN job.skip_until IS NULL OR job.skip_until <= now()
+        OR EXISTS (SELECT 1 FROM public.catalog_publications WHERE publication_id = job.publication_id)
+      ELSE COALESCE(job.lease_until >= now(), false)
+        OR (NOT EXCLUDED.deferred AND (job.deferred OR job.next_attempt_at < now() - ${OVERDUE_JOB}::interval))
+      END
+    RETURNING deferred`;
+  return !deferred && rows.length === 1 && rows[0].deferred === false;
+}
+
+/** Deferred jobs come last, and only when `includeDeferred` (the daily cron). */
+export async function leaseCatalogJob(lease: string, { includeDeferred = true } = {}) {
   const rows = await getAlertsSql()`UPDATE public.catalog_sync_jobs SET lease_id = ${lease}::uuid,
       lease_until = now() + interval '90 seconds', attempts = attempts + 1
     WHERE publication_id = (SELECT publication_id FROM public.catalog_sync_jobs
       WHERE revision > processed_revision AND next_attempt_at <= now() AND (lease_until IS NULL OR lease_until < now())
-      ORDER BY next_attempt_at LIMIT 1 FOR UPDATE SKIP LOCKED)
+        AND (${includeDeferred}::boolean OR NOT deferred)
+      ORDER BY deferred, next_attempt_at LIMIT 1 FOR UPDATE SKIP LOCKED)
     RETURNING publication_id, revision, attempts`;
   if (!rows.length) return null;
   return { id: String(rows[0].publication_id), revision: Number(rows[0].revision), attempts: Number(rows[0].attempts) };
 }
 
-export async function completeCatalogJob(id: string, lease: string, revision: number) {
+/** `skipSeconds` ignores notifications for the item that long (see enqueueCatalogNotification). */
+export async function completeCatalogJob(id: string, lease: string, revision: number, skipSeconds = 0) {
   await getAlertsSql()`UPDATE public.catalog_sync_jobs SET processed_revision = GREATEST(processed_revision, ${revision}),
-      lease_id = NULL, lease_until = NULL, attempts = 0, last_error = NULL, updated_at = now()
+      lease_id = NULL, lease_until = NULL, attempts = 0, last_error = NULL, updated_at = now(),
+      skip_until = CASE WHEN ${skipSeconds}::int > 0 THEN now() + ${skipSeconds}::int * interval '1 second' END
     WHERE publication_id = ${id} AND lease_id = ${lease}::uuid`;
 }
 
@@ -191,6 +237,62 @@ export async function acquireReconciliation(lease: string) {
   return rows.length === 1;
 }
 
+/**
+ * Deletes jobs nothing needs any more, during a reconciliation that holds `lease`, and returns how
+ * many. Only jobs of items never stored, not leased, and untouched since this reconciliation started:
+ * - finished, once any skip has expired;
+ * - given up, after GIVEN_UP_RETENTION_DAYS;
+ * - still deferred, when the listing was complete: a genuine one is a vehicle of the seller, which
+ *   this reconciliation found missing from the copy and queued again, clearing the deferral.
+ * Jobs of stored items are never deleted: their revisions and leases guard every write.
+ */
+export async function pruneCatalogJobs(lease: string, { listingComplete }: { listingComplete: boolean }) {
+  const rows = await getAlertsSql()`DELETE FROM public.catalog_sync_jobs job USING public.catalog_sync_runs run
+    WHERE run.id = 'reconciliation' AND run.lease_id = ${lease}::uuid AND job.updated_at < run.last_started_at
+      AND (job.lease_until IS NULL OR job.lease_until < now())
+      AND NOT EXISTS (SELECT 1 FROM public.catalog_publications WHERE publication_id = job.publication_id)
+      AND CASE WHEN job.revision <= job.processed_revision
+        THEN (job.skip_until IS NULL OR job.skip_until <= now())
+          AND (job.last_error IS NULL OR job.updated_at < now() - ${GIVEN_UP_RETENTION_DAYS}::int * interval '1 day')
+        ELSE job.deferred AND ${listingComplete}::boolean
+        END
+    RETURNING 1`;
+  return rows.length;
+}
+
+/**
+ * One webhook drain at a time: concurrent notifications would otherwise each read the queue in
+ * parallel. The lease is short and renewed per item, so an interrupted drain blocks others briefly.
+ */
+export async function acquireNotificationDrain(lease: string) {
+  const rows = await getAlertsSql()`INSERT INTO public.catalog_sync_runs AS run (id, lease_id, lease_until, last_started_at)
+    VALUES ('notification_drain', ${lease}::uuid, now() + interval '90 seconds', now())
+    ON CONFLICT (id) DO UPDATE SET lease_id = EXCLUDED.lease_id, lease_until = EXCLUDED.lease_until,
+      last_started_at = EXCLUDED.last_started_at
+    WHERE run.lease_until IS NULL OR run.lease_until < now()
+    RETURNING id`;
+  return rows.length === 1;
+}
+
+export async function renewNotificationDrain(lease: string) {
+  const rows = await getAlertsSql()`UPDATE public.catalog_sync_runs SET lease_until = now() + interval '90 seconds'
+    WHERE id = 'notification_drain' AND lease_id = ${lease}::uuid RETURNING id`;
+  return rows.length === 1;
+}
+
+export async function releaseNotificationDrain(lease: string) {
+  await getAlertsSql()`UPDATE public.catalog_sync_runs SET lease_id = NULL, lease_until = NULL, last_completed_at = now()
+    WHERE id = 'notification_drain' AND lease_id = ${lease}::uuid`;
+}
+
+/** Whether a webhook drain would find a job now. */
+export async function hasDueNotificationJobs() {
+  const rows = await getAlertsSql()`SELECT EXISTS (SELECT 1 FROM public.catalog_sync_jobs
+    WHERE revision > processed_revision AND next_attempt_at <= now() AND NOT deferred
+      AND (lease_until IS NULL OR lease_until < now())) AS due`;
+  return rows[0].due === true;
+}
+
 export async function finishReconciliation(lease: string, result: { listed: number } | { failure: string }) {
   const sql = getAlertsSql();
   if ('listed' in result) {
@@ -210,6 +312,7 @@ export async function readSyncHealth() {
       FROM public.catalog_sync_runs WHERE id = 'reconciliation'`,
     sql`SELECT count(*) FILTER (WHERE revision > processed_revision)::int AS pending,
         count(*) FILTER (WHERE revision > processed_revision AND attempts > 0)::int AS retrying,
+        count(*) FILTER (WHERE revision > processed_revision AND deferred)::int AS deferred,
         min(updated_at) FILTER (WHERE revision > processed_revision) AS oldest_pending_at,
         count(*) FILTER (WHERE revision <= processed_revision AND last_error IS NOT NULL)::int AS abandoned
       FROM public.catalog_sync_jobs`,
@@ -224,7 +327,7 @@ export async function readSyncHealth() {
       lastFailedAt: iso(run?.last_failed_at), lastFailure: run?.last_failure ?? null,
       lastListed: run?.last_listed ?? null,
     },
-    jobs: { pending: jobs[0].pending, retrying: jobs[0].retrying, abandoned: jobs[0].abandoned,
+    jobs: { pending: jobs[0].pending, retrying: jobs[0].retrying, deferred: jobs[0].deferred, abandoned: jobs[0].abandoned,
       oldestPendingAt: iso(jobs[0].oldest_pending_at) },
     publications: Object.fromEntries(publications.map(row => [String(row.status), row.count])),
     lastSyncedAt: iso(publications.reduce<unknown>((latest, row) =>

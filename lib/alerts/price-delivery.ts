@@ -56,12 +56,21 @@ export async function confirmPriceAlert(id: string, generation: string) {
   return rows.length ? String(rows[0].vehicle_slug) : null;
 }
 
+/**
+ * Only items with an active alert are queued. Returns whether there is new work to drain: a job that
+ * is already due and not being read is left alone (keeping its backoff), unless no worker has
+ * picked it up for two minutes.
+ */
 export async function enqueuePriceItem(id: string) {
   const sql = getAlertsSql();
-  await sql`INSERT INTO public.price_alert_item_jobs (publication_id)
+  const rows = await sql`INSERT INTO public.price_alert_item_jobs AS job (publication_id)
     SELECT ${id} WHERE EXISTS (SELECT 1 FROM public.vehicle_price_alerts WHERE publication_id = ${id} AND status = 'active')
-    ON CONFLICT (publication_id) DO UPDATE SET revision = price_alert_item_jobs.revision + 1,
-      next_attempt_at = now(), updated_at = now()`;
+    ON CONFLICT (publication_id) DO UPDATE SET revision = job.revision + 1,
+      next_attempt_at = now(), updated_at = now()
+    WHERE job.revision <= job.processed_revision OR job.lease_until >= now()
+      OR job.next_attempt_at < now() - interval '2 minutes'
+    RETURNING 1`;
+  return rows.length === 1;
 }
 
 export async function enqueueDailyPriceReview() {

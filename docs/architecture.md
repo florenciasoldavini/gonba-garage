@@ -72,7 +72,7 @@ that a sync worker keeps current. Sync is one-way; nothing is edited on the site
    and only then answers 200. If the job cannot be stored it answers 503 so Mercado Libre retries.
 3. After the response, the worker leases the job and reads the item and description again with the
    seller token. The notification payload is never trusted, so duplicate, forged or out-of-order
-   notifications cannot write wrong data.
+   notifications cannot write wrong data. The safeguards below keep them cheap as well.
 4. Cars, pickups and motorcycles of the configured seller are saved in `catalog_publications`
    (public presentation fields only) in any status: active, paused or closed. Items that no longer
    exist are marked `closed`. Other sellers' items and anything else (trucks, boats, savings plans,
@@ -103,7 +103,55 @@ read makes the item due again; writes require the item's current job lease, so a
 expired cannot overwrite a newer read; failed reads back off exponentially up to an hour and are given
 up after eight attempts with the error kept for diagnostics; a single-row lease allows one
 reconciliation at a time. `GET /api/mercado-libre/diagnostics?sync=1` reports the last reconciliation,
-queue backlog and row counts.
+queue backlog (`jobs.deferred` counts jobs from unlisted addresses) and row counts.
+
+### Forged and repeated notifications
+
+Mercado Libre does not sign notifications, and the seller ID is public, so anyone can post a
+plausible one. It can never write data (step 3), but each one used to cost a queue row, a drain in a
+300-second function and two or three Mercado Libre calls on the seller token. Mercado Libre also
+sends many copies of one change. No safeguard rejects a notification: every one that passes the ID
+checks is either queued durably or already covered by queued work, so a genuine notification can
+be delayed but never lost.
+
+- **Copies of queued work** (`enqueueCatalogNotification` in `lib/catalog/store.ts`). A notification
+  for a job that is already due changes nothing and starts no drain: the drain already on its way
+  reads the current item. It keeps any backoff. A notification for a job being read adds a revision,
+  as before. A finished job is made due again. A due job that no worker has picked up for two
+  minutes (an interrupted drain) does get a new drain. The price-alert queue works the same way
+  (`enqueuePriceItem`).
+- **One webhook drain at a time.** The drain holds a single-row lease (`notification_drain` in
+  `catalog_sync_runs`), renewed per item and expiring after 90 seconds if the function dies. A
+  notification that finds it taken starts nothing, so a drain checks once more for due work after
+  releasing it. The cron drains on its own, alongside it; job leases keep the two apart.
+- **Items that are not ours.** When a read finds that an item never stored belongs to another seller,
+  notifications for it are ignored for a day; when it does not exist, for an hour, in case a brand
+  new listing was read too early (`skip_until`). A stored vehicle is never skipped, and the
+  reconciliation clears the skip, since the seller's own listing vouches for the item.
+- **Unlisted source addresses** (optional). Mercado Libre publishes the addresses it sends
+  notifications from, in [Recibe notificaciones](https://developers.mercadolibre.com.ar/es_ar/productos-recibe-notificaciones),
+  but its pages disagree (the Spanish page lists far more than the English one and the
+  [security guide](https://developers.mercadolibre.com.ar/es_ar/seguridad-apps)) and say the list can
+  change. Set `MERCADO_LIBRE_WEBHOOK_IPS` to the comma-separated list from the Spanish page to use it.
+  The webhook compares `x-vercel-forwarded-for`, which Vercel sets itself, never the first
+  `x-forwarded-for` entry. A notification from any other address is still queued and answered 200,
+  but as `deferred`: the webhook never drains it, and the daily cron reads it after every other job.
+  So an outdated list only delays notifications to the daily sync, and each one is logged
+  (`mercado_libre_webhook_unlisted_address`, with the address) so the list can be updated. Unset, as
+  locally and in tests, every address is accepted. A proxy in front of Vercel would make every
+  address look unlisted.
+- **Bounded queue** (`pruneCatalogJobs`). Each successful reconciliation deletes jobs of items never
+  stored that are not leased and were last touched before it started: finished jobs once any skip has
+  expired, given-up jobs after 14 days, and deferred jobs when the listing was complete (a genuine
+  one is a seller vehicle missing from the copy, which the same reconciliation queued again). Jobs of
+  stored vehicles are never deleted, since their lease and revision guard every write, and nothing
+  touches `catalog_publications`.
+
+There is no cap on notification volume per time window. A cap that rejected notifications could
+drop genuine ones, and one that only skipped drains would add little: the drain lease already
+allows a single drain at a time. Configuring the addresses is the strongest lever. Forged
+notifications then cost one statement each, start nothing, and are read at most within the cron's
+200-item budget per day.
 
 The cron runs daily so it also works on the Vercel Hobby plan, which rejects more frequent crons.
 Webhooks carry real-time changes; on a Pro plan, change the schedule in `vercel.json` to

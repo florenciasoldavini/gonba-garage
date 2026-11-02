@@ -14,10 +14,11 @@ import { createDatabase, createSql } from '../helpers/postgres.mjs';
 const SELLER = '123';
 const apiKey = 'catalog-api-key-for-tests';
 
-const state = vi.hoisted(() => ({ sql: null, deferred: [] }));
+// `beforeQuery` runs before each application query, to interleave work at an exact point.
+const state = vi.hoisted(() => ({ sql: null, deferred: [], beforeQuery: null }));
 // Fake Mercado Libre. Items are mapped by the real mapper, as the real client does.
 const mercadoLibre = vi.hoisted(() => ({
-  items: new Map(), calls: { item: [], list: 0, category: [] }, listFails: false, itemFails: false,
+  items: new Map(), calls: { item: [], list: 0, category: [] }, listFails: false, itemFails: false, listTotal: null,
 }));
 vi.mock('next/server', async importOriginal => ({ ...await importOriginal(), after: task => { state.deferred.push(task); } }));
 vi.mock('@/lib/alerts/database', () => ({ getAlertsSql: () => state.sql, isAlertsDatabaseConfigured: () => true }));
@@ -43,7 +44,8 @@ vi.mock('@/lib/integrations/mercado-libre/oauth', async () => {
       calls.list++;
       if (mercadoLibre.listFails) throw failures.failure('catalog_query', 'http_error', { httpStatus: 503 });
       // Every status, as the real scan returns it.
-      return { seller: { id: 123 }, publications: { items: [...items.values()].map(entry => mapMercadoLibreItemToVehicle(entry)) } };
+      return { seller: { id: 123 }, publications: { total: mercadoLibre.listTotal ?? items.size,
+        items: [...items.values()].map(entry => mapMercadoLibreItemToVehicle(entry)) } };
     },
     // Real Mercado Libre Argentina ancestries (cars, motorcycles, trucks, savings plans and a toy
     // category), plus a hypothetical future subcategory of cars.
@@ -150,7 +152,12 @@ describe('catalog sync', () => {
   beforeAll(async () => {
     // Every migration, through the same runner as `npm run db:migrate`.
     db = await createDatabase();
-    state.sql = createSql(() => db, faults);
+    const sql = createSql(() => db, faults);
+    state.sql = Object.assign((strings, ...values) => {
+      const query = sql(strings, ...values);
+      return { ...query, then: (onFulfilled, onRejected) =>
+        Promise.resolve(state.beforeQuery?.(query.text)).then(() => query).then(onFulfilled, onRejected) };
+    }, { transaction: sql.transaction });
   });
   afterAll(() => db.close());
 
@@ -285,7 +292,7 @@ describe('catalog sync', () => {
     items.set('MLA4', item('MLA4'));
     items.set('MLA3', item('MLA3', { status: 'paused' }));
     result = await sync.reconcileCatalog();
-    assert.deepEqual(result, { skipped: false, listed: 2, enqueued: 2 }, 'Every status is listed, not only active');
+    assert.deepEqual(result, { skipped: false, listed: 2, enqueued: 2, pruned: 0 }, 'Every status is listed, not only active');
     assert.equal((await row('MLA3')).status, 'active', 'Reconciliation alone does not change a vehicle');
     await sync.runCatalogSyncWork();
     assert.equal((await row('MLA3')).status, 'paused');
@@ -307,7 +314,7 @@ describe('catalog sync', () => {
     assert.equal((await row('MLA4')).status, 'active');
     mercadoLibre.listFails = true;
     await assert.rejects(sync.reconcileCatalog());
-    const run = (await query('SELECT * FROM public.catalog_sync_runs'))[0];
+    const run = (await query("SELECT * FROM public.catalog_sync_runs WHERE id = 'reconciliation'"))[0];
     assert.equal(run.last_failure, 'catalog_query:http_error:503');
     assert.equal(run.lease_id, null, 'A failed run releases its lease');
     mercadoLibre.listFails = false;
@@ -326,7 +333,7 @@ describe('catalog sync', () => {
     items.set('MLA13', item('MLA13', { category_id: 'MLA58254', title: 'Mercedes-Benz Atego 1726' }));
     items.set('MLA14', item('MLA14', { category_id: 'MLA900001' }));
     result = await sync.reconcileCatalog();
-    assert.deepEqual(result, { skipped: false, listed: 5, enqueued: 3 }, 'Only cars, pickups and motorcycles are listed and queued');
+    assert.deepEqual(result, { skipped: false, listed: 5, enqueued: 3, pruned: 0 }, 'Only cars, pickups and motorcycles are listed and queued');
     await sync.runCatalogSyncWork();
     assert.equal((await row('MLA7')).status, 'closed', 'A car closed before the copy existed is stored');
     assert.equal((await row('MLA7')).vehicle_category, 'MLA1744');
@@ -392,9 +399,9 @@ describe('catalog sync', () => {
   });
 
   it('runs only one reconciliation at a time', async () => {
-    await query("UPDATE public.catalog_sync_runs SET lease_id = '00000000-0000-4000-8000-000000000003', lease_until = now() + interval '1 minute'");
+    await query("UPDATE public.catalog_sync_runs SET lease_id = '00000000-0000-4000-8000-000000000003', lease_until = now() + interval '1 minute' WHERE id = 'reconciliation'");
     assert.deepEqual(await sync.reconcileCatalog(), { skipped: true });
-    await query('UPDATE public.catalog_sync_runs SET lease_id = NULL, lease_until = NULL');
+    await query("UPDATE public.catalog_sync_runs SET lease_id = NULL, lease_until = NULL WHERE id = 'reconciliation'");
   });
 
   it('accepts only CRON_SECRET on the cron route', async () => {
@@ -452,5 +459,185 @@ describe('catalog sync', () => {
     assert.deepEqual(await events('MLA1'), ['closed'], 'A closed listing that comes back is recorded, however old');
     assert.ok((await query('SELECT * FROM public.inventory_alert_events')).every(({ state }) => state === 'pending'),
       'Without alert email configuration nothing is matched');
+  });
+
+  // Forged and repeated notifications. Mercado Libre sends many copies of one change: a copy of work
+  // already queued costs one statement, with no new revision, drain or read.
+  it('coalesces copies of a notification into one drain and one read', async () => {
+    state.deferred.length = 0; calls.item.length = 0;
+    items.set('MLA30', item('MLA30'));
+    for (let i = 0; i < 5; i++) assert.equal((await notify('MLA30')).status, 200);
+    assert.equal(state.deferred.length, 1, 'Five copies start one drain');
+    assert.equal(Number((await job('MLA30')).revision), 1, 'Copies of due work add no revision');
+    await runDeferred();
+    assert.deepEqual(calls.item, ['MLA30'], 'and one read');
+    assert.equal((await row('MLA30')).status, 'active');
+  });
+
+  it('still reads an item again when notified during a read', async () => {
+    await query("UPDATE public.catalog_sync_jobs SET revision = revision + 1, lease_id = $1, lease_until = now() + interval '1 minute' WHERE publication_id = 'MLA30'",
+      ['00000000-0000-4000-8000-000000000004']);
+    const reading = Number((await job('MLA30')).revision);
+    await notify('MLA30');
+    assert.equal(Number((await job('MLA30')).revision), reading + 1, 'A notification during a read adds a revision');
+    assert.equal(state.deferred.length, 1);
+    await query("UPDATE public.catalog_sync_jobs SET lease_id = NULL, lease_until = NULL WHERE publication_id = 'MLA30'");
+    await runDeferred();
+    assert.equal(Number((await job('MLA30')).processed_revision), reading + 1);
+  });
+
+  it('drains due work no worker picked up, and keeps a backoff', async () => {
+    await store.enqueueCatalogJobs(['MLA30']);
+    await notify('MLA30');
+    assert.equal(state.deferred.length, 0, 'A drain is already on its way');
+    await query("UPDATE public.catalog_sync_jobs SET next_attempt_at = now() - interval '3 minutes' WHERE publication_id = 'MLA30'");
+    await notify('MLA30');
+    assert.equal(state.deferred.length, 1, 'Overdue work gets a drain');
+    state.deferred.length = 0;
+    await query("UPDATE public.catalog_sync_jobs SET next_attempt_at = now() + interval '10 minutes' WHERE publication_id = 'MLA30'");
+    await notify('MLA30');
+    assert.equal(state.deferred.length, 0, 'A notification does not cut a backoff short');
+    assert.ok((await job('MLA30')).next_attempt_at > new Date());
+    await query("UPDATE public.catalog_sync_jobs SET next_attempt_at = now() WHERE publication_id = 'MLA30'");
+  });
+
+  it('runs one webhook drain at a time, which finds work queued while it held the lease', async () => {
+    const otherDrain = '00000000-0000-4000-8000-000000000005';
+    assert.equal(await store.acquireNotificationDrain(otherDrain), true);
+    assert.equal(await store.acquireNotificationDrain('00000000-0000-4000-8000-000000000006'), false);
+    calls.item.length = 0;
+    await sync.runCatalogSyncWorkSafely();
+    assert.deepEqual(calls.item, [], 'While another drain runs, a second one reads nothing');
+    await query("UPDATE public.catalog_sync_runs SET lease_until = now() - interval '1 second' WHERE id = 'notification_drain'");
+    items.set('MLA31', item('MLA31'));
+    state.beforeQuery = async text => {
+      if (!text.includes("id = 'notification_drain'") || !text.includes('last_completed_at')) return;
+      state.beforeQuery = null;
+      // Arrives after the drain found nothing more, just before it lets go: its own drain would find
+      // the lease taken.
+      await notify('MLA31');
+    };
+    await sync.runCatalogSyncWorkSafely();
+    state.deferred.length = 0;
+    assert.deepEqual(calls.item, ['MLA30', 'MLA31'], 'An expired lease is taken over, and late work is still drained');
+    assert.equal((await row('MLA31')).status, 'active');
+    assert.equal((await query("SELECT lease_id FROM public.catalog_sync_runs WHERE id = 'notification_drain'"))[0].lease_id, null);
+  });
+
+  // An item a read found to belong to another seller, or missing, is not read again for a while, unless
+  // it is stored. The reconciliation ignores the skip.
+  it('skips items of other sellers for a day and missing items for an hour', async () => {
+    calls.item.length = 0;
+    items.set('MLA32', item('MLA32', { seller_id: 999 }));
+    await notify('MLA32'); await notify('MLA33'); await runDeferred();
+    const hours = async id => ((await job(id)).skip_until - Date.now()) / 3_600_000;
+    assert.ok(await hours('MLA32') > 23.9 && await hours('MLA32') <= 24, 'Another seller: skipped for a day');
+    assert.ok(await hours('MLA33') > 0.9 && await hours('MLA33') <= 1, 'Missing: skipped for an hour');
+    for (let i = 0; i < 3; i++) { await notify('MLA32'); await notify('MLA33'); }
+    assert.equal(state.deferred.length, 0, 'Repeats start nothing');
+    assert.deepEqual(calls.item, ['MLA32', 'MLA33'], 'and read nothing');
+    await query("UPDATE public.catalog_sync_jobs SET skip_until = now() - interval '1 second' WHERE publication_id = 'MLA33'");
+    await notify('MLA33');
+    assert.equal(state.deferred.length, 1, 'After the skip, the item is read again');
+    await runDeferred();
+  });
+
+  it('never skips a stored vehicle, and lets the reconciliation clear a skip', async () => {
+    items.delete('MLA30');
+    await notify('MLA30'); await runDeferred();
+    assert.equal((await row('MLA30')).status, 'closed');
+    assert.equal((await job('MLA30')).skip_until, null, 'A stored vehicle that disappears is closed, never skipped');
+    await query("UPDATE public.catalog_sync_jobs SET skip_until = now() + interval '1 day' WHERE publication_id = 'MLA30'");
+    await notify('MLA30');
+    assert.equal(state.deferred.length, 1, 'A skip never applies to a stored vehicle');
+    await runDeferred();
+    items.set('MLA33', item('MLA33'));
+    await notify('MLA33');
+    assert.equal(state.deferred.length, 0);
+    assert.ok((await sync.reconcileCatalog()).enqueued >= 1);
+    assert.equal((await job('MLA33')).skip_until, null, 'The seller\'s own listing clears the skip');
+    await sync.runCatalogSyncWork();
+    assert.equal((await row('MLA33')).status, 'active');
+  });
+
+  // Mercado Libre's notification addresses: any other source is queued (never lost, in case the list
+  // is outdated) but deferred. The webhook never drains it; the daily cron does, after other work.
+  it('defers notifications from unlisted addresses to the cron', async () => {
+    vi.stubEnv('MERCADO_LIBRE_WEBHOOK_IPS', '54.88.218.97,18.215.140.160');
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const notifyFrom = (id, address) => webhook.POST(new Request('https://example.test/api/mercado-libre/webhook', {
+      method: 'POST', headers: { 'x-vercel-forwarded-for': address },
+      body: JSON.stringify({ topic: 'items', resource: `/items/${id}`, user_id: 123, application_id: 456 }),
+    }));
+    items.set('MLA34', item('MLA34'));
+    calls.item.length = 0;
+    assert.equal((await notifyFrom('MLA34', '203.0.113.9')).status, 200);
+    assert.equal((await notifyFrom('MLA34', '203.0.113.9')).status, 200);
+    assert.equal((await job('MLA34')).deferred, true);
+    assert.equal(state.deferred.length, 0, 'An unlisted source starts no drain');
+    await sync.runCatalogSyncWorkSafely();
+    assert.deepEqual(calls.item, [], 'and the webhook drain never reads its items');
+    assert.equal((await store.readSyncHealth()).jobs.deferred, 1);
+    await notifyFrom('MLA34', '54.88.218.97');
+    assert.equal((await job('MLA34')).deferred, false, 'A listed source vouches for the item');
+    assert.equal(state.deferred.length, 1);
+    await runDeferred();
+    assert.equal((await row('MLA34')).status, 'active');
+    await query("UPDATE public.catalog_sync_jobs SET revision = revision + 1, lease_id = $1, lease_until = now() + interval '1 minute' WHERE publication_id = 'MLA34'",
+      ['00000000-0000-4000-8000-000000000008']);
+    await notifyFrom('MLA34', '203.0.113.9');
+    assert.equal(state.deferred.length, 0, 'An unlisted source never starts a drain, even for an item being read');
+    assert.equal((await job('MLA34')).deferred, false, 'nor downgrades work a listed source queued');
+    await query("UPDATE public.catalog_sync_jobs SET lease_id = NULL, lease_until = NULL WHERE publication_id = 'MLA34'");
+    await notifyFrom('MLA35', '203.0.113.9');
+    await query("UPDATE public.catalog_sync_jobs SET next_attempt_at = now() - interval '1 hour' WHERE publication_id = 'MLA35'");
+    await store.enqueueCatalogJobs(['MLA34']);
+    calls.item.length = 0;
+    await sync.runCatalogSyncWork();
+    assert.deepEqual(calls.item.filter(id => ['MLA34', 'MLA35'].includes(id)), ['MLA34', 'MLA35'], 'The cron reads deferred items last');
+  });
+
+  // The daily reconciliation bounds the queue. It deletes only jobs of items never stored, never one
+  // being read or touched since it started, and never a catalog row.
+  it('prunes jobs nothing needs during the reconciliation', async () => {
+    const old = "now() - interval '2 hours'";
+    await query(`INSERT INTO public.catalog_sync_jobs (publication_id, revision, processed_revision, last_error, skip_until, deferred,
+        lease_id, lease_until, updated_at) VALUES
+      ('MLA40', 1, 1, NULL, NULL, false, NULL, NULL, ${old}),
+      ('MLA41', 1, 1, NULL, now() + interval '1 hour', false, NULL, NULL, ${old}),
+      ('MLA42', 1, 1, 'catalog_query:http_error:500', NULL, false, NULL, NULL, ${old}),
+      ('MLA43', 1, 1, 'catalog_query:http_error:500', NULL, false, NULL, NULL, now() - interval '15 days'),
+      ('MLA44', 2, 1, NULL, NULL, false, NULL, NULL, ${old}),
+      ('MLA45', 2, 1, NULL, NULL, true, NULL, NULL, ${old}),
+      ('MLA46', 2, 1, NULL, NULL, true, NULL, NULL, ${old}),
+      ('MLA47', 2, 1, NULL, NULL, false, '00000000-0000-4000-8000-000000000007', now() + interval '1 minute', ${old}),
+      ('MLA48', 1, 1, NULL, NULL, false, NULL, NULL, now() + interval '1 minute')`);
+    await query(`UPDATE public.catalog_sync_jobs SET processed_revision = revision, last_error = 'catalog_query:http_error:500',
+      updated_at = now() - interval '30 days' WHERE publication_id = 'MLA4'`);
+    items.set('MLA46', item('MLA46'));
+    const jobIds = async () => new Set((await query('SELECT publication_id FROM public.catalog_sync_jobs')).map(({ publication_id }) => publication_id));
+    const storedRows = async () => (await query('SELECT publication_id FROM public.catalog_publications')).length;
+    const storedBefore = await storedRows();
+    // A scan that stopped early proves nothing about deferred items.
+    mercadoLibre.listTotal = items.size + 1;
+    await sync.reconcileCatalog();
+    mercadoLibre.listTotal = null;
+    assert.ok((await jobIds()).has('MLA45'), 'An incomplete listing keeps deferred jobs');
+    assert.equal((await jobIds()).has('MLA40'), false, 'A finished job of an item never stored goes regardless');
+    assert.equal((await jobIds()).has('MLA43'), false, 'So does one given up more than two weeks ago');
+    await query(`UPDATE public.catalog_sync_jobs SET updated_at = ${old}, deferred = true WHERE publication_id = 'MLA46'`);
+    const jobsBefore = await jobIds();
+    result = await sync.reconcileCatalog();
+    const jobsAfter = await jobIds();
+    const deleted = [...jobsBefore].filter(id => !jobsAfter.has(id));
+    assert.equal(result.pruned, deleted.length);
+    assert.ok(deleted.includes('MLA45'), 'A deferred job the seller does not list is deleted');
+    for (const id of ['MLA41', 'MLA42', 'MLA44', 'MLA46', 'MLA47', 'MLA48', 'MLA4', 'MLA32']) assert.ok(jobsAfter.has(id), `${id} is kept`);
+    assert.equal((await job('MLA46')).deferred, false, 'A deferred item the seller lists is queued by the reconciliation');
+    const stored = new Set((await query('SELECT publication_id FROM public.catalog_publications')).map(({ publication_id }) => publication_id));
+    assert.equal(deleted.some(id => stored.has(id)), false, 'No job of a stored vehicle is ever deleted');
+    assert.equal(await storedRows(), storedBefore, 'Pruning never touches the catalog copy');
+    await sync.runCatalogSyncWork();
+    assert.equal((await row('MLA46')).status, 'active');
   });
 });

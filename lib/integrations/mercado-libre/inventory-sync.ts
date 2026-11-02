@@ -1,8 +1,9 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import {
-  acquireReconciliation, completeCatalogJob, enqueueCatalogJobs, failCatalogJob, finishReconciliation,
-  leaseCatalogJob, markPublicationRemoved, readStoredSyncState, savePublication,
+  acquireNotificationDrain, acquireReconciliation, completeCatalogJob, enqueueCatalogJobs, enqueueCatalogNotification,
+  failCatalogJob, finishReconciliation, hasDueNotificationJobs, leaseCatalogJob, markPublicationRemoved, pruneCatalogJobs,
+  readStoredSyncState, releaseNotificationDrain, renewNotificationDrain, savePublication,
 } from '@/lib/catalog/store';
 import { catalogAccessToken } from './access-token';
 import { failure, IntegrationFailure, safeFailure, type IntegrationIncident } from './failures';
@@ -12,6 +13,13 @@ import { vehicleCategoryOf, type VehicleCategory } from './vehicle-categories';
 
 /** Rows not refreshed for a day are read again, which also picks up description-only edits. */
 const REFRESH_AFTER_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Notifications for an item never stored are ignored this long after a read found it missing, or
+ * of another seller. Short for missing items, in case a new listing was read before it existed.
+ */
+const SKIP_NOT_FOUND_SECONDS = 60 * 60;
+const SKIP_OTHER_SELLER_SECONDS = 24 * 60 * 60;
 
 const vehicleCategories = new Map<string, Promise<VehicleCategory | null>>();
 
@@ -52,9 +60,11 @@ function incidentCode({ stage, code, httpStatus }: IntegrationIncident) {
 /**
  * A notification only means "go check this item". It is queued durably before the webhook
  * acknowledges it, and its payload is never trusted: the worker always reads the item again.
+ * Returns whether the webhook should start a drain; `verified: false` (a source outside
+ * MERCADO_LIBRE_WEBHOOK_IPS) queues the item for the daily cron only.
  */
-export async function enqueueCatalogSync(id: string) {
-  await enqueueCatalogJobs([id]);
+export async function enqueueCatalogSync(id: string, { verified = true } = {}) {
+  return enqueueCatalogNotification(id, { deferred: !verified });
 }
 
 /** Null when Mercado Libre no longer has the item. Description 404s are already optional. */
@@ -68,21 +78,25 @@ async function readCurrentPublication(id: string) {
 }
 
 /** Processes one due item. Returns false when nothing is due. */
-export async function processNextCatalogJob() {
+export async function processNextCatalogJob({ includeDeferred = true } = {}) {
   const lease = randomUUID();
-  const job = await leaseCatalogJob(lease);
+  const job = await leaseCatalogJob(lease, { includeDeferred });
   if (!job) return false;
   try {
     const seller = sellerId();
     const publication = await readCurrentPublication(job.id);
+    let skipSeconds = 0;
     if (!publication) {
-      await markPublicationRemoved(job.id, lease);
+      // A stored vehicle is closed, and never skipped. Only an item never stored is.
+      if (!(await markPublicationRemoved(job.id, lease))) skipSeconds = SKIP_NOT_FOUND_SECONDS;
     } else if (String(publication.source.seller_id) === seller && publication.source.id === job.id) {
       const category = await vehicleCategory(publication.source);
       if (category) await savePublication(publication, category, lease);
+    } else if (String(publication.source.seller_id) !== seller) {
+      skipSeconds = SKIP_OTHER_SELLER_SECONDS;
     }
     // Items of other sellers and items that are not vehicles are never stored. The job is done either way.
-    await completeCatalogJob(job.id, lease, job.revision);
+    await completeCatalogJob(job.id, lease, job.revision, skipSeconds);
   } catch (error) {
     const incident = safeFailure(error, 'catalog_sync').incident;
     await failCatalogJob(job.id, lease, job.revision, job.attempts, incidentCode(incident));
@@ -91,17 +105,39 @@ export async function processNextCatalogJob() {
   return true;
 }
 
-/** Drains due items within a time budget. Items in backoff wait for the next run. */
-export async function runCatalogSyncWork({ budgetMs = 200_000, maxItems = 200 } = {}) {
+/**
+ * Drains due items within a time budget. Items in backoff wait for the next run. Deferred items
+ * come last, and only with `includeDeferred`. `renew` is checked before each item.
+ */
+export async function runCatalogSyncWork({ budgetMs = 200_000, maxItems = 200, includeDeferred = true,
+  renew = async () => true } = {}) {
   const deadline = Date.now() + budgetMs;
   let processed = 0;
-  while (Date.now() < deadline && processed < maxItems && await processNextCatalogJob()) processed++;
+  while (Date.now() < deadline && processed < maxItems && await renew()
+    && await processNextCatalogJob({ includeDeferred })) processed++;
   return processed;
 }
 
-export async function runCatalogSyncWorkSafely() {
-  try { await runCatalogSyncWork(); }
-  catch { console.error(JSON.stringify({ event: 'catalog_sync_worker_failure' })); }
+/**
+ * The webhook's drain. Only one runs at a time (a lease), and it never reads deferred items. A
+ * notification that finds the lease taken starts nothing, so after releasing it the drain checks
+ * once more for work queued meanwhile.
+ */
+export async function runCatalogSyncWorkSafely({ budgetMs = 200_000, maxItems = 200 } = {}) {
+  try {
+    const deadline = Date.now() + budgetMs;
+    let processed = 0;
+    do {
+      const lease = randomUUID();
+      if (!(await acquireNotificationDrain(lease))) return;
+      try {
+        processed += await runCatalogSyncWork({ budgetMs: deadline - Date.now(), maxItems: maxItems - processed,
+          includeDeferred: false, renew: () => renewNotificationDrain(lease) });
+      } finally {
+        await releaseNotificationDrain(lease);
+      }
+    } while (Date.now() < deadline && processed < maxItems && await hasDueNotificationJobs());
+  } catch { console.error(JSON.stringify({ event: 'catalog_sync_worker_failure' })); }
 }
 
 /**
@@ -117,6 +153,8 @@ export async function reconcileCatalog() {
     const seller = sellerId();
     const catalog = await readMercadoLibrePublications(await catalogAccessToken());
     if (String(catalog.seller.id) !== seller) throw failure('catalog_sync', 'unexpected_seller');
+    // A scan that stopped early (see readAllItemIds) must not count as proof that an item is not listed.
+    const listingComplete = catalog.publications.items.length >= catalog.publications.total;
     const listed = new Map<string, { status: string; lastUpdated: number | null }>();
     for (const { source, vehicle } of catalog.publications.items) {
       if (String(source.seller_id) !== seller) continue;
@@ -138,8 +176,9 @@ export async function reconcileCatalog() {
       if (!closed && row.syncedAt < staleBefore) due.add(id);
     }
     await enqueueCatalogJobs([...due]);
+    const pruned = await pruneCatalogJobs(lease, { listingComplete });
     await finishReconciliation(lease, { listed: listed.size });
-    return { skipped: false as const, listed: listed.size, enqueued: due.size };
+    return { skipped: false as const, listed: listed.size, enqueued: due.size, pruned };
   } catch (error) {
     const incident = safeFailure(error, 'catalog_sync').incident;
     await finishReconciliation(lease, { failure: incidentCode(incident) }).catch(() => {});
