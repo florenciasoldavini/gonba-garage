@@ -1531,7 +1531,7 @@ html:has(.compare-selection-dialog[open]) { overflow: hidden; }
   .catalog-toolbar-controls .catalog-sort { justify-self: stretch; }
   .catalog-sort .custom-select { width: 100%; min-width: 0; }
   .inventory-alert-trigger-toolbar { width: 46px; min-width: 46px; min-height: 46px; padding: 0; justify-content: center; gap: 0; }
-  .inventory-alert-trigger-toolbar .inventory-alert-trigger-label { display: none; }
+  .inventory-alert-trigger-toolbar .inventory-alert-trigger-label { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
   .catalog-grid { grid-template-columns: 1fr; }
   .catalog-card-title :is(h2, h3) { font-size: 1.55rem; }
   .catalog-contact { min-height: 440px; grid-template-columns: 1fr; align-content: space-between; gap: 44px; }
