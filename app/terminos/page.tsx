@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 import { LegalPage } from '@/components/layout/legal-page';
 import { WHATSAPP_DISPLAY_NUMBER, WHATSAPP_GENERAL_MESSAGE } from '@/constants/contact';
-import { BUSINESS_HOURS, BUSINESS_LOCATION, LEGAL_OWNER_CUIT, LEGAL_OWNER_NAME, LEGAL_PAGES } from '@/constants/legal';
+import { BUSINESS_LOCATION, LEGAL_BUSINESS_HOURS_TEXT, LEGAL_OWNER_CUIT, LEGAL_OWNER_NAME, LEGAL_PAGES } from '@/constants/legal';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { createPageMetadata } from '@/lib/metadata';
 
@@ -72,7 +72,7 @@ export default function TermsPage() {
       <section id="visitas">
         <h2>Visitas</h2>
         <p>
-          Atendemos solo con turno previo, {BUSINESS_HOURS}, en {BUSINESS_LOCATION}. Coordinamos el turno por {whatsapp}. Te
+          Atendemos solo con turno previo, {LEGAL_BUSINESS_HOURS_TEXT}, en {BUSINESS_LOCATION}. Coordinamos el turno por {whatsapp}. Te
           recomendamos revisar el vehículo y su documentación en persona antes de cerrar la operación.
         </p>
       </section>

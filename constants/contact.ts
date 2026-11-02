@@ -9,6 +9,22 @@ export const WHATSAPP_PRIVACY_MESSAGE = "Hola, quiero hacer una consulta sobre m
 
 // Confirmed by the owner. Visits are by appointment only and there is no public street address,
 // so never publish one or present these hours as walk-in hours.
-export const BUSINESS_AREA = { locality: 'Villa Pueyrredón', region: 'CABA', country: 'AR' } as const;
-export const BUSINESS_HOURS = ['Lunes a viernes de 10 a 18 h', 'Sábados de 10 a 13 h'] as const;
+// The area and schedule are also part of the legal text (constants/legal.ts): changing the area
+// revises /terminos and /privacidad, and changing the schedule revises /terminos. Bump
+// LEGAL_PAGES.terms.updatedAt and LEGAL_PAGES.privacy.updatedAt to match.
+export const BUSINESS_AREA = {
+  locality: 'Villa Pueyrredón',
+  region: 'CABA',
+  regionName: 'Ciudad Autónoma de Buenos Aires',
+  country: 'AR',
+} as const;
+// `days` is a range (first and last day) or a single weekday, in plural.
+export const BUSINESS_SCHEDULE = [
+  { days: ['lunes', 'viernes'], opens: 10, closes: 18 },
+  { days: ['sábados'], opens: 10, closes: 13 },
+] as const;
+export const BUSINESS_HOURS = BUSINESS_SCHEDULE.map(({ days, opens, closes }) => {
+  const label = days.join(' a ');
+  return `${label[0].toUpperCase()}${label.slice(1)} de ${opens} a ${closes} h`;
+});
 export const BUSINESS_VISIT_POLICY = 'Siempre con cita previa';
