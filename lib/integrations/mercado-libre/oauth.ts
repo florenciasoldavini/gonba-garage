@@ -77,10 +77,7 @@ export async function exchangeMercadoLibreAuthorizationCode(code: string, verifi
     cache: 'no-store', signal: AbortSignal.timeout(20_000),
   }).catch(error => { throw safeFailure(error, 'authorization_exchange'); });
 
-  return parseMercadoLibreResponse<MercadoLibreTokenResponse>(
-    response,
-    'Mercado Libre authorization-code exchange',
-  );
+  return parseMercadoLibreResponse<MercadoLibreTokenResponse>(response, 'authorization_exchange');
 }
 
 export async function refreshMercadoLibreToken(refreshToken: string) {
@@ -95,5 +92,5 @@ export async function refreshMercadoLibreToken(refreshToken: string) {
     }),
     cache: 'no-store', signal: AbortSignal.timeout(20_000),
   }).catch(error => { throw safeFailure(error, 'token_refresh'); });
-  return parseMercadoLibreResponse<MercadoLibreTokenResponse>(response, 'Mercado Libre token refresh');
+  return parseMercadoLibreResponse<MercadoLibreTokenResponse>(response, 'token_refresh', 'token_response');
 }

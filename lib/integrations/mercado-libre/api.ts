@@ -66,7 +66,7 @@ async function fetchMercadoLibre<T>(path: string, accessToken: string) {
     cache: 'no-store', signal: AbortSignal.timeout(20_000),
   }).catch(error => { throw safeFailure(error, 'catalog_query'); });
 
-  return parseMercadoLibreResponse<T>(response, `Mercado Libre GET ${path}`);
+  return parseMercadoLibreResponse<T>(response, 'catalog_query');
 }
 
 async function fetchOptionalMercadoLibre<T>(path: string, accessToken: string) {
@@ -79,7 +79,7 @@ async function fetchOptionalMercadoLibre<T>(path: string, accessToken: string) {
 
   if (response.status === 404) return null;
 
-  return parseMercadoLibreResponse<T>(response, `Mercado Libre GET ${path}`);
+  return parseMercadoLibreResponse<T>(response, 'catalog_query');
 }
 
 function chunks<T>(values: T[], size: number) {
