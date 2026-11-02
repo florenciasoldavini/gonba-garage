@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { resolve, dirname } from 'node:path';
 import ts from 'typescript';
 import { PGlite } from '@electric-sql/pglite';
+import { migrate, pgliteSession } from './migration-runner.mjs';
 
 const require = createRequire(import.meta.url);
 const SELLER = '123';
@@ -15,11 +16,9 @@ delete process.env.MERCADO_LIBRE_BACKEND_URL;
 // Without the alert email configuration no alert work runs (lib/alerts/config.ts).
 delete process.env.RESEND_API_KEY;
 
-// Every migration, applied twice: the runner expects rerunnable DDL.
+// Every migration, through the same runner as `npm run db:migrate`.
 const db = new PGlite();
-const migrations = readdirSync('database/migrations').filter(file => file.endsWith('.sql')).sort()
-  .map(file => readFileSync(`database/migrations/${file}`, 'utf8'));
-for (let i = 0; i < 2; i++) for (const migration of migrations) await db.exec(migration);
+await migrate(pgliteSession(db));
 let failQueries = false;
 async function sql(strings, ...values) {
   if (failQueries) throw Error('Simulated database outage');
@@ -439,4 +438,4 @@ try {
   console.error = previousError;
   await db.close();
 }
-console.log('Inventory sync: rerunnable migrations, photo placeholder, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth and database-only reads passed.');
+console.log('Inventory sync: migrations, photo placeholder, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth and database-only reads passed.');

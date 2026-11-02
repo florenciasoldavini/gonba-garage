@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { resolve, dirname } from 'node:path';
 import ts from 'typescript';
 import { PGlite } from '@electric-sql/pglite';
+import { migrate, pgliteSession } from './migration-runner.mjs';
 
 // Search-alert delivery against real PostgreSQL (PGlite), the real catalog sync, matcher, outbox
 // and routes. Mercado Libre, the MEP quote and Resend are fakes. Fixtures live here; the app ships
@@ -19,10 +20,8 @@ Object.assign(process.env, {
 delete process.env.ALERTS_TEST_RECIPIENT;
 delete process.env.MERCADO_LIBRE_BACKEND_URL;
 
-const migrations = readdirSync('database/migrations').filter(file => file.endsWith('.sql')).sort()
-  .map(file => readFileSync(`database/migrations/${file}`, 'utf8'));
 const db = new PGlite();
-for (let i = 0; i < 2; i++) for (const migration of migrations) await db.exec(migration);
+await migrate(pgliteSession(db));
 let failCommit = false;
 function sql(strings, ...values) {
   const text = strings.reduce((result, part, i) => result + part + (i < values.length ? `$${i + 1}` : ''), '');

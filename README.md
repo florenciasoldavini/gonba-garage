@@ -196,8 +196,8 @@ To see real cars locally, keep `MERCADO_LIBRE_BACKEND_URL` from `.env.example` a
 `MERCADO_LIBRE_CATALOG_API_KEY`. The local server then reads the catalog from the deployed backend,
 with no Mercado Libre credentials needed on your machine ([setup notes](docs/mercado-libre-local.md#desarrollo-local)).
 `DATABASE_URL` is server-only and is needed for alerts and for reading a catalog copy directly from
-Neon. Apply schema changes with `npm run db:migrate`
-([Neon storage](docs/neon-alert-storage.md)).
+Neon. `npm run db:migrate` applies pending migrations in file-name order and records each one in
+`schema_migrations` ([adding a migration](docs/neon-alert-storage.md#adding-a-migration)).
 
 ## Quality checks
 
@@ -223,7 +223,7 @@ features/vehicles/        Vehicle domain model, Mercado Libre mapper, presentati
 lib/integrations/         Server-only adapters: Mercado Libre, Arg Autos, MEP quote
 lib/catalog/              Synced catalog store and sync job queue (SQL)
 lib/alerts/               Alert subscriptions, signed tokens, rate limits, outbox workers, email
-database/migrations/      Versioned SQL migrations
+database/migrations/      Versioned SQL migrations, tracked in schema_migrations
 scripts/                  Migration runner and check-*.mjs test suites
 docs/                     Architecture, SEO, alerts, design system and operations notes
 ```
