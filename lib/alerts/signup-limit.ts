@@ -50,6 +50,13 @@ export function clientIp(request: Request) {
   return `${groups.slice(0, 4).map(group => parseInt(group, 16).toString(16)).join(':')}::/64`;
 }
 
+/**
+ * Every bucket lives in price_alert_signup_windows: both signup endpoints and the confirmation
+ * emails. The table keeps its first name on purpose. Migrations and deploys are not atomic on
+ * Vercel, so a rename would leave either the running or the new code querying a missing table
+ * unless a compatibility view bridged two releases, and the frozen BASELINE in
+ * scripts/migration-runner.mjs checks for this name. Not worth it for a name.
+ */
 async function reserve(buckets: Bucket[]) {
   const sql = getSql();
   // Opportunistic pruning: no window is longer than a day, so older rows are already expired.
