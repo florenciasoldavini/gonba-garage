@@ -19,7 +19,6 @@ type CatalogVehicleCardProps = {
   compareDisabled?: boolean;
   /** h3 when the card sits under another section heading, as in the similar-cars rail. */
   headingLevel?: 'h2' | 'h3';
-  index: number;
   isSelected?: boolean;
   /** Without it the card has no compare button. */
   onToggleComparison?: (vehicle: Vehicle) => void;
@@ -29,7 +28,6 @@ type CatalogVehicleCardProps = {
 export function CatalogVehicleCard({
   compareDisabled = false,
   headingLevel: Heading = 'h2',
-  index,
   isSelected = false,
   onToggleComparison,
   vehicle,
@@ -67,7 +65,6 @@ export function CatalogVehicleCard({
             className="cover-image"
           />
         </Link>
-        <span className="catalog-card-index">{String(index + 1).padStart(2, '0')}</span>
         <span className="catalog-card-status">{status.label}</span>
         {onToggleComparison && (
           <button

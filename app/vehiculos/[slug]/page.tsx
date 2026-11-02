@@ -373,8 +373,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
             <Link className="text-link" href="/vehiculos">Ver inventario completo <Arrow /></Link>
           </div>
           <div className="detail-similar-grid">
-            {similarVehicles.map((similar, index) => (
-              <CatalogVehicleCard headingLevel="h3" index={index} key={similar.slug} vehicle={similar} />
+            {similarVehicles.map((similar) => (
+              <CatalogVehicleCard headingLevel="h3" key={similar.slug} vehicle={similar} />
             ))}
             {similarVehicles.length < 3 && (
               <Link className="detail-similar-more glass-panel" href="/vehiculos">

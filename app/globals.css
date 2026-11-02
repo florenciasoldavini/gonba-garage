@@ -344,9 +344,7 @@ h3 { letter-spacing: -0.04em; }
 .vehicle-card { height: 100%; min-width: 0; padding: 10px 10px 20px; border-radius: var(--radius); overflow: hidden; }
 .vehicle-image { position: relative; height: clamp(280px, 34vw, 470px); overflow: hidden; border-radius: 11px; }
 .vehicle-card:hover .cover-image { transform: scale(1.035); }
-.vehicle-index, .vehicle-status { position: absolute; top: 12px; padding: 8px 10px; border-radius: 7px; font: 600 var(--text-label) var(--font-mono); }
-.vehicle-index { left: 12px; color: var(--accent); background: rgba(6, 8, 6, 0.77); backdrop-filter: blur(12px); }
-.vehicle-status { right: 12px; color: var(--accent-dark); background: var(--accent); text-transform: uppercase; }
+.vehicle-status { position: absolute; top: 12px; right: 12px; padding: 8px 10px; border-radius: 7px; font: 600 var(--text-label) var(--font-mono); color: var(--accent-dark); background: var(--accent); text-transform: uppercase; }
 .vehicle-copy { padding: 20px 8px 0; display: flex; justify-content: space-between; gap: 20px; align-items: center; }
 .vehicle-copy p { margin-bottom: 5px; color: var(--accent); font: 500 var(--text-micro) var(--font-mono); }
 .vehicle-copy h3 { margin: 0; font-size: clamp(1.15rem, 2vw, 1.5rem); }
@@ -524,15 +522,17 @@ h3 { letter-spacing: -0.04em; }
 .catalog-card-image { position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 11px; background: #111411; }
 .catalog-card-image-link { position: absolute; inset: 0; }
 .catalog-card:hover .cover-image { transform: scale(1.035); }
-.catalog-card-index, .catalog-card-status {
+.catalog-card-status {
   position: absolute;
   top: 12px;
+  right: 12px;
   padding: 8px 10px;
   border-radius: 7px;
   font: 600 var(--text-label) var(--font-mono);
+  color: var(--accent-dark);
+  background: var(--accent);
+  text-transform: uppercase;
 }
-.catalog-card-index { left: 12px; color: var(--accent); background: rgba(6, 8, 6, 0.76); backdrop-filter: blur(12px); }
-.catalog-card-status { right: 12px; color: var(--accent-dark); background: var(--accent); text-transform: uppercase; }
 /* Solid lime means available. Other statuses keep a distinct badge and a muted photo. */
 :is(.vehicle-card, .catalog-card)[data-status='paused'] :is(.vehicle-status, .catalog-card-status) { color: var(--accent); background: rgba(6, 8, 6, 0.77); box-shadow: inset 0 0 0 1px rgba(220, 255, 0, 0.7); backdrop-filter: blur(12px); }
 :is(.vehicle-card, .catalog-card)[data-status='sold'] :is(.vehicle-status, .catalog-card-status) { color: var(--background); background: var(--text); }
