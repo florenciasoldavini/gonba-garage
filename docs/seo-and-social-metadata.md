@@ -37,7 +37,7 @@ check when applicable.
 | Dynamic vehicle share cards | `app/og/vehiculos/[slug]/route.ts` |
 | Crawler rules | `app/robots.ts` |
 | Discoverable URLs and freshness | `app/sitemap.ts` (empty until the indexing launch) |
-| Favicon, Apple icon, and manifest | `public/favicon.svg`, `app/apple-icon.tsx`, and `app/manifest.ts` (192, 512 and maskable 512 PNGs in `public/brand/`) |
+| Favicon, Apple icon, and manifest | `public/favicon.svg`, `app/apple-icon.tsx`, and `app/manifest.ts` (GG icons in `public/brand/`; the round logo with the car is not used) |
 | Brand logo files (header, footer, share cards, dealer `logo`) | `public/brand/` |
 | End-to-end metadata contract | `scripts/check-social-metadata.mjs` |
 
