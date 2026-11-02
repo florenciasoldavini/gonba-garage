@@ -1,8 +1,13 @@
 import 'server-only';
-import type { Vehicle, VehicleStatus } from '@/features/vehicles/domain/vehicle';
+import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import type { MercadoLibreItem, MercadoLibrePublication } from '@/lib/integrations/mercado-libre/types';
 import type { VehicleCategory } from '@/lib/integrations/mercado-libre/vehicle-categories';
 import { getSql } from '@/lib/database';
+import { parseJobLease, parseRow, parseRows } from '@/lib/database-rows';
+import {
+  NO_RECONCILIATION, parseCatalogPublication, parseCatalogVehicle, parseDueCheck, parseJobHealth, parsePublicationHealth,
+  parseQueuedNotification, parseReconciliationHealth, parseSaveResult, parseStoredSyncState,
+} from './rows';
 
 /**
  * Local copy of the seller's Mercado Libre publications. Pages read only from here and only the
@@ -16,8 +21,6 @@ export type CatalogPublication = {
   source: Pick<MercadoLibreItem, 'id' | 'title' | 'pictures' | 'attributes' | 'permalink'>;
 };
 
-type Row = Record<string, unknown>;
-
 const PUBLICATION_ID = /^MLA\d+$/;
 const MAX_JOB_ATTEMPTS = 8;
 /** A due job no worker has picked up for this long gets a new drain from the next notification. */
@@ -26,16 +29,6 @@ const OVERDUE_JOB = '2 minutes';
 const GIVEN_UP_RETENTION_DAYS = 14;
 const NEW_LISTING_DAYS = 7;
 
-function toVehicle(row: Row): Vehicle {
-  return {
-    ...(row.vehicle as Omit<Vehicle, 'slug' | 'status' | 'updatedAt'>),
-    slug: String(row.slug),
-    status: row.status as VehicleStatus,
-    // A real content or availability change, never a provider-side touch or the sync time.
-    updatedAt: new Date(row.content_changed_at as string).toISOString(),
-  };
-}
-
 function toTimestamp(value: unknown) {
   if (typeof value !== 'string') return null;
   const time = Date.parse(value);
@@ -43,22 +36,18 @@ function toTimestamp(value: unknown) {
 }
 
 export async function listActiveCatalogVehicles() {
-  const rows = await getSql()`SELECT slug, status, vehicle, content_changed_at FROM public.catalog_publications
+  const rows = await getSql()`SELECT publication_id, slug, status, vehicle, content_changed_at FROM public.catalog_publications
     WHERE status = 'active' ORDER BY listed_at DESC NULLS LAST, publication_id DESC`;
-  return rows.map(toVehicle);
+  return parseRows('catalog_publications', rows, parseCatalogVehicle);
 }
 
 /** Any synced publication, including paused or closed ones, so their pages keep a stable URL. */
 export async function findCatalogPublication(id: string): Promise<CatalogPublication | null> {
   if (!PUBLICATION_ID.test(id)) return null;
-  const rows = await getSql()`SELECT slug, status, vehicle, source, description, content_changed_at
+  const rows = await getSql()`SELECT publication_id, slug, status, vehicle, source, description, content_changed_at
     FROM public.catalog_publications WHERE publication_id = ${id}`;
   if (!rows.length) return null;
-  return {
-    vehicle: toVehicle(rows[0]),
-    description: (rows[0].description ?? null) as CatalogPublication['description'],
-    source: rows[0].source as CatalogPublication['source'],
-  };
+  return parseRow('catalog_publications', rows[0], parseCatalogPublication);
 }
 
 /**
@@ -119,7 +108,7 @@ export async function savePublication(publication: MercadoLibrePublication, vehi
     )
     SELECT (SELECT count(*) FROM saved)::int AS saved, (SELECT count(*) FROM history)::int AS price_changes,
       (SELECT count(*) FROM available)::int AS available`;
-  return { saved: rows[0].saved === 1, priceChanged: rows[0].price_changes === 1, becameAvailable: rows[0].available === 1 };
+  return parseRow('catalog_publications', rows[0], parseSaveResult);
 }
 
 /**
@@ -177,7 +166,7 @@ export async function enqueueCatalogNotification(id: string, { deferred }: { def
         OR (NOT EXCLUDED.deferred AND (job.deferred OR job.next_attempt_at < now() - ${OVERDUE_JOB}::interval))
       END
     RETURNING deferred`;
-  return !deferred && rows.length === 1 && rows[0].deferred === false;
+  return !deferred && rows.length === 1 && !parseRow('catalog_sync_jobs', rows[0], parseQueuedNotification).deferred;
 }
 
 /** Deferred jobs come last, and only when `includeDeferred` (the daily cron). */
@@ -190,7 +179,8 @@ export async function leaseCatalogJob(lease: string, { includeDeferred = true } 
       ORDER BY deferred, next_attempt_at LIMIT 1 FOR UPDATE SKIP LOCKED)
     RETURNING publication_id, revision, attempts`;
   if (!rows.length) return null;
-  return { id: String(rows[0].publication_id), revision: Number(rows[0].revision), attempts: Number(rows[0].attempts) };
+  const { publication_id: id, revision, attempts } = parseRow('catalog_sync_jobs', rows[0], parseJobLease);
+  return { id, revision, attempts };
 }
 
 /** `skipSeconds` ignores notifications for the item that long (see enqueueCatalogNotification). */
@@ -218,13 +208,8 @@ export async function failCatalogJob(id: string, lease: string, revision: number
 export async function readStoredSyncState() {
   const rows = await getSql()`SELECT publication_id, status, source_updated_at, synced_at, vehicle_category
     FROM public.catalog_publications`;
-  return new Map(rows.map(row => [String(row.publication_id), {
-    status: row.status as VehicleStatus,
-    // Null only for rows saved before categories were recorded, until they are read again.
-    vehicleCategory: (row.vehicle_category ?? null) as VehicleCategory | null,
-    sourceUpdatedAt: row.source_updated_at ? new Date(row.source_updated_at as string).getTime() : null,
-    syncedAt: new Date(row.synced_at as string).getTime(),
-  }]));
+  // A skipped row looks missing from the copy, so a listed item is queued and its row rewritten.
+  return new Map(parseRows('catalog_publications', rows, parseStoredSyncState));
 }
 
 /** Only one reconciliation runs at a time. An interrupted run's lease expires after five minutes. */
@@ -290,7 +275,7 @@ export async function hasDueNotificationJobs() {
   const rows = await getSql()`SELECT EXISTS (SELECT 1 FROM public.catalog_sync_jobs
     WHERE revision > processed_revision AND next_attempt_at <= now() AND NOT deferred
       AND (lease_until IS NULL OR lease_until < now())) AS due`;
-  return rows[0].due === true;
+  return parseRow('catalog_sync_jobs', rows[0], parseDueCheck).due;
 }
 
 export async function finishReconciliation(lease: string, result: { listed: number } | { failure: string }) {
@@ -319,18 +304,12 @@ export async function readSyncHealth() {
     sql`SELECT status, count(*)::int AS count, max(synced_at) AS last_synced_at
       FROM public.catalog_publications GROUP BY status`,
   ]);
-  const iso = (value: unknown) => value ? new Date(value as string).toISOString() : null;
-  const run = runs[0];
+  const groups = publications.map(row => parseRow('catalog_publications', row, parsePublicationHealth));
   return {
-    reconciliation: {
-      lastStartedAt: iso(run?.last_started_at), lastCompletedAt: iso(run?.last_completed_at),
-      lastFailedAt: iso(run?.last_failed_at), lastFailure: run?.last_failure ?? null,
-      lastListed: run?.last_listed ?? null,
-    },
-    jobs: { pending: jobs[0].pending, retrying: jobs[0].retrying, deferred: jobs[0].deferred, abandoned: jobs[0].abandoned,
-      oldestPendingAt: iso(jobs[0].oldest_pending_at) },
-    publications: Object.fromEntries(publications.map(row => [String(row.status), row.count])),
-    lastSyncedAt: iso(publications.reduce<unknown>((latest, row) =>
-      !latest || new Date(row.last_synced_at as string) > new Date(latest as string) ? row.last_synced_at : latest, null)),
+    reconciliation: runs.length ? parseRow('catalog_sync_runs', runs[0], parseReconciliationHealth) : NO_RECONCILIATION,
+    jobs: parseRow('catalog_sync_jobs', jobs[0], parseJobHealth),
+    publications: Object.fromEntries(groups.map(({ status, count }) => [status, count])),
+    lastSyncedAt: groups.reduce<string | null>((latest, group) =>
+      !latest || group.lastSyncedAt > latest ? group.lastSyncedAt : latest, null),
   };
 }
