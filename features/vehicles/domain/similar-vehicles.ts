@@ -3,9 +3,9 @@ import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 const bodyType = (vehicle: Vehicle) => vehicle.body.split(' · ')[0];
 
 /**
- * Available alternatives to a car that is no longer for sale, most similar first: same model (often
- * the same car relisted under a new publication), then body type, make and age. Ties go to the
- * closest price in the same currency, then to the catalog order.
+ * Other available cars to show on a car's page, most similar first: same model (for a car that is no
+ * longer for sale, often the same car relisted under a new publication), then body type, make and
+ * age. Ties go to the closest price in the same currency, then to the catalog order.
  */
 export function pickSimilarVehicles(vehicle: Vehicle, candidates: Vehicle[], limit = 3) {
   const score = (candidate: Vehicle) =>

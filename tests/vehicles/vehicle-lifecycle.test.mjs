@@ -59,6 +59,27 @@ describe('similar vehicles', () => {
     assert.deepEqual(pickSimilarVehicles(sold, [sold, candidates[5]]), []);
   });
 
+  it('suggests other available cars under an available car too', () => {
+    const available = candidates[3];
+    const picked = pickSimilarVehicles(available, candidates).map(({ slug }) => slug);
+    assert.deepEqual(picked, ['audi-a4', 'vw-vento', 'bmw-x1']);
+    assert.ok(!picked.includes(available.slug), 'never the car itself');
+    assert.ok(!picked.includes('bmw-320i-paused') && !picked.includes(sold.slug), 'only available cars');
+  });
+
+  it('keeps the rail short', () => {
+    assert.equal(pickSimilarVehicles(sold, candidates).length, 3);
+    assert.equal(pickSimilarVehicles(sold, candidates, 2).length, 2);
+    // Fewer candidates than the limit: all of them, no padding.
+    assert.deepEqual(pickSimilarVehicles(sold, [candidates[0]]).map(({ slug }) => slug), ['ford-focus']);
+  });
+
+  it('suggests nothing when no other car is available', () => {
+    assert.deepEqual(pickSimilarVehicles(sold, []), []);
+    const onlyCar = candidates[0];
+    assert.deepEqual(pickSimilarVehicles(onlyCar, [onlyCar, candidates[5], sold]), []);
+  });
+
   it('does not compare prices in another currency', () => {
     // Catalog order decides among equals.
     const pesos = [car('a', { currency: 'ARS', price: 1 }), car('b', { currency: 'ARS', price: 99_999_999 })];

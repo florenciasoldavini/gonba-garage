@@ -131,6 +131,22 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
               },
             );
 
+            // Only some cars have the rail: an empty selection would warn.
+            if (root.current?.querySelector('.detail-similar')) {
+              gsap.from('.detail-similar-grid > *', {
+                y: 54,
+                autoAlpha: 0,
+                stagger: 0.1,
+                duration: 0.7,
+                ease: 'power3.out',
+                scrollTrigger: {
+                  trigger: '.detail-similar',
+                  start: 'top 76%',
+                  once: true,
+                },
+              });
+            }
+
             gsap.from('.detail-confidence > div', {
               y: 54,
               autoAlpha: 0,

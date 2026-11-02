@@ -381,7 +381,23 @@ assert.equal(new URL(legacySlug.headers.get('location'), targetOrigin).pathname,
 const homeHtml = await (await fetch(targetOrigin)).text();
 const lifecycleSitemap = await (await fetch(new URL('/sitemap.xml', targetOrigin))).text();
 const activeDetail = await (await fetch(new URL(listedVehiclePath, targetOrigin))).text();
-assert.doesNotMatch(activeDetail, /id="similares"/, 'An available car does not show the similar-cars rail');
+// Every car page links up to three other available cars, never itself, when there are any.
+const assertSimilarRail = (html, path) => {
+  assert.match(html, /id="similares"/, `${path} shows other available cars`);
+  const start = html.indexOf('id="similares"');
+  const rail = html.slice(start, html.indexOf('</section>', start));
+  const railLinks = [...rail.matchAll(/<a\b[^>]*class="catalog-card-image-link"[^>]*>/g)].map(([tag]) => getAttributes(tag).href);
+  assert.ok(railLinks.length > 0 && railLinks.length <= 3, `${path} rail shows up to three cars`);
+  assert.ok(!railLinks.includes(path), `${path} rail never suggests the car itself`);
+  assert.ok(!rail.match(/data-status="(?!active)/), `${path} rail only suggests available cars`);
+};
+if (listedVehiclePaths.length > 1) {
+  assertSimilarRail(activeDetail, listedVehiclePath);
+  assert.ok(activeDetail.indexOf('id="similares"') > activeDetail.indexOf('id="ficha"'), 'An available car shows the rail after its own details');
+  assert.match(activeDetail, /Otros autos que te pueden gustar/, 'An available car frames the rail as other cars');
+} else {
+  assert.doesNotMatch(activeDetail, /id="similares"/, 'The only available car has no rail');
+}
 assert.match(activeDetail, /Consultar por este auto/, 'An available car keeps its contact action');
 
 // Cars that are no longer for sale keep their page, out of search results and listings. Mercado Libre
@@ -423,12 +439,8 @@ for (const path of unlistedVehiclePaths) {
     assert.match(statusCard, /escribinos por WhatsApp/, `${fixture.path} points to WhatsApp instead`);
     assert.match(html, /href="https:\/\/wa\.me\/[^"]*"[^>]*>(?:Avisame por WhatsApp|Contanos qué buscás)/, `${fixture.path} links WhatsApp`);
   }
-  assert.match(html, /id="similares"/, `${fixture.path} shows available alternatives`);
-  const railLinks = [...html.slice(html.indexOf('id="similares"')).matchAll(/<a\b[^>]*class="catalog-card-image-link"[^>]*>/g)]
-    .map(([tag]) => getAttributes(tag).href);
-  assert.ok(railLinks.length > 0 && railLinks.length <= 3, `${fixture.path} rail shows up to three cars`);
-  assert.ok(!railLinks.includes(fixture.path), `${fixture.path} rail never suggests the car itself`);
-  assert.ok(!html.slice(html.indexOf('id="similares"')).match(/data-status="(?!active)/), `${fixture.path} rail only suggests available cars`);
+  assertSimilarRail(html, fixture.path);
+  assert.match(html, /Parecidos, y todavía en el garage/, `${fixture.path} frames the rail as alternatives`);
   for (const listing of [catalogHtml, homeHtml, lifecycleSitemap]) {
     assert.ok(!listing.includes(fixture.path), `${fixture.path} is not listed`);
   }
