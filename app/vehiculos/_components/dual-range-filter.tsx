@@ -1,8 +1,12 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 type DualRangeFilterProps = {
   formatValue: (value: number) => string;
   label: string;
+  /** Rendered beside the label, e.g. an info disclosure. */
+  labelAddon?: ReactNode;
   maximum: number;
   maximumAriaLabel: string;
   maximumValue: number;
@@ -17,6 +21,7 @@ type DualRangeFilterProps = {
 export function DualRangeFilter({
   formatValue,
   label,
+  labelAddon,
   maximum,
   maximumAriaLabel,
   maximumValue,
@@ -34,7 +39,7 @@ export function DualRangeFilter({
   return (
     <div className="catalog-field catalog-range-filter">
       <div className="catalog-range-heading">
-        <span>{label}</span>
+        {labelAddon ? <div className="catalog-range-label"><span>{label}</span>{labelAddon}</div> : <span>{label}</span>}
         <output>{formatValue(minimumValue)} — {formatValue(maximumValue)}</output>
       </div>
       <div className="catalog-range-control">
