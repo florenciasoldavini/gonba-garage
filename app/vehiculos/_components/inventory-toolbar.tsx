@@ -5,11 +5,11 @@ import { Search, SlidersHorizontal, X } from 'lucide-react';
 
 import { CustomSelect } from '@/components/ui/custom-select';
 
-export type InventorySort = 'featured' | 'newest' | 'price-asc' | 'price-desc' | 'mileage';
+export type InventorySort = 'featured' | 'year' | 'price-asc' | 'price-desc' | 'mileage';
 
 const sortOptions: Array<{ value: InventorySort; label: string }> = [
   { value: 'featured', label: 'Destacados' },
-  { value: 'newest', label: 'Más recientes' },
+  { value: 'year', label: 'Año más nuevo' },
   { value: 'price-asc', label: 'Menor precio' },
   { value: 'price-desc', label: 'Mayor precio' },
   { value: 'mileage', label: 'Menor kilometraje' },

@@ -43,6 +43,8 @@ describe('catalog URL state', () => {
     assert.equal(parse('marca=Ford').make, 'all', 'Unknown options fall back to all');
     assert.equal(parse('transmision=automatic').transmission, 'all', 'Only Spanish URL values are accepted');
     assert.equal(parse('orden=price-asc').sort, 'featured');
+    assert.equal(parse('orden=recientes').sort, 'year', 'Links from before the year sort was renamed still work');
+    assert.equal(serialize(parse('orden=recientes')), 'orden=anio');
     assert.deepEqual(parse('comparar=a,a,x,b,c,d').compare, ['a', 'b', 'c'], 'Comparison drops unknown and duplicate slugs and caps at the maximum');
   });
 

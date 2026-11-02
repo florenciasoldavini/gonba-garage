@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle } from '@/features/vehicles/domain/vehicle';
+import { orderFeaturedVehicles } from '@/features/vehicles/domain/featured-order';
 import { cleanCatalogVehicle } from '@/features/vehicles/presentation/listing-cleanup';
 import {
   findCatalogPublication as findStoredPublication,
@@ -48,11 +49,12 @@ function presentVehicle(vehicle: Vehicle, attributes?: CatalogPublication['sourc
   return cleanCatalogVehicle(withFullSizeImage(vehicle), attributes);
 }
 
+/** Available vehicles in the default ("Destacados") order, which the home page also uses. */
 export const listCatalogVehicles = cache(async () => {
-  if (!readsRemoteBackend()) return (await listActiveCatalogVehicles()).map(vehicle => presentVehicle(vehicle));
+  if (!readsRemoteBackend()) return orderFeaturedVehicles((await listActiveCatalogVehicles()).map(vehicle => presentVehicle(vehicle)));
   const result = await remoteCatalog<{ vehicles: Vehicle[] }>();
   if (!result) throw new Error('Missing catalog');
-  return result.vehicles.map(vehicle => presentVehicle(vehicle));
+  return orderFeaturedVehicles(result.vehicles.map(vehicle => presentVehicle(vehicle)));
 });
 
 /**
