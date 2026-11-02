@@ -23,7 +23,6 @@ import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/s
 import { pickSimilarVehicles } from '@/features/vehicles/domain/similar-vehicles';
 import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle } from '@/features/vehicles/domain/vehicle';
 import { ApproximateUsdPrice } from '../_components/approximate-usd-price';
-import { CatalogVehicleCard } from '../_components/catalog-vehicle-card';
 import { InventoryAlert, type InventoryAlertCriteria } from '../_components/inventory-alert';
 import { createPageMetadata } from '@/lib/metadata';
 import { getMepQuote } from '@/lib/integrations/mep-quote';
@@ -33,6 +32,7 @@ import type { AnalyticsEvent } from '@/lib/analytics/client';
 import { PriceAlert } from './_components/price-alert';
 import { alertEmailsConfigured } from '@/lib/alerts/config';
 import { ShareButton } from './_components/share-button';
+import { SimilarVehicleLink } from './_components/similar-vehicle-link';
 import { VehicleAnalytics } from './_components/vehicle-analytics';
 import { VehiclePhotoViewer } from './_components/vehicle-photo-viewer';
 
@@ -165,29 +165,29 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
     },
   });
   // The same rail under every car. Reserved and sold: alternatives, right under the status card that
-  // points to them. Available: other cars to keep browsing, once this one has been seen in full.
+  // points to them. Available: other cars to keep browsing, once this one has been seen in full and
+  // before the closing contact callout.
   const similarRail = similarVehicles.length > 0 && (
     <section className="section-shell detail-similar" id="similares" aria-labelledby="similar-title">
-      <div className="detail-similar-heading">
-        <div>
-          <Eyebrow>Disponibles ahora</Eyebrow>
-          <h2 id="similar-title">{status.isAvailable ? 'Otros autos que te pueden gustar.' : 'Parecidos, y todavía en el garage.'}</h2>
-        </div>
-        <Link className="text-link" href="/vehiculos">Ver inventario completo <Arrow /></Link>
-      </div>
-      <div className="detail-similar-grid">
-        {similarVehicles.map((similar) => (
-          <CatalogVehicleCard headingLevel="h3" key={similar.slug} quote={quote} vehicle={similar} />
+      <h2 className="eyebrow" id="similar-title"><span aria-hidden="true" />{status.isAvailable ? 'Seguí mirando' : 'Parecidos, todavía en el garage'}</h2>
+      <Link className="text-link" href="/vehiculos">Ver inventario completo <Arrow /></Link>
+      <ol className="detail-similar-list">
+        {similarVehicles.map((similar, index) => (
+          <SimilarVehicleLink index={index} key={similar.slug} quote={quote} vehicle={similar} />
         ))}
         {similarVehicles.length < 3 && (
-          <Link className="detail-similar-more glass-panel" href="/vehiculos">
-            <span>Inventario</span>
-            <span className="catalog-card-arrow" aria-hidden="true"><ArrowUpRight size={17} strokeWidth={1.8} /></span>
-            <strong>Ver todo el inventario</strong>
-            <p>{String(availableCount).padStart(2, '0')} {availableCount === 1 ? 'auto disponible' : 'autos disponibles'} hoy. Filtrá por marca, carrocería, precio y kilometraje.</p>
-          </Link>
+          <li>
+            <Link className="detail-similar-link detail-similar-more" href="/vehiculos">
+              <span className="detail-similar-number">{String(similarVehicles.length + 1).padStart(2, '0')}</span>
+              <span className="detail-similar-name">
+                <strong>Todo el inventario</strong>
+                <span>{String(availableCount).padStart(2, '0')} {availableCount === 1 ? 'auto disponible' : 'autos disponibles'} hoy</span>
+              </span>
+              <ArrowUpRight className="detail-similar-arrow" aria-hidden="true" size={20} strokeWidth={1.8} />
+            </Link>
+          </li>
         )}
-      </div>
+      </ol>
     </section>
   );
   const organizationId = new URL(ORGANIZATION_SCHEMA_ID, siteUrl).toString();
@@ -416,15 +416,13 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         </div>
       </section>
 
-      <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} layout="grid" />
-
-      {status.isAvailable && similarRail}
-
       <section className="section-shell detail-confidence" aria-label="Proceso Gonba's Garage">
         <div><span>01</span><strong>Selección</strong><p>Elegimos unidades con identidad y una historia clara.</p></div>
         <div><span>02</span><strong>Revisión</strong><p>Chequeamos información, estado general y documentación.</p></div>
         <div><span>03</span><strong>Acompañamiento</strong><p>Coordinamos la visita y te acompañamos hasta la entrega.</p></div>
       </section>
+
+      {status.isAvailable && similarRail}
 
       <ContactCallout
         actionHref={contact.href}

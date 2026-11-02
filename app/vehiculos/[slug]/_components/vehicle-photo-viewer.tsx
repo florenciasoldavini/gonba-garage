@@ -9,7 +9,6 @@ import { VEHICLE_PHOTO_PLACEHOLDER } from '@/features/vehicles/domain/vehicle';
 type Props = {
   photos: string[];
   title: string;
-  layout?: 'primary' | 'grid';
 };
 
 function Photo({ src, alt, expanded = false, eager = false }: {
@@ -28,10 +27,11 @@ function Photo({ src, alt, expanded = false, eager = false }: {
     </>;
 }
 
-export function VehiclePhotoViewer({ photos, title, layout = 'primary' }: Props) {
+export function VehiclePhotoViewer({ photos, title }: Props) {
   const [index, setIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const thumbsRef = useRef<HTMLDivElement>(null);
   const gesture = useRef<{ x: number; y: number } | null>(null);
   const ignoreClickUntil = useRef(0);
   const count = photos.length;
@@ -43,13 +43,19 @@ export function VehiclePhotoViewer({ photos, title, layout = 'primary' }: Props)
     return () => { document.body.style.overflow = previous; };
   }, [expanded]);
 
-  // Without photos the main slot shows the placeholder, with nothing to enlarge or count, and the
-  // gallery further down is left out.
-  if (!count) return layout === 'primary'
-    ? <div className="detail-primary-image">
-      <Photo src={VEHICLE_PHOTO_PLACEHOLDER} alt={`${title}: foto no disponible`} eager />
-    </div>
-    : null;
+  // Keeps the current photo's thumbnail centred in the strip as the arrows or swipes move it, without
+  // scrolling the page itself.
+  useEffect(() => {
+    const strip = thumbsRef.current;
+    const thumb = strip?.children[index] as HTMLElement | undefined;
+    if (!strip || !thumb) return;
+    strip.scrollTo({ left: thumb.offsetLeft - (strip.clientWidth - thumb.offsetWidth) / 2, behavior: 'smooth' });
+  }, [index]);
+
+  // Without photos the main slot shows the placeholder, with nothing to enlarge, count or pick.
+  if (!count) return <div className="detail-primary-image">
+    <Photo src={VEHICLE_PHOTO_PLACEHOLDER} alt={`${title}: foto no disponible`} eager />
+  </div>;
   const move = (direction: number) => setIndex(current => (current + direction + count) % count);
   const open = (photoIndex: number, timeStamp: number) => {
     if (timeStamp < ignoreClickUntil.current) return;
@@ -91,7 +97,7 @@ export function VehiclePhotoViewer({ photos, title, layout = 'primary' }: Props)
   </div>;
 
   return <>
-    {layout === 'primary' ? <div className="detail-primary-image vehicle-photo-carousel" role="region" aria-label={`Fotos de ${title}`} aria-roledescription="carrusel" onKeyDown={onKeyDown}>
+    <div className="detail-primary-image vehicle-photo-carousel" role="region" aria-label={`Fotos de ${title}`} aria-roledescription="carrusel" onKeyDown={onKeyDown}>
       <button type="button" className="vehicle-photo-open" onClick={event => open(index, event.timeStamp)} aria-label={`Ampliar foto ${index + 1} de ${count}`} {...swipeProps}>
         <Photo key={photos[index]} src={photos[index]} alt={`${title} · Foto ${index + 1}`} eager />
       </button>
@@ -100,11 +106,12 @@ export function VehiclePhotoViewer({ photos, title, layout = 'primary' }: Props)
         <button type="button" className="detail-photo-arrow detail-photo-arrow-next" onClick={() => move(1)} aria-label="Foto siguiente"><ChevronRight aria-hidden="true" size={20} strokeWidth={1.8} /></button>
       </>}
       <span className="detail-image-count" role="status" aria-live="polite" aria-atomic="true">{String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}</span>
-    </div> : <section className="section-shell detail-gallery" aria-label="Galería del vehículo">
-      {photos.map((src, photoIndex) => <button type="button" className="detail-gallery-image" key={`${src}-${photoIndex}`} onClick={event => open(photoIndex, event.timeStamp)} aria-label={`Ampliar foto ${photoIndex + 1} de ${count}`}>
-        <Photo src={src} alt={`${title} · Foto ${photoIndex + 1}`} />
+    </div>
+    {count > 1 && <div className="detail-photo-thumbs" ref={thumbsRef} role="group" aria-label={`Elegir foto de ${title}`}>
+      {photos.map((src, photoIndex) => <button type="button" className="detail-photo-thumb" key={`${src}-${photoIndex}`} onClick={() => setIndex(photoIndex)} aria-label={`Ver foto ${photoIndex + 1} de ${count}`} aria-current={photoIndex === index ? 'true' : undefined}>
+        <Image src={src} alt="" fill sizes="104px" className="cover-image" draggable={false} />
       </button>)}
-    </section>}
+    </div>}
 
     <dialog ref={dialogRef} className="vehicle-photo-dialog" aria-label={`Fotos ampliadas de ${title}`}
       onClose={() => setExpanded(false)} onKeyDown={onKeyDown}

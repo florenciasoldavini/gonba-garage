@@ -1,50 +1,33 @@
 'use client';
 
-import { useEffect, useId, useRef, useState, type FocusEvent } from 'react';
+import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Info } from 'lucide-react';
 
 import type { CatalogMepQuote } from '@/features/vehicles/domain/catalog-pricing';
 
 const arsPerUsdFormatter = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 });
 
-/** Disclosure next to the USD price filter label explaining which MEP quote converts peso prices. */
+/**
+ * Disclosure next to the USD price filter label explaining which MEP quote converts peso prices.
+ * The panel opens in the flow of the filter panel, pushing the slider down instead of covering it.
+ */
 export function MepQuoteInfo({ quote }: { quote: CatalogMepQuote }) {
   const [isOpen, setIsOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const panelId = useId();
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const closeOnOutsidePointer = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
-    };
-    // Captured and cancelled so that inside the mobile filters dialog Escape closes this popover
-    // first instead of the whole sheet.
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      event.stopPropagation();
-      setIsOpen(false);
-      triggerRef.current?.focus();
-    };
-
-    document.addEventListener('pointerdown', closeOnOutsidePointer);
-    document.addEventListener('keydown', closeOnEscape, true);
-    return () => {
-      document.removeEventListener('pointerdown', closeOnOutsidePointer);
-      document.removeEventListener('keydown', closeOnEscape, true);
-    };
-  }, [isOpen]);
-
-  const closeOnFocusOut = (event: FocusEvent<HTMLDivElement>) => {
-    const nextTarget = event.relatedTarget;
-    if (isOpen && nextTarget instanceof Node && !rootRef.current?.contains(nextTarget)) setIsOpen(false);
+  // Cancelled so that inside the mobile filters dialog Escape folds this panel first instead of
+  // closing the whole sheet.
+  const closeOnEscape = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Escape' || !isOpen) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setIsOpen(false);
+    triggerRef.current?.focus();
   };
 
   return (
-    <div className="mep-quote-info" ref={rootRef} onBlur={closeOnFocusOut}>
+    <div className="mep-quote-info" onKeyDown={closeOnEscape}>
       <button
         className="mep-quote-info-trigger"
         type="button"
