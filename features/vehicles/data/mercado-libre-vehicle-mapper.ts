@@ -1,4 +1,4 @@
-import type { Vehicle, VehicleStatus } from '@/features/vehicles/domain/vehicle';
+import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle, type VehicleStatus } from '@/features/vehicles/domain/vehicle';
 import { fullSizeMercadoLibreImageUrl } from '@/lib/integrations/mercado-libre/pictures';
 import type {
   MercadoLibreAttribute,
@@ -123,7 +123,7 @@ export function mapMercadoLibreItemToVehicle(
     ?? fullSizeMercadoLibreImageUrl(item.pictures?.[0]?.url)
     ?? fullSizeMercadoLibreImageUrl(item.secure_thumbnail)
     ?? fullSizeMercadoLibreImageUrl(item.thumbnail)
-    ?? '/showroom-car.jpg';
+    ?? VEHICLE_PHOTO_PLACEHOLDER;
   const descriptionText = description?.plain_text?.trim() || description?.text?.trim() || '';
 
   return {

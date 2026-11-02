@@ -10,6 +10,7 @@ import { ArrowUpRight, Check, Scale, X } from 'lucide-react';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { Button } from '@/components/ui/button';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
+import { formatVehicleImageAlt } from '@/features/vehicles/presentation/formatters';
 import {
   getVehicleSpecification,
   vehicleSpecificationLabels,
@@ -133,7 +134,7 @@ export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onCl
               {vehicles.map((vehicle) => (
                 <article className="vehicle-compare-card" key={vehicle.slug}>
                   <div className="vehicle-compare-card-image">
-                    <Image src={vehicle.image} alt={vehicle.imageAlt} fill sizes="260px" className="cover-image" />
+                    <Image src={vehicle.image} alt={formatVehicleImageAlt(vehicle)} fill sizes="260px" className="cover-image" />
                     <button type="button" aria-label={`Quitar ${vehicle.make} ${vehicle.model}`} onClick={() => removeVehicle(vehicle.slug)}><X aria-hidden="true" size={12} /></button>
                   </div>
                   <p>{vehicle.year} · {vehicle.version}</p>

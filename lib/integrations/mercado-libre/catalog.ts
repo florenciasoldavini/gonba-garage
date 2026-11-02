@@ -1,6 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
-import type { Vehicle } from '@/features/vehicles/domain/vehicle';
+import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle } from '@/features/vehicles/domain/vehicle';
 import {
   findCatalogPublication as findStoredPublication,
   listActiveCatalogVehicles,
@@ -33,7 +33,12 @@ async function remoteCatalog<T>(item?: string): Promise<T | null> {
   return response.json() as Promise<T>;
 }
 
+// Publications saved before the placeholder existed store the home-page showroom photo as their
+// image. A re-read replaces it, but closed publications are never read again, so reads swap it.
+const PREVIOUS_PHOTO_FALLBACK = '/showroom-car.jpg';
+
 function withFullSizeImage(vehicle: Vehicle): Vehicle {
+  if (vehicle.image === PREVIOUS_PHOTO_FALLBACK) return { ...vehicle, image: VEHICLE_PHOTO_PLACEHOLDER };
   return { ...vehicle, image: fullSizeMercadoLibreImageUrl(vehicle.image) ?? vehicle.image };
 }
 

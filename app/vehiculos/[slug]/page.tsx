@@ -19,7 +19,7 @@ import { publicVehicleAttributes } from '@/features/vehicles/presentation/public
 import { VehicleSpecificationGroups } from './_components/vehicle-specification-groups';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 import { pickSimilarVehicles } from '@/features/vehicles/domain/similar-vehicles';
-import type { Vehicle } from '@/features/vehicles/domain/vehicle';
+import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle } from '@/features/vehicles/domain/vehicle';
 import { CatalogVehicleCard } from '../_components/catalog-vehicle-card';
 import { InventoryAlert, type InventoryAlertCriteria } from '../_components/inventory-alert';
 import { createPageMetadata } from '@/lib/metadata';
@@ -91,7 +91,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const pictures = publication.source.pictures ?? [];
   const photos = pictures.map(picture => fullSizeMercadoLibreImageUrl(picture.secure_url || picture.url))
     .filter((src): src is string => Boolean(src));
-  if (!photos.length) photos.push(vehicle.image);
+  // A publication without pictures can still have a thumbnail. The placeholder is not a photo of the car.
+  if (!photos.length && vehicle.image !== VEHICLE_PHOTO_PLACEHOLDER) photos.push(vehicle.image);
   const attributes = publicVehicleAttributes(
     publication.source.attributes ?? [],
     `${vehicle.make} ${vehicle.model} ${vehicle.version}`,
@@ -165,7 +166,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         '@id': vehicleSchemaId,
         mainEntityOfPage: vehicleUrl,
         name: `${vehicle.make} ${vehicle.model} ${vehicle.version}`,
-        image: [new URL(vehicle.image, siteUrl).toString()],
+        ...(photos.length ? { image: [new URL(vehicle.image, siteUrl).toString()] } : {}),
         description: vehicle.description,
         url: vehicleUrl,
         sku: vehicle.stockCode,

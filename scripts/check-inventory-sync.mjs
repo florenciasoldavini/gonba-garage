@@ -75,6 +75,8 @@ function load(file) {
 }
 const failures = load('lib/integrations/mercado-libre/failures.ts');
 const { mapMercadoLibreItemToVehicle } = load('features/vehicles/data/mercado-libre-vehicle-mapper.ts');
+assert.equal(mapMercadoLibreItemToVehicle(item('MLA9', { pictures: [] })).vehicle.image, '/vehicle-photo-placeholder.jpg',
+  'A publication without photos shows the placeholder, never a photo of another car');
 overrides['./oauth'] = {
   async readMercadoLibrePublication(id) {
     calls.item.push(id);
@@ -185,6 +187,9 @@ try {
   assert.equal(saved.status, 'closed');
   assert.ok(saved.closed_at, 'Closing records the date');
   assert.ok(saved.published_at, 'Publication date is kept');
+  await query(`UPDATE public.catalog_publications SET vehicle = jsonb_set(vehicle, '{image}', '"/showroom-car.jpg"') WHERE publication_id = 'MLA1'`);
+  assert.equal((await catalog.findCatalogVehicle('toyota-corolla-xei-mla1')).image, '/vehicle-photo-placeholder.jpg',
+    'A closed row saved with the previous fallback photo reads as the placeholder');
 
   // Items of another seller are never stored.
   items.set('MLA2', item('MLA2', { seller_id: 999 }));
@@ -434,4 +439,4 @@ try {
   console.error = previousError;
   await db.close();
 }
-console.log('Inventory sync: rerunnable migrations, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth and database-only reads passed.');
+console.log('Inventory sync: rerunnable migrations, photo placeholder, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth and database-only reads passed.');

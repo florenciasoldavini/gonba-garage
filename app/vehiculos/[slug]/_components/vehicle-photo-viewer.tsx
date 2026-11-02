@@ -4,6 +4,8 @@ import Image from 'next/image';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 
+import { VEHICLE_PHOTO_PLACEHOLDER } from '@/features/vehicles/domain/vehicle';
+
 type Props = {
   photos: string[];
   title: string;
@@ -42,7 +44,14 @@ export function VehiclePhotoViewer({ photos, title, stockCode, layout = 'primary
     return () => { document.body.style.overflow = previous; };
   }, [expanded]);
 
-  if (!count) return null;
+  // Without photos the main slot shows the placeholder, with nothing to enlarge or count, and the
+  // gallery further down is left out.
+  if (!count) return layout === 'primary'
+    ? <div className="detail-primary-image">
+      <Photo src={VEHICLE_PHOTO_PLACEHOLDER} alt={`${title}: foto no disponible`} eager />
+      {stockCode && <span className="detail-stock">Stock {stockCode}</span>}
+    </div>
+    : null;
   const move = (direction: number) => setIndex(current => (current + direction + count) % count);
   const open = (photoIndex: number, timeStamp: number) => {
     if (timeStamp < ignoreClickUntil.current) return;

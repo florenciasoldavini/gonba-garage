@@ -16,7 +16,7 @@ import { HomeGsapMotion } from '@/app/_components/home-gsap-motion';
 import { FaqAccordion } from '@/app/_components/faq-accordion';
 import { listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
-import { formatVehicleMileage } from '@/features/vehicles/presentation/formatters';
+import { formatVehicleImageAlt, formatVehicleMileage } from '@/features/vehicles/presentation/formatters';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 
 export const metadata: Metadata = createPageMetadata({
@@ -85,7 +85,7 @@ export default async function Home() {
             <Link className="vehicle-card-link" href={`/vehiculos/${vehicle.slug}`} key={vehicle.slug}>
               <article className="vehicle-card glass-panel" data-status={getVehicleStatusPresentation(vehicle).status}>
                 <div className="vehicle-image">
-                  <Image src={vehicle.image} alt={vehicle.imageAlt} fill sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw" className="cover-image" />
+                  <Image src={vehicle.image} alt={formatVehicleImageAlt(vehicle)} fill sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw" className="cover-image" />
                   <span className="vehicle-index">0{index + 1}</span>
                   <span className="vehicle-status">{getVehicleStatusPresentation(vehicle).label}</span>
                 </div>

@@ -1,5 +1,8 @@
 export type VehicleStatus = 'active' | 'paused' | 'closed' | 'sold';
 
+/** The image of a publication without photos: the GG mark on the site canvas, never another car. */
+export const VEHICLE_PHOTO_PLACEHOLDER = '/vehicle-photo-placeholder.jpg';
+
 /**
  * Canonical vehicle shape used by pages and data-source adapters.
  * External APIs should normalize their payloads into this type.
