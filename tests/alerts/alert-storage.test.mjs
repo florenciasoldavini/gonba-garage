@@ -4,7 +4,8 @@ import { afterAll, beforeAll, beforeEach, describe, it, vi } from 'vitest';
 import * as subscriptions from '@/lib/alerts/subscriptions';
 import { POST as inventoryRoute } from '@/app/api/inventory-alerts/route';
 import { POST as priceRoute } from '@/app/api/price-alerts/route';
-import { applyMigrationsTwice, createDatabase, createSql, readMigration } from '../helpers/postgres.mjs';
+import { migrate, pgliteSession, readMigrations } from '../../scripts/migration-runner.mjs';
+import { createDatabase, createSql } from '../helpers/postgres.mjs';
 import { checkInventoryStorage, checkPriceStorage } from './storage-scenarios.mjs';
 
 // Real SQL, signup limiter and storage behind both routes on local PostgreSQL (PGlite), with alert
@@ -20,7 +21,6 @@ vi.mock('@/lib/integrations/mercado-libre/catalog', () => ({
   findCatalogVehicle: async slug => ({ slug, price: 100, currency: 'USD', status: 'active' }),
 }));
 
-const ALERT_MIGRATIONS = ['20261028_alert_subscriptions.sql', '20261029_price_alert_delivery.sql', '20261030_alert_signup_confirmation.sql'];
 const sql = createSql(() => state.db);
 state.sql = sql;
 
@@ -34,10 +34,11 @@ describe('alert migrations', () => {
   beforeAll(async () => {
     state.db = new PGlite();
     // Subscriptions created before double opt-in must stay active (grandfathered as confirmed).
-    for (const file of ALERT_MIGRATIONS.slice(0, 2)) await state.db.exec(readMigration(file));
+    const migrations = readMigrations();
+    await migrate(pgliteSession(state.db), migrations.slice(0, 2));
     await state.db.exec(`INSERT INTO public.vehicle_inventory_alerts (email) VALUES ('legacy@example.invalid');
       INSERT INTO public.vehicle_price_alerts (email, vehicle_slug, current_price, currency) VALUES ('legacy@example.invalid', 'legacy-mla1', 1, 'USD')`);
-    await applyMigrationsTwice(state.db, ALERT_MIGRATIONS);
+    await migrate(pgliteSession(state.db), migrations);
   });
   afterAll(() => state.db.close());
 
@@ -60,7 +61,7 @@ describe('alert migrations', () => {
 });
 
 describe('alert storage', () => {
-  beforeAll(async () => { state.db = await createDatabase(ALERT_MIGRATIONS); });
+  beforeAll(async () => { state.db = await createDatabase(); });
   afterAll(() => state.db.close());
 
   it('deduplicates concurrent searches and confirms them once per generation', () => checkInventoryStorage(sql, subscriptions));
@@ -95,7 +96,7 @@ describe('signup limits', () => {
   const statuses = async (count, next) => { const result = []; for (let i = 0; i < count; i++) result.push((await next(i)).status); return result; };
   const resetWindows = () => sql`DELETE FROM public.price_alert_signup_windows`;
 
-  beforeAll(async () => { state.db = await createDatabase(ALERT_MIGRATIONS); });
+  beforeAll(async () => { state.db = await createDatabase(); });
   afterAll(() => state.db.close());
 
   describe.each([['inventory', 'price'], ['price', 'inventory']])('%s endpoint', (scope, other) => {

@@ -12,7 +12,8 @@ import * as priceRoute from '@/app/api/price-alerts/route';
 import * as inventoryRoute from '@/app/api/inventory-alerts/route';
 import * as confirmRoute from '@/app/api/alerts/confirm/route';
 import * as cron from '@/app/api/alerts/daily/route';
-import { applyMigrationsTwice, createDatabase, createSql, readMigration } from '../helpers/postgres.mjs';
+import { migrate, pgliteSession, readMigrations } from '../../scripts/migration-runner.mjs';
+import { createDatabase, createSql } from '../helpers/postgres.mjs';
 
 // Price-alert delivery against real PostgreSQL (PGlite) and the real engine, routes and emails.
 // Mercado Libre and Resend are fakes.
@@ -34,7 +35,6 @@ vi.mock('@/lib/integrations/mercado-libre/catalog', () => ({
 // Search-alert work has its own suite (inventory-alert-delivery.test.mjs).
 vi.mock('@/lib/alerts/inventory-delivery', () => ({ runInventoryAlertWork: async () => {}, runInventoryAlertWorkSafely: async () => {} }));
 
-const ALERT_MIGRATIONS = ['20261028_alert_subscriptions.sql', '20261029_price_alert_delivery.sql', '20261030_alert_signup_confirmation.sql'];
 const faults = { commit: false };
 state.sql = createSql(() => state.db, faults);
 const db = { query: (...args) => state.db.query(...args), exec: (...args) => state.db.exec(...args) };
@@ -94,7 +94,7 @@ describe('price alert delivery', () => {
   const statusOf = async () => (await db.query('SELECT status, confirmed_at FROM vehicle_price_alerts WHERE id = $1', [subscribed.id])).rows[0];
   const base = 'https://example.test/api/alerts/confirm?token=';
 
-  beforeAll(async () => { state.db = await createDatabase(ALERT_MIGRATIONS); });
+  beforeAll(async () => { state.db = await createDatabase(); });
   afterAll(() => state.db.close());
 
   it('keeps one alert per address and publication, with stable publication IDs', async () => {
@@ -367,10 +367,11 @@ describe('price alert delivery', () => {
 describe('price alerts created before double opt-in', () => {
   beforeAll(async () => {
     state.db = new PGlite();
-    for (const file of ALERT_MIGRATIONS.slice(0, 2)) await state.db.exec(readMigration(file));
+    const migrations = readMigrations();
+    await migrate(pgliteSession(state.db), migrations.slice(0, 2));
     await state.db.exec(`INSERT INTO vehicle_price_alerts (email, vehicle_slug, publication_id, vehicle_title, current_price, currency, source)
       VALUES ('legacy@example.invalid', 'ford-ka-mla777', 'MLA777', 'Ford Ka 2019', 10000, 'USD', 'mercado_libre')`);
-    await applyMigrationsTwice(state.db, ALERT_MIGRATIONS);
+    await migrate(pgliteSession(state.db), migrations);
   });
   afterAll(() => state.db.close());
 

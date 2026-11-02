@@ -1,25 +1,10 @@
-import { readFileSync, readdirSync } from 'node:fs';
 import { PGlite } from '@electric-sql/pglite';
+import { migrate, pgliteSession, readMigrations } from '../../scripts/migration-runner.mjs';
 
-const migrationsDirectory = new URL('../../database/migrations/', import.meta.url);
-
-// Every migration, in the order the runner applies them.
-export const ALL_MIGRATIONS = readdirSync(migrationsDirectory).filter(file => file.endsWith('.sql')).sort();
-
-export function readMigration(file) {
-  return readFileSync(new URL(file, migrationsDirectory), 'utf8');
-}
-
-// Applies each migration twice: the runner expects rerunnable DDL.
-export async function applyMigrationsTwice(db, files = ALL_MIGRATIONS) {
-  const migrations = files.map(readMigration);
-  for (let i = 0; i < 2; i++) for (const migration of migrations) await db.exec(migration);
-}
-
-// Real PostgreSQL in memory (PGlite) with the given migrations applied twice.
-export async function createDatabase(files = ALL_MIGRATIONS) {
+// Real PostgreSQL in memory (PGlite), migrated by the same runner as `npm run db:migrate`.
+export async function createDatabase(migrations = readMigrations()) {
   const db = new PGlite();
-  await applyMigrationsTwice(db, files);
+  await migrate(pgliteSession(db), migrations);
   return db;
 }
 

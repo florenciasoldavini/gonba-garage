@@ -8,7 +8,8 @@ import { VEHICLE_CATEGORIES } from '@/lib/integrations/mercado-libre/vehicle-cat
 import * as webhook from '@/app/api/mercado-libre/webhook/route';
 import * as syncRoute from '@/app/api/mercado-libre/sync/route';
 import * as catalogRoute from '@/app/api/mercado-libre/catalog/route';
-import { createDatabase, createSql, readMigration } from '../helpers/postgres.mjs';
+import { readMigrations } from '../../scripts/migration-runner.mjs';
+import { createDatabase, createSql } from '../helpers/postgres.mjs';
 
 const SELLER = '123';
 const apiKey = 'catalog-api-key-for-tests';
@@ -147,7 +148,7 @@ describe('catalog sync', () => {
   let saved, firstChange, result, listed;
 
   beforeAll(async () => {
-    // Every migration, applied twice: the runner expects rerunnable DDL.
+    // Every migration, through the same runner as `npm run db:migrate`.
     db = await createDatabase();
     state.sql = createSql(() => db, faults);
   });
@@ -362,7 +363,7 @@ describe('catalog sync', () => {
   // The database itself rejects any write without a car, pickup or motorcycle category, so no other
   // code path can store something else. The SQL list matches vehicle-categories.ts.
   it('rejects in the database any write without a vehicle category', async () => {
-    const categoryMigration = readMigration('20261102_catalog_vehicle_category.sql');
+    const categoryMigration = readMigrations().find(({ file }) => file === '20261102_catalog_vehicle_category.sql').sql;
     assert.deepEqual([...categoryMigration.matchAll(/'(MLA\d+)'/g)].map(([, id]) => id).sort(), Object.keys(VEHICLE_CATEGORIES).sort());
     const directInsert = category => query(`INSERT INTO public.catalog_publications (publication_id, slug, status, price, currency,
       vehicle, source${category === undefined ? '' : ', vehicle_category'}) VALUES ('MLA15', 'direct-mla15', 'active', 1, 'USD', '{}', '{}'
@@ -379,7 +380,7 @@ describe('catalog sync', () => {
   it('keeps rows saved before categories on the site and records their category', async () => {
     await query('ALTER TABLE public.catalog_publications DROP CONSTRAINT catalog_publications_vehicle_category_check');
     await query("UPDATE public.catalog_publications SET vehicle_category = NULL WHERE publication_id IN ('MLA3', 'MLA4')");
-    await db.exec(readMigration('20261102_catalog_vehicle_category.sql'));
+    await db.exec(readMigrations().find(({ file }) => file === '20261102_catalog_vehicle_category.sql').sql);
     assert.equal((await row('MLA4')).vehicle_category, null, 'Existing rows are not checked by the migration');
     assert.deepEqual((await catalog.listCatalogVehicles()).map(({ slug }) => slug), ['toyota-corolla-xei-mla4'], 'They stay on the site');
     result = await sync.reconcileCatalog();

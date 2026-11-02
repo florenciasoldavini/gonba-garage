@@ -11,13 +11,22 @@ preferred public hostname.
 > set the final `NEXT_PUBLIC_SITE_URL`, change `SITE_INDEXING_ENABLED=true` in Production, then
 > redeploy and verify both values before submitting the sitemap.
 
-## Current temporary setup
+## Current setup
 
-- Public URL: `https://gonba-garage.vercel.app`
+- Public URL: `https://gonbagarage.com.ar`, connected on Vercel. `www.gonbagarage.com.ar`
+  redirects permanently to it, and production pages already use it as their canonical URL.
 - Hosting: Vercel
 - Canonical URL source: `NEXT_PUBLIC_SITE_URL`
-- Search Console: temporary URL-prefix property for the Vercel URL
+- Temporary hostname: `https://gonba-garage.vercel.app` still serves the site without a redirect
+  and is still the fallback in `lib/site-url.ts`.
+- Indexing: still off (`robots.txt` advertises no sitemap), as intended until the final launch.
+- Search Console: temporary URL-prefix property for the Vercel URL; not yet reviewed for the new
+  domain.
 - Analytics: the existing PostHog project named **Gonba's Garage**
+
+The domain is connected, but the unticked items below have not been confirmed since. Review each
+one at the final launch, in particular the Mercado Libre callback and webhook URLs and
+`ALERTS_PUBLIC_URL`.
 
 Before making changes, record the exact final domain, who controls its DNS, and which hostname is
 canonical. Vercel recommends using `www` as the primary hostname and redirecting the apex domain to
@@ -83,8 +92,8 @@ licenses. Only replace the temporary public hostname.
 
 ### Mercado Libre
 
-The OAuth callback and webhook are planned in `docs/architecture.md`; complete these items when that
-integration is enabled.
+The OAuth callback and webhook are live (see `docs/architecture.md`, "Mercado Libre sync"). Until
+these items are done, the integration keeps using the temporary hostname.
 
 - [ ] Change `MERCADO_LIBRE_REDIRECT_URI` in Vercel to
   `https://<custom-domain>/api/mercado-libre/callback`.
@@ -94,6 +103,14 @@ integration is enabled.
   `https://<custom-domain>/api/mercado-libre/webhook`.
 - [ ] Redeploy, then run a fresh OAuth authorization and a test webhook delivery.
 - [ ] Keep the client secret unchanged unless there is a separate reason to rotate it.
+
+### Alert emails
+
+- [ ] Change `ALERTS_PUBLIC_URL` to `https://<custom-domain>` and redeploy. It is the fixed origin of
+  every vehicle, confirmation and cancellation link in alert emails (`lib/alerts/config.ts`). Links
+  in emails that were already sent keep the old hostname, so keep the old hostname redirecting.
+- [ ] If `ALERTS_EMAIL_FROM` moves to an address on the new domain, verify that domain in Resend and
+  configure its SPF, DKIM and DMARC records before switching.
 
 ### Other services
 
@@ -145,11 +162,8 @@ domain does not require new analytics credentials.
 - [ ] Update email signatures, QR codes, WhatsApp templates, proposals, invoices, printed material,
   and saved response templates.
 - [ ] Ask owners of important external links to replace the Vercel URL with the custom domain.
-- [ ] Confirm whether `ventas@gonbagarage.com.ar` matches the final domain and is active. If the
-  final domain differs, update the email link in `app/vehiculos/[slug]/page.tsx` and configure the
-  new mailbox before deployment.
-- [ ] If the application starts sending email, configure and validate SPF, DKIM, and DMARC before
-  using an address on the new domain.
+- [ ] The site currently publishes no email address (contact is through WhatsApp,
+  `constants/contact.ts`). If one is added, configure the mailbox on the final domain first.
 
 There are no paid-ad destination URLs to update at present. Add that step later only if campaigns
 are created.

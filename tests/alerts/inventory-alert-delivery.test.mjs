@@ -153,7 +153,7 @@ describe('search-alert delivery', () => {
   let everything, reserved, cancelUrl, batch, retry, row;
 
   beforeAll(async () => {
-    // Every migration, applied twice: the runner expects rerunnable DDL.
+    // Every migration, through the same runner as `npm run db:migrate`.
     db = await createDatabase();
     state.sql = createSql(() => db, faults);
     state.quote = { arsPerUsd: 1000, updatedAt: new Date().toISOString() };
