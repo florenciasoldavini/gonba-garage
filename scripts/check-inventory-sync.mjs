@@ -525,8 +525,49 @@ try {
   await sync.runCatalogSyncWork();
   assert.equal((await row('MLA33')).status, 'active');
 
+  // Mercado Libre's notification addresses: any other source is queued (never lost, in case the list
+  // is outdated) but deferred. The webhook never drains it; the daily cron does, after other work.
+  process.env.MERCADO_LIBRE_WEBHOOK_IPS = '54.88.218.97,18.215.140.160';
+  const previousWarn = console.warn;
+  console.warn = () => {};
+  const notifyFrom = (id, address) => webhook.POST(new Request('https://example.test/api/mercado-libre/webhook', {
+    method: 'POST', headers: { 'x-vercel-forwarded-for': address },
+    body: JSON.stringify({ topic: 'items', resource: `/items/${id}`, user_id: 123, application_id: 456 }),
+  }));
+  try {
+    items.set('MLA34', item('MLA34'));
+    calls.item.length = 0;
+    assert.equal((await notifyFrom('MLA34', '203.0.113.9')).status, 200);
+    assert.equal((await notifyFrom('MLA34', '203.0.113.9')).status, 200);
+    assert.equal((await job('MLA34')).deferred, true);
+    assert.equal(deferred.length, 0, 'An unlisted source starts no drain');
+    await sync.runCatalogSyncWorkSafely();
+    assert.deepEqual(calls.item, [], 'and the webhook drain never reads its items');
+    assert.equal((await store.readSyncHealth()).jobs.deferred, 1);
+    await notifyFrom('MLA34', '54.88.218.97');
+    assert.equal((await job('MLA34')).deferred, false, 'A listed source vouches for the item');
+    assert.equal(deferred.length, 1);
+    await runDeferred();
+    assert.equal((await row('MLA34')).status, 'active');
+    await query("UPDATE public.catalog_sync_jobs SET revision = revision + 1, lease_id = $1, lease_until = now() + interval '1 minute' WHERE publication_id = 'MLA34'",
+      ['00000000-0000-4000-8000-000000000008']);
+    await notifyFrom('MLA34', '203.0.113.9');
+    assert.equal(deferred.length, 0, 'An unlisted source never starts a drain, even for an item being read');
+    assert.equal((await job('MLA34')).deferred, false, 'nor downgrades work a listed source queued');
+    await query("UPDATE public.catalog_sync_jobs SET lease_id = NULL, lease_until = NULL WHERE publication_id = 'MLA34'");
+    await notifyFrom('MLA35', '203.0.113.9');
+    await query("UPDATE public.catalog_sync_jobs SET next_attempt_at = now() - interval '1 hour' WHERE publication_id = 'MLA35'");
+    await store.enqueueCatalogJobs(['MLA34']);
+    calls.item.length = 0;
+    await sync.runCatalogSyncWork();
+    assert.deepEqual(calls.item.filter(id => ['MLA34', 'MLA35'].includes(id)), ['MLA34', 'MLA35'], 'The cron reads deferred items last');
+  } finally {
+    console.warn = previousWarn;
+    delete process.env.MERCADO_LIBRE_WEBHOOK_IPS;
+  }
+
 } finally {
   console.error = previousError;
   await db.close();
 }
-console.log('Inventory sync: migrations, photo placeholder, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth, database-only reads, coalesced notifications with a single drain, skipped foreign and missing items passed.');
+console.log('Inventory sync: migrations, photo placeholder, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth, database-only reads, coalesced notifications with a single drain, skipped foreign and missing items, deferred unlisted sources passed.');

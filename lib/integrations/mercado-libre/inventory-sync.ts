@@ -60,10 +60,11 @@ function incidentCode({ stage, code, httpStatus }: IntegrationIncident) {
 /**
  * A notification only means "go check this item". It is queued durably before the webhook
  * acknowledges it, and its payload is never trusted: the worker always reads the item again.
- * Returns whether the webhook should start a drain.
+ * Returns whether the webhook should start a drain; `verified: false` (a source outside
+ * MERCADO_LIBRE_WEBHOOK_IPS) queues the item for the daily cron only.
  */
-export async function enqueueCatalogSync(id: string) {
-  return enqueueCatalogNotification(id);
+export async function enqueueCatalogSync(id: string, { verified = true } = {}) {
+  return enqueueCatalogNotification(id, { deferred: !verified });
 }
 
 /** Null when Mercado Libre no longer has the item. Description 404s are already optional. */
@@ -77,9 +78,9 @@ async function readCurrentPublication(id: string) {
 }
 
 /** Processes one due item. Returns false when nothing is due. */
-export async function processNextCatalogJob() {
+export async function processNextCatalogJob({ includeDeferred = true } = {}) {
   const lease = randomUUID();
-  const job = await leaseCatalogJob(lease);
+  const job = await leaseCatalogJob(lease, { includeDeferred });
   if (!job) return false;
   try {
     const seller = sellerId();
@@ -105,20 +106,22 @@ export async function processNextCatalogJob() {
 }
 
 /**
- * Drains due items within a time budget. Items in backoff wait for the next run. `renew` is checked
- * before each item.
+ * Drains due items within a time budget. Items in backoff wait for the next run. Deferred items
+ * come last, and only with `includeDeferred`. `renew` is checked before each item.
  */
-export async function runCatalogSyncWork({ budgetMs = 200_000, maxItems = 200, renew = async () => true } = {}) {
+export async function runCatalogSyncWork({ budgetMs = 200_000, maxItems = 200, includeDeferred = true,
+  renew = async () => true } = {}) {
   const deadline = Date.now() + budgetMs;
   let processed = 0;
   while (Date.now() < deadline && processed < maxItems && await renew()
-    && await processNextCatalogJob()) processed++;
+    && await processNextCatalogJob({ includeDeferred })) processed++;
   return processed;
 }
 
 /**
- * The webhook's drain. Only one runs at a time (a lease). A notification that finds the lease taken
- * starts nothing, so after releasing it the drain checks once more for work queued meanwhile.
+ * The webhook's drain. Only one runs at a time (a lease), and it never reads deferred items. A
+ * notification that finds the lease taken starts nothing, so after releasing it the drain checks
+ * once more for work queued meanwhile.
  */
 export async function runCatalogSyncWorkSafely({ budgetMs = 200_000, maxItems = 200 } = {}) {
   try {
@@ -129,7 +132,7 @@ export async function runCatalogSyncWorkSafely({ budgetMs = 200_000, maxItems = 
       if (!(await acquireNotificationDrain(lease))) return;
       try {
         processed += await runCatalogSyncWork({ budgetMs: deadline - Date.now(), maxItems: maxItems - processed,
-          renew: () => renewNotificationDrain(lease) });
+          includeDeferred: false, renew: () => renewNotificationDrain(lease) });
       } finally {
         await releaseNotificationDrain(lease);
       }

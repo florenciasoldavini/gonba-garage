@@ -136,8 +136,8 @@ export async function markPublicationRemoved(id: string, lease: string) {
 }
 
 /**
- * Reconciliation (and tests): always makes each item due, even a skipped one, since the seller's
- * own listing vouches for it.
+ * Reconciliation (and tests): always makes each item due, even a skipped or deferred one, since the
+ * seller's own listing vouches for it.
  */
 export async function enqueueCatalogJobs(ids: string[]) {
   const valid = [...new Set(ids)].filter(id => PUBLICATION_ID.test(id));
@@ -145,7 +145,7 @@ export async function enqueueCatalogJobs(ids: string[]) {
   await getAlertsSql()`INSERT INTO public.catalog_sync_jobs (publication_id)
     SELECT unnest(${valid}::text[])
     ON CONFLICT (publication_id) DO UPDATE SET revision = catalog_sync_jobs.revision + 1,
-      next_attempt_at = now(), skip_until = NULL, updated_at = now()`;
+      next_attempt_at = now(), deferred = false, skip_until = NULL, updated_at = now()`;
 }
 
 /**
@@ -153,33 +153,39 @@ export async function enqueueCatalogJobs(ids: string[]) {
  * - a finished job is made due again, unless a recent read found an item never stored missing or of
  *   another seller (skip_until);
  * - a job being read gets a new revision, so the item is read again afterwards;
- * - a job already due is left alone (and keeps its backoff); it only asks for a drain when no worker
- *   has picked it up for OVERDUE_JOB.
+ * - a job already due is left alone (and keeps its backoff); it only asks for a drain when it
+ *   leaves the deferred state or no worker has picked it up for OVERDUE_JOB.
+ * `deferred` marks a source outside MERCADO_LIBRE_WEBHOOK_IPS: queued, never drained here.
  */
-export async function enqueueCatalogNotification(id: string) {
+export async function enqueueCatalogNotification(id: string, { deferred }: { deferred: boolean }) {
   if (!PUBLICATION_ID.test(id)) return false;
-  const rows = await getAlertsSql()`INSERT INTO public.catalog_sync_jobs AS job (publication_id) VALUES (${id})
+  const rows = await getAlertsSql()`INSERT INTO public.catalog_sync_jobs AS job (publication_id, deferred)
+    VALUES (${id}, ${deferred}::boolean)
     ON CONFLICT (publication_id) DO UPDATE SET
       revision = CASE WHEN job.revision > job.processed_revision AND NOT COALESCE(job.lease_until >= now(), false)
         THEN job.revision ELSE job.revision + 1 END,
       next_attempt_at = CASE WHEN job.revision > job.processed_revision AND NOT COALESCE(job.lease_until >= now(), false)
         THEN job.next_attempt_at ELSE now() END,
+      deferred = CASE WHEN job.revision > job.processed_revision THEN job.deferred AND EXCLUDED.deferred ELSE EXCLUDED.deferred END,
       skip_until = NULL, updated_at = now()
     WHERE CASE WHEN job.revision <= job.processed_revision
       THEN job.skip_until IS NULL OR job.skip_until <= now()
         OR EXISTS (SELECT 1 FROM public.catalog_publications WHERE publication_id = job.publication_id)
-      ELSE COALESCE(job.lease_until >= now(), false) OR job.next_attempt_at < now() - ${OVERDUE_JOB}::interval
+      ELSE COALESCE(job.lease_until >= now(), false)
+        OR (NOT EXCLUDED.deferred AND (job.deferred OR job.next_attempt_at < now() - ${OVERDUE_JOB}::interval))
       END
-    RETURNING 1`;
-  return rows.length === 1;
+    RETURNING deferred`;
+  return !deferred && rows.length === 1 && rows[0].deferred === false;
 }
 
-export async function leaseCatalogJob(lease: string) {
+/** Deferred jobs come last, and only when `includeDeferred` (the daily cron). */
+export async function leaseCatalogJob(lease: string, { includeDeferred = true } = {}) {
   const rows = await getAlertsSql()`UPDATE public.catalog_sync_jobs SET lease_id = ${lease}::uuid,
       lease_until = now() + interval '90 seconds', attempts = attempts + 1
     WHERE publication_id = (SELECT publication_id FROM public.catalog_sync_jobs
       WHERE revision > processed_revision AND next_attempt_at <= now() AND (lease_until IS NULL OR lease_until < now())
-      ORDER BY next_attempt_at LIMIT 1 FOR UPDATE SKIP LOCKED)
+        AND (${includeDeferred}::boolean OR NOT deferred)
+      ORDER BY deferred, next_attempt_at LIMIT 1 FOR UPDATE SKIP LOCKED)
     RETURNING publication_id, revision, attempts`;
   if (!rows.length) return null;
   return { id: String(rows[0].publication_id), revision: Number(rows[0].revision), attempts: Number(rows[0].attempts) };
@@ -257,7 +263,7 @@ export async function releaseNotificationDrain(lease: string) {
 /** Whether a webhook drain would find a job now. */
 export async function hasDueNotificationJobs() {
   const rows = await getAlertsSql()`SELECT EXISTS (SELECT 1 FROM public.catalog_sync_jobs
-    WHERE revision > processed_revision AND next_attempt_at <= now()
+    WHERE revision > processed_revision AND next_attempt_at <= now() AND NOT deferred
       AND (lease_until IS NULL OR lease_until < now())) AS due`;
   return rows[0].due === true;
 }
@@ -281,6 +287,7 @@ export async function readSyncHealth() {
       FROM public.catalog_sync_runs WHERE id = 'reconciliation'`,
     sql`SELECT count(*) FILTER (WHERE revision > processed_revision)::int AS pending,
         count(*) FILTER (WHERE revision > processed_revision AND attempts > 0)::int AS retrying,
+        count(*) FILTER (WHERE revision > processed_revision AND deferred)::int AS deferred,
         min(updated_at) FILTER (WHERE revision > processed_revision) AS oldest_pending_at,
         count(*) FILTER (WHERE revision <= processed_revision AND last_error IS NOT NULL)::int AS abandoned
       FROM public.catalog_sync_jobs`,
@@ -295,7 +302,7 @@ export async function readSyncHealth() {
       lastFailedAt: iso(run?.last_failed_at), lastFailure: run?.last_failure ?? null,
       lastListed: run?.last_listed ?? null,
     },
-    jobs: { pending: jobs[0].pending, retrying: jobs[0].retrying, abandoned: jobs[0].abandoned,
+    jobs: { pending: jobs[0].pending, retrying: jobs[0].retrying, deferred: jobs[0].deferred, abandoned: jobs[0].abandoned,
       oldestPendingAt: iso(jobs[0].oldest_pending_at) },
     publications: Object.fromEntries(publications.map(row => [String(row.status), row.count])),
     lastSyncedAt: iso(publications.reduce<unknown>((latest, row) =>

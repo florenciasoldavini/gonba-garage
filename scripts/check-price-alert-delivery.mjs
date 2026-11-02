@@ -323,7 +323,8 @@ try {
   deferred = [];
   overrides['@/lib/alerts/price-delivery'] = { enqueuePriceItem: async id => { if (enqueueFail) throw Error(); queued.push(id); return true; }, runPriceAlertWorkSafely: async () => {} };
   const syncQueued = [];
-  overrides['@/lib/integrations/mercado-libre/inventory-sync'] = { enqueueCatalogSync: async id => { syncQueued.push(id); return true; }, runCatalogSyncWorkSafely: async () => {} };
+  overrides['@/lib/integrations/mercado-libre/inventory-sync'] = {
+    enqueueCatalogSync: async (id, { verified }) => { syncQueued.push([id, verified]); return verified; }, runCatalogSyncWorkSafely: async () => {} };
   const webhook = load('app/api/mercado-libre/webhook/route.ts');
   const post = body => new Request('https://example.test/api/mercado-libre/webhook', { method: 'POST', body: JSON.stringify(body) });
   const notification = { topic: 'items', resource: '/items/MLA123', user_id: 123, application_id: 456 };
@@ -332,8 +333,36 @@ try {
   assert.equal(queued.length, 0);
   assert.equal((await webhook.POST(post(notification))).status, 200);
   assert.deepEqual(queued, ['MLA123']);
-  assert.deepEqual(syncQueued, ['MLA123'], 'The same notification also queues a catalog sync');
+  assert.deepEqual(syncQueued, [['MLA123', true]], 'The same notification also queues a catalog sync');
   assert.equal(deferred.length, 1);
+  // With Mercado Libre's notification addresses configured, any other address is still queued in both
+  // queues (it may be a new Mercado Libre address) but starts no work. Only Vercel's own header counts.
+  process.env.MERCADO_LIBRE_WEBHOOK_IPS = '54.88.218.97, 18.215.140.160';
+  const sentFrom = (headers, body = notification) => webhook.POST(new Request('https://example.test/api/mercado-libre/webhook',
+    { method: 'POST', headers, body: JSON.stringify(body) }));
+  const warn = console.warn;
+  const warnings = [];
+  console.warn = message => warnings.push(JSON.parse(message));
+  try {
+    queued.length = 0; syncQueued.length = 0; deferred = [];
+    for (const headers of [{}, { 'x-forwarded-for': '54.88.218.97' }, { 'x-vercel-forwarded-for': '203.0.113.9', 'x-forwarded-for': '54.88.218.97, 203.0.113.9' }]) {
+      assert.equal((await sentFrom(headers)).status, 200);
+    }
+    assert.deepEqual(queued, ['MLA123', 'MLA123', 'MLA123'], 'An unlisted address is queued, never dropped');
+    assert.deepEqual(syncQueued.map(([, verified]) => verified), [false, false, false]);
+    assert.equal(deferred.length, 0, 'An unlisted address starts no drain, whatever x-forwarded-for says');
+    assert.deepEqual(warnings.map(({ address }) => address), ['', '', '203.0.113.9'], 'Each one is logged with its address');
+    assert.equal((await sentFrom({ 'x-vercel-forwarded-for': '18.215.140.160' })).status, 200);
+    assert.equal((await sentFrom({ 'x-vercel-forwarded-for': '::ffff:54.88.218.97' })).status, 200);
+    assert.deepEqual(syncQueued.slice(3).map(([, verified]) => verified), [true, true]);
+    assert.equal(deferred.length, 2, 'A listed address drains as before');
+    deferred = [];
+    assert.equal((await sentFrom({ 'x-vercel-forwarded-for': '203.0.113.9' }, { ...notification, user_id: 999 })).status, 200);
+    assert.equal(queued.length, 5, 'Foreign notifications are still ignored first');
+  } finally {
+    console.warn = warn;
+    delete process.env.MERCADO_LIBRE_WEBHOOK_IPS;
+  }
   // A duplicate of queued price work needs no drain of its own.
   deferred = [];
   overrides['@/lib/alerts/price-delivery'].enqueuePriceItem = async id => { queued.push(id); return false; };
@@ -369,5 +398,5 @@ try {
   await engine.recordPriceObservation('MLA777', legacyVehicle);
   assert.equal(await engine.processPriceDelivery(), true);
   assert.equal(sentTo('legacy@example.invalid', 'Bajó de precio').length, 1, 'Grandfathered alerts still deliver price drops');
-  console.log('Price alert delivery: real PostgreSQL migration, stable publication IDs, recurring drops, concurrent deduplication, frozen idempotent retries, ambiguous send recovery, cancellation generations, double opt-in (pending, capped confirmation emails, scoped expiring tokens, idempotent confirmation), grandfathered alerts, webhook persistence, coalesced price jobs and cron auth passed.');
+  console.log('Price alert delivery: real PostgreSQL migration, stable publication IDs, recurring drops, concurrent deduplication, frozen idempotent retries, ambiguous send recovery, cancellation generations, double opt-in (pending, capped confirmation emails, scoped expiring tokens, idempotent confirmation), grandfathered alerts, webhook persistence, coalesced price jobs, deferred unlisted sources and cron auth passed.');
 } finally { globalThis.fetch = realFetch; await db.close(); }
