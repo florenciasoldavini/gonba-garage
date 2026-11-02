@@ -98,6 +98,12 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
               .from('.detail-purchase-card', { x: desktop ? 64 : 0, y: desktop ? 0 : 28, autoAlpha: 0, duration: 0.86 }, 0.72)
               .from('.detail-purchase-card > *', { y: 16, autoAlpha: 0, stagger: 0.055, duration: 0.42 }, 0.91);
 
+            // Cars with a single photo or none have no thumbnail strip: an empty selection would warn.
+            // The strip moves as one so the thumbnails keep their own active and hover opacity.
+            if (root.current?.querySelector('.detail-photo-thumbs')) {
+              intro.from('.detail-photo-thumbs', { y: 14, autoAlpha: 0, duration: 0.5, clearProps: 'transform,opacity,visibility' }, 0.9);
+            }
+
             const overview = gsap.timeline({
               defaults: { ease: 'power3.out' },
               scrollTrigger: {
@@ -113,27 +119,9 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
               .from('.detail-specs', { x: desktop ? 58 : 0, y: desktop ? 0 : 32, autoAlpha: 0, duration: 0.76 }, '<0.1')
               .from('.detail-specs dl > div', { x: 24, autoAlpha: 0, stagger: 0.055, duration: 0.4 }, '<0.18');
 
-            gsap.fromTo(
-              '.detail-gallery-image',
-              {
-                clipPath: (index) => index === 0 ? 'inset(0 0 100% 0)' : 'inset(100% 0 0 0)',
-              },
-              {
-                clipPath: 'inset(0% 0 0 0)',
-                stagger: 0.12,
-                duration: 1.05,
-                ease: 'power3.inOut',
-                scrollTrigger: {
-                  trigger: '.detail-gallery',
-                  start: 'top 76%',
-                  once: true,
-                },
-              },
-            );
-
             // Only some cars have the rail: an empty selection would warn.
             if (root.current?.querySelector('.detail-similar')) {
-              gsap.from('.detail-similar-grid > *', {
+              gsap.from('.detail-similar-list > li', {
                 y: 54,
                 autoAlpha: 0,
                 stagger: 0.1,

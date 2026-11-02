@@ -54,53 +54,53 @@ export function SiteFooter({
           <strong>@gonbagarage</strong>
           <small>Nuevos ingresos, novedades y contenido del garage.</small>
         </span>
-        <span className="footer-instagram-action">
-          Seguir <ArrowUpRight aria-hidden="true" size={16} />
+        <span className="footer-instagram-arrow" aria-hidden="true">
+          <ArrowUpRight size={18} />
         </span>
       </a>
 
-      <div className="footer-columns">
-        <section className="footer-visits" aria-label="Visitas">
-          <span className="footer-visits-label">Visitas · {BUSINESS_VISIT_POLICY}</span>
-          <ul>
-            <li>{BUSINESS_AREA_LABEL}</li>
-            {BUSINESS_HOURS.map((hours) => <li key={hours}>{hours}</li>)}
-          </ul>
-          <TrackedAnchor
-            analyticsEvent={{ name: 'contact_intent_clicked', properties: { channel: 'whatsapp', placement: 'footer' } }}
-            href={getWhatsAppUrl(WHATSAPP_APPOINTMENT_MESSAGE)}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Pedí tu cita <ArrowUpRight aria-hidden="true" size={13} />
-          </TrackedAnchor>
-        </section>
+      <div className="footer-divider" aria-hidden="true" />
 
-        <div className="footer-navigation">
-          <nav className="footer-link-group" aria-label="Secciones">
-            <span className="footer-link-label">Secciones</span>
-            <div className="footer-link-list">
-              {siteNavigation.map((item) => (
-                <Link href={item.path} key={item.label}>{item.label}</Link>
-              ))}
-            </div>
-          </nav>
-          <nav className="footer-link-group" aria-label="Contacto">
-            <span className="footer-link-label">Contacto</span>
-            <div className="footer-link-list">
-              <TrackedAnchor
-                analyticsEvent={{ name: 'contact_intent_clicked', properties: { channel: 'whatsapp', placement: 'footer' } }}
-                href={WHATSAPP_URL}
-                aria-label={`WhatsApp ${WHATSAPP_DISPLAY_NUMBER}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <span className="footer-contact-number">{WHATSAPP_DISPLAY_NUMBER}</span>
-                <ArrowUpRight aria-hidden="true" size={13} />
-              </TrackedAnchor>
-            </div>
-          </nav>
-        </div>
+      <section className="footer-visits" aria-label="Visitas">
+        <span className="footer-visits-label">Visitas · {BUSINESS_VISIT_POLICY}</span>
+        <ul>
+          <li>{BUSINESS_AREA_LABEL}</li>
+          {BUSINESS_HOURS.map((hours) => <li key={hours}>{hours}</li>)}
+        </ul>
+        <TrackedAnchor
+          analyticsEvent={{ name: 'contact_intent_clicked', properties: { channel: 'whatsapp', placement: 'footer' } }}
+          href={getWhatsAppUrl(WHATSAPP_APPOINTMENT_MESSAGE)}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Pedí tu cita <ArrowUpRight aria-hidden="true" size={13} />
+        </TrackedAnchor>
+      </section>
+
+      <div className="footer-navigation">
+        <nav className="footer-link-group" aria-label="Secciones">
+          <span className="footer-link-label">Secciones</span>
+          <div className="footer-link-list">
+            {siteNavigation.map((item) => (
+              <Link href={item.path} key={item.label}>{item.label}</Link>
+            ))}
+          </div>
+        </nav>
+        <nav className="footer-link-group" aria-label="Contacto">
+          <span className="footer-link-label">Contacto</span>
+          <div className="footer-link-list">
+            <TrackedAnchor
+              analyticsEvent={{ name: 'contact_intent_clicked', properties: { channel: 'whatsapp', placement: 'footer' } }}
+              href={WHATSAPP_URL}
+              aria-label={`WhatsApp ${WHATSAPP_DISPLAY_NUMBER}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span className="footer-contact-number">{WHATSAPP_DISPLAY_NUMBER}</span>
+              <ArrowUpRight aria-hidden="true" size={13} />
+            </TrackedAnchor>
+          </div>
+        </nav>
       </div>
       <div className="footer-legal">
         <nav className="footer-legal-links" aria-label="Legal">

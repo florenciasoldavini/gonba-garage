@@ -421,21 +421,23 @@ h3 { letter-spacing: -0.04em; }
 .catalog-range-heading { display: grid; gap: 7px; }
 .catalog-range-heading > span { color: #8e938a; font: 500 var(--text-label) var(--font-mono); letter-spacing: 0.07em; text-transform: uppercase; }
 .catalog-range-heading output { color: var(--text); font: 600 var(--text-label) var(--font-mono); white-space: nowrap; }
-.catalog-range-label { position: relative; display: flex; align-items: center; gap: 4px; }
+.catalog-range-label { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .catalog-range-label > span { color: #8e938a; font: 500 var(--text-label) var(--font-mono); letter-spacing: 0.07em; text-transform: uppercase; }
+/* The trigger sits beside the label and the panel wraps to its own row below it. */
+.mep-quote-info { display: contents; }
 .mep-quote-info-trigger { width: 24px; height: 24px; margin: -6px 0; padding: 0; display: inline-grid; place-items: center; color: #8e938a; border: 0; border-radius: 50%; background: none; cursor: pointer; transition: color var(--duration-default) ease, background var(--duration-default) ease; }
 .mep-quote-info-trigger:hover, .mep-quote-info-trigger[aria-expanded='true'] { color: var(--accent); background: rgba(220, 255, 0, 0.07); }
 .mep-quote-info-trigger:focus-visible { outline-offset: 0; }
-/* Opaque and slightly wider than the field so the range output and slider thumbs don't show through or around it. */
-.mep-quote-info-panel { position: absolute; z-index: 30; top: calc(100% + 4px); right: -6px; left: -6px; padding: 14px; display: grid; gap: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--color-surface-raised); box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5); }
+.mep-quote-info-panel { flex: 1 0 100%; margin: 8px 0 4px; padding: 12px 14px; display: grid; gap: 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, 0.025); animation: mep-quote-info-reveal var(--duration-default) var(--ease-standard); }
 .mep-quote-info-panel[hidden] { display: none; }
-.mep-quote-info-panel dl { margin: 0; display: grid; gap: 10px; }
+@keyframes mep-quote-info-reveal { from { opacity: 0; transform: translateY(-4px); } }
+.mep-quote-info-panel dl { margin: 0; display: grid; gap: 8px; }
 .mep-quote-info-panel dl > div { display: grid; gap: 3px; }
 .mep-quote-info-panel dt { color: var(--color-text-tertiary); font: 500 var(--text-label) var(--font-mono); letter-spacing: 0.07em; text-transform: uppercase; }
 .mep-quote-info-panel dd { margin: 0; color: var(--text); font-size: var(--text-caption); line-height: 1.45; }
 .mep-quote-info-panel a { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--color-border-strong); transition: text-decoration-color var(--duration-default) ease; }
 .mep-quote-info-panel a:hover { text-decoration-color: var(--accent); }
-.mep-quote-info-panel p { margin: 0; padding-top: 12px; color: var(--color-text-tertiary); border-top: 1px solid var(--line); font-size: var(--text-fine); line-height: 1.55; }
+.mep-quote-info-panel p { margin: 0; padding-top: 10px; color: var(--color-text-tertiary); border-top: 1px solid var(--line); font-size: var(--text-fine); line-height: 1.55; }
 .catalog-range-control { position: relative; height: 30px; margin-top: 4px; }
 .catalog-range-track { position: absolute; top: 50%; right: 0; left: 0; height: 3px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); transform: translateY(-50%); }
 .catalog-range-track span { position: absolute; top: 0; bottom: 0; border-radius: inherit; background: var(--accent); }
@@ -615,7 +617,6 @@ h3 { letter-spacing: -0.04em; }
 }
 
 .inner-page-motion .detail-primary-image,
-.inner-page-motion .detail-gallery-image,
 .inner-page-motion .valuation-image,
 .inner-page-motion .catalog-card-image { will-change: clip-path; }
 /* Vehicle detail */
@@ -850,15 +851,31 @@ h3 { letter-spacing: -0.04em; }
 
 /* Other available cars on every car's page: alternatives under a reserved or sold car. */
 .detail-similar { padding-top: clamp(72px, 8vw, 120px); }
-.detail-similar-heading { margin-bottom: 30px; display: flex; align-items: end; justify-content: space-between; gap: 24px; }
-.detail-similar-heading h2 { margin: 0; font-size: clamp(2.2rem, 3.6vw, 3.4rem); }
-.detail-similar-heading .text-link { min-height: 44px; flex: 0 0 auto; }
-.detail-similar-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-.detail-similar-more { min-height: 100%; padding: 24px; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr auto auto; border-radius: var(--radius); }
-.detail-similar-more:hover { border-color: rgba(220, 255, 0, 0.36); }
-.detail-similar-more > span:first-child { color: var(--accent); font: 600 var(--text-label) var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; }
-.detail-similar-more strong { grid-column: 1 / -1; grid-row: 3; font-size: var(--text-heading-md); letter-spacing: -0.05em; }
-.detail-similar-more p { grid-column: 1 / -1; grid-row: 4; margin: 8px 0 0; color: var(--muted); font-size: 0.8rem; line-height: 1.55; }
+/* Under an available car the rail follows the process strip, which already leaves the air above it,
+   and keeps the same air before the contact callout. */
+.detail-confidence + .detail-similar { padding-top: 0; padding-bottom: clamp(90px, 11vw, 150px); }
+/* Eyebrow and inventory link share the first row; on phones the link moves under the list. */
+.detail-similar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px 24px; }
+.detail-similar > h2.eyebrow { margin: 0; }
+.detail-similar > .text-link { min-height: 44px; }
+.detail-similar-list { grid-column: 1 / -1; }
+/* An editorial index rather than catalog cards: the names carry the rows, the photo stays small. */
+.detail-similar-list { margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--line); }
+.detail-similar-link { position: relative; min-height: 118px; padding-block: 18px; display: grid; grid-template-columns: 56px minmax(0, 1fr) 190px 170px 132px 28px; grid-template-areas: 'number name meta price photo arrow'; align-items: center; gap: 22px; border-top: 1px solid var(--line); }
+.detail-similar-number { grid-area: number; color: var(--accent); font: 600 var(--text-label) var(--font-mono); }
+.detail-similar-name { grid-area: name; min-width: 0; display: grid; gap: 4px; transition: transform var(--duration-default) var(--ease-standard); }
+.detail-similar-name h3, .detail-similar-name strong { margin: 0; font-size: clamp(1.7rem, 3vw, 2.7rem); font-weight: 800; letter-spacing: -0.06em; line-height: 1; }
+.detail-similar-name > span { overflow: hidden; color: var(--muted); font-size: 0.82rem; text-overflow: ellipsis; white-space: nowrap; }
+.detail-similar-meta { grid-area: meta; color: var(--muted); font: 500 var(--text-caption) var(--font-mono); }
+.detail-similar-price { grid-area: price; display: grid; justify-items: end; gap: 3px; font-weight: 800; }
+.detail-similar-photo { grid-area: photo; position: relative; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 10px; background: #111411; transition: filter var(--duration-default) ease; }
+.detail-similar-arrow { grid-area: arrow; justify-self: end; color: var(--muted); transition: color var(--duration-default) ease, transform var(--duration-default) var(--ease-standard); }
+@media (hover: hover) {
+  .detail-similar-photo { filter: grayscale(1) brightness(0.6); }
+  .detail-similar-link:hover .detail-similar-photo { filter: none; }
+  .detail-similar-link:hover .detail-similar-name { transform: translateX(8px); }
+  .detail-similar-link:hover .detail-similar-arrow { color: var(--accent); transform: translate(3px, -3px); }
+}
 
 .price-alert-dialog {
   width: min(620px, calc(100% - 32px));
@@ -951,10 +968,20 @@ h3 { letter-spacing: -0.04em; }
 .detail-specs-groups details[open] summary svg { transform: rotate(180deg); color: var(--accent); }
 .detail-specs-panel { overflow: hidden; }
 
-.detail-gallery { display: grid; grid-template-columns: 1.5fr 0.5fr; gap: 14px; }
-.detail-gallery-image { position: relative; min-height: clamp(480px, 55vw, 760px); overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: #111411; }
-.detail-crop-left { object-position: 18% center; }
-.detail-crop-right { object-position: 82% center; }
+.detail-photo-thumbs { position: relative; grid-column: 1; grid-row: 2; display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; }
+.detail-photo-thumbs::-webkit-scrollbar { display: none; }
+.detail-showcase:has(.detail-photo-thumbs) > .detail-purchase-card { grid-column: 2; grid-row: 1 / span 2; }
+.detail-photo-thumb { position: relative; flex: 0 0 auto; width: 104px; aspect-ratio: 4 / 3; padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: #111411; cursor: pointer; opacity: 0.5; transition: opacity var(--duration-default) ease, border-color var(--duration-default) ease; }
+.detail-photo-thumb:hover { opacity: 0.85; }
+.detail-photo-thumb[aria-current='true'] { opacity: 1; border-color: var(--accent); }
+.detail-photo-thumb:focus-visible { outline-offset: -3px; }
+.detail-showcase:not([data-status='active']) .detail-photo-thumb img { filter: grayscale(1) brightness(0.72); }
+@media (min-width: 1001px) {
+  /* The strip (78px thumbnails plus the 14px gap) comes out of the photo, so photo and strip together
+     stay as tall as a lone 4:3 photo and the purchase card beside them keeps its height. */
+  .detail-showcase:has(.detail-photo-thumbs) { container-type: inline-size; grid-template-rows: minmax(0, 1fr) auto; }
+  .detail-showcase:has(.detail-photo-thumbs) > .detail-primary-image { aspect-ratio: auto; min-height: calc((100cqw - clamp(340px, 29vw, 400px) - 14px) * 3 / 4 - 92px); }
+}
 
 .vehicle-photo-open { position: absolute; inset: 0; width: 100%; padding: 0; border: 0; background: transparent; color: var(--text); cursor: pointer; touch-action: pan-y pinch-zoom; }
 .vehicle-photo-open:focus-visible { outline-offset: -5px; }
@@ -967,7 +994,6 @@ h3 { letter-spacing: -0.04em; }
 .vehicle-photo-controls button, .vehicle-photo-close { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: rgba(255, 255, 255, 0.05); color: #cdd0c9; cursor: pointer; transition: color var(--duration-default) ease, border-color var(--duration-default) ease, background var(--duration-default) ease; }
 .vehicle-photo-controls button:hover, .vehicle-photo-close:hover { color: var(--text); border-color: var(--color-border-strong); background: rgba(255, 255, 255, 0.09); }
 .vehicle-photo-controls span { min-width: 76px; padding: 9px 11px; border-radius: var(--radius-control); color: var(--accent); background: rgba(5, 7, 5, 0.72); font: 600 var(--text-label) var(--font-mono); font-variant-numeric: tabular-nums; text-align: center; }
-button.detail-gallery-image { display: block; width: 100%; padding: 0; color: var(--text); cursor: pointer; }
 .vehicle-photo-error { position: absolute; inset: 0; display: grid; place-content: center; padding: 24px; color: var(--text); background: var(--background); font-size: 0.875rem; }
 .vehicle-photo-loading { position: absolute; inset: 0; display: grid; place-content: center; color: var(--text); font-size: 0.875rem; }
 .vehicle-photo-dialog { width: min(1440px, calc(100% - 32px)); max-width: none; max-height: calc(100dvh - 32px); padding: 0; border: 1px solid var(--line); border-radius: var(--radius-feature); background: #0d100e; color: var(--text); }
@@ -984,7 +1010,7 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
   .vehicle-photo-dialog-panel { height: calc(100dvh - 20px); padding: 8px; }
 }
 
-.detail-confidence { padding-block: clamp(90px, 11vw, 150px); display: grid; grid-template-columns: repeat(3, 1fr); }
+.detail-confidence { padding-block: 0 clamp(90px, 11vw, 150px); display: grid; grid-template-columns: repeat(3, 1fr); }
 .detail-confidence > div { min-height: 240px; padding: 28px; display: flex; flex-direction: column; border-top: 1px solid var(--line); border-right: 1px solid var(--line); }
 .detail-confidence > div:first-child { border-left: 1px solid var(--line); }
 .detail-confidence strong { margin-top: auto; font-size: 1.3rem; }
@@ -1234,18 +1260,18 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
   .legal-content a:hover, .price-alert-privacy a:hover { color: var(--accent); }
 }
 
-.site-footer { min-height: 260px; padding-block: 70px 35px; display: grid; grid-template-columns: 1fr auto; gap: 32px; align-items: start; }
-.footer-intro { display: grid; gap: 10px; }
+/* Two columns: the wordmark and visits on the left; the Instagram card above the links on the right,
+   as wide as them, so its borders land on "Secciones" and on the footer's edge. */
+.site-footer { min-height: 260px; padding-block: 70px 35px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 32px 56px; align-items: start; }
+.footer-intro { align-self: end; display: grid; gap: 10px; }
 .footer-wordmark img { height: 44px; }
 .footer-intro > p { margin: 0; color: var(--muted); font-size: 0.78rem; }
 .site-footer .footer-instagram {
-  grid-column: 1 / -1;
-  min-height: 126px;
-  padding: clamp(20px, 2.5vw, 28px);
+  padding: 18px 18px 18px 20px;
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 18px;
+  gap: 16px;
   overflow: hidden;
   color: var(--text);
   border: 1px solid var(--color-border-default);
@@ -1258,19 +1284,20 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 .footer-instagram-icon { width: 50px; height: 50px; display: grid; place-items: center; color: var(--accent); border: 1px solid rgba(220, 255, 0, .2); border-radius: 50%; background: var(--color-brand-soft); }
 .footer-instagram-copy { min-width: 0; display: grid; gap: 3px; }
 .footer-instagram-copy > span { color: var(--accent); font: 700 var(--text-label) var(--font-mono); letter-spacing: .1em; text-transform: uppercase; }
-.footer-instagram-copy > strong { color: var(--text); font-size: clamp(1.55rem, 2.5vw, 2.15rem); letter-spacing: -.05em; line-height: 1; }
-.footer-instagram-copy > small { margin-top: 5px; color: var(--muted); font-size: var(--text-caption); line-height: 1.4; }
-.footer-instagram-action { min-height: 44px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; color: var(--accent-dark); border-radius: var(--radius-button); background: var(--accent); font-size: .75rem; font-weight: 800; }
-.footer-navigation { display: flex; flex-wrap: wrap; gap: 56px; }
+.footer-instagram-copy > strong { color: var(--text); font-size: 1.7rem; letter-spacing: -.05em; line-height: 1; }
+.footer-instagram-copy > small { margin-top: 3px; color: var(--muted); font-size: var(--text-caption); line-height: 1.4; }
+.footer-instagram-arrow { width: 44px; height: 44px; display: grid; place-items: center; color: var(--text); border: 1px solid var(--line); border-radius: 50%; transition: color var(--duration-default) ease, background var(--duration-default) ease, border-color var(--duration-default) ease; }
+.site-footer .footer-instagram:hover .footer-instagram-arrow { color: var(--accent-dark); border-color: var(--accent); background: var(--accent); }
+.footer-divider { grid-column: 1 / -1; border-top: 1px solid var(--line); }
+.footer-navigation { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 56px; }
 .footer-link-group { display: grid; align-content: start; gap: 13px; }
 .footer-link-label { color: var(--color-text-tertiary); font: 650 var(--text-label) var(--font-mono); letter-spacing: 0.12em; text-transform: uppercase; }
 .footer-link-list { display: flex; flex-wrap: wrap; gap: 22px; }
 /* Visits on the left and navigation on the right in one row; stacked in that order on phones. */
-.footer-columns { grid-column: 1 / -1; display: flex; align-items: start; justify-content: space-between; gap: 40px 56px; }
 .footer-visits { display: grid; justify-items: start; gap: 10px; }
-.footer-columns .footer-link-group { gap: 15px; }
-.footer-columns .footer-link-list a { color: var(--text); font-size: 0.85rem; }
-.footer-columns .footer-link-list a:hover { color: var(--accent); }
+.footer-navigation .footer-link-group { gap: 15px; }
+.footer-navigation .footer-link-list a { color: var(--text); font-size: 0.85rem; }
+.footer-navigation .footer-link-list a:hover { color: var(--accent); }
 .footer-contact-number { white-space: nowrap; }
 .footer-visits-label { color: var(--accent); font: 700 var(--text-label) var(--font-mono); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
 .footer-visits ul { margin: 0; padding: 0; display: grid; gap: 6px; color: var(--text); font-size: 0.85rem; list-style: none; }
@@ -1410,6 +1437,8 @@ html:has(.compare-selection-dialog[open]) { overflow: hidden; }
 .vehicle-compare-empty .button { justify-content: center; cursor: pointer; }
 
 @media (max-width: 1000px) {
+  .site-footer { grid-template-columns: 1fr; }
+  .footer-navigation { justify-content: start; }
   .main-nav { display: none; }
   .site-header { grid-template-columns: 1fr auto; }
   .site-menu-trigger { display: inline-grid; }
@@ -1427,8 +1456,7 @@ html:has(.compare-selection-dialog[open]) { overflow: hidden; }
   .detail-disclaimer { margin-top: 24px; }
   .detail-overview { grid-template-columns: 1fr; }
   .detail-specs { position: static; }
-  .detail-gallery { grid-template-columns: 1fr 1fr; }
-  .detail-gallery-wide { grid-column: 1 / -1; }
+  .detail-showcase:has(.detail-photo-thumbs) > .detail-purchase-card { grid-column: 1; grid-row: 3; }
   .detail-confidence { grid-template-columns: 1fr; }
   .detail-confidence > div { min-height: 190px; border-left: 1px solid var(--line); border-bottom: 0; }
   .detail-confidence > div:last-child { border-bottom: 1px solid var(--line); }
@@ -1479,17 +1507,20 @@ html:has(.compare-selection-dialog[open]) { overflow: hidden; }
   .detail-purchase-card { min-height: 0; padding: 26px 22px; }
   .detail-status-banner { max-width: calc(100% - 24px); margin: 12px; font-size: var(--text-caption); }
   .detail-similar { padding-top: 72px; }
-  .detail-similar-heading { align-items: start; flex-direction: column; gap: 18px; }
-  .detail-similar-heading h2 { font-size: clamp(2.2rem, 11vw, 3rem); }
-  .detail-similar-grid { margin-inline: -12px; padding-inline: 12px; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 84%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .detail-similar-grid > * { scroll-snap-align: start; }
+  .detail-similar > .text-link { grid-row: 3; justify-self: start; margin-top: 6px; }
+  /* The name gets the full width; the arrow sits in the corner instead of taking a column. */
+  .detail-similar-link { min-height: 0; grid-template-columns: 28px minmax(0, 1fr) auto; grid-template-areas: 'number name name' 'number meta price'; align-items: start; gap: 10px 14px; }
+  .detail-similar-name { padding-right: 30px; }
+  .detail-similar-arrow { position: absolute; top: 20px; right: 0; }
+  .detail-similar-number { padding-top: 6px; }
+  .detail-similar-name h3, .detail-similar-name strong { font-size: 1.5rem; }
+  .detail-similar-meta { align-self: end; }
+  .detail-similar-photo { display: none; }
   .detail-overview { padding-block: 100px; gap: 58px; }
-  .detail-gallery { grid-template-columns: 1fr; }
-  .detail-gallery-wide { grid-column: auto; }
-  .detail-gallery-image { min-height: 440px; }
+  .detail-photo-thumb { width: 76px; border-radius: 10px; }
   .detail-highlights { grid-template-columns: 1fr; }
   .detail-highlights li:nth-child(odd) { padding-right: 0; }
-  .detail-confidence { padding-block: 90px; }
+  .detail-confidence { padding-block: 0 90px; }
   .sell-section { min-height: 0; }
   .sell-media { min-height: 420px; }
   .sell-content { padding: 36px 24px; }
@@ -1508,12 +1539,9 @@ html:has(.compare-selection-dialog[open]) { overflow: hidden; }
   .share-dialog-close { top: 12px; right: 12px; }
   .share-dialog-content > h2 { padding-right: 34px; font-size: clamp(2rem, 10vw, 2.8rem); }
   .share-dialog-routes { margin-top: 22px; }
-  .site-footer { grid-template-columns: 1fr; }
   .footer-note { justify-self: start; }
-  .site-footer .footer-instagram { grid-column: auto; grid-template-columns: auto 1fr; }
-  .footer-instagram-action { grid-column: 1 / -1; width: 100%; }
+  .footer-instagram-copy > strong { font-size: 1.45rem; }
   .footer-navigation { gap: 40px; }
-  .footer-columns { flex-direction: column; }
   .footer-legal { flex-direction: column; align-items: start; }
   .site-footer .footer-back-to-top { margin-left: 0; }
   .catalog-hero { padding-bottom: 40px; }

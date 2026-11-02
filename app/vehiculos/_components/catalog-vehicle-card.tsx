@@ -19,8 +19,6 @@ if (typeof window !== 'undefined') {
 
 type CatalogVehicleCardProps = {
   compareDisabled?: boolean;
-  /** h3 when the card sits under another section heading, as in the similar-cars rail. */
-  headingLevel?: 'h2' | 'h3';
   isSelected?: boolean;
   /** Without it the card has no compare button. */
   onToggleComparison?: (vehicle: Vehicle) => void;
@@ -31,7 +29,6 @@ type CatalogVehicleCardProps = {
 
 export function CatalogVehicleCard({
   compareDisabled = false,
-  headingLevel: Heading = 'h2',
   isSelected = false,
   onToggleComparison,
   quote = null,
@@ -87,7 +84,7 @@ export function CatalogVehicleCard({
       <div className="catalog-card-copy">
         <div className="catalog-card-title">
           <p>{vehicle.year} · {vehicle.body.split(' · ')[0]}</p>
-          <Heading><Link href={href} aria-label={`${vehicleName} ${vehicle.year}`}>{vehicleName}</Link></Heading>
+          <h2><Link href={href} aria-label={`${vehicleName} ${vehicle.year}`}>{vehicleName}</Link></h2>
           <span>{vehicle.version}</span>
         </div>
         <Link className="catalog-card-arrow" href={href} aria-hidden="true" tabIndex={-1}>
