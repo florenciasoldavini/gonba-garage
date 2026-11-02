@@ -239,4 +239,7 @@ docs/                     Architecture, SEO, alerts, design system and operation
   [analytics](docs/analytics.md), [vehicle attribute policy](docs/vehicle-attribute-policy.md)
 - [Custom-domain launch checklist](docs/custom-domain-launch-checklist.md)
 
-<!-- TODO(license): no license has been chosen yet. The package is marked private. -->
+## License
+
+All rights reserved. Code shared for portfolio review. Brand, logos and content belong to Gonba's
+Garage. The bundled Geist fonts keep their own SIL Open Font License (`app/fonts/`).
