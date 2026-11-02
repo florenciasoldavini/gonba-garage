@@ -11,7 +11,7 @@ describe.runIf(process.env.TEST_LIVE === '1')('alert storage on the configured N
   beforeAll(async () => {
     if (existsSync('.env.local')) process.loadEnvFile('.env.local');
     assert.ok(process.env.DATABASE_URL, 'DATABASE_URL is required for the live storage test');
-    sql = (await import('@/lib/alerts/database')).getAlertsSql();
+    sql = (await import('@/lib/database')).getSql();
     subscriptions = await import('@/lib/alerts/subscriptions');
   });
 

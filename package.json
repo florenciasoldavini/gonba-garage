@@ -21,7 +21,7 @@
     "test:inventory-alert-delivery": "vitest run tests/alerts/inventory-alert-delivery.test.mjs",
     "test:metadata": "node scripts/check-social-metadata.mjs",
     "typecheck": "tsc --noEmit",
-    "db:migrate": "node scripts/migrate-alerts.mjs"
+    "db:migrate": "node scripts/migrate-database.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

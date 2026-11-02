@@ -1,12 +1,13 @@
 import 'server-only';
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { alertEmailEnv } from '@/lib/env';
 import { alertOrigin } from './config';
 
 export const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Callers must give each token type a distinct signed format, so one can never verify as another. */
 export function sign(value: string) {
-  const secret = process.env.ALERTS_SIGNING_SECRET;
-  if (!secret || secret.length < 32) throw new Error('Missing alert signing secret');
+  const secret = alertEmailEnv.signingSecret();
+  if (!secret) throw new Error('Missing alert signing secret');
   return createHmac('sha256', secret).update(value).digest('base64url');
 }
 export function cancellationToken(id: string, generation: string) {

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cronAuthorized, alertEmailsConfigured, privateHeaders } from '@/lib/alerts/config';
-import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
+import { isDatabaseConfigured } from '@/lib/database';
 import { runInventoryAlertWorkSafely } from '@/lib/alerts/inventory-delivery';
 import { reconcileCatalog, runCatalogSyncWork } from '@/lib/integrations/mercado-libre/inventory-sync';
 import { reportIntegrationFailure } from '@/lib/integrations/mercado-libre/failures';
@@ -14,7 +14,7 @@ export const maxDuration = 300;
  */
 export async function GET(request: Request) {
   if (!cronAuthorized(request)) return NextResponse.json({ ok: false }, { status: 401, headers: privateHeaders });
-  if (!isAlertsDatabaseConfigured()) return NextResponse.json({ ok: false }, { status: 503, headers: privateHeaders });
+  if (!isDatabaseConfigured()) return NextResponse.json({ ok: false }, { status: 503, headers: privateHeaders });
   const deadline = Date.now() + 270_000;
   try {
     const reconciliation = await reconcileCatalog();

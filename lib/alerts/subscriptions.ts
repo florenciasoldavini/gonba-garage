@@ -1,5 +1,5 @@
 import 'server-only';
-import { getAlertsSql } from './database';
+import { getSql } from '@/lib/database';
 
 export type InventorySubscription = {
   email: string;
@@ -19,7 +19,7 @@ export type InventorySubscription = {
  * New and cancelled searches become pending until confirmed by email; active ones stay active.
  */
 export async function saveInventorySubscription(input: InventorySubscription) {
-  const sql = getAlertsSql();
+  const sql = getSql();
   const rows = await sql`
     INSERT INTO public.vehicle_inventory_alerts
       (email, search_query, make, transmission, body_type, fuel,
@@ -41,7 +41,7 @@ export async function saveInventorySubscription(input: InventorySubscription) {
 
 /** Idempotent. Returns whether that generation is active now. */
 export async function confirmInventorySubscription(id: string, generation: string) {
-  const sql = getAlertsSql();
+  const sql = getSql();
   await sql`UPDATE public.vehicle_inventory_alerts SET status = 'active', confirmed_at = now(), updated_at = now()
     WHERE id = ${id} AND generation = ${generation} AND status = 'pending'`;
   const rows = await sql`SELECT 1 FROM public.vehicle_inventory_alerts
@@ -58,7 +58,7 @@ export type PriceSubscription = {
 
 /** Storage where alert emails are not configured: stored as pending, no email is sent. */
 export async function savePriceSubscription(input: PriceSubscription) {
-  const sql = getAlertsSql();
+  const sql = getSql();
   await sql`
     INSERT INTO public.vehicle_price_alerts (email, vehicle_slug, current_price, currency, status)
     VALUES (${input.email}, ${input.vehicleSlug}, ${input.price}, ${input.currency}, 'pending')

@@ -24,9 +24,9 @@ const listings = vi.hoisted(() => ({
     version: 'XEi', price: 20000, currency: 'USD', status: 'active' },
 }));
 vi.mock('next/server', async importOriginal => ({ ...await importOriginal(), after: task => { state.deferred.push(task); } }));
-vi.mock('@/lib/alerts/database', () => ({ getAlertsSql: () => state.sql, isAlertsDatabaseConfigured: () => true }));
+vi.mock('@/lib/database', () => ({ getSql: () => state.sql, isDatabaseConfigured: () => true }));
 vi.mock('@/lib/integrations/mercado-libre/access-token', () => ({ catalogAccessToken: async () => 'fake' }));
-vi.mock('@/lib/integrations/mercado-libre/oauth', () => ({
+vi.mock('@/lib/integrations/mercado-libre/api', () => ({
   readMercadoLibrePublication: async id => ({ vehicle: id === 'MLA777' ? listings.legacyVehicle : listings.vehicle, source: { id, seller_id: 123 } }),
 }));
 vi.mock('@/lib/integrations/mercado-libre/catalog', () => ({

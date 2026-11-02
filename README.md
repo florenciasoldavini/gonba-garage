@@ -232,7 +232,9 @@ app/                      Routes, layouts and thin route handlers (route-only UI
   og/vehiculos/[slug]/    Generated 1200×630 share card per vehicle
 components/               Shared UI primitives, layout, brand, motion and SEO components
 features/vehicles/        Vehicle domain model, Mercado Libre mapper, presentation rules
-lib/integrations/         Server-only adapters: Mercado Libre, Arg Autos, MEP quote
+lib/env.ts                Server environment, grouped by feature and read lazily
+lib/database.ts           The Neon connection shared by the catalog store and alerts
+lib/integrations/         Server-only adapters: Mercado Libre (OAuth, read API), Arg Autos, MEP quote
 lib/catalog/              Synced catalog store and sync job queue (SQL)
 lib/alerts/               Alert subscriptions, signed tokens, rate limits, outbox workers, email
 database/migrations/      Versioned SQL migrations, tracked in schema_migrations
@@ -240,6 +242,11 @@ scripts/                  Migration runner and the metadata contract check
 tests/                    Vitest suites, helpers and test fixtures
 docs/                     Architecture, SEO, alerts, design system and operations notes
 ```
+
+`features/<feature>/` holds one feature's own code, by layer: `domain/` (model and rules),
+`data/` (mapping provider data into the model) and `presentation/` (display rules shared by
+pages). `lib/` holds server infrastructure that several features share: configuration, the
+database, stores, workers and external integrations.
 
 ## Documentation
 

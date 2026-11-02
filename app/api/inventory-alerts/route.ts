@@ -1,6 +1,6 @@
 import { after, NextResponse } from 'next/server';
 
-import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
+import { isDatabaseConfigured } from '@/lib/database';
 import { saveInventorySubscription } from '@/lib/alerts/subscriptions';
 import { alertEmailsConfigured } from '@/lib/alerts/config';
 import { reserveAlertSignup } from '@/lib/alerts/signup-limit';
@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!isAlertsDatabaseConfigured()) {
+  if (!isDatabaseConfigured()) {
     return NextResponse.json({ message: 'Las alertas no están disponibles por el momento.' }, { status: 503 });
   }
 

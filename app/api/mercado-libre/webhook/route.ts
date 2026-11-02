@@ -1,6 +1,7 @@
 import { after, NextResponse } from 'next/server';
 import { alertEmailsConfigured, privateHeaders, requireAlertConfig } from '@/lib/alerts/config';
-import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
+import { isDatabaseConfigured } from '@/lib/database';
+import { mercadoLibreEnv } from '@/lib/env';
 import { runInventoryAlertWorkSafely } from '@/lib/alerts/inventory-delivery';
 import { enqueuePriceItem, runPriceAlertWorkSafely } from '@/lib/alerts/price-delivery';
 import { enqueueCatalogSync, runCatalogSyncWorkSafely } from '@/lib/integrations/mercado-libre/inventory-sync';
@@ -15,7 +16,7 @@ export const maxDuration = 300;
  * x-forwarded-for entry is not used.
  */
 function fromListedAddress(request: Request) {
-  const listed = (process.env.MERCADO_LIBRE_WEBHOOK_IPS ?? '').split(',').map(ip => ip.trim()).filter(Boolean);
+  const listed = mercadoLibreEnv.webhookIps();
   if (!listed.length) return true;
   const address = request.headers.get('x-vercel-forwarded-for')?.trim().replace(/^::ffff:/, '') ?? '';
   if (listed.includes(address)) return true;
@@ -36,12 +37,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 400, headers: privateHeaders });
   }
   const match = typeof notification.resource === 'string' ? notification.resource.match(/^\/items\/(MLA\d+)(?:\/prices)?$/) : null;
+  const sellerId = mercadoLibreEnv.sellerId(), clientId = mercadoLibreEnv.clientId();
   if (!match || !['items', 'items_prices'].includes(String(notification.topic))
-    || !process.env.MERCADO_LIBRE_SELLER_ID || String(notification.user_id) !== process.env.MERCADO_LIBRE_SELLER_ID
-    || !process.env.MERCADO_LIBRE_CLIENT_ID || String(notification.application_id) !== process.env.MERCADO_LIBRE_CLIENT_ID) {
+    || !sellerId || String(notification.user_id) !== sellerId || !clientId || String(notification.application_id) !== clientId) {
     return NextResponse.json({ ok: true }, { headers: privateHeaders });
   }
-  const catalogSync = isAlertsDatabaseConfigured();
+  const catalogSync = isDatabaseConfigured();
   const priceAlerts = alertEmailsConfigured();
   if (!catalogSync && !priceAlerts) return NextResponse.json({ ok: true }, { headers: privateHeaders });
   // An unlisted address is still queued, so an outdated list delays a genuine notification until the

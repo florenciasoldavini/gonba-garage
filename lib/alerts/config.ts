@@ -1,18 +1,18 @@
 import 'server-only';
 import { timingSafeEqual } from 'node:crypto';
+import { alertEmailEnv, cronEnv, databaseEnv } from '@/lib/env';
 
 export function alertOrigin() {
-  const url = new URL(process.env.ALERTS_PUBLIC_URL || '');
-  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/') {
-    throw new Error('Invalid alerts public origin');
-  }
-  return url.origin;
+  const origin = alertEmailEnv.publicOrigin();
+  if (!origin) throw new Error('Invalid alerts public origin');
+  return origin;
 }
 
 export function requireAlertConfig() {
   alertOrigin();
-  if (!process.env.DATABASE_URL || !process.env.RESEND_API_KEY || !process.env.ALERTS_EMAIL_FROM
-    || (process.env.ALERTS_SIGNING_SECRET?.length ?? 0) < 32) throw new Error('Missing alert email configuration');
+  if (!databaseEnv.url() || !alertEmailEnv.resendApiKey() || !alertEmailEnv.from() || !alertEmailEnv.signingSecret()) {
+    throw new Error('Missing alert email configuration');
+  }
 }
 
 /**
@@ -28,9 +28,9 @@ export function alertEmailsConfigured() {
 }
 
 export function cronAuthorized(request: Request) {
-  const expected = process.env.CRON_SECRET;
+  const expected = cronEnv.secret();
   const supplied = request.headers.get('authorization') || '';
-  if (!expected || expected.length < 32) return false;
+  if (!expected) return false;
   const a = Buffer.from(`Bearer ${expected}`), b = Buffer.from(supplied);
   return a.length === b.length && timingSafeEqual(a, b);
 }

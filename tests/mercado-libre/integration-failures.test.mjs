@@ -20,7 +20,7 @@ it('loads only its expected runtime dependencies', () => {
   const allowed = {
     'lib/integrations/mercado-libre/failures.ts': [],
     'lib/integrations/mercado-libre/refresh-token-store.ts': ['./failures'],
-    'lib/integrations/mercado-libre/credentials.ts': ['@vercel/blob', './oauth', './refresh-token-store', './failures'],
+    'lib/integrations/mercado-libre/credentials.ts': ['@vercel/blob', '@/lib/env', './oauth', './refresh-token-store', './failures'],
   };
   for (const [file, dependencies] of Object.entries(allowed)) {
     for (const id of runtimeImports(file)) {

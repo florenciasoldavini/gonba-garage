@@ -7,13 +7,13 @@ import { runtimeImports } from '../helpers/modules.mjs';
 // Route behavior with storage and delivery replaced: alert emails are not configured (demo mode).
 const routes = vi.hoisted(() => ({ calls: [], configured: true, failStorage: false, vehicle: null, deferred: [] }));
 vi.mock('next/server', async importOriginal => ({ ...await importOriginal(), after: task => { routes.deferred.push(task); } }));
-vi.mock('@/lib/alerts/database', () => ({ isAlertsDatabaseConfigured: () => routes.configured }));
+vi.mock('@/lib/database', () => ({ isDatabaseConfigured: () => routes.configured }));
 vi.mock('@/lib/alerts/config', () => ({ alertEmailsConfigured: () => false }));
 vi.mock('@/lib/alerts/price-delivery', () => ({}));
 vi.mock('@/lib/alerts/signup-limit', () => ({ reserveAlertSignup: async () => true }));
 vi.mock('@/lib/alerts/confirmation', () => ({ sendSignupConfirmationSafely: async () => assert.fail('Demo mode sends no confirmation') }));
 vi.mock('@/lib/integrations/mercado-libre/access-token', () => ({}));
-vi.mock('@/lib/integrations/mercado-libre/oauth', () => ({}));
+vi.mock('@/lib/integrations/mercado-libre/api', () => ({}));
 vi.mock('@/lib/alerts/subscriptions', () => ({
   saveInventorySubscription: async input => {
     if (routes.failStorage) throw new Error('Private DB error');
@@ -39,10 +39,11 @@ afterEach(() => {
   assert.equal(routes.deferred.length, 0, 'Demo mode queues no confirmation email');
 });
 
-it('loads only the dependencies replaced here and the request guard', () => {
-  const dependencies = ['server-only', 'next/server', '@/lib/alerts/database', '@/lib/alerts/config', '@/lib/alerts/price-delivery',
+it('loads only the dependencies replaced here, the request guard and the environment', () => {
+  const dependencies = ['server-only', 'next/server', '@/lib/database', '@/lib/alerts/config', '@/lib/alerts/price-delivery',
     '@/lib/alerts/signup-limit', '@/lib/alerts/confirmation', '@/lib/integrations/mercado-libre/access-token',
-    '@/lib/integrations/mercado-libre/oauth', '@/lib/alerts/subscriptions', '@/lib/integrations/mercado-libre/catalog', '@/lib/alerts/request-guard'];
+    '@/lib/integrations/mercado-libre/api', '@/lib/alerts/subscriptions', '@/lib/integrations/mercado-libre/catalog', '@/lib/alerts/request-guard',
+    '@/lib/env'];
   for (const file of ['lib/alerts/request-guard.ts', 'app/api/inventory-alerts/route.ts', 'app/api/price-alerts/route.ts']) {
     for (const id of runtimeImports(file)) assert.ok(dependencies.includes(id), `Unexpected dependency: ${id}`);
   }
