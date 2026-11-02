@@ -202,13 +202,16 @@ Neon. `npm run db:migrate` applies pending migrations in file-name order and rec
 ## Quality checks
 
 ```bash
+npm run format:check
 npm run lint
 npm run typecheck
 npm test
 npm run build
 ```
 
-[CI](.github/workflows/ci.yml) runs all four on every pull request.
+[CI](.github/workflows/ci.yml) runs all five on every pull request. Formatting is owned by Prettier
+([`.prettierrc.json`](.prettierrc.json)); `npm run format` rewrites files in place, and ESLint leaves
+style to it.
 
 `npm test` runs the Vitest suites in `tests/`. They need no credentials or network: database code
 runs against real PostgreSQL in memory (PGlite), migrated by the same runner as `npm run db:migrate`,
