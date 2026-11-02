@@ -204,12 +204,24 @@ Neon. `npm run db:migrate` applies pending migrations in file-name order and rec
 ```bash
 npm run lint
 npm run typecheck
+npm test
 npm run build
 ```
 
-[CI](.github/workflows/ci.yml) runs these three checks on every pull request. Domain checks for the
-sync, token store, alerts and metadata contract are the `test:*` scripts in
-[`package.json`](package.json).
+[CI](.github/workflows/ci.yml) runs all four on every pull request.
+
+`npm test` runs the Vitest suites in `tests/`. They need no credentials or network: database code
+runs against real PostgreSQL in memory (PGlite), migrated by the same runner as `npm run db:migrate`,
+and Mercado Libre, the MEP quote and Resend are replaced with fakes. Test fixtures live in the test
+files and `tests/fixtures/`; the application never imports them. `npm run test:watch` reruns them on
+change, and `npm run test:live` adds the checks against the live Mercado Libre category schema and
+the Neon database in `.env.local`.
+
+`npm run test:metadata` checks the SEO and social metadata contract against a running production
+server that reads the real catalog (see
+[Verification](docs/seo-and-social-metadata.md#verification)). CI runs it in both indexing modes
+when the `MERCADO_LIBRE_CATALOG_API_KEY` repository secret is set, and skips it with a notice
+otherwise.
 
 ## Project structure
 
@@ -224,7 +236,8 @@ lib/integrations/         Server-only adapters: Mercado Libre, Arg Autos, MEP qu
 lib/catalog/              Synced catalog store and sync job queue (SQL)
 lib/alerts/               Alert subscriptions, signed tokens, rate limits, outbox workers, email
 database/migrations/      Versioned SQL migrations, tracked in schema_migrations
-scripts/                  Migration runner and check-*.mjs test suites
+scripts/                  Migration runner and the metadata contract check
+tests/                    Vitest suites, helpers and test fixtures
 docs/                     Architecture, SEO, alerts, design system and operations notes
 ```
 

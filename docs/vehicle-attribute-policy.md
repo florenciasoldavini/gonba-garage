@@ -5,7 +5,7 @@ single source of truth for displaying attributes in a vehicle's public specifica
 It explicitly covers the 322 attributes returned by the MLA1744 (Autos y Camionetas)
 category on 2026-10-28, plus separately identified legacy adapter and historical IDs.
 The provider schema snapshot (IDs/names only) is in
-`scripts/fixtures/mercado-libre-mla1744-attributes.json`.
+`tests/fixtures/mercado-libre-mla1744-attributes.json`.
 
 Each ID has exactly one decision:
 
@@ -35,7 +35,7 @@ a scheduled check or an email alert. The original attributes always remain untou
 including excluded fields, units, multiple values and boolean “No” values.
 
 Run `npm run test:attributes` for offline coverage and regression checks. Run
-`npm run test:attributes -- --live` to compare the current public category API with the
+`TEST_LIVE=1 npm run test:attributes` to compare the current public category API with the
 registry. A new unclassified ID fails that check. No periodic job is installed.
 When reviewing new fields, add a deliberate show/exclude rule, update the schema snapshot
 if appropriate, and rerun the checks. Existing legacy IDs may remain when removed from
