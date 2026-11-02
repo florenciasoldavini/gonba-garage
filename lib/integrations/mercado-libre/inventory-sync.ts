@@ -14,6 +14,13 @@ import { vehicleCategoryOf, type VehicleCategory } from './vehicle-categories';
 /** Rows not refreshed for a day are read again, which also picks up description-only edits. */
 const REFRESH_AFTER_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * Notifications for an item never stored are ignored this long after a read found it missing, or
+ * of another seller. Short for missing items, in case a new listing was read before it existed.
+ */
+const SKIP_NOT_FOUND_SECONDS = 60 * 60;
+const SKIP_OTHER_SELLER_SECONDS = 24 * 60 * 60;
+
 const vehicleCategories = new Map<string, Promise<VehicleCategory | null>>();
 
 /**
@@ -77,14 +84,18 @@ export async function processNextCatalogJob() {
   try {
     const seller = sellerId();
     const publication = await readCurrentPublication(job.id);
+    let skipSeconds = 0;
     if (!publication) {
-      await markPublicationRemoved(job.id, lease);
+      // A stored vehicle is closed, and never skipped. Only an item never stored is.
+      if (!(await markPublicationRemoved(job.id, lease))) skipSeconds = SKIP_NOT_FOUND_SECONDS;
     } else if (String(publication.source.seller_id) === seller && publication.source.id === job.id) {
       const category = await vehicleCategory(publication.source);
       if (category) await savePublication(publication, category, lease);
+    } else if (String(publication.source.seller_id) !== seller) {
+      skipSeconds = SKIP_OTHER_SELLER_SECONDS;
     }
     // Items of other sellers and items that are not vehicles are never stored. The job is done either way.
-    await completeCatalogJob(job.id, lease, job.revision);
+    await completeCatalogJob(job.id, lease, job.revision, skipSeconds);
   } catch (error) {
     const incident = safeFailure(error, 'catalog_sync').incident;
     await failCatalogJob(job.id, lease, job.revision, job.attempts, incidentCode(incident));

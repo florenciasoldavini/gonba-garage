@@ -120,29 +120,38 @@ export async function savePublication(publication: MercadoLibrePublication, vehi
   return { saved: rows[0].saved === 1, priceChanged: rows[0].price_changes === 1, becameAvailable: rows[0].available === 1 };
 }
 
-/** The item no longer exists on Mercado Libre. Its page stays, marked as no longer available. */
+/**
+ * The item no longer exists on Mercado Libre. Its page stays, marked as no longer available.
+ * Returns false when there is no stored row (or the lease was lost).
+ */
 export async function markPublicationRemoved(id: string, lease: string) {
-  await getAlertsSql()`UPDATE public.catalog_publications SET status = 'closed',
+  const rows = await getAlertsSql()`UPDATE public.catalog_publications SET status = 'closed',
       closed_at = COALESCE(closed_at, now()),
       content_changed_at = CASE WHEN status = 'closed' THEN content_changed_at ELSE now() END,
       synced_at = now()
     WHERE publication_id = ${id} AND EXISTS (SELECT 1 FROM public.catalog_sync_jobs
-      WHERE publication_id = ${id} AND lease_id = ${lease}::uuid)`;
+      WHERE publication_id = ${id} AND lease_id = ${lease}::uuid)
+    RETURNING 1`;
+  return rows.length === 1;
 }
 
-/** Reconciliation (and tests): always makes each item due. */
+/**
+ * Reconciliation (and tests): always makes each item due, even a skipped one, since the seller's
+ * own listing vouches for it.
+ */
 export async function enqueueCatalogJobs(ids: string[]) {
   const valid = [...new Set(ids)].filter(id => PUBLICATION_ID.test(id));
   if (!valid.length) return;
   await getAlertsSql()`INSERT INTO public.catalog_sync_jobs (publication_id)
     SELECT unnest(${valid}::text[])
     ON CONFLICT (publication_id) DO UPDATE SET revision = catalog_sync_jobs.revision + 1,
-      next_attempt_at = now(), updated_at = now()`;
+      next_attempt_at = now(), skip_until = NULL, updated_at = now()`;
 }
 
 /**
  * Queues a notification and returns whether it needs a drain. Duplicates cost one statement:
- * - a finished job is made due again;
+ * - a finished job is made due again, unless a recent read found an item never stored missing or of
+ *   another seller (skip_until);
  * - a job being read gets a new revision, so the item is read again afterwards;
  * - a job already due is left alone (and keeps its backoff); it only asks for a drain when no worker
  *   has picked it up for OVERDUE_JOB.
@@ -155,9 +164,12 @@ export async function enqueueCatalogNotification(id: string) {
         THEN job.revision ELSE job.revision + 1 END,
       next_attempt_at = CASE WHEN job.revision > job.processed_revision AND NOT COALESCE(job.lease_until >= now(), false)
         THEN job.next_attempt_at ELSE now() END,
-      updated_at = now()
-    WHERE job.revision <= job.processed_revision OR COALESCE(job.lease_until >= now(), false)
-      OR job.next_attempt_at < now() - ${OVERDUE_JOB}::interval
+      skip_until = NULL, updated_at = now()
+    WHERE CASE WHEN job.revision <= job.processed_revision
+      THEN job.skip_until IS NULL OR job.skip_until <= now()
+        OR EXISTS (SELECT 1 FROM public.catalog_publications WHERE publication_id = job.publication_id)
+      ELSE COALESCE(job.lease_until >= now(), false) OR job.next_attempt_at < now() - ${OVERDUE_JOB}::interval
+      END
     RETURNING 1`;
   return rows.length === 1;
 }
@@ -173,9 +185,11 @@ export async function leaseCatalogJob(lease: string) {
   return { id: String(rows[0].publication_id), revision: Number(rows[0].revision), attempts: Number(rows[0].attempts) };
 }
 
-export async function completeCatalogJob(id: string, lease: string, revision: number) {
+/** `skipSeconds` ignores notifications for the item that long (see enqueueCatalogNotification). */
+export async function completeCatalogJob(id: string, lease: string, revision: number, skipSeconds = 0) {
   await getAlertsSql()`UPDATE public.catalog_sync_jobs SET processed_revision = GREATEST(processed_revision, ${revision}),
-      lease_id = NULL, lease_until = NULL, attempts = 0, last_error = NULL, updated_at = now()
+      lease_id = NULL, lease_until = NULL, attempts = 0, last_error = NULL, updated_at = now(),
+      skip_until = CASE WHEN ${skipSeconds}::int > 0 THEN now() + ${skipSeconds}::int * interval '1 second' END
     WHERE publication_id = ${id} AND lease_id = ${lease}::uuid`;
 }
 

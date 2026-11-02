@@ -494,8 +494,39 @@ try {
   assert.equal((await row('MLA31')).status, 'active');
   assert.equal((await query("SELECT lease_id FROM public.catalog_sync_runs WHERE id = 'notification_drain'"))[0].lease_id, null);
 
+  // An item a read found to belong to another seller, or missing, is not read again for a while, unless
+  // it is stored. The reconciliation ignores the skip.
+  calls.item.length = 0;
+  items.set('MLA32', item('MLA32', { seller_id: 999 }));
+  await notify('MLA32'); await notify('MLA33'); await runDeferred();
+  const hours = async id => ((await job(id)).skip_until - Date.now()) / 3_600_000;
+  assert.ok(await hours('MLA32') > 23.9 && await hours('MLA32') <= 24, 'Another seller: skipped for a day');
+  assert.ok(await hours('MLA33') > 0.9 && await hours('MLA33') <= 1, 'Missing: skipped for an hour');
+  for (let i = 0; i < 3; i++) { await notify('MLA32'); await notify('MLA33'); }
+  assert.equal(deferred.length, 0, 'Repeats start nothing');
+  assert.deepEqual(calls.item, ['MLA32', 'MLA33'], 'and read nothing');
+  await query("UPDATE public.catalog_sync_jobs SET skip_until = now() - interval '1 second' WHERE publication_id = 'MLA33'");
+  await notify('MLA33');
+  assert.equal(deferred.length, 1, 'After the skip, the item is read again');
+  await runDeferred();
+  items.delete('MLA30');
+  await notify('MLA30'); await runDeferred();
+  assert.equal((await row('MLA30')).status, 'closed');
+  assert.equal((await job('MLA30')).skip_until, null, 'A stored vehicle that disappears is closed, never skipped');
+  await query("UPDATE public.catalog_sync_jobs SET skip_until = now() + interval '1 day' WHERE publication_id = 'MLA30'");
+  await notify('MLA30');
+  assert.equal(deferred.length, 1, 'A skip never applies to a stored vehicle');
+  await runDeferred();
+  items.set('MLA33', item('MLA33'));
+  await notify('MLA33');
+  assert.equal(deferred.length, 0);
+  assert.ok((await sync.reconcileCatalog()).enqueued >= 1);
+  assert.equal((await job('MLA33')).skip_until, null, 'The seller\'s own listing clears the skip');
+  await sync.runCatalogSyncWork();
+  assert.equal((await row('MLA33')).status, 'active');
+
 } finally {
   console.error = previousError;
   await db.close();
 }
-console.log('Inventory sync: migrations, photo placeholder, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth, database-only reads, coalesced notifications with a single drain passed.');
+console.log('Inventory sync: migrations, photo placeholder, durable webhook queue, seller-checked public-only copy, stable slugs, price history, lifecycle, availability events, stale-lease protection, revisions, backoff, safe reconciliation, all-status car and motorcycle backfill, database-enforced vehicle categories, whole-number attributes with thousands separators, cron auth, database-only reads, coalesced notifications with a single drain, skipped foreign and missing items passed.');
