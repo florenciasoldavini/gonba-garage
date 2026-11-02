@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { ArrowDown, ArrowUpRight, Scale } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, Check, Scale } from 'lucide-react';
 
 import { TrackedButtonAnchor } from '@/components/analytics/tracked-anchor';
 import { SiteFooter } from '@/components/layout/site-footer';
@@ -404,8 +404,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
           <h2 id="overview-title">Elegido por cómo se siente. Revisado por todo lo demás.</h2>
           <p style={{ whiteSpace: 'pre-wrap' }}>{vehicle.description || 'Esta publicación no incluye descripción.'}</p>
           <ul className="detail-highlights" aria-label="Puntos destacados">
-            {vehicle.highlights.map((highlight, index) => (
-              <li key={highlight}><span>0{index + 1}</span>{highlight}</li>
+            {vehicle.highlights.map((highlight) => (
+              <li key={highlight}><Check aria-hidden="true" size={14} strokeWidth={1.8} />{highlight}</li>
             ))}
           </ul>
         </div>

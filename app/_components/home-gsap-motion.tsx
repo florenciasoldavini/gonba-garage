@@ -212,7 +212,7 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
               },
               '<0.2',
             )
-            .from('.service-number', { scale: 0.4, autoAlpha: 0, stagger: 0.14, duration: 0.42 }, '<0.22');
+            .from('.service-icon', { scale: 0.4, autoAlpha: 0, stagger: 0.14, duration: 0.42 }, '<0.22');
 
           const trust = gsap.timeline({
             defaults: { ease: 'power3.out' },

@@ -109,6 +109,10 @@ Deliberate differences:
   destination.
 - Specifications use consistent label/value rows and mono labels.
 - Availability, reserved, and sold states must have distinct text in addition to color.
+- Mono numbers (`01`, `02`…) mark real sequences only: the sell steps, the `/vender` stepper and
+  the car page's Selección / Revisión / Acompañamiento process. Unordered items don't get numbers:
+  the hero qualities use the eyebrow's lime bar, the home services a lucide icon tile, and Mercado
+  Libre equipment highlights a lime check.
 - Photography uses `4:3` for catalog cards and `16:9` for editorial or detail views unless the
   composition requires an intentional exception.
 - A publication without photos shows `public/vehicle-photo-placeholder.jpg` (the GG mark at 12 %

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { connection } from 'next/server';
-import { ArrowDown, ArrowUpRight } from 'lucide-react';
+import { ArrowDown, ArrowLeftRight, ArrowUpRight, FileCheck, HandCoins } from 'lucide-react';
 
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
@@ -62,9 +62,9 @@ export default async function Home() {
           </div>
         </div>
         <aside className="hero-facts glass-panel" aria-label="Información destacada">
-          <div><strong>01</strong><span>Selección cuidadosa</span></div>
-          <div><strong>02</strong><span>Información transparente</span></div>
-          <div><strong>03</strong><span>Atención directa</span></div>
+          <div><span className="hero-fact-mark" aria-hidden="true" /><span>Selección cuidadosa</span></div>
+          <div><span className="hero-fact-mark" aria-hidden="true" /><span>Información transparente</span></div>
+          <div><span className="hero-fact-mark" aria-hidden="true" /><span>Atención directa</span></div>
         </aside>
         <a className="scroll-cue" href="#vehiculos">Explorar <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></a>
       </section>
@@ -125,9 +125,9 @@ export default async function Home() {
           <div><Eyebrow>Otros servicios</Eyebrow><h2 id="services-title">Todo lo importante, en un solo lugar.</h2></div>
         </div>
         <div className="services-grid">
-          <article className="service-card glass-panel"><span className="service-number">01</span><div><h3>Financiación</h3><p>Alternativas para que la operación se adapte a tus posibilidades.</p></div><Arrow /></article>
-          <article className="service-card glass-panel"><span className="service-number">02</span><div><h3>Permutas</h3><p>Evaluamos tu vehículo como parte de pago de forma directa y transparente.</p></div><Arrow /></article>
-          <article className="service-card glass-panel"><span className="service-number">03</span><div><h3>Gestoría</h3><p>Acompañamiento documental para una transferencia clara y ordenada.</p></div><Arrow /></article>
+          <article className="service-card glass-panel"><span className="service-icon"><HandCoins aria-hidden="true" size={18} strokeWidth={1.8} /></span><div><h3>Financiación</h3><p>Alternativas para que la operación se adapte a tus posibilidades.</p></div><Arrow /></article>
+          <article className="service-card glass-panel"><span className="service-icon"><ArrowLeftRight aria-hidden="true" size={18} strokeWidth={1.8} /></span><div><h3>Permutas</h3><p>Evaluamos tu vehículo como parte de pago de forma directa y transparente.</p></div><Arrow /></article>
+          <article className="service-card glass-panel"><span className="service-icon"><FileCheck aria-hidden="true" size={18} strokeWidth={1.8} /></span><div><h3>Gestoría</h3><p>Acompañamiento documental para una transferencia clara y ordenada.</p></div><Arrow /></article>
         </div>
       </section>
 
