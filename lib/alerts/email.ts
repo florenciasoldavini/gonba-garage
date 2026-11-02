@@ -1,4 +1,5 @@
 import 'server-only';
+import { alertEmailEnv } from '@/lib/env';
 import { alertOrigin, confirmationLifetimeHours } from './config';
 import { cancellationUrl, searchCancellationUrl } from './cancellation';
 import { EMAIL_LOGO_CONTENT_ID, EMAIL_LOGO_PNG_BASE64 } from './email-logo';
@@ -28,7 +29,7 @@ export function buildAlertEmail(input: AlertEmail) {
   const footer = welcome ? '¿No solicitaste esta alerta? Podés cancelarla acá.' : 'Podés dejar de recibir esta alerta cuando quieras.';
   const text = `GONBA'S GARAGE\n\n${subject}\n\n${detail}\n\nVer vehículo: ${url}\n\n${footer}\nCancelar alerta: ${cancel}`;
   const html = shell(subject, `<h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">${escape(subject)}</h1><p style="font-size:16px;line-height:1.7">${escape(detail)}</p>${button(url, 'Ver vehículo')}<p style="font-size:14px;line-height:1.6;color:#4a5145">${escape(footer)} <a href="${escape(cancel)}" style="color:#171a16">Cancelar alerta</a></p>`);
-  return { from: process.env.ALERTS_EMAIL_FROM || '', to: [input.email], subject, html, text, attachments: [logoAttachment],
+  return { from: alertEmailEnv.from() ?? '', to: [input.email], subject, html, text, attachments: [logoAttachment],
     headers: { 'List-Unsubscribe': `<${cancel}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } };
 }
 
@@ -48,7 +49,7 @@ export function buildConfirmationEmail(input: ConfirmationEmail) {
   const footer = `El enlace vence en ${confirmationLifetimeHours} horas. Si no lo pediste, ignorá este correo: no te enviaremos alertas.`;
   const text = `GONBA'S GARAGE\n\n${subject}\n\n${detail}\n\nConfirmar alerta: ${input.url}\n\n${footer}`;
   const html = shell(subject, `<h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">${escape(subject)}</h1><p style="font-size:16px;line-height:1.7">${escape(detail)}</p>${button(input.url, 'Confirmar alerta')}<p style="font-size:14px;line-height:1.6;color:#4a5145">${escape(footer)}</p>`);
-  return { from: process.env.ALERTS_EMAIL_FROM || '', to: [input.email], subject, html, text, attachments: [logoAttachment] };
+  return { from: alertEmailEnv.from() ?? '', to: [input.email], subject, html, text, attachments: [logoAttachment] };
 }
 
 export type SearchMatchVehicle = {
@@ -102,7 +103,7 @@ export function buildSearchMatchEmail(input: SearchMatchEmail) {
     + (moreText ? `<p style="font-size:16px;line-height:1.7">${escape(moreText)}</p>` : '')
     + button(single ? vehicleUrl(first.slug) : catalog, single ? 'Ver vehículo' : 'Ver inventario')
     + `<p style="font-size:14px;line-height:1.6;color:#4a5145">${escape(footer)} <a href="${escape(cancel)}" style="color:#171a16">Cancelar alerta</a></p>`);
-  return { from: process.env.ALERTS_EMAIL_FROM || '', to: [input.email], subject, html, text, attachments: [logoAttachment],
+  return { from: alertEmailEnv.from() ?? '', to: [input.email], subject, html, text, attachments: [logoAttachment],
     headers: { 'List-Unsubscribe': `<${cancel}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } };
 }
 
@@ -117,12 +118,12 @@ export class EmailFailure extends Error {
 /** Connection errors raised before the request reached the provider. */
 const unreachedCodes = new Set(['ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'UND_ERR_CONNECT_TIMEOUT']);
 export async function sendAlertEmail(payload: { to: string[] }, key: string) {
-  const allowlist = process.env.ALERTS_TEST_RECIPIENT;
+  const allowlist = alertEmailEnv.testRecipient();
   if (allowlist && payload.to.some(email => email !== allowlist)) throw new EmailFailure('test_recipient_blocked', false);
   let response: Response;
   try {
     response = await fetch('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': key },
+      method: 'POST', headers: { Authorization: `Bearer ${alertEmailEnv.resendApiKey()}`, 'Content-Type': 'application/json', 'Idempotency-Key': key },
       body: JSON.stringify(payload), signal: AbortSignal.timeout(15_000),
     });
   } catch (error) {

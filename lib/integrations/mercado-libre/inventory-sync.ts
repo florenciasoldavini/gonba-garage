@@ -5,6 +5,7 @@ import {
   failCatalogJob, finishReconciliation, hasDueNotificationJobs, leaseCatalogJob, markPublicationRemoved, pruneCatalogJobs,
   readStoredSyncState, releaseNotificationDrain, renewNotificationDrain, savePublication,
 } from '@/lib/catalog/store';
+import { requireMercadoLibreEnv } from '@/lib/env';
 import { catalogAccessToken } from './access-token';
 import { failure, IntegrationFailure, safeFailure, type IntegrationIncident } from './failures';
 import { readMercadoLibreCategoryPath, readMercadoLibrePublication, readMercadoLibrePublications } from './api';
@@ -42,12 +43,6 @@ async function vehicleCategory(item: MercadoLibreItem) {
   return result;
 }
 
-function sellerId() {
-  const seller = process.env.MERCADO_LIBRE_SELLER_ID?.trim();
-  if (!seller) throw failure('configuration', 'missing_configuration');
-  return seller;
-}
-
 function lastUpdatedTime(value?: string) {
   const time = value ? Date.parse(value) : NaN;
   return Number.isFinite(time) ? time : null;
@@ -83,7 +78,7 @@ export async function processNextCatalogJob({ includeDeferred = true } = {}) {
   const job = await leaseCatalogJob(lease, { includeDeferred });
   if (!job) return false;
   try {
-    const seller = sellerId();
+    const seller = requireMercadoLibreEnv('sellerId');
     const publication = await readCurrentPublication(job.id);
     let skipSeconds = 0;
     if (!publication) {
@@ -151,7 +146,7 @@ export async function reconcileCatalog() {
   const lease = randomUUID();
   if (!(await acquireReconciliation(lease))) return { skipped: true as const };
   try {
-    const seller = sellerId();
+    const seller = requireMercadoLibreEnv('sellerId');
     const catalog = await readMercadoLibrePublications(await catalogAccessToken());
     if (String(catalog.seller.id) !== seller) throw failure('catalog_sync', 'unexpected_seller');
     const { items, total, unread } = catalog.publications;

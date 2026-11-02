@@ -8,7 +8,7 @@ const backend = vi.hoisted(() => ({
   authenticated: false, upstream: null, connectionReads: 0, refreshCalls: 0, syncHealthReads: 0,
 }));
 vi.mock('@/lib/integrations/mercado-libre/credentials', () => ({
-  authorized: () => backend.authenticated, required: () => '123',
+  authorized: () => backend.authenticated,
   readConnectionDiagnostics: async () => { backend.connectionReads++; return { state: 'connected', providerVerified: false }; },
 }));
 vi.mock('@/lib/integrations/mercado-libre/access-token', () => ({
@@ -29,7 +29,7 @@ describe('diagnostics route', () => {
 
   it('loads only its expected runtime dependencies', () => {
     const dependencies = ['server-only', 'next/server', '@/lib/integrations/mercado-libre/credentials', '@/lib/integrations/mercado-libre/access-token',
-      '@/lib/integrations/mercado-libre/publication-diagnostics', '@/lib/integrations/mercado-libre/failures', '@/lib/catalog/store'];
+      '@/lib/integrations/mercado-libre/publication-diagnostics', '@/lib/integrations/mercado-libre/failures', '@/lib/catalog/store', '@/lib/env'];
     for (const id of runtimeImports('app/api/mercado-libre/diagnostics/route.ts')) {
       if (dependencies.includes(id)) continue;
       assert.equal(id, 'node:crypto');

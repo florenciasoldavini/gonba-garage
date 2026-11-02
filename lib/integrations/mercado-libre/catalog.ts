@@ -8,6 +8,7 @@ import {
   listActiveCatalogVehicles,
   type CatalogPublication,
 } from '@/lib/catalog/store';
+import { mercadoLibreEnv } from '@/lib/env';
 import { fullSizeMercadoLibreImageUrl } from './pictures';
 
 /**
@@ -16,12 +17,12 @@ import { fullSizeMercadoLibreImageUrl } from './pictures';
  * Neither path calls Mercado Libre during a page request.
  */
 function readsRemoteBackend() {
-  return Boolean(process.env.MERCADO_LIBRE_BACKEND_URL?.trim());
+  return Boolean(mercadoLibreEnv.backendUrl());
 }
 
 async function remoteCatalog<T>(item?: string): Promise<T | null> {
-  const base = process.env.MERCADO_LIBRE_BACKEND_URL;
-  const key = process.env.MERCADO_LIBRE_CATALOG_API_KEY;
+  const base = mercadoLibreEnv.backendUrl();
+  const key = mercadoLibreEnv.catalogApiKey();
   if (!base || !key) throw new Error('Missing remote catalog configuration');
   const url = new URL('/api/mercado-libre/catalog', base);
   if (url.protocol !== 'https:') throw new Error('Catalog backend requires HTTPS');

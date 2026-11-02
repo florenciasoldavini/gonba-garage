@@ -1,19 +1,21 @@
 import assert from 'node:assert/strict';
-import { describe, it, vi } from 'vitest';
+import { beforeEach, describe, it, vi } from 'vitest';
 import { catalogAccessToken } from '@/lib/integrations/mercado-libre/access-token';
 import { runtimeImports } from '../helpers/modules.mjs';
 
 const provider = vi.hoisted(() => ({ tokenResponse: null, shared: null }));
-vi.mock('@/lib/integrations/mercado-libre/credentials', () => ({ required: () => '123', sharedAccessToken: renew => provider.shared(renew) }));
+vi.mock('@/lib/integrations/mercado-libre/credentials', () => ({ sharedAccessToken: renew => provider.shared(renew) }));
 vi.mock('@/lib/integrations/mercado-libre/oauth', () => ({ refreshMercadoLibreToken: async () => provider.tokenResponse }));
 
 const secret = 'DO_NOT_LOG_ACCESS_OR_REFRESH_TOKEN';
 
 // Each step continues with the access token the previous one left in memory.
 describe('catalog access token', () => {
+  beforeEach(() => { vi.stubEnv('MERCADO_LIBRE_SELLER_ID', '123'); });
+
   it('loads only its expected runtime dependencies', () => {
     for (const id of runtimeImports('lib/integrations/mercado-libre/access-token.ts')) {
-      if (['server-only', './credentials', './oauth', './failures'].includes(id)) continue;
+      if (['server-only', '@/lib/env', './credentials', './oauth', './failures'].includes(id)) continue;
       assert.equal(id, 'node:crypto');
     }
   });

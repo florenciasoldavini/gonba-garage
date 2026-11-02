@@ -2,6 +2,7 @@ import 'server-only';
 import { createHmac } from 'node:crypto';
 import { isIP } from 'node:net';
 import { getSql } from '@/lib/database';
+import { alertEmailEnv } from '@/lib/env';
 import { requireAlertConfig } from './config';
 
 export type AlertScope = 'price' | 'inventory';
@@ -23,11 +24,6 @@ const signupLimits = { ip: 20, email: 5, global: 100 } as const;
  * itself cannot be used to flood an inbox.
  */
 const confirmationLimits = { subscription: { limit: 1, windowSeconds: 600 }, recipient: { limit: 5, windowSeconds: 24 * hour } } as const;
-
-function signingSecret() {
-  const secret = process.env.ALERTS_SIGNING_SECRET;
-  return secret && secret.length >= 32 ? secret : null;
-}
 
 /** Keyed hashes only: raw addresses and IPs are never stored. */
 function hashed(secret: string, kind: string, value: string) {
@@ -79,7 +75,7 @@ async function reserve(buckets: Bucket[]) {
  * per-IP and per-address buckets cannot be keyed safely, so only the global bucket applies.
  */
 export async function reserveAlertSignup(scope: AlertScope, email: string, request: Request) {
-  const secret = signingSecret();
+  const secret = alertEmailEnv.signingSecret();
   const buckets: Bucket[] = secret ? [
     { key: `${scope}:ip:${hashed(secret, 'ip', clientIp(request))}`, limit: signupLimits.ip, windowSeconds: hour },
     { key: `${scope}:email:${hashed(secret, 'email', email)}`, limit: signupLimits.email, windowSeconds: hour },
@@ -92,6 +88,6 @@ export async function reserveConfirmationEmail(scope: AlertScope, subscriptionId
   requireAlertConfig();
   return reserve([
     { key: `confirm:${scope}:${subscriptionId}`, ...confirmationLimits.subscription },
-    { key: `confirm:email:${hashed(process.env.ALERTS_SIGNING_SECRET!, 'email', email)}`, ...confirmationLimits.recipient },
+    { key: `confirm:email:${hashed(alertEmailEnv.signingSecret()!, 'email', email)}`, ...confirmationLimits.recipient },
   ]);
 }

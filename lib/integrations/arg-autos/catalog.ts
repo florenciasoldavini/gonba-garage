@@ -1,4 +1,5 @@
 import 'server-only';
+import { argAutosEnv } from '@/lib/env';
 
 export type CatalogResource = 'brands' | 'models' | 'versions';
 
@@ -36,7 +37,7 @@ export async function fetchVehicleCatalog(resource: CatalogResource, parentId?: 
   const path = getResourcePath(resource, parentId);
   const options: CatalogOption[] = [];
   const headers: HeadersInit = { Accept: 'application/json' };
-  const apiKey = process.env.ARGAUTOS_API_KEY?.trim();
+  const apiKey = argAutosEnv.apiKey();
 
   if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
 

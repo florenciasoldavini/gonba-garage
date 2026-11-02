@@ -4,6 +4,7 @@ import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { catalogAccessToken } from '@/lib/integrations/mercado-libre/access-token';
 import { readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/api';
 import { getSql } from '@/lib/database';
+import { mercadoLibreEnv } from '@/lib/env';
 import { alertEmailsConfigured, requireAlertConfig } from './config';
 import { buildAlertEmail, EmailFailure, sendAlertEmail } from './email';
 
@@ -110,7 +111,7 @@ async function processItem() {
     const subscriptions = await sql`SELECT id FROM public.vehicle_price_alerts WHERE publication_id = ${job.publication_id} AND status = 'active' LIMIT 1`;
     if (subscriptions.length) {
       const publication = await readMercadoLibrePublication(job.publication_id, await catalogAccessToken());
-      if (String(publication.source.seller_id) !== process.env.MERCADO_LIBRE_SELLER_ID || publication.source.id !== job.publication_id) {
+      if (String(publication.source.seller_id) !== mercadoLibreEnv.sellerId() || publication.source.id !== job.publication_id) {
         throw new Error('Publication ownership mismatch');
       }
       await recordPriceObservation(job.publication_id, publication.vehicle);
@@ -152,7 +153,7 @@ export async function processPriceDelivery() {
     if (row.kind === 'drop' && !row.request_payload) {
       const subscription = await sql`SELECT publication_id FROM public.vehicle_price_alerts WHERE id = ${row.alert_id}`;
       const publication = await readMercadoLibrePublication(subscription[0].publication_id, await catalogAccessToken());
-      if (String(publication.source.seller_id) !== process.env.MERCADO_LIBRE_SELLER_ID || publication.source.id !== subscription[0].publication_id) throw new Error('Publication ownership mismatch');
+      if (String(publication.source.seller_id) !== mercadoLibreEnv.sellerId() || publication.source.id !== subscription[0].publication_id) throw new Error('Publication ownership mismatch');
       const current = publication.vehicle;
       if (current.status !== 'active' || current.currency !== row.currency || current.price > Number(row.price)) {
         await sql`UPDATE public.price_alert_deliveries SET state = 'cancelled', failure_code = 'price_no_longer_available'

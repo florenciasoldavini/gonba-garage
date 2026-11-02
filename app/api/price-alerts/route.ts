@@ -4,6 +4,7 @@ import { findCatalogVehicle } from '@/lib/integrations/mercado-libre/catalog';
 import { catalogAccessToken } from '@/lib/integrations/mercado-libre/access-token';
 import { readMercadoLibrePublication } from '@/lib/integrations/mercado-libre/api';
 import { isDatabaseConfigured } from '@/lib/database';
+import { mercadoLibreEnv } from '@/lib/env';
 import { savePriceSubscription } from '@/lib/alerts/subscriptions';
 import { alertEmailsConfigured } from '@/lib/alerts/config';
 import { reserveAlertSignup } from '@/lib/alerts/signup-limit';
@@ -63,7 +64,7 @@ export async function POST(request: Request) {
     if (deliveryEnabled && !id) return NextResponse.json({ message: 'El vehículo ya no está disponible.' }, { status: 400 });
     // Resolve real subscriptions directly through Mercado Libre, not through the synced copy.
     const publication = deliveryEnabled ? await readMercadoLibrePublication(id!, await catalogAccessToken()) : null;
-    if (publication && String(publication.source.seller_id) !== process.env.MERCADO_LIBRE_SELLER_ID) {
+    if (publication && String(publication.source.seller_id) !== mercadoLibreEnv.sellerId()) {
       return NextResponse.json({ message: 'El vehículo ya no está disponible.' }, { status: 400 });
     }
     const vehicle = publication?.vehicle ?? await findCatalogVehicle(vehicleSlug);

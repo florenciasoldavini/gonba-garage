@@ -39,10 +39,11 @@ afterEach(() => {
   assert.equal(routes.deferred.length, 0, 'Demo mode queues no confirmation email');
 });
 
-it('loads only the dependencies replaced here and the request guard', () => {
+it('loads only the dependencies replaced here, the request guard and the environment', () => {
   const dependencies = ['server-only', 'next/server', '@/lib/database', '@/lib/alerts/config', '@/lib/alerts/price-delivery',
     '@/lib/alerts/signup-limit', '@/lib/alerts/confirmation', '@/lib/integrations/mercado-libre/access-token',
-    '@/lib/integrations/mercado-libre/api', '@/lib/alerts/subscriptions', '@/lib/integrations/mercado-libre/catalog', '@/lib/alerts/request-guard'];
+    '@/lib/integrations/mercado-libre/api', '@/lib/alerts/subscriptions', '@/lib/integrations/mercado-libre/catalog', '@/lib/alerts/request-guard',
+    '@/lib/env'];
   for (const file of ['lib/alerts/request-guard.ts', 'app/api/inventory-alerts/route.ts', 'app/api/price-alerts/route.ts']) {
     for (const id of runtimeImports(file)) assert.ok(dependencies.includes(id), `Unexpected dependency: ${id}`);
   }

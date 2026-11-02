@@ -1,7 +1,8 @@
 import 'server-only';
 
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { failure, safeFailure } from './failures';
+import { requireMercadoLibreEnv } from '@/lib/env';
+import { safeFailure } from './failures';
 import { parseMercadoLibreResponse } from './response';
 
 // Mercado Libre OAuth: the authorization URL with PKCE, the code exchange and token refresh. The read
@@ -17,16 +18,6 @@ type MercadoLibreTokenResponse = {
   user_id: number;
   refresh_token?: string;
 };
-
-function requiredEnvironmentVariable(name: string) {
-  const value = process.env[name]?.trim();
-
-  if (!value) {
-    throw failure('configuration', 'missing_configuration');
-  }
-
-  return value;
-}
 
 function toBase64Url(value: Buffer) {
   return value.toString('base64url');
@@ -44,8 +35,8 @@ export function createMercadoLibreOAuthAttempt() {
 }
 
 export function buildMercadoLibreAuthorizationUrl(state: string, challenge: string) {
-  const clientId = requiredEnvironmentVariable('MERCADO_LIBRE_CLIENT_ID');
-  const redirectUri = requiredEnvironmentVariable('MERCADO_LIBRE_REDIRECT_URI');
+  const clientId = requireMercadoLibreEnv('clientId');
+  const redirectUri = requireMercadoLibreEnv('redirectUri');
   const url = new URL(AUTHORIZATION_URL);
 
   url.searchParams.set('response_type', 'code');
@@ -66,9 +57,9 @@ export function securelyMatches(left: string, right: string) {
 }
 
 export async function exchangeMercadoLibreAuthorizationCode(code: string, verifier: string) {
-  const clientId = requiredEnvironmentVariable('MERCADO_LIBRE_CLIENT_ID');
-  const clientSecret = requiredEnvironmentVariable('MERCADO_LIBRE_CLIENT_SECRET');
-  const redirectUri = requiredEnvironmentVariable('MERCADO_LIBRE_REDIRECT_URI');
+  const clientId = requireMercadoLibreEnv('clientId');
+  const clientSecret = requireMercadoLibreEnv('clientSecret');
+  const redirectUri = requireMercadoLibreEnv('redirectUri');
   const response = await fetch(TOKEN_URL, {
     method: 'POST',
     headers: {
@@ -98,8 +89,8 @@ export async function refreshMercadoLibreToken(refreshToken: string) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      client_id: requiredEnvironmentVariable('MERCADO_LIBRE_CLIENT_ID'),
-      client_secret: requiredEnvironmentVariable('MERCADO_LIBRE_CLIENT_SECRET'),
+      client_id: requireMercadoLibreEnv('clientId'),
+      client_secret: requireMercadoLibreEnv('clientSecret'),
       refresh_token: refreshToken,
     }),
     cache: 'no-store', signal: AbortSignal.timeout(20_000),

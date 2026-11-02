@@ -1,23 +1,18 @@
 import 'server-only';
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 import { get, put } from '@vercel/blob';
+import { mercadoLibreEnv, requireMercadoLibreEnv } from '@/lib/env';
 import { securelyMatches } from './oauth';
 import { createRefreshTokenStore, type AccessToken, type TokenRecord } from './refresh-token-store';
-import { failure, readSafeIncident, safeFailure } from './failures';
-
-export function required(name: string) {
-  const value = process.env[name]?.trim();
-  if (!value) throw failure('configuration', 'missing_configuration');
-  return value;
-}
+import { readSafeIncident, safeFailure } from './failures';
 
 export function authorized(request: Request) {
-  const expected = process.env.MERCADO_LIBRE_CATALOG_API_KEY?.trim();
+  const expected = mercadoLibreEnv.catalogApiKey();
   return !!expected && securelyMatches(request.headers.get('authorization') ?? '', `Bearer ${expected}`);
 }
 
 function storage() {
-  const seller = required('MERCADO_LIBRE_SELLER_ID');
+  const seller = requireMercadoLibreEnv('sellerId');
   if (!/^\d+$/.test(seller)) throw new Error('Invalid seller ID');
   const pathname = `mercado-libre/${seller}/refresh-token.json`;
   return {
@@ -65,7 +60,7 @@ export async function readConnectionDiagnostics() {
 }
 
 function key() {
-  const value = Buffer.from(required('MERCADO_LIBRE_TOKEN_ENCRYPTION_KEY'), 'base64');
+  const value = Buffer.from(requireMercadoLibreEnv('tokenEncryptionKey'), 'base64');
   if (value.length !== 32) throw new Error('Encryption key must contain 32 bytes');
   return value;
 }
@@ -73,7 +68,7 @@ function key() {
 function encrypt(token: string) {
   const iv = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', key(), iv);
-  cipher.setAAD(Buffer.from(required('MERCADO_LIBRE_SELLER_ID')));
+  cipher.setAAD(Buffer.from(requireMercadoLibreEnv('sellerId')));
   const ciphertext = Buffer.concat([cipher.update(token, 'utf8'), cipher.final()]);
   return ['v1', iv.toString('base64'), cipher.getAuthTag().toString('base64'), ciphertext.toString('base64')].join('.');
 }
@@ -82,13 +77,13 @@ function decrypt(value: string) {
   const [version, iv, tag, ciphertext] = value.split('.');
   if (version !== 'v1' || !iv || !tag || !ciphertext) throw new Error('Invalid encrypted token');
   const cipher = createDecipheriv('aes-256-gcm', key(), Buffer.from(iv, 'base64'));
-  cipher.setAAD(Buffer.from(required('MERCADO_LIBRE_SELLER_ID')));
+  cipher.setAAD(Buffer.from(requireMercadoLibreEnv('sellerId')));
   cipher.setAuthTag(Buffer.from(tag, 'base64'));
   return Buffer.concat([cipher.update(Buffer.from(ciphertext, 'base64')), cipher.final()]).toString('utf8');
 }
 
 export async function saveAuthorization(sellerId: number, token: string) {
-  if (String(sellerId) !== required('MERCADO_LIBRE_SELLER_ID')) throw new Error('Unexpected seller');
+  if (String(sellerId) !== requireMercadoLibreEnv('sellerId')) throw new Error('Unexpected seller');
   try { await store().authorize(token); }
   catch (error) { throw safeFailure(error, 'credential_save'); }
 }
