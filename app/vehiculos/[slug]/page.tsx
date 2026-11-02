@@ -265,7 +265,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       </section>
 
       <section className="section-shell detail-showcase" data-status={status.status} aria-label="Presentación del vehículo">
-        <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} stockCode={vehicle.stockCode} />
+        <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} />
         {!status.isAvailable && (
           <p className="detail-status-banner" data-status={status.status}>
             <b>{status.label}</b>
@@ -412,7 +412,6 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         <div className="detail-specs glass-panel">
           <div className="detail-specs-heading">
             <p>Ficha técnica</p>
-            <span>{vehicle.stockCode}</span>
           </div>
           <VehicleSpecificationGroups attributes={attributes} />
         </div>
