@@ -59,7 +59,7 @@ without credentials or email data in logs. The existing form honeypot stays in p
 PostgreSQL (PGlite), including concurrent duplicates, original-price preservation, SQL
 injection, constraints and repeat migration. It needs no credentials.
 
-`npm run test:alerts -- --live` tests the same storage on the selected Neon database and
+`TEST_LIVE=1 npm run test:alerts` tests the same storage on the selected Neon database and
 removes its own uniquely named synthetic test rows afterward. Run locally against development.
 
 Search-alert delivery adds three tables (`20261101_inventory_alert_delivery.sql`):
