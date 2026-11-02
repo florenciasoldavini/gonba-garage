@@ -165,7 +165,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
     },
   });
   // The same rail under every car. Reserved and sold: alternatives, right under the status card that
-  // points to them. Available: other cars to keep browsing, once this one has been seen in full.
+  // points to them. Available: other cars to keep browsing, at the end of the page, before the contact callout.
   const similarRail = similarVehicles.length > 0 && (
     <section className="section-shell detail-similar" id="similares" aria-labelledby="similar-title">
       <div className="detail-similar-heading">
@@ -418,13 +418,13 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
       <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} layout="grid" />
 
-      {status.isAvailable && similarRail}
-
       <section className="section-shell detail-confidence" aria-label="Proceso Gonba's Garage">
         <div><span>01</span><strong>Selección</strong><p>Elegimos unidades con identidad y una historia clara.</p></div>
         <div><span>02</span><strong>Revisión</strong><p>Chequeamos información, estado general y documentación.</p></div>
         <div><span>03</span><strong>Acompañamiento</strong><p>Coordinamos la visita y te acompañamos hasta la entrega.</p></div>
       </section>
+
+      {status.isAvailable && similarRail}
 
       <ContactCallout
         actionHref={contact.href}

@@ -991,6 +991,9 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 .detail-confidence span { color: var(--accent); font: 500 var(--text-micro) var(--font-mono); }
 .detail-confidence p { max-width: 290px; margin: 12px 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.55; }
 .detail-contact { margin-top: 0; }
+/* Under an available car the rail sits between the process section and the callout, spaced like them. */
+.detail-confidence + .detail-similar { padding-top: 0; }
+.detail-similar + .detail-contact { margin-top: clamp(90px, 11vw, 150px); }
 
 .sell-section {
   min-height: 720px;
@@ -1490,6 +1493,7 @@ html:has(.compare-selection-dialog[open]) { overflow: hidden; }
   .detail-highlights { grid-template-columns: 1fr; }
   .detail-highlights li:nth-child(odd) { padding-right: 0; }
   .detail-confidence { padding-block: 90px; }
+  .detail-similar + .detail-contact { margin-top: 90px; }
   .sell-section { min-height: 0; }
   .sell-media { min-height: 420px; }
   .sell-content { padding: 36px 24px; }

@@ -143,8 +143,8 @@ homepage.
 Every car page, available or not, has the same rail of up to three other available cars, most
 similar first (`features/vehicles/domain/similar-vehicles.ts`). It never links the car itself and is
 left out when no other car is available. Under a reserved or sold car it sits right under the status
-card, as alternatives; under an available car it comes after the photo gallery, as other cars to keep
-browsing. The metadata check verifies both.
+card, as alternatives; under an available car it comes after the process section, right before the
+contact callout, as other cars to keep browsing. The metadata check verifies both.
 
 Each inventory record must provide a reliable `updatedAt`; sitemap `lastModified` must reflect a real
 content or availability update, not the build time.

@@ -393,7 +393,7 @@ const assertSimilarRail = (html, path) => {
 };
 if (listedVehiclePaths.length > 1) {
   assertSimilarRail(activeDetail, listedVehiclePath);
-  assert.ok(activeDetail.indexOf('id="similares"') > activeDetail.indexOf('id="ficha"'), 'An available car shows the rail after its own details');
+  assert.ok(activeDetail.indexOf('id="similares"') > activeDetail.indexOf('detail-confidence'), 'An available car shows the rail after its own details');
   assert.match(activeDetail, /Otros autos que te pueden gustar/, 'An available car frames the rail as other cars');
 } else {
   assert.doesNotMatch(activeDetail, /id="similares"/, 'The only available car has no rail');
