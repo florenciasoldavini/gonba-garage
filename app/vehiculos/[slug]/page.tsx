@@ -109,6 +109,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const isReserved = status.status === 'paused';
   const vehicleName = `${vehicle.make} ${vehicle.model}`;
   const bodyType = vehicle.body.split(' · ')[0];
+  // The card states the status, once. The eyebrow names what the title meta row leaves out.
+  const titleEyebrow = [bodyType, vehicle.fuel].filter(fact => fact && fact !== 'Sin especificar').join(' · ') || vehicle.make;
   const formattedPrice = formatVehiclePrice(vehicle.price, vehicle.currency);
   // The seller has several cars of the same model, so every message names the exact publication.
   const vehicleReference = [vehicle.make, vehicle.model, vehicle.version, vehicle.year].filter(Boolean).join(' ');
@@ -255,7 +257,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
 
       <section className="section-shell detail-title" aria-labelledby="vehicle-title">
         <div>
-          <Eyebrow>{status.label}</Eyebrow>
+          <Eyebrow>{titleEyebrow}</Eyebrow>
           <h1 id="vehicle-title">{`${vehicle.make} ${vehicle.model}`}{' '}<em>{unbreakableVersionSegments(vehicle.version)}</em></h1>
         </div>
         <div className="detail-title-meta">
@@ -268,10 +270,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       <section className="section-shell detail-showcase" data-status={status.status} aria-label="Presentación del vehículo">
         <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} />
         {!status.isAvailable && (
-          <p className="detail-status-banner" data-status={status.status}>
-            <b>{status.label}</b>
-            <span>{isReserved ? 'Ya tiene una reserva.' : 'Esta unidad ya tiene dueño.'}</span>
-          </p>
+          <p className="detail-status-banner">{isReserved ? 'Ya tiene una reserva.' : 'Esta unidad ya tiene dueño.'}</p>
         )}
 
         <aside className="detail-purchase-card glass-panel" aria-label={status.isAvailable ? 'Precio y consulta' : 'Estado de la publicación'}>
