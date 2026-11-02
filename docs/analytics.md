@@ -14,9 +14,11 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 NEXT_PUBLIC_POSTHOG_SESSION_REPLAY=false
 ```
 
-Analytics remains disabled when `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` is empty. Keep the token out of
-local development unless intentionally testing analytics, and avoid configuring it on disposable
-preview deployments so they do not pollute production data.
+Analytics remains disabled when `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` is empty. It also only starts on
+the hostname of `NEXT_PUBLIC_SITE_URL`, so the `gonba-garage.vercel.app` alias and preview deployments
+never send events even when the token is set. Keep the token out of local development unless
+intentionally testing analytics; testing locally works because `.env.example` points the site URL at
+`localhost`.
 
 Session replay is disabled independently by default. Before enabling it, verify the project-level
 privacy settings and inspect test recordings. Inputs are masked by the SDK, and the valuation and
@@ -24,6 +26,10 @@ price-alert forms are explicitly excluded from autocapture.
 
 No analytics event may include a name, email address, phone number, free-text notes, uploaded photo,
 or full search query. Vehicle slugs and catalog attributes are permitted.
+
+The catalog keeps the typed search in the `q` URL parameter, so `lib/analytics/privacy.ts` removes it
+from every URL PostHog records (`$current_url`, `$referrer`, their session and initial copies, and
+heatmap URLs). Any new URL parameter that can carry free text must be added there.
 
 The privacy policy at `/privacidad` describes this collection, including the anonymous cookie and
 optional session replay. Update it whenever events, replay settings or the analytics provider change.

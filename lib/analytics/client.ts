@@ -77,7 +77,8 @@ export function captureAnalyticsEvent<EventName extends keyof AnalyticsEventProp
   eventName: EventName,
   properties: AnalyticsEventProperties[EventName],
 ) {
-  if (!process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN) return;
+  // Not loaded without a token or away from the canonical host (see instrumentation-client.ts).
+  if (!posthog.__loaded) return;
 
   posthog.capture(eventName, properties);
 }
