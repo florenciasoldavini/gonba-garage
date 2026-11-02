@@ -138,7 +138,9 @@ describe('Mercado Libre client', () => {
   it('reads bulk batches a few at a time, in order', async () => {
     const client = await vi.importActual('@/lib/integrations/mercado-libre/api');
     const ids = Array.from({ length: 210 }, (_, index) => `MLA${1000 + index}`);
-    let inFlight = 0, maxInFlight = 0, bulkRequests = 0;
+    let inFlight = 0;
+    let maxInFlight = 0;
+    let bulkRequests = 0;
     vi.stubGlobal('fetch', async url => {
       const { pathname, searchParams } = new URL(url);
       if (pathname === '/users/me') return Response.json({ id: Number(SELLER) });

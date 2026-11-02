@@ -67,7 +67,9 @@ async function readCurrentPublication(id: string) {
   try {
     return await readMercadoLibrePublication(id, await catalogAccessToken());
   } catch (error) {
-    if (error instanceof IntegrationFailure && error.incident.stage === 'catalog_query' && error.incident.httpStatus === 404) return null;
+    if (error instanceof IntegrationFailure && error.incident.stage === 'catalog_query' && error.incident.httpStatus === 404) {
+      return null;
+    }
     throw error;
   }
 }
@@ -109,7 +111,9 @@ export async function runCatalogSyncWork({ budgetMs = 200_000, maxItems = 200, i
   const deadline = Date.now() + budgetMs;
   let processed = 0;
   while (Date.now() < deadline && processed < maxItems && await renew()
-    && await processNextCatalogJob({ includeDeferred })) processed++;
+    && await processNextCatalogJob({ includeDeferred })) {
+    processed++;
+  }
   return processed;
 }
 

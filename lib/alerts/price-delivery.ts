@@ -99,7 +99,8 @@ export async function recordPriceObservation(id: string, vehicle: Vehicle) {
 }
 
 async function processItem() {
-  const sql = getSql(), lease = randomUUID();
+  const sql = getSql();
+  const lease = randomUUID();
   const jobs = await sql`UPDATE public.price_alert_item_jobs SET lease_id = ${lease}, lease_until = now() + interval '90 seconds', attempts = attempts + 1
     WHERE publication_id = (SELECT publication_id FROM public.price_alert_item_jobs
       WHERE revision > processed_revision AND next_attempt_at <= now() AND (lease_until IS NULL OR lease_until < now())
@@ -127,7 +128,8 @@ async function processItem() {
 }
 
 export async function processPriceDelivery() {
-  const sql = getSql(), lease = randomUUID();
+  const sql = getSql();
+  const lease = randomUUID();
   // A stable idempotency key protects only 24h at the provider. Never blind-retry an ambiguous send beyond 23h.
   await sql`UPDATE public.price_alert_deliveries SET state = 'blocked', failure_code = 'ambiguous_send_window_expired'
     WHERE state IN ('pending','sending') AND first_attempt_at < now() - interval '23 hours'
@@ -153,7 +155,9 @@ export async function processPriceDelivery() {
       const subscription = await sql`SELECT publication_id FROM public.vehicle_price_alerts WHERE id = ${row.alert_id}`;
       const publicationId = parseRow('vehicle_price_alerts', subscription[0], parseAlertPublication);
       const publication = await readMercadoLibrePublication(publicationId, await catalogAccessToken());
-      if (String(publication.source.seller_id) !== mercadoLibreEnv.sellerId() || publication.source.id !== publicationId) throw new Error('Publication ownership mismatch');
+      if (String(publication.source.seller_id) !== mercadoLibreEnv.sellerId() || publication.source.id !== publicationId) {
+        throw new Error('Publication ownership mismatch');
+      }
       const current = publication.vehicle;
       if (current.status !== 'active' || current.currency !== row.currency || current.price > Number(row.price)) {
         await sql`UPDATE public.price_alert_deliveries SET state = 'cancelled', failure_code = 'price_no_longer_available'
@@ -190,7 +194,8 @@ export async function processPriceDelivery() {
 export async function runPriceAlertWork() {
   if (!alertEmailsConfigured()) return;
   const deadline = Date.now() + 200_000;
-  let items = 0, deliveries = 0;
+  let items = 0;
+  let deliveries = 0;
   while (Date.now() < deadline && items < 50 && deliveries < 150) {
     // Clear durable outbox work before observing fresh prices.
     if (await processPriceDelivery()) { deliveries++; continue; }

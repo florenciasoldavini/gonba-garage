@@ -24,7 +24,9 @@ function storage() {
       if (record.version !== 1 || typeof record.encryptedRefreshToken !== 'string' ||
         (record.refreshStartedAt !== null && !Number.isFinite(record.refreshStartedAt)) ||
         (record.encryptedAccessToken !== undefined && typeof record.encryptedAccessToken !== 'string') ||
-        (record.accessTokenExpiresAt !== undefined && !Number.isFinite(record.accessTokenExpiresAt))) throw new Error('Invalid credential record');
+        (record.accessTokenExpiresAt !== undefined && !Number.isFinite(record.accessTokenExpiresAt))) {
+        throw new Error('Invalid credential record');
+      }
       return { record, etag: result.blob.etag };
     },
     async write(record: TokenRecord, etag?: string) {

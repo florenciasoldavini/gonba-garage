@@ -20,8 +20,11 @@ export function parseConfirmationToken(token: string, now = Date.now()) {
   const parts = token.split('.');
   const [scope, id, generation, expires, signature] = parts;
   if (parts.length !== 5 || !scopes.includes(scope as AlertScope) || !uuid.test(id || '') || !uuid.test(generation || '')
-    || !/^\d{10}$/.test(expires || '') || !signature || signature.length !== 43) return null;
-  const expected = Buffer.from(sign(`confirm.${scope}.${id}.${generation}.${expires}`)), actual = Buffer.from(signature);
+    || !/^\d{10}$/.test(expires || '') || !signature || signature.length !== 43) {
+    return null;
+  }
+  const expected = Buffer.from(sign(`confirm.${scope}.${id}.${generation}.${expires}`));
+  const actual = Buffer.from(signature);
   if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) return null;
   return { scope: scope as AlertScope, id, generation, expired: Number(expires) * 1000 <= now };
 }

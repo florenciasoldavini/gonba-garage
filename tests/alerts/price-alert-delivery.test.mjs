@@ -40,7 +40,8 @@ state.sql = createSql(() => state.db, faults);
 const db = { query: (...args) => state.db.query(...args), exec: (...args) => state.db.exec(...args) };
 
 // Fake Resend. A repeated key must carry identical bytes and returns the first response.
-const providerCalls = [], accepted = new Map();
+const providerCalls = [];
+const accepted = new Map();
 let providerFail = false;
 async function resend(url, options) {
   assert.equal(url, 'https://api.resend.com/emails');

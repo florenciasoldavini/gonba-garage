@@ -57,7 +57,8 @@ export async function matchingAlerts(vehicle: StoredVehicle, eventId: string) {
 
 /** Matches one due event. Returns false when nothing is due. */
 export async function processNextEvent() {
-  const sql = getSql(), lease = randomUUID();
+  const sql = getSql();
+  const lease = randomUUID();
   const events = await sql`UPDATE public.inventory_alert_events SET lease_id = ${lease}::uuid,
       lease_until = now() + interval '90 seconds', attempts = attempts + 1
     WHERE id = (SELECT id FROM public.inventory_alert_events
@@ -161,7 +162,8 @@ function emailVehicle(row: ReturnType<typeof parseMatchedPublication>): SearchMa
 
 /** Sends one due email. Returns false when nothing is due. */
 export async function processNextDelivery() {
-  const sql = getSql(), lease = randomUUID();
+  const sql = getSql();
+  const lease = randomUUID();
   await maintainDeliveries();
   const rows = await sql`UPDATE public.inventory_alert_deliveries SET state = 'sending', lease_id = ${lease}::uuid,
       lease_until = now() + interval '2 minutes', attempts = attempts + 1
@@ -179,7 +181,8 @@ export async function processNextDelivery() {
       await sql`UPDATE public.inventory_alert_deliveries SET state = 'cancelled' WHERE id = ${row.id}::uuid AND lease_id = ${lease}::uuid`;
       return true;
     }
-    let payload = row.request_payload, count = null as number | null;
+    let payload = row.request_payload;
+    let count = null as number | null;
     if (!payload) {
       // Before the first send of a series only: cars reserved or sold since they matched are dropped
       // and forgotten, so they can be announced if they come back.
@@ -253,7 +256,8 @@ export async function runInventoryAlertWork({ budgetMs = 200_000 } = {}) {
   if (!alertEmailsConfigured()) return;
   const deadline = Date.now() + budgetMs;
   await expireEvents();
-  let events = 0, deliveries = 0;
+  let events = 0;
+  let deliveries = 0;
   while (Date.now() < deadline && events < MAX_EVENTS_PER_RUN && await processNextEvent()) events++;
   await batchMatches();
   while (Date.now() < deadline && deliveries < MAX_DELIVERIES_PER_RUN && await processNextDelivery()) deliveries++;

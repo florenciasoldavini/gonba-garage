@@ -18,7 +18,8 @@ export const maxDuration = 300;
 function fromListedAddress(request: Request) {
   const listed = mercadoLibreEnv.webhookIps();
   if (!listed.length) return true;
-  const address = request.headers.get('x-vercel-forwarded-for')?.trim().replace(/^::ffff:/, '') ?? '';
+  const forwarded = request.headers.get('x-vercel-forwarded-for');
+  const address = forwarded?.trim().replace(/^::ffff:/, '') ?? '';
   if (listed.includes(address)) return true;
   // The address shows whether Mercado Libre started using one that is missing from the list.
   console.warn(JSON.stringify({ event: 'mercado_libre_webhook_unlisted_address', address: address.slice(0, 64) }));
@@ -37,7 +38,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 400, headers: privateHeaders });
   }
   const match = typeof notification.resource === 'string' ? notification.resource.match(/^\/items\/(MLA\d+)(?:\/prices)?$/) : null;
-  const sellerId = mercadoLibreEnv.sellerId(), clientId = mercadoLibreEnv.clientId();
+  const sellerId = mercadoLibreEnv.sellerId();
+  const clientId = mercadoLibreEnv.clientId();
   if (!match || !['items', 'items_prices'].includes(String(notification.topic))
     || !sellerId || String(notification.user_id) !== sellerId || !clientId || String(notification.application_id) !== clientId) {
     return NextResponse.json({ ok: true }, { headers: privateHeaders });
@@ -48,7 +50,8 @@ export async function POST(request: Request) {
   // An unlisted address is still queued, so an outdated list delays a genuine notification until the
   // daily crons but never loses it. It just starts no work here.
   const verified = fromListedAddress(request);
-  let drainCatalog = false, drainPrices = false;
+  let drainCatalog = false;
+  let drainPrices = false;
   try {
     // The payload is only a hint: both queues read the item again from Mercado Libre.
     if (catalogSync) drainCatalog = await enqueueCatalogSync(match[1], { verified });

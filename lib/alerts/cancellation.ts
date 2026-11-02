@@ -17,8 +17,11 @@ export function cancellationToken(id: string, generation: string) {
 export function parseCancellationToken(token: string) {
   const parts = token.split('.');
   const [id, generation, signature] = parts;
-  if (parts.length !== 3 || !uuid.test(id || '') || !uuid.test(generation || '') || !signature || signature.length !== 43) return null;
-  const expected = Buffer.from(sign(`${id}.${generation}`)), actual = Buffer.from(signature);
+  if (parts.length !== 3 || !uuid.test(id || '') || !uuid.test(generation || '') || !signature || signature.length !== 43) {
+    return null;
+  }
+  const expected = Buffer.from(sign(`${id}.${generation}`));
+  const actual = Buffer.from(signature);
   return expected.length === actual.length && timingSafeEqual(expected, actual) ? { id, generation } : null;
 }
 export function cancellationUrl(id: string, generation: string) {
@@ -36,8 +39,11 @@ export function searchCancellationToken(id: string, generation: string) {
 export function parseSearchCancellationToken(token: string) {
   const parts = token.split('.');
   const [scope, id, generation, signature] = parts;
-  if (parts.length !== 4 || scope !== 'search' || !uuid.test(id || '') || !uuid.test(generation || '') || !signature || signature.length !== 43) return null;
-  const expected = Buffer.from(sign(`cancel.search.${id}.${generation}`)), actual = Buffer.from(signature);
+  if (parts.length !== 4 || scope !== 'search' || !uuid.test(id || '') || !uuid.test(generation || '') || !signature || signature.length !== 43) {
+    return null;
+  }
+  const expected = Buffer.from(sign(`cancel.search.${id}.${generation}`));
+  const actual = Buffer.from(signature);
   return expected.length === actual.length && timingSafeEqual(expected, actual) ? { id, generation } : null;
 }
 export function searchCancellationUrl(id: string, generation: string) {

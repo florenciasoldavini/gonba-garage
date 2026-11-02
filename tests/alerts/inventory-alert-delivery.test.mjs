@@ -64,7 +64,8 @@ const item = (id, { make = 'Toyota', model = 'Corolla', version = 'XEi', year = 
 });
 
 // Fake Resend. A repeated key must carry identical bytes and returns the first response.
-const providerCalls = [], accepted = new Map();
+const providerCalls = [];
+const accepted = new Map();
 let provider = 'ok';
 async function resend(url, options) {
   assert.equal(url, 'https://api.resend.com/emails');

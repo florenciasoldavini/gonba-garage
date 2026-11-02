@@ -57,7 +57,9 @@ export function readSafeIncident(value: unknown): IntegrationIncident | null {
   const record = value as Record<string, unknown>;
   if (typeof record.incidentId !== 'string' || !/^[a-f0-9-]{36}$/.test(record.incidentId)
     || typeof record.occurredAt !== 'string' || !Number.isFinite(Date.parse(record.occurredAt))
-    || !stages.includes(record.stage as FailureStage) || !codes.includes(record.code as FailureCode)) return null;
+    || !stages.includes(record.stage as FailureStage) || !codes.includes(record.code as FailureCode)) {
+    return null;
+  }
   return {
     incidentId: record.incidentId, occurredAt: new Date(record.occurredAt).toISOString(),
     stage: record.stage as FailureStage, code: record.code as FailureCode,

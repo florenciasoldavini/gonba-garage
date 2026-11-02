@@ -95,7 +95,8 @@ describe('parseRow and parseRows', () => {
   });
 
   it('skips and logs invalid rows of a list, never their content', () => {
-    const good = { id: ALERT, email: ADDRESS }, bad = { id: GENERATION, email: null };
+    const good = { id: ALERT, email: ADDRESS };
+    const bad = { id: GENERATION, email: null };
     assert.deepEqual(rows.parseRows('vehicle_inventory_alerts', [good, bad, good], alertRows.parseAlertEmail), [ADDRESS, ADDRESS]);
     assert.deepEqual(logged(), [{ event: 'invalid_database_row', action: 'skipped', table: 'vehicle_inventory_alerts', field: 'email', id: GENERATION }]);
     // A malformed key may itself be content, so it is left out.

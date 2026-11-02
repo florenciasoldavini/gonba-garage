@@ -31,7 +31,8 @@ export function cronAuthorized(request: Request) {
   const expected = cronEnv.secret();
   const supplied = request.headers.get('authorization') || '';
   if (!expected) return false;
-  const a = Buffer.from(`Bearer ${expected}`), b = Buffer.from(supplied);
+  const a = Buffer.from(`Bearer ${expected}`);
+  const b = Buffer.from(supplied);
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
