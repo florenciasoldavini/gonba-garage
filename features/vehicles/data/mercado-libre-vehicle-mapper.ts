@@ -36,15 +36,16 @@ function attributeText(item: MercadoLibreItem, id: string) {
   return `${candidate.value_struct.number}${candidate.value_struct.unit ? ` ${candidate.value_struct.unit}` : ''}`;
 }
 
-function attributeNumber(item: MercadoLibreItem, id: string) {
+// Year, kilometers, doors and gears are whole numbers, so text values keep digits only: in
+// "120.000 km" the dot is the Argentine thousands separator, not a decimal point.
+function attributeInteger(item: MercadoLibreItem, id: string) {
   const candidate = attribute(item, id);
   const structuredNumber = candidate?.value_struct?.number;
 
   if (typeof structuredNumber === 'number') return structuredNumber;
 
   const value = structuredNumber ?? candidate?.value_name;
-  const normalized = String(value ?? '').replace(/[^\d,.-]/g, '').replace(',', '.');
-  const parsed = Number.parseFloat(normalized);
+  const parsed = Number.parseInt(String(value ?? '').replace(/\D/g, ''), 10);
 
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -79,7 +80,7 @@ function formatLocation(item: MercadoLibreItem) {
 
 function formatTransmission(item: MercadoLibreItem) {
   const transmission = attributeText(item, 'TRANSMISSION') ?? 'Sin especificar';
-  const gears = attributeNumber(item, 'GEAR_NUMBER');
+  const gears = attributeInteger(item, 'GEAR_NUMBER');
 
   return gears > 0 ? `${transmission}, ${gears} marchas` : transmission;
 }
@@ -94,7 +95,7 @@ function formatEngine(item: MercadoLibreItem) {
 
 function formatBody(item: MercadoLibreItem) {
   const body = attributeText(item, 'VEHICLE_BODY_TYPE') ?? 'Sin especificar';
-  const doors = attributeNumber(item, 'DOORS');
+  const doors = attributeInteger(item, 'DOORS');
 
   return doors > 0 ? `${body} · ${doors} puertas` : body;
 }
@@ -133,10 +134,10 @@ export function mapMercadoLibreItemToVehicle(
       make,
       model,
       version,
-      year: attributeNumber(item, 'VEHICLE_YEAR'),
+      year: attributeInteger(item, 'VEHICLE_YEAR'),
       price: item.price ?? 0,
       currency: mapCurrency(item.currency_id),
-      mileageKm: attributeNumber(item, 'KILOMETERS'),
+      mileageKm: attributeInteger(item, 'KILOMETERS'),
       transmission: formatTransmission(item),
       fuel: attributeText(item, 'FUEL_TYPE') ?? 'Sin especificar',
       engine: formatEngine(item),
