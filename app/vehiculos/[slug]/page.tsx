@@ -118,14 +118,10 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   // Alerts are offered only where their emails can be sent (production, not previews).
   const alertsEnabled = alertEmailsConfigured();
 
-  let similarVehicles: Vehicle[] = [];
-  let availableCount = 0;
-  if (!status.isAvailable) {
-    // The rail is a bonus: a catalog failure must not take down the page of a car that is not for sale.
-    const catalog = await listCatalogVehicles().catch(() => []);
-    similarVehicles = pickSimilarVehicles(vehicle, catalog);
-    availableCount = catalog.length;
-  }
+  // The rail is a bonus: a catalog failure must not take down the car's page.
+  const catalog: Vehicle[] = await listCatalogVehicles().catch(() => []);
+  const similarVehicles = pickSimilarVehicles(vehicle, catalog);
+  const availableCount = catalog.length;
   // Only peso prices get the approximate dollar line, so the quote is fetched only when one is shown.
   const quote = vehicle.currency === 'ARS' || similarVehicles.some(({ currency }) => currency === 'ARS')
     ? await getMepQuote()
@@ -168,6 +164,32 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       vehicle_status: status.isAvailable ? 'available' : isReserved ? 'reserved' : 'sold',
     },
   });
+  // The same rail under every car. Reserved and sold: alternatives, right under the status card that
+  // points to them. Available: other cars to keep browsing, once this one has been seen in full.
+  const similarRail = similarVehicles.length > 0 && (
+    <section className="section-shell detail-similar" id="similares" aria-labelledby="similar-title">
+      <div className="detail-similar-heading">
+        <div>
+          <Eyebrow>Disponibles ahora</Eyebrow>
+          <h2 id="similar-title">{status.isAvailable ? 'Otros autos que te pueden gustar.' : 'Parecidos, y todavía en el garage.'}</h2>
+        </div>
+        <Link className="text-link" href="/vehiculos">Ver inventario completo <Arrow /></Link>
+      </div>
+      <div className="detail-similar-grid">
+        {similarVehicles.map((similar) => (
+          <CatalogVehicleCard headingLevel="h3" key={similar.slug} quote={quote} vehicle={similar} />
+        ))}
+        {similarVehicles.length < 3 && (
+          <Link className="detail-similar-more glass-panel" href="/vehiculos">
+            <span>Inventario</span>
+            <span className="catalog-card-arrow" aria-hidden="true"><ArrowUpRight size={17} strokeWidth={1.8} /></span>
+            <strong>Ver todo el inventario</strong>
+            <p>{String(availableCount).padStart(2, '0')} {availableCount === 1 ? 'auto disponible' : 'autos disponibles'} hoy. Filtrá por marca, carrocería, precio y kilometraje.</p>
+          </Link>
+        )}
+      </div>
+    </section>
+  );
   const organizationId = new URL(ORGANIZATION_SCHEMA_ID, siteUrl).toString();
   const vehicleSchemaId = `${vehicleUrl}#vehicle`;
   const vehicleStructuredData = {
@@ -372,30 +394,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
         </aside>
       </section>
 
-      {similarVehicles.length > 0 && (
-        <section className="section-shell detail-similar" id="similares" aria-labelledby="similar-title">
-          <div className="detail-similar-heading">
-            <div>
-              <Eyebrow>Disponibles ahora</Eyebrow>
-              <h2 id="similar-title">Parecidos, y todavía en el garage.</h2>
-            </div>
-            <Link className="text-link" href="/vehiculos">Ver inventario completo <Arrow /></Link>
-          </div>
-          <div className="detail-similar-grid">
-            {similarVehicles.map((similar) => (
-              <CatalogVehicleCard headingLevel="h3" key={similar.slug} quote={quote} vehicle={similar} />
-            ))}
-            {similarVehicles.length < 3 && (
-              <Link className="detail-similar-more glass-panel" href="/vehiculos">
-                <span>Inventario</span>
-                <span className="catalog-card-arrow" aria-hidden="true"><ArrowUpRight size={17} strokeWidth={1.8} /></span>
-                <strong>Ver todo el inventario</strong>
-                <p>{String(availableCount).padStart(2, '0')} {availableCount === 1 ? 'auto disponible' : 'autos disponibles'} hoy. Filtrá por marca, carrocería, precio y kilometraje.</p>
-              </Link>
-            )}
-          </div>
-        </section>
-      )}
+      {!status.isAvailable && similarRail}
 
       <section className="section-shell detail-overview" id="ficha" aria-labelledby="overview-title">
         <div className="detail-story">
@@ -418,6 +417,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       </section>
 
       <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} layout="grid" />
+
+      {status.isAvailable && similarRail}
 
       <section className="section-shell detail-confidence" aria-label="Proceso Gonba's Garage">
         <div><span>01</span><strong>Selección</strong><p>Elegimos unidades con identidad y una historia clara.</p></div>
