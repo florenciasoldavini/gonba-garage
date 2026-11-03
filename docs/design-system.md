@@ -113,6 +113,25 @@ Deliberate differences:
 - The `/vender` success view replaces the valuation form in place, so it keeps that form's
   `--radius-feature` and background.
 
+### Floating docks
+
+Two docks float at the bottom of the viewport, never on the same page: the catalog's compare dock and
+the car page's contact dock. Both use the scrolled header's floating treatment: centred,
+`width: min(900px, 100%)`, about 82px tall, radius 18px, `rgba(9, 11, 10, 0.96)` with the header's
+shadow and backdrop blur, the layout gutter on the sides and `max(18px, env(safe-area-inset-bottom))`
+from the bottom.
+
+The contact dock (`app/vehiculos/[slug]/_components/vehicle-contact-dock.*`) keeps the purchase
+card's price and actions in reach on available cars: thumbnail, name over a mono meta line, the
+price with its approximate dollar line, a bell that opens the card's own price-alert dialog, and the
+accent "Consultar por este auto". It appears once the card has scrolled off the top and hides again
+when the card comes back or the contact section (`#consulta`) is reached, using
+`IntersectionObserver`. While hidden it is `inert` and `aria-hidden`. It fades and slides in with
+`--duration-slow` and `--ease-standard`, and only fades under `prefers-reduced-motion`. Up to
+1000px it drops the thumbnail and the name, leaving the price and both actions on one line; up to
+480px the button reads "Consultar" (screen readers still hear the whole label). Reserved and sold
+cars don't get it.
+
 ## Domain patterns
 
 - Vehicle cards always present media, year, make/model, concise facts, price or status, and a clear
