@@ -411,6 +411,7 @@
   overflow: hidden;
   border-radius: 10px;
   background: #111411;
+  transition: box-shadow var(--duration-default) ease;
 }
 .detail-similar-arrow {
   grid-area: arrow;
@@ -422,6 +423,13 @@
 }
 /* The rail only lists available cars, so their photos stay in color: grey means unavailable everywhere else. */
 @media (hover: hover) {
+  /* The same zoom and lime edge as a catalog card's photo. */
+  .detail-similar-link:hover .detail-similar-photo {
+    box-shadow: 0 0 0 1px rgba(220, 255, 0, 0.36);
+  }
+  .detail-similar-link:hover .detail-similar-photo .cover-image {
+    transform: scale(1.035);
+  }
   .detail-similar-link:hover .detail-similar-name {
     transform: translateX(8px);
   }
