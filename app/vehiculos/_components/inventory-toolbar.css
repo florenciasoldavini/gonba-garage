@@ -54,7 +54,7 @@
   border: 0;
   outline: 0;
   background: transparent;
-  font: 500 0.76rem var(--font-sans);
+  font: 500 0.875rem var(--font-sans);
 }
 .catalog-toolbar-search input::placeholder {
   color: var(--color-text-tertiary);

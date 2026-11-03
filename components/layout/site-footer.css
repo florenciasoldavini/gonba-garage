@@ -1,6 +1,6 @@
 .site-footer a {
   color: #c8cbc4;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   transition: color 180ms ease;
 }
 .site-footer a {
@@ -30,7 +30,7 @@
 .footer-intro > p {
   margin: 0;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.875rem;
 }
 .site-footer .footer-instagram {
   padding: 18px 18px 18px 20px;
@@ -145,7 +145,7 @@
 }
 .footer-navigation .footer-link-list a {
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
 }
 .footer-navigation .footer-link-list a:hover {
   color: var(--accent);
@@ -166,7 +166,7 @@
   display: grid;
   gap: 6px;
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.9375rem;
   list-style: none;
 }
 .footer-visits a {

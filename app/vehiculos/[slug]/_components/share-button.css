@@ -165,7 +165,7 @@
   text-transform: uppercase;
 }
 .share-dialog-route strong {
-  font-size: 0.76rem;
+  font-size: 0.875rem;
 }
 .share-dialog-route-primary {
   min-height: 76px;
@@ -199,7 +199,7 @@
 .share-dialog-link label {
   padding-left: 2px;
   color: #7f847b;
-  font: 600 0.55rem var(--font-mono);
+  font: 600 var(--text-label) var(--font-mono);
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }

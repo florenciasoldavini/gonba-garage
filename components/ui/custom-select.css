@@ -14,7 +14,7 @@
   border: 1px solid var(--line);
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.045);
-  font: 500 0.76rem var(--font-sans);
+  font: 500 0.875rem var(--font-sans);
   cursor: pointer;
   transition:
     border-color 180ms ease,

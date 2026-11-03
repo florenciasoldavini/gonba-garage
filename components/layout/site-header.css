@@ -40,7 +40,7 @@
 
 .main-nav a {
   color: #d5d8d1;
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: -0.01em;
   transition: color 180ms ease;
@@ -61,7 +61,7 @@
   color: var(--accent-dark);
   background: var(--accent);
   border-radius: 10px;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-weight: 800;
   transition: transform var(--duration-default) var(--ease-standard);
 }

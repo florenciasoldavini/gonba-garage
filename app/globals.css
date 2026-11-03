@@ -127,7 +127,7 @@ h3 {
   gap: 30px;
   border: 1px solid transparent;
   border-radius: var(--radius-button);
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   font-weight: 800;
   transition:
     transform var(--duration-default) ease,
@@ -173,7 +173,7 @@ h3 {
   gap: 18px;
   padding-bottom: 5px;
   border-bottom: 1px solid var(--accent);
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   font-weight: 700;
   transition:
     color var(--duration-default) ease,
