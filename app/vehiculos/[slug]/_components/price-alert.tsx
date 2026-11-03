@@ -8,6 +8,7 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { PrivacyPolicyLink } from '@/components/ui/privacy-policy-link';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import { getEmailError } from '@/lib/email-address';
 import { postJson, type RequestFailure } from '@/lib/json-request';
 import '../../_components/alert-dialog.css';
 
@@ -23,6 +24,8 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
   const [email, setEmail] = useState('');
   const [state, setState] = useState<SubmissionState>('idle');
   const [failure, setFailure] = useState<RequestFailure | null>(null);
+  // Caught before sending, so the browser's own validation bubble never shows.
+  const [emailError, setEmailError] = useState<string | null>(null);
   const titleId = useId();
   const successTitleId = useId();
   const emailErrorId = useId();
@@ -41,6 +44,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
   const openDialog = () => {
     setState('idle');
     setFailure(null);
+    setEmailError(null);
     captureAnalyticsEvent('price_alert_opened', { vehicle_slug: vehicleSlug });
     requestAnimationFrame(animateDialogOpen);
   };
@@ -52,6 +56,15 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const nextEmailError = getEmailError(email);
+    if (nextEmailError) {
+      setState('idle');
+      setFailure(null);
+      setEmailError(nextEmailError);
+      emailRef.current?.focus();
+      return;
+    }
+
     setState('submitting');
 
     const form = new FormData(event.currentTarget);
@@ -72,7 +85,8 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
   };
 
   const shownFailure = state === 'error' ? failure : null;
-  const emailInvalid = shownFailure?.field === 'email';
+  const emailMessage = emailError ?? (shownFailure?.field === 'email' ? shownFailure.title : null);
+  const emailInvalid = emailMessage !== null;
   const retry = shownFailure?.retryable === true;
 
   return (
@@ -128,7 +142,13 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
               </div>
             </div>
           ) : (
-            <form className="price-alert-form ph-no-capture" data-dialog-view data-private onSubmit={handleSubmit}>
+            <form
+              className="price-alert-form ph-no-capture"
+              data-dialog-view
+              data-private
+              noValidate
+              onSubmit={handleSubmit}
+            >
               <Eyebrow>Alerta de precio</Eyebrow>
               <h2 id={titleId}>¿Esperando una mejor oportunidad?</h2>
               <p>
@@ -136,13 +156,16 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
               </p>
 
               <label>
-                <span>Email</span>
+                <span>Email *</span>
                 <input
                   ref={emailRef}
                   type="email"
                   name="email"
                   value={email}
-                  onChange={event => setEmail(event.target.value)}
+                  onChange={event => {
+                    setEmail(event.target.value);
+                    setEmailError(null);
+                  }}
                   placeholder="tu@email.com"
                   autoComplete="email"
                   maxLength={320}
@@ -154,7 +177,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
               {emailInvalid && (
                 <p className="price-alert-field-error" id={emailErrorId} role="alert">
                   <CircleAlert aria-hidden="true" size={15} strokeWidth={2} />
-                  {shownFailure.title}
+                  {emailMessage}
                 </p>
               )}
 
@@ -171,7 +194,7 @@ export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAl
                   <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
                 )}
               </Button>
-              {shownFailure && !emailInvalid && (
+              {shownFailure && shownFailure.field !== 'email' && (
                 <div className="price-alert-error" role="alert">
                   {shownFailure.kind === 'connection' ? (
                     <WifiOff aria-hidden="true" size={18} strokeWidth={2} />

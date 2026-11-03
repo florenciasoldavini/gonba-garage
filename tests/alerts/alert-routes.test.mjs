@@ -57,7 +57,7 @@ afterEach(() => {
   assert.equal(routes.deferred.length, 0, 'Demo mode queues no confirmation email');
 });
 
-it('loads only the dependencies replaced here, the request guard and the environment', () => {
+it('loads only the dependencies replaced here, the request guard, the email check and the environment', () => {
   const dependencies = [
     'server-only',
     'next/server',
@@ -71,6 +71,7 @@ it('loads only the dependencies replaced here, the request guard and the environ
     '@/lib/alerts/subscriptions',
     '@/lib/integrations/mercado-libre/catalog',
     '@/lib/alerts/request-guard',
+    '@/lib/email-address',
     '@/lib/env',
   ];
   for (const file of [

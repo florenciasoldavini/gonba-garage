@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { CarFront } from 'lucide-react';
 
 import { CustomSelect } from '@/components/ui/custom-select';
+import { ValuationFieldError } from './valuation-field-error';
 import { ValuationStepHeading } from './valuation-step-heading';
+import { fieldErrorProps, type ValuationErrors } from './valuation-validation';
 import './vehicle-catalog-fields.css';
 
 type CatalogOption = {
@@ -33,9 +35,11 @@ type ManualCatalogFieldProps = {
   min?: number;
   max?: number;
   onReturn?: () => void;
+  error?: string;
 };
 
 function ManualCatalogField({
+  error,
   inputMode,
   label,
   max,
@@ -65,7 +69,9 @@ function ManualCatalogField({
         placeholder={placeholder}
         required={required}
         type={type}
+        {...fieldErrorProps(name, error)}
       />
+      <ValuationFieldError field={name} message={error} />
     </label>
   );
 }
@@ -79,7 +85,7 @@ async function getCatalogOptions(url: string, signal: AbortSignal): Promise<Cata
   return payload.options;
 }
 
-export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
+export function VehicleCatalogFields({ hidden, errors }: { hidden: boolean; errors: ValuationErrors }) {
   const [makeId, setMakeId] = useState('');
   const [modelId, setModelId] = useState('');
   const [year, setYear] = useState('');
@@ -196,6 +202,7 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
           <ManualCatalogField
             label="Marca *"
             name="make"
+            error={errors.make}
             onReturn={() => handleMakeChange('')}
             placeholder="Escribí la marca"
             required
@@ -205,7 +212,6 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
             <span>Marca *</span>
             <CustomSelect
               ariaLabel="Marca"
-              required
               searchable
               value={makeId}
               onChange={handleMakeChange}
@@ -213,7 +219,9 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
               disabled={makeStatus === 'loading'}
               placeholder={makeStatus === 'loading' ? 'Cargando marcas…' : 'Seleccionar marca'}
               searchPlaceholder="Buscar marca…"
+              {...fieldErrorProps('make', errors.make)}
             />
+            <ValuationFieldError field="make" message={errors.make} />
             <input name="make" type="hidden" value={makeName} />
             {makeStatus === 'error' ? (
               <small className="valuation-catalog-status">
@@ -234,11 +242,12 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
         )}
 
         {makeId === MANUAL_OPTION ? (
-          <ManualCatalogField label="Modelo *" name="model" placeholder="Ej. 330i" required />
+          <ManualCatalogField label="Modelo *" name="model" placeholder="Ej. 330i" required error={errors.model} />
         ) : modelId === MANUAL_OPTION ? (
           <ManualCatalogField
             label="Modelo *"
             name="model"
+            error={errors.model}
             onReturn={() => handleModelChange('')}
             placeholder="Escribí el modelo"
             required
@@ -248,7 +257,6 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
             <span>Modelo *</span>
             <CustomSelect
               ariaLabel="Modelo"
-              required
               searchable
               key={makeId}
               value={modelId}
@@ -263,7 +271,9 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
                     : 'Seleccionar modelo'
               }
               searchPlaceholder="Buscar modelo…"
+              {...fieldErrorProps('model', errors.model)}
             />
+            <ValuationFieldError field="model" message={errors.model} />
             <input name="model" type="hidden" value={modelName} />
             {modelStatus === 'error' ? (
               <small className="valuation-catalog-status">
@@ -287,6 +297,7 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
           <ManualCatalogField
             label="Año *"
             name="year"
+            error={errors.year}
             inputMode="numeric"
             type="number"
             min={1950}
@@ -298,6 +309,7 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
           <ManualCatalogField
             label="Año *"
             name="year"
+            error={errors.year}
             inputMode="numeric"
             type="number"
             min={1950}
@@ -311,7 +323,6 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
             <span>Año *</span>
             <CustomSelect
               ariaLabel="Año"
-              required
               key={modelId}
               value={year}
               onChange={handleYearChange}
@@ -324,7 +335,9 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
                     ? 'Primero elegí un modelo'
                     : 'Seleccionar año'
               }
+              {...fieldErrorProps('year', errors.year)}
             />
+            <ValuationFieldError field="year" message={errors.year} />
             <input name="year" type="hidden" value={year} />
             {versionStatus === 'error' ? (
               <small className="valuation-catalog-status">
@@ -345,17 +358,25 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
         )}
 
         {makeId === MANUAL_OPTION || modelId === MANUAL_OPTION || year === MANUAL_OPTION ? (
-          <ManualCatalogField label="Versión" name="version" placeholder="Ej. M Sport" />
+          <ManualCatalogField
+            label="Versión *"
+            name="version"
+            placeholder="Ej. M Sport"
+            required
+            error={errors.version}
+          />
         ) : versionId === MANUAL_OPTION ? (
           <ManualCatalogField
-            label="Versión"
+            label="Versión *"
             name="version"
+            error={errors.version}
             onReturn={() => setVersionId('')}
             placeholder="Escribí la versión"
+            required
           />
         ) : (
           <div className="valuation-select-field">
-            <span>Versión</span>
+            <span>Versión *</span>
             <CustomSelect
               ariaLabel="Versión"
               searchable
@@ -372,13 +393,22 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
                     : 'Seleccionar versión'
               }
               searchPlaceholder="Buscar versión…"
+              {...fieldErrorProps('version', errors.version)}
             />
+            <ValuationFieldError field="version" message={errors.version} />
             <input name="version" type="hidden" value={versionName} />
           </div>
         )}
         <label>
-          <span>Color</span>
-          <input name="color" autoComplete="off" placeholder="Ej. Negro" />
+          <span>Color *</span>
+          <input
+            name="color"
+            required
+            autoComplete="off"
+            placeholder="Ej. Negro"
+            {...fieldErrorProps('color', errors.color)}
+          />
+          <ValuationFieldError field="color" message={errors.color} />
         </label>
         <small className="valuation-catalog-credit valuation-field-wide">
           Catálogo vehicular provisto por{' '}
