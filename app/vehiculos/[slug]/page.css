@@ -404,9 +404,11 @@
   gap: 3px;
   font-weight: 800;
 }
+/* Set width for the same reason as .detail-primary-image: an aspect ratio stops the stretch. */
 .detail-similar-photo {
   grid-area: photo;
   position: relative;
+  width: 100%;
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: 10px;
