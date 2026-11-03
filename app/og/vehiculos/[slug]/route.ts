@@ -72,7 +72,8 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
     }),
     createElement('div', {
       style: {
-        background: 'linear-gradient(90deg, rgba(8,10,9,0.98) 0%, rgba(8,10,9,0.88) 44%, rgba(8,10,9,0.12) 78%, rgba(8,10,9,0.28) 100%)',
+        background:
+          'linear-gradient(90deg, rgba(8,10,9,0.98) 0%, rgba(8,10,9,0.88) 44%, rgba(8,10,9,0.12) 78%, rgba(8,10,9,0.28) 100%)',
         display: 'flex',
         height: '100%',
         left: 0,
@@ -128,7 +129,16 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
         { style: { display: 'flex', flexDirection: 'column', maxWidth: 720 } },
         createElement(
           'div',
-          { style: { color: '#dcff00', display: 'flex', fontSize: 22, letterSpacing: '2px', marginBottom: 14, textTransform: 'uppercase' } },
+          {
+            style: {
+              color: '#dcff00',
+              display: 'flex',
+              fontSize: 22,
+              letterSpacing: '2px',
+              marginBottom: 14,
+              textTransform: 'uppercase',
+            },
+          },
           `${vehicle.year} · ${vehicle.version}`,
         ),
         createElement(
@@ -139,11 +149,22 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
         createElement(
           'div',
           { style: { alignItems: 'center', display: 'flex', marginTop: 30 } },
-          isSold ? null : createElement(
-            'div',
-            { style: { borderTop: '5px solid #dcff00', display: 'flex', fontSize: 30, fontWeight: 700, marginRight: 28, paddingTop: 16 } },
-            formatVehiclePrice(vehicle.price, vehicle.currency),
-          ),
+          isSold
+            ? null
+            : createElement(
+                'div',
+                {
+                  style: {
+                    borderTop: '5px solid #dcff00',
+                    display: 'flex',
+                    fontSize: 30,
+                    fontWeight: 700,
+                    marginRight: 28,
+                    paddingTop: 16,
+                  },
+                },
+                formatVehiclePrice(vehicle.price, vehicle.currency),
+              ),
           createElement(
             'div',
             { style: { color: 'rgba(245,246,242,0.76)', display: 'flex', fontSize: 18, paddingTop: 16 } },

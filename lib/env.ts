@@ -40,7 +40,11 @@ export const mercadoLibreEnv = {
   /** Local development only: the deployed backend whose synced catalog this server reads. */
   backendUrl: () => trimmed('MERCADO_LIBRE_BACKEND_URL'),
   /** Addresses Mercado Libre sends notifications from. Empty when unset. */
-  webhookIps: () => (process.env.MERCADO_LIBRE_WEBHOOK_IPS ?? '').split(',').map(ip => ip.trim()).filter(Boolean),
+  webhookIps: () =>
+    (process.env.MERCADO_LIBRE_WEBHOOK_IPS ?? '')
+      .split(',')
+      .map(ip => ip.trim())
+      .filter(Boolean),
 };
 
 type MercadoLibreSetting = Exclude<keyof typeof mercadoLibreEnv, 'webhookIps'>;
@@ -62,8 +66,15 @@ export const alertEmailEnv = {
   /** The bare HTTPS origin of ALERTS_PUBLIC_URL, or undefined when it is unset or anything else. */
   publicOrigin: () => {
     const url = URL.parse(exact('ALERTS_PUBLIC_URL') ?? '');
-    return url && url.protocol === 'https:' && !url.username && !url.password && !url.search && !url.hash && url.pathname === '/'
-      ? url.origin : undefined;
+    return url &&
+      url.protocol === 'https:' &&
+      !url.username &&
+      !url.password &&
+      !url.search &&
+      !url.hash &&
+      url.pathname === '/'
+      ? url.origin
+      : undefined;
   },
   /** Signs confirmation and cancellation links and keys the hashed rate limits. */
   signingSecret: () => longSecret(exact('ALERTS_SIGNING_SECRET')),
@@ -102,14 +113,20 @@ export function misconfiguredFeatures() {
   const groups: Array<{ feature: string; trigger: string[]; usable: Record<string, boolean> }> = [
     {
       feature: 'mercado_libre',
-      trigger: ['MERCADO_LIBRE_CLIENT_ID', 'MERCADO_LIBRE_CLIENT_SECRET', 'MERCADO_LIBRE_REDIRECT_URI',
-        'MERCADO_LIBRE_SELLER_ID', 'MERCADO_LIBRE_TOKEN_ENCRYPTION_KEY'],
+      trigger: [
+        'MERCADO_LIBRE_CLIENT_ID',
+        'MERCADO_LIBRE_CLIENT_SECRET',
+        'MERCADO_LIBRE_REDIRECT_URI',
+        'MERCADO_LIBRE_SELLER_ID',
+        'MERCADO_LIBRE_TOKEN_ENCRYPTION_KEY',
+      ],
       usable: {
         MERCADO_LIBRE_CLIENT_ID: !!mercadoLibreEnv.clientId(),
         MERCADO_LIBRE_CLIENT_SECRET: !!mercadoLibreEnv.clientSecret(),
         MERCADO_LIBRE_REDIRECT_URI: !!mercadoLibreEnv.redirectUri(),
         MERCADO_LIBRE_SELLER_ID: /^\d+$/.test(mercadoLibreEnv.sellerId() ?? ''),
-        MERCADO_LIBRE_TOKEN_ENCRYPTION_KEY: Buffer.from(mercadoLibreEnv.tokenEncryptionKey() ?? '', 'base64').length === 32,
+        MERCADO_LIBRE_TOKEN_ENCRYPTION_KEY:
+          Buffer.from(mercadoLibreEnv.tokenEncryptionKey() ?? '', 'base64').length === 32,
       },
     },
     {

@@ -32,5 +32,6 @@ export const alertPageButton = (label: string) => `<form method="post">${button(
  * A form that the browser submits on load. Link scanners fetch the page without running scripts,
  * so they never send the POST. The button appears only when JavaScript is disabled.
  */
-export const alertPageAutoSubmit = (label: string) => `<form method="post"><noscript>${button(label)}</noscript></form>`;
+export const alertPageAutoSubmit = (label: string) =>
+  `<form method="post"><noscript>${button(label)}</noscript></form>`;
 export const autoSubmitScript = 'document.forms[0].submit()';

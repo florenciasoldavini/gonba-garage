@@ -12,7 +12,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Names the table and the first invalid field, never a value: rows hold emails and listing content. */
 export class InvalidRowError extends Error {
-  constructor(readonly table: string, readonly field: string) {
+  constructor(
+    readonly table: string,
+    readonly field: string,
+  ) {
     super(`Invalid ${table} row: ${field}`);
     this.name = 'InvalidRowError';
   }
@@ -20,7 +23,9 @@ export class InvalidRowError extends Error {
 
 /** Thrown by the readers below. parseRow and parseRows add the table and the row's ID. */
 class InvalidField extends Error {
-  constructor(readonly field: string) { super(field); }
+  constructor(readonly field: string) {
+    super(field);
+  }
 }
 
 function invalid(field: string): never {
@@ -29,7 +34,8 @@ function invalid(field: string): never {
 
 /** Only the row's own ID is logged, and only when it has the expected shape. */
 function rowKey(row: Row | undefined) {
-  if (typeof row?.publication_id === 'string' && PUBLICATION_ID.test(row.publication_id)) return { publicationId: row.publication_id };
+  if (typeof row?.publication_id === 'string' && PUBLICATION_ID.test(row.publication_id))
+    return { publicationId: row.publication_id };
   if (typeof row?.id === 'string' && UUID.test(row.id)) return { id: row.id };
   return {};
 }
@@ -42,15 +48,22 @@ function report(table: string, row: Row | undefined, error: unknown, action: 'fa
 
 /** Single-item reads and job or lease bookkeeping: a missing or invalid row fails the operation. */
 export function parseRow<T>(table: string, row: Row | undefined, parse: (row: Row) => T): T {
-  try { return parse(row ?? invalid('row')); }
-  catch (error) { throw report(table, row, error, 'failed'); }
+  try {
+    return parse(row ?? invalid('row'));
+  } catch (error) {
+    throw report(table, row, error, 'failed');
+  }
 }
 
 /** List reads: an invalid row is logged and left out, so one bad row cannot fail a page or a cron. */
 export function parseRows<T>(table: string, rows: Row[], parse: (row: Row) => T): T[] {
   return rows.flatMap(row => {
-    try { return [parse(row)]; }
-    catch (error) { report(table, row, error, 'skipped'); return []; }
+    try {
+      return [parse(row)];
+    } catch (error) {
+      report(table, row, error, 'skipped');
+      return [];
+    }
   });
 }
 
@@ -63,7 +76,7 @@ export function optionalText(value: unknown, field: string) {
 }
 
 export function oneOf<T extends string>(values: readonly T[], value: unknown, field: string): T {
-  return values.includes(value as T) ? value as T : invalid(field);
+  return values.includes(value as T) ? (value as T) : invalid(field);
 }
 
 export function uuid(value: unknown, field: string) {
@@ -111,7 +124,7 @@ export function optionalTimestamp(value: unknown, field: string) {
 
 /** A JSON object (jsonb). */
 export function record(value: unknown, field: string): Row {
-  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Row : invalid(field);
+  return value !== null && typeof value === 'object' && !Array.isArray(value) ? (value as Row) : invalid(field);
 }
 
 export function list(value: unknown, field: string): unknown[] {

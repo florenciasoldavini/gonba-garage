@@ -16,12 +16,15 @@ import './page.css';
 
 // The catalog stays out of search results until the final version of the site, whatever
 // SITE_INDEXING_ENABLED says (docs/seo-and-social-metadata.md).
-export const metadata: Metadata = { ...createPageMetadata({
-  title: "Vehículos disponibles | Gonba's Garage",
-  description:
-    "Explorá el inventario de autos usados seleccionados de Gonba's Garage. Filtrá por marca, transmisión, tipo y precio.",
-  path: '/vehiculos',
-}), robots: { index: false, follow: false } };
+export const metadata: Metadata = {
+  ...createPageMetadata({
+    title: "Vehículos disponibles | Gonba's Garage",
+    description:
+      "Explorá el inventario de autos usados seleccionados de Gonba's Garage. Filtrá por marca, transmisión, tipo y precio.",
+    path: '/vehiculos',
+  }),
+  robots: { index: false, follow: false },
+};
 
 export default async function VehiclesPage() {
   // Keep Next.js request-time rendering outside the API failure handler.
@@ -31,7 +34,15 @@ export default async function VehiclesPage() {
   try {
     vehicles = await listCatalogVehicles();
   } catch {
-    return <div className="section-shell"><SiteHeader active="vehicles" /><main><h1>Catálogo no disponible</h1><p>No pudimos consultar las publicaciones. Revisá la conexión del backend y volvé a intentar.</p></main></div>;
+    return (
+      <div className="section-shell">
+        <SiteHeader active="vehicles" />
+        <main>
+          <h1>Catálogo no disponible</h1>
+          <p>No pudimos consultar las publicaciones. Revisá la conexión del backend y volvé a intentar.</p>
+        </main>
+      </div>
+    );
   }
   const quote = await quotePromise;
   const alertsEnabled = alertEmailsConfigured();
@@ -40,23 +51,26 @@ export default async function VehiclesPage() {
       <SiteHeader active="vehicles" />
 
       <main>
-      <CatalogResultCountProvider>
-        <section className="section-shell catalog-hero" aria-labelledby="catalog-title">
-          <span className="catalog-scan-line" aria-hidden="true" />
-          <div>
-            <Eyebrow>Inventario actual</Eyebrow>
-            <h1 id="catalog-title">Autos con una razón para estar acá.</h1>
-          </div>
-          <div className="catalog-hero-copy">
-            <p>Una selección breve, revisada y presentada con claridad. Compará las unidades y encontrá la que mejor encaja con vos.</p>
-            <CatalogHeroCount total={vehicles.length} />
-          </div>
-        </section>
+        <CatalogResultCountProvider>
+          <section className="section-shell catalog-hero" aria-labelledby="catalog-title">
+            <span className="catalog-scan-line" aria-hidden="true" />
+            <div>
+              <Eyebrow>Inventario actual</Eyebrow>
+              <h1 id="catalog-title">Autos con una razón para estar acá.</h1>
+            </div>
+            <div className="catalog-hero-copy">
+              <p>
+                Una selección breve, revisada y presentada con claridad. Compará las unidades y encontrá la que mejor
+                encaja con vos.
+              </p>
+              <CatalogHeroCount total={vehicles.length} />
+            </div>
+          </section>
 
-        <Suspense fallback={<InventoryCatalog vehicles={vehicles} quote={quote} alertsEnabled={alertsEnabled} />}>
-          <InventoryCatalogFromSearchParams vehicles={vehicles} quote={quote} alertsEnabled={alertsEnabled} />
-        </Suspense>
-      </CatalogResultCountProvider>
+          <Suspense fallback={<InventoryCatalog vehicles={vehicles} quote={quote} alertsEnabled={alertsEnabled} />}>
+            <InventoryCatalogFromSearchParams vehicles={vehicles} quote={quote} alertsEnabled={alertsEnabled} />
+          </Suspense>
+        </CatalogResultCountProvider>
       </main>
 
       <SiteFooter topHref="#catalog-top" />

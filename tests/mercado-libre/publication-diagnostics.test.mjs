@@ -7,9 +7,26 @@ const seller = '123';
 const ids = Array.from({ length: 1003 }, (_, i) => `MLA${i + 1}`);
 const states = ['active', 'closed', 'paused', 'under_review', 'future_state'];
 const attributes = Object.freeze([
-  Object.freeze({ id: 'HAS_RAIN_SENSOR', name: 'Sensor de lluvia', value_name: 'No', value_type: 'boolean', values: [{ id: '242084', name: 'No', struct: null }] }),
-  Object.freeze({ id: 'UNKNOWN_ATTRIBUTE', name: 'Atributo nuevo', value_name: null, values: [{ name: 'Primero' }, { name: 'Segundo' }], future_field: { original: true } }),
-  Object.freeze({ id: 'ENGINE_DISPLACEMENT', name: 'Cilindrada', value_name: '2800 cc', values: [{ name: '2800 cc', struct: { number: 2800, unit: 'cc' } }] }),
+  Object.freeze({
+    id: 'HAS_RAIN_SENSOR',
+    name: 'Sensor de lluvia',
+    value_name: 'No',
+    value_type: 'boolean',
+    values: [{ id: '242084', name: 'No', struct: null }],
+  }),
+  Object.freeze({
+    id: 'UNKNOWN_ATTRIBUTE',
+    name: 'Atributo nuevo',
+    value_name: null,
+    values: [{ name: 'Primero' }, { name: 'Segundo' }],
+    future_field: { original: true },
+  }),
+  Object.freeze({
+    id: 'ENGINE_DISPLACEMENT',
+    name: 'Cilindrada',
+    value_name: '2800 cc',
+    values: [{ name: '2800 cc', struct: { number: 2800, unit: 'cc' } }],
+  }),
 ]);
 
 describe('publication diagnostics', () => {
@@ -32,16 +49,36 @@ describe('publication diagnostics', () => {
       }
       bulkCalls++;
       assert.equal(url.searchParams.has('attributes'), false, 'Do not project away the bulk response envelope');
-      assert.equal(url.searchParams.get('include_internal_attributes'), 'true', 'Use the same complete attribute source as the catalog');
+      assert.equal(
+        url.searchParams.get('include_internal_attributes'),
+        'true',
+        'Use the same complete attribute source as the catalog',
+      );
       const batch = url.searchParams.get('ids').split(',');
       assert.ok(batch.length <= 20);
-      return batch.toReversed().map(id => ({ id, status_code: 200, body: { id, seller_id: 123, title: id, status: states[(Number(id.slice(3)) - 1) % states.length], sub_status: ['example'], attributes, seller_address: { address_line: 'Must not be returned' }, seller_contact: { email: 'private@example.test' } } }));
+      return batch.toReversed().map(id => ({
+        id,
+        status_code: 200,
+        body: {
+          id,
+          seller_id: 123,
+          title: id,
+          status: states[(Number(id.slice(3)) - 1) % states.length],
+          sub_status: ['example'],
+          attributes,
+          seller_address: { address_line: 'Must not be returned' },
+          seller_contact: { email: 'private@example.test' },
+        },
+      }));
     });
     assert.equal(page, 11);
     assert.equal(bulkCalls, 51);
     assert.equal(full.complete, true);
     assert.equal(full.totalRead, 1003);
-    assert.equal(Object.values(full.countsByStatus).reduce((a, b) => a + b, 0), 1003);
+    assert.equal(
+      Object.values(full.countsByStatus).reduce((a, b) => a + b, 0),
+      1003,
+    );
     assert.equal(full.countsByStatus.active, 201);
     assert.equal(full.countsByStatus.closed, 201);
     assert.equal(full.countsByStatus.future_state, 200);
@@ -62,15 +99,25 @@ describe('publication diagnostics', () => {
   });
 
   it('reports partial and truncated reads as incomplete', async () => {
-    const partial = await read(seller, async path => path.includes('/search')
-      ? { paging: { total: 3 }, results: ['MLA1', 'MLA2', 'MLA3'] }
-      : [{ id: 'MLA1', status_code: 200, body: { id: 'MLA1', seller_id: 123, title: 'One', status: 'active' } }, { id: 'MLA2', status_code: 404 }]);
+    const partial = await read(seller, async path =>
+      path.includes('/search')
+        ? { paging: { total: 3 }, results: ['MLA1', 'MLA2', 'MLA3'] }
+        : [
+            { id: 'MLA1', status_code: 200, body: { id: 'MLA1', seller_id: 123, title: 'One', status: 'active' } },
+            { id: 'MLA2', status_code: 404 },
+          ],
+    );
     assert.equal(partial.complete, false);
     assert.equal(partial.totalRead, 1);
-    assert.deepEqual(partial.failures, [{ id: 'MLA2', code: 404 }, { id: 'MLA3', code: null }]);
-    const truncated = await read(seller, async path => path.includes('/search')
-      ? { paging: { total: 63 }, results: ['MLA1'] }
-      : [{ id: 'MLA1', status_code: 200, body: { id: 'MLA1', seller_id: 123, title: 'One', status: 'closed' } }]);
+    assert.deepEqual(partial.failures, [
+      { id: 'MLA2', code: 404 },
+      { id: 'MLA3', code: null },
+    ]);
+    const truncated = await read(seller, async path =>
+      path.includes('/search')
+        ? { paging: { total: 63 }, results: ['MLA1'] }
+        : [{ id: 'MLA1', status_code: 200, body: { id: 'MLA1', seller_id: 123, title: 'One', status: 'closed' } }],
+    );
     assert.equal(truncated.complete, false);
   });
 
@@ -82,33 +129,62 @@ describe('publication diagnostics', () => {
   });
 
   it('tells empty attributes from missing ones', async () => {
-    const incompleteAttributes = await read(seller, async path => path.includes('/search')
-      ? { paging: { total: 3 }, results: ['MLA1', 'MLA2', 'MLA3'] }
-      : [
-        { status_code: 200, body: { id: 'MLA1', seller_id: 123, title: 'Empty', status: 'closed', attributes: [] } },
-        { status_code: 200, body: { id: 'MLA2', seller_id: 123, title: 'Omitted', status: 'paused' } },
-        { status_code: 200, body: { id: 'MLA3', seller_id: 123, title: 'Null', status: 'closed', attributes: null } },
-      ]);
+    const incompleteAttributes = await read(seller, async path =>
+      path.includes('/search')
+        ? { paging: { total: 3 }, results: ['MLA1', 'MLA2', 'MLA3'] }
+        : [
+            {
+              status_code: 200,
+              body: { id: 'MLA1', seller_id: 123, title: 'Empty', status: 'closed', attributes: [] },
+            },
+            { status_code: 200, body: { id: 'MLA2', seller_id: 123, title: 'Omitted', status: 'paused' } },
+            {
+              status_code: 200,
+              body: { id: 'MLA3', seller_id: 123, title: 'Null', status: 'closed', attributes: null },
+            },
+          ],
+    );
     assert.equal(incompleteAttributes.complete, false);
     assert.equal(incompleteAttributes.totalRead, 3);
     assert.deepEqual(incompleteAttributes.missingAttributes, ['MLA2', 'MLA3']);
-    assert.deepEqual(incompleteAttributes.items.map(item => item.attributes), [[], null, null]);
-    const emptyAttributes = await read(seller, async path => path.includes('/search')
-      ? { paging: { total: 1 }, results: ['MLA1'] }
-      : [{ status_code: 200, body: { id: 'MLA1', seller_id: 123, title: 'Empty', status: 'closed', attributes: [] } }]);
+    assert.deepEqual(
+      incompleteAttributes.items.map(item => item.attributes),
+      [[], null, null],
+    );
+    const emptyAttributes = await read(seller, async path =>
+      path.includes('/search')
+        ? { paging: { total: 1 }, results: ['MLA1'] }
+        : [
+            {
+              status_code: 200,
+              body: { id: 'MLA1', seller_id: 123, title: 'Empty', status: 'closed', attributes: [] },
+            },
+          ],
+    );
     assert.equal(emptyAttributes.complete, true, 'An explicitly empty attribute array is a valid response');
   });
 
-  it('ignores another seller\'s publications', async () => {
-    const foreignSeller = await read(seller, async path => path.includes('/search')
-      ? { paging: { total: 1 }, results: ['MLA1'] }
-      : [{ status_code: 200, body: { id: 'MLA1', seller_id: 456, title: 'Other seller', status: 'closed', attributes } }]);
+  it("ignores another seller's publications", async () => {
+    const foreignSeller = await read(seller, async path =>
+      path.includes('/search')
+        ? { paging: { total: 1 }, results: ['MLA1'] }
+        : [
+            {
+              status_code: 200,
+              body: { id: 'MLA1', seller_id: 456, title: 'Other seller', status: 'closed', attributes },
+            },
+          ],
+    );
     assert.equal(foreignSeller.totalRead, 0);
     assert.equal(foreignSeller.complete, false);
     assert.deepEqual(foreignSeller.items, []);
   });
 
   it('fails when the provider fails', async () => {
-    await assert.rejects(read(seller, async () => { throw new Error('Provider unavailable'); }));
+    await assert.rejects(
+      read(seller, async () => {
+        throw new Error('Provider unavailable');
+      }),
+    );
   });
 });

@@ -33,15 +33,23 @@ export async function POST(request: Request) {
     const text = await request.text();
     if (text.length > 16_384) throw new Error('Oversized notification');
     notification = JSON.parse(text);
-    if (!notification || typeof notification !== 'object' || Array.isArray(notification)) throw new Error('Invalid notification');
+    if (!notification || typeof notification !== 'object' || Array.isArray(notification))
+      throw new Error('Invalid notification');
   } catch {
     return NextResponse.json({ ok: false }, { status: 400, headers: privateHeaders });
   }
-  const match = typeof notification.resource === 'string' ? notification.resource.match(/^\/items\/(MLA\d+)(?:\/prices)?$/) : null;
+  const match =
+    typeof notification.resource === 'string' ? notification.resource.match(/^\/items\/(MLA\d+)(?:\/prices)?$/) : null;
   const sellerId = mercadoLibreEnv.sellerId();
   const clientId = mercadoLibreEnv.clientId();
-  if (!match || !['items', 'items_prices'].includes(String(notification.topic))
-    || !sellerId || String(notification.user_id) !== sellerId || !clientId || String(notification.application_id) !== clientId) {
+  if (
+    !match ||
+    !['items', 'items_prices'].includes(String(notification.topic)) ||
+    !sellerId ||
+    String(notification.user_id) !== sellerId ||
+    !clientId ||
+    String(notification.application_id) !== clientId
+  ) {
     return NextResponse.json({ ok: true }, { headers: privateHeaders });
   }
   const catalogSync = isDatabaseConfigured();
@@ -57,7 +65,7 @@ export async function POST(request: Request) {
     if (catalogSync) drainCatalog = await enqueueCatalogSync(match[1], { verified });
     if (priceAlerts) {
       requireAlertConfig();
-      drainPrices = await enqueuePriceItem(match[1]) && verified;
+      drainPrices = (await enqueuePriceItem(match[1])) && verified;
     }
   } catch {
     // Never acknowledge a relevant event before it is durable. Mercado Libre can retry.
@@ -69,10 +77,14 @@ export async function POST(request: Request) {
   // Search alerts match what the sync just saved, so they run after it, within the same function.
   const searchAlerts = catalogSync && alertEmailsConfigured();
   const deadline = Date.now() + 270_000;
-  after(() => Promise.all([
-    drainCatalog && runCatalogSyncWorkSafely()
-      .then(() => searchAlerts ? runInventoryAlertWorkSafely({ budgetMs: deadline - Date.now() }) : undefined),
-    drainPrices && runPriceAlertWorkSafely(),
-  ]));
+  after(() =>
+    Promise.all([
+      drainCatalog &&
+        runCatalogSyncWorkSafely().then(() =>
+          searchAlerts ? runInventoryAlertWorkSafely({ budgetMs: deadline - Date.now() }) : undefined,
+        ),
+      drainPrices && runPriceAlertWorkSafely(),
+    ]),
+  );
   return NextResponse.json({ ok: true }, { headers: privateHeaders });
 }

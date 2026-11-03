@@ -33,7 +33,12 @@ export function CatalogHeroCount({ total }: { total: number }) {
   const count = useContext(ResultCountContext);
   const unit = total === 1 ? 'unidad' : 'unidades';
 
-  if (count === null) return <span className="catalog-hero-count">{total} {unit} {total === 1 ? 'publicada' : 'publicadas'}</span>;
+  if (count === null)
+    return (
+      <span className="catalog-hero-count">
+        {total} {unit} {total === 1 ? 'publicada' : 'publicadas'}
+      </span>
+    );
 
   return (
     <span className="catalog-hero-count catalog-hero-count-filtered">

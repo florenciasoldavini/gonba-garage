@@ -9,7 +9,11 @@ import { ArrowUpRight, Check, Scale } from 'lucide-react';
 
 import type { MepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
-import { formatVehicleImageAlt, formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
+import {
+  formatVehicleImageAlt,
+  formatVehicleMileage,
+  formatVehiclePrice,
+} from '@/features/vehicles/presentation/formatters';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 import { ApproximateUsdPrice } from './approximate-usd-price';
 import './catalog-vehicle-card.css';
@@ -57,7 +61,11 @@ export function CatalogVehicleCard({
   );
 
   return (
-    <article className={`catalog-card glass-panel${isSelected ? ' catalog-card-selected' : ''}`} data-status={status.status} ref={cardRef}>
+    <article
+      className={`catalog-card glass-panel${isSelected ? ' catalog-card-selected' : ''}`}
+      data-status={status.status}
+      ref={cardRef}
+    >
       <div className="catalog-card-image">
         <Link className="catalog-card-image-link" href={href} aria-hidden="true" tabIndex={-1}>
           <Image
@@ -84,8 +92,14 @@ export function CatalogVehicleCard({
       </div>
       <div className="catalog-card-copy">
         <div className="catalog-card-title">
-          <p>{vehicle.year} · {vehicle.body.split(' · ')[0]}</p>
-          <h2><Link href={href} aria-label={`${vehicleName} ${vehicle.year}`}>{vehicleName}</Link></h2>
+          <p>
+            {vehicle.year} · {vehicle.body.split(' · ')[0]}
+          </p>
+          <h2>
+            <Link href={href} aria-label={`${vehicleName} ${vehicle.year}`}>
+              {vehicleName}
+            </Link>
+          </h2>
           <span>{vehicle.version}</span>
         </div>
         <Link className="catalog-card-arrow" href={href} aria-hidden="true" tabIndex={-1}>

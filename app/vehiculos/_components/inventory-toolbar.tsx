@@ -28,20 +28,32 @@ type InventoryToolbarProps = {
   priceEnabled: boolean;
 };
 
-export function InventoryToolbar({ activeFilterCount, alertAction, count, onOpenFilters, onQueryChange, onSortChange, query, sort, priceEnabled }: InventoryToolbarProps) {
+export function InventoryToolbar({
+  activeFilterCount,
+  alertAction,
+  count,
+  onOpenFilters,
+  onQueryChange,
+  onSortChange,
+  query,
+  sort,
+  priceEnabled,
+}: InventoryToolbarProps) {
   const searchRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="catalog-toolbar">
       <div className="catalog-toolbar-search">
-        <label className="sr-only" htmlFor="inventory-search">Buscar vehículos</label>
+        <label className="sr-only" htmlFor="inventory-search">
+          Buscar vehículos
+        </label>
         <Search aria-hidden="true" size={16} />
         <input
           id="inventory-search"
           ref={searchRef}
           type="search"
           value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
+          onChange={event => onQueryChange(event.target.value)}
           placeholder="Marca, modelo o año"
         />
         {query ? (
@@ -69,7 +81,7 @@ export function InventoryToolbar({ activeFilterCount, alertAction, count, onOpen
           <CustomSelect
             ariaLabel="Ordenar vehículos"
             value={sort}
-            onChange={(value) => onSortChange(value as InventorySort)}
+            onChange={value => onSortChange(value as InventorySort)}
             options={sortOptions.filter(option => priceEnabled || !option.value.startsWith('price-'))}
           />
         </div>

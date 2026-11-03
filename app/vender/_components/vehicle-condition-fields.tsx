@@ -26,12 +26,29 @@ export function VehicleConditionFields({ hidden }: { hidden: boolean }) {
         title="Estado y configuración"
       />
       <div className="valuation-fields">
-        <label><span>Kilometraje *</span><input name="mileage" required inputMode="numeric" type="number" min="0" placeholder="48000" /></label>
+        <label>
+          <span>Kilometraje *</span>
+          <input name="mileage" required inputMode="numeric" type="number" min="0" placeholder="48000" />
+        </label>
         <div className="valuation-select-field">
           <span>Estado general *</span>
-          <CustomSelect name="condition" ariaLabel="Estado general" required value={condition} onChange={setCondition} options={conditionOptions} />
+          <CustomSelect
+            name="condition"
+            ariaLabel="Estado general"
+            required
+            value={condition}
+            onChange={setCondition}
+            options={conditionOptions}
+          />
         </div>
-        <label className="valuation-field-wide"><span>Comentarios sobre el estado</span><textarea name="notes" rows={4} placeholder="Service, detalles de pintura, cubiertas, equipamiento o cualquier información relevante." /></label>
+        <label className="valuation-field-wide">
+          <span>Comentarios sobre el estado</span>
+          <textarea
+            name="notes"
+            rows={4}
+            placeholder="Service, detalles de pintura, cubiertas, equipamiento o cualquier información relevante."
+          />
+        </label>
         <VehiclePhotoUpload />
       </div>
     </section>

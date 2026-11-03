@@ -16,14 +16,24 @@ const bounds = {
 };
 const parse = (query, overrides = {}) => parseCatalogUrlState(new URLSearchParams(query), { ...bounds, ...overrides });
 const serialize = (state, overrides = {}) => serializeCatalogUrlState(state, { ...bounds, ...overrides });
-const full = 'q=330i+m&marca=Mercedes-Benz&transmision=automatica&tipo=Coup%C3%A9&combustible=Nafta&precio_min=10000&precio_max=60000&km_min=5000&km_max=40000&orden=menor-precio&comparar=b,a';
+const full =
+  'q=330i+m&marca=Mercedes-Benz&transmision=automatica&tipo=Coup%C3%A9&combustible=Nafta&precio_min=10000&precio_max=60000&km_min=5000&km_max=40000&orden=menor-precio&comparar=b,a';
 
 describe('catalog URL state', () => {
   it('keeps a clean /vehiculos URL for the defaults', () => {
     const defaults = parse('');
     assert.deepEqual(defaults, {
-      query: '', make: 'all', transmission: 'all', bodyType: 'all', fuel: 'all',
-      minPrice: 0, maxPrice: 120_000, minMileage: 0, maxMileage: 90_000, sort: 'featured', compare: [],
+      query: '',
+      make: 'all',
+      transmission: 'all',
+      bodyType: 'all',
+      fuel: 'all',
+      minPrice: 0,
+      maxPrice: 120_000,
+      minMileage: 0,
+      maxMileage: 90_000,
+      sort: 'featured',
+      compare: [],
     });
     assert.equal(serialize(defaults), '', 'Default catalog must keep a clean /vehiculos URL');
   });
@@ -45,7 +55,11 @@ describe('catalog URL state', () => {
     assert.equal(parse('orden=price-asc').sort, 'featured');
     assert.equal(parse('orden=recientes').sort, 'year', 'Links from before the year sort was renamed still work');
     assert.equal(serialize(parse('orden=recientes')), 'orden=anio');
-    assert.deepEqual(parse('comparar=a,a,x,b,c,d').compare, ['a', 'b', 'c'], 'Comparison drops unknown and duplicate slugs and caps at the maximum');
+    assert.deepEqual(
+      parse('comparar=a,a,x,b,c,d').compare,
+      ['a', 'b', 'c'],
+      'Comparison drops unknown and duplicate slugs and caps at the maximum',
+    );
   });
 
   it('snaps and clamps ranges', () => {

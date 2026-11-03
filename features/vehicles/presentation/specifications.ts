@@ -2,15 +2,7 @@ import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { formatVehicleMileage, formatVehiclePrice } from './formatters';
 
 export type VehicleSpecificationKey =
-  | 'price'
-  | 'year'
-  | 'mileage'
-  | 'transmission'
-  | 'engine'
-  | 'fuel'
-  | 'traction'
-  | 'body'
-  | 'color';
+  'price' | 'year' | 'mileage' | 'transmission' | 'engine' | 'fuel' | 'traction' | 'body' | 'color';
 
 export const vehicleSpecificationLabels: Record<VehicleSpecificationKey, string> = {
   price: 'Precio',

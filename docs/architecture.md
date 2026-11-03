@@ -32,34 +32,34 @@ it.
 
 Pages (all server-rendered; client components only add interaction):
 
-| Route | Purpose | Rendering |
-| --- | --- | --- |
-| `/` | Brand story, up to three available cars, FAQ, contact | Request time (`connection()`) |
-| `/vehiculos` | Catalog with URL-based filters, comparison and search alerts | Request time (`connection()`) |
-| `/vehiculos/[slug]` | Vehicle detail in any status, price alert, contact | Request time (`force-dynamic`), `generateMetadata`; other slugs for the same ID redirect permanently |
-| `/vender` | Sell-your-car valuation form that opens WhatsApp with a prefilled message | Server page, client form |
-| `/privacidad`, `/terminos` | Privacy policy and terms of use | Static |
-| `/alertas/confirmacion` | Result page after an emailed confirmation link | Request time, always `noindex` |
+| Route                      | Purpose                                                                   | Rendering                                                                                            |
+| -------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `/`                        | Brand story, up to three available cars, FAQ, contact                     | Request time (`connection()`)                                                                        |
+| `/vehiculos`               | Catalog with URL-based filters, comparison and search alerts              | Request time (`connection()`)                                                                        |
+| `/vehiculos/[slug]`        | Vehicle detail in any status, price alert, contact                        | Request time (`force-dynamic`), `generateMetadata`; other slugs for the same ID redirect permanently |
+| `/vender`                  | Sell-your-car valuation form that opens WhatsApp with a prefilled message | Server page, client form                                                                             |
+| `/privacidad`, `/terminos` | Privacy policy and terms of use                                           | Static                                                                                               |
+| `/alertas/confirmacion`    | Result page after an emailed confirmation link                            | Request time, always `noindex`                                                                       |
 
 Metadata and asset routes: `/og/vehiculos/[slug]` (1200×630 share card), `/sitemap.xml`,
 `/robots.txt`, `/manifest.webmanifest` and `/apple-icon`.
 
 Route handlers (`robots.txt` disallows `/api/`; the private ones send `no-store` and `noindex`):
 
-| Route | Method | Access | Purpose |
-| --- | --- | --- | --- |
-| `/api/mercado-libre/connect` | GET | Catalog API key (Basic or Bearer) | Starts OAuth with PKCE |
-| `/api/mercado-libre/callback` | GET | OAuth state and PKCE cookies | Exchanges the code, checks the seller, stores the encrypted token |
-| `/api/mercado-libre/webhook` | POST | Seller and application ID check | Queues the item for sync and price alerts |
-| `/api/mercado-libre/sync` | GET | `CRON_SECRET` | Daily reconciliation, then drains the queue |
-| `/api/mercado-libre/catalog` | GET | Catalog API key | Synced copy for local development servers |
-| `/api/mercado-libre/diagnostics` | GET | Catalog API key | Publication diagnostics; `?connection=1` credential state; `?sync=1` sync health |
-| `/api/price-alerts` | POST | Same-site JSON, rate limits | Price alert signup |
-| `/api/inventory-alerts` | POST | Same-site JSON, rate limits | Search alert signup |
-| `/api/alerts/confirm` | GET, POST | Signed, expiring token | GET shows a page that posts itself; POST confirms |
-| `/api/price-alerts/cancel`, `/api/inventory-alerts/cancel` | GET, POST | Signed token | GET shows a form; POST cancels (RFC 8058 one-click) |
-| `/api/alerts/daily` | GET | `CRON_SECRET` | Daily price review and pending alert email |
-| `/api/vehicle-catalog` | GET | Public, CDN-cached | Arg Autos makes, models and versions for `/vender` |
+| Route                                                      | Method    | Access                            | Purpose                                                                          |
+| ---------------------------------------------------------- | --------- | --------------------------------- | -------------------------------------------------------------------------------- |
+| `/api/mercado-libre/connect`                               | GET       | Catalog API key (Basic or Bearer) | Starts OAuth with PKCE                                                           |
+| `/api/mercado-libre/callback`                              | GET       | OAuth state and PKCE cookies      | Exchanges the code, checks the seller, stores the encrypted token                |
+| `/api/mercado-libre/webhook`                               | POST      | Seller and application ID check   | Queues the item for sync and price alerts                                        |
+| `/api/mercado-libre/sync`                                  | GET       | `CRON_SECRET`                     | Daily reconciliation, then drains the queue                                      |
+| `/api/mercado-libre/catalog`                               | GET       | Catalog API key                   | Synced copy for local development servers                                        |
+| `/api/mercado-libre/diagnostics`                           | GET       | Catalog API key                   | Publication diagnostics; `?connection=1` credential state; `?sync=1` sync health |
+| `/api/price-alerts`                                        | POST      | Same-site JSON, rate limits       | Price alert signup                                                               |
+| `/api/inventory-alerts`                                    | POST      | Same-site JSON, rate limits       | Search alert signup                                                              |
+| `/api/alerts/confirm`                                      | GET, POST | Signed, expiring token            | GET shows a page that posts itself; POST confirms                                |
+| `/api/price-alerts/cancel`, `/api/inventory-alerts/cancel` | GET, POST | Signed token                      | GET shows a form; POST cancels (RFC 8058 one-click)                              |
+| `/api/alerts/daily`                                        | GET       | `CRON_SECRET`                     | Daily price review and pending alert email                                       |
+| `/api/vehicle-catalog`                                     | GET       | Public, CDN-cached                | Arg Autos makes, models and versions for `/vender`                               |
 
 ## Mercado Libre sync
 

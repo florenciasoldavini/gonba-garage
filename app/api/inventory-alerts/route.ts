@@ -32,12 +32,7 @@ function normalizeText(value: unknown, maximumLength: number) {
 
 function normalizeBound(value: unknown, maximum: number) {
   if (value === null || value === undefined || value === '') return 0;
-  if (
-    typeof value !== 'number' ||
-    !Number.isSafeInteger(value) ||
-    value < 0 ||
-    value > maximum
-  ) return null;
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0 || value > maximum) return null;
   return value;
 }
 
@@ -48,7 +43,7 @@ export async function POST(request: Request) {
   let body: InventoryAlertRequest;
 
   try {
-    body = await request.json() as InventoryAlertRequest;
+    body = (await request.json()) as InventoryAlertRequest;
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Invalid body');
   } catch {
     return NextResponse.json({ message: 'La solicitud no es válida.' }, { status: 400 });
@@ -99,20 +94,30 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (!await reserveAlertSignup('inventory', email, request)) {
+    if (!(await reserveAlertSignup('inventory', email, request))) {
       return NextResponse.json({ message: 'Recibimos demasiadas solicitudes. Probá más tarde.' }, { status: 429 });
     }
-    const alert = await saveInventorySubscription({ email, query, make, transmission, bodyType, fuel,
-      minPrice, maxPrice, minMileage, maxMileage });
+    const alert = await saveInventorySubscription({
+      email,
+      query,
+      make,
+      transmission,
+      bodyType,
+      fuel,
+      minPrice,
+      maxPrice,
+      minMileage,
+      maxMileage,
+    });
     // Pending until confirmed. Without the alert email configuration it is stored and nothing is
     // sent: the site hides the signup then, and could not deliver alerts anyway.
-    if (alert.status === 'pending' && alertEmailsConfigured()) after(() => sendSignupConfirmationSafely({ scope: 'inventory', id: alert.id, generation: alert.generation, email }));
+    if (alert.status === 'pending' && alertEmailsConfigured())
+      after(() =>
+        sendSignupConfirmationSafely({ scope: 'inventory', id: alert.id, generation: alert.generation, email }),
+      );
   } catch {
     console.error('Unable to create inventory alert');
-    return NextResponse.json(
-      { message: 'No pudimos guardar la alerta. Probá otra vez.' },
-      { status: 500 },
-    );
+    return NextResponse.json({ message: 'No pudimos guardar la alerta. Probá otra vez.' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true }, { status: 201 });

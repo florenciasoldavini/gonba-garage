@@ -17,7 +17,13 @@ export function cancellationToken(id: string, generation: string) {
 export function parseCancellationToken(token: string) {
   const parts = token.split('.');
   const [id, generation, signature] = parts;
-  if (parts.length !== 3 || !uuid.test(id || '') || !uuid.test(generation || '') || !signature || signature.length !== 43) {
+  if (
+    parts.length !== 3 ||
+    !uuid.test(id || '') ||
+    !uuid.test(generation || '') ||
+    !signature ||
+    signature.length !== 43
+  ) {
     return null;
   }
   const expected = Buffer.from(sign(`${id}.${generation}`));
@@ -39,7 +45,14 @@ export function searchCancellationToken(id: string, generation: string) {
 export function parseSearchCancellationToken(token: string) {
   const parts = token.split('.');
   const [scope, id, generation, signature] = parts;
-  if (parts.length !== 4 || scope !== 'search' || !uuid.test(id || '') || !uuid.test(generation || '') || !signature || signature.length !== 43) {
+  if (
+    parts.length !== 4 ||
+    scope !== 'search' ||
+    !uuid.test(id || '') ||
+    !uuid.test(generation || '') ||
+    !signature ||
+    signature.length !== 43
+  ) {
     return null;
   }
   const expected = Buffer.from(sign(`cancel.search.${id}.${generation}`));

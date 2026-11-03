@@ -9,19 +9,29 @@ import {
 import { formatVehicleVersion } from './listing-cleanup';
 
 function normalizedWords(value: string) {
-  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 }
 
-export function vehicleAttributeDisplayRule(attribute: MercadoLibreAttribute, title: string):
-  VehicleAttributeRule | { action: 'exclude'; reason: 'unmapped' | 'duplicate_in_title' } {
+export function vehicleAttributeDisplayRule(
+  attribute: MercadoLibreAttribute,
+  title: string,
+): VehicleAttributeRule | { action: 'exclude'; reason: 'unmapped' | 'duplicate_in_title' } {
   const rule = getVehicleAttributeRule(attribute.id);
   if (!rule) return { action: 'exclude', reason: 'unmapped' };
   if (rule.action === 'exclude') return rule;
   if (attribute.id === 'TRIM' || attribute.id === 'SHORT_VERSION') {
-    const value = attribute.value_name
-      ?? attribute.values?.map(candidate => candidate.name).filter(Boolean).join(' ')
-      ?? '';
+    const value =
+      attribute.value_name ??
+      attribute.values
+        ?.map(candidate => candidate.name)
+        .filter(Boolean)
+        .join(' ') ??
+      '';
     // The title carries the cleaned-up version, so the attribute is compared the same way.
     const versionWords = normalizedWords(formatVehicleVersion(value));
     if (versionWords && ` ${normalizedWords(title)} `.includes(` ${versionWords} `)) {
@@ -33,9 +43,13 @@ export function vehicleAttributeDisplayRule(attribute: MercadoLibreAttribute, ti
 
 /** The displayed value. Distances get the Argentine thousands separator, as everywhere else: 83000 km → 83.000 km. */
 export function formatVehicleAttributeValue(attribute: MercadoLibreAttribute) {
-  const value = attribute.value_name
-    ?? attribute.values?.map(candidate => candidate.name).filter(Boolean).join(', ')
-    ?? '';
+  const value =
+    attribute.value_name ??
+    attribute.values
+      ?.map(candidate => candidate.name)
+      .filter(Boolean)
+      .join(', ') ??
+    '';
   const kilometers = value.trim().match(/^(\d+)\s*km$/i);
   return kilometers ? `${new Intl.NumberFormat('es-AR').format(Number(kilometers[1]))} km` : value;
 }
@@ -50,9 +64,9 @@ export function publicVehicleAttributes(attributes: MercadoLibreAttribute[], tit
   return attributes.filter(attribute => vehicleAttributeDisplayRule(attribute, title).action === 'show');
 }
 
-const PRIMARY_ATTRIBUTE_IDS = VEHICLE_ATTRIBUTE_POLICY_GROUPS.find(
-  group => group.rule.action === 'show' && group.rule.section === 'general',
-)?.ids ?? [];
+const PRIMARY_ATTRIBUTE_IDS =
+  VEHICLE_ATTRIBUTE_POLICY_GROUPS.find(group => group.rule.action === 'show' && group.rule.section === 'general')
+    ?.ids ?? [];
 
 /** Every displayed field has an explicit section. There is no catch-all UI group. */
 export function groupPublicVehicleAttributes(published: MercadoLibreAttribute[]) {

@@ -1,3 +1,5 @@
 .inner-page-motion .detail-primary-image,
 .inner-page-motion .valuation-image,
-.inner-page-motion .catalog-card-image { will-change: clip-path; }
+.inner-page-motion .catalog-card-image {
+  will-change: clip-path;
+}

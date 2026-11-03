@@ -7,8 +7,14 @@ import { vehicleSpecificationLabels } from './specifications';
  */
 export type VehicleAttributeSection = 'general' | 'mechanics' | 'safety' | 'comfort' | 'dimensions';
 
-export type AttributeExclusionReason = 'internal_metadata' | 'identifiers' | 'unconfirmed_warranty'
-  | 'regional_metadata' | 'history_disabled' | 'commercial_terms' | 'not_vehicle_specification';
+export type AttributeExclusionReason =
+  | 'internal_metadata'
+  | 'identifiers'
+  | 'unconfirmed_warranty'
+  | 'regional_metadata'
+  | 'history_disabled'
+  | 'commercial_terms'
+  | 'not_vehicle_specification';
 
 export type VehicleAttributeRule =
   | { readonly action: 'show'; readonly section: VehicleAttributeSection }

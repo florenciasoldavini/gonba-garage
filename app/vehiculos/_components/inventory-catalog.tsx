@@ -10,7 +10,11 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { WHATSAPP_CATALOG_MESSAGE } from '@/constants/contact';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { comparableUsdPrice, type CatalogMepQuote } from '@/features/vehicles/domain/catalog-pricing';
-import { matchesSearchText, vehicleBodyType, vehicleTransmissionType } from '@/features/vehicles/domain/inventory-search';
+import {
+  matchesSearchText,
+  vehicleBodyType,
+  vehicleTransmissionType,
+} from '@/features/vehicles/domain/inventory-search';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { CatalogEmptyState } from './catalog-empty-state';
@@ -48,13 +52,19 @@ const URL_SYNC_DELAY_MS = 300;
 export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams }: InventoryCatalogProps) {
   const resultsRef = useRef<HTMLDivElement>(null);
   const priceEnabled = quote !== null || vehicles.every(v => v.currency === 'USD');
-  const comparisonPrices = useMemo(() => new Map(vehicles.map(v => [v.slug, comparableUsdPrice(v, quote)])), [vehicles, quote]);
+  const comparisonPrices = useMemo(
+    () => new Map(vehicles.map(v => [v.slug, comparableUsdPrice(v, quote)])),
+    [vehicles, quote],
+  );
   const priceCeiling = useMemo(
-    () => Math.ceil(Math.max(...Array.from(comparisonPrices.values()).map(v => v ?? 0), PRICE_STEP) / PRICE_STEP) * PRICE_STEP,
+    () =>
+      Math.ceil(Math.max(...Array.from(comparisonPrices.values()).map(v => v ?? 0), PRICE_STEP) / PRICE_STEP) *
+      PRICE_STEP,
     [comparisonPrices],
   );
   const mileageCeiling = useMemo(
-    () => Math.ceil(Math.max(...vehicles.map(({ mileageKm }) => mileageKm), MILEAGE_STEP) / MILEAGE_STEP) * MILEAGE_STEP,
+    () =>
+      Math.ceil(Math.max(...vehicles.map(({ mileageKm }) => mileageKm), MILEAGE_STEP) / MILEAGE_STEP) * MILEAGE_STEP,
     [vehicles],
   );
   const makes = useMemo(() => [...new Set(vehicles.map(({ make: value }) => value))].sort(), [vehicles]);
@@ -84,7 +94,7 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
   const [maxMileage, setMaxMileage] = useState(initialState.maxMileage);
   const [sort, setSort] = useState<InventorySort>(initialState.sort);
   const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>(() =>
-    initialState.compare.flatMap((slug) => vehicles.filter((vehicle) => vehicle.slug === slug)),
+    initialState.compare.flatMap(slug => vehicles.filter(vehicle => vehicle.slug === slug)),
   );
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
@@ -92,26 +102,45 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
 
   const filteredVehicles = useMemo(() => {
     // Same text, transmission and body rules as saved search alerts (inventory-search.ts).
-    const result = vehicles.filter((vehicle) => {
+    const result = vehicles.filter(vehicle => {
       return (
         matchesSearchText(vehicle, query) &&
         (make === 'all' || vehicle.make === make) &&
         (transmission === 'all' || vehicleTransmissionType(vehicle) === transmission) &&
         (bodyType === 'all' || vehicleBodyType(vehicle) === bodyType) &&
         (fuel === 'all' || vehicle.fuel === fuel) &&
-        (!priceEnabled || ((comparisonPrices.get(vehicle.slug) ?? 0) >= minPrice && (comparisonPrices.get(vehicle.slug) ?? 0) <= maxPrice)) &&
-        vehicle.mileageKm >= minMileage && vehicle.mileageKm <= maxMileage
+        (!priceEnabled ||
+          ((comparisonPrices.get(vehicle.slug) ?? 0) >= minPrice &&
+            (comparisonPrices.get(vehicle.slug) ?? 0) <= maxPrice)) &&
+        vehicle.mileageKm >= minMileage &&
+        vehicle.mileageKm <= maxMileage
       );
     });
 
     return result.toSorted((a, b) => {
       if (sort === 'year') return b.year - a.year;
-      if (priceEnabled && sort === 'price-asc') return (comparisonPrices.get(a.slug) ?? 0) - (comparisonPrices.get(b.slug) ?? 0);
-      if (priceEnabled && sort === 'price-desc') return (comparisonPrices.get(b.slug) ?? 0) - (comparisonPrices.get(a.slug) ?? 0);
+      if (priceEnabled && sort === 'price-asc')
+        return (comparisonPrices.get(a.slug) ?? 0) - (comparisonPrices.get(b.slug) ?? 0);
+      if (priceEnabled && sort === 'price-desc')
+        return (comparisonPrices.get(b.slug) ?? 0) - (comparisonPrices.get(a.slug) ?? 0);
       if (sort === 'mileage') return a.mileageKm - b.mileageKm;
       return vehicles.indexOf(a) - vehicles.indexOf(b);
     });
-  }, [bodyType, fuel, make, maxMileage, maxPrice, minMileage, minPrice, query, sort, transmission, vehicles, priceEnabled, comparisonPrices]);
+  }, [
+    bodyType,
+    fuel,
+    make,
+    maxMileage,
+    maxPrice,
+    minMileage,
+    minPrice,
+    query,
+    sort,
+    transmission,
+    vehicles,
+    priceEnabled,
+    comparisonPrices,
+  ]);
   const filteredVehicleKey = filteredVehicles.map(({ slug }) => slug).join('|');
 
   useGSAP(
@@ -151,11 +180,7 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
 
       const emptyState = resultsRef.current?.querySelector('.catalog-empty');
       if (emptyState) {
-        gsap.fromTo(
-          emptyState,
-          { y: 24, autoAlpha: 0 },
-          { y: 0, autoAlpha: 1, duration: 0.55, ease: 'power3.out' },
-        );
+        gsap.fromTo(emptyState, { y: 24, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.55, ease: 'power3.out' });
       }
     },
     { scope: resultsRef, dependencies: [filteredVehicleKey], revertOnUpdate: true },
@@ -210,11 +235,10 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
     }, 500);
 
     return () => window.clearTimeout(timeout);
-  }, [activeFilterCount, bodyType, filteredVehicles.length, fuel, make, maxMileage, maxPrice, minMileage, minPrice, query, sort, transmission]);
-
-  const nextSearchParams = serializeCatalogUrlState({
+  }, [
+    activeFilterCount,
     bodyType,
-    compare: selectedVehicles.map(({ slug }) => slug),
+    filteredVehicles.length,
     fuel,
     make,
     maxMileage,
@@ -224,7 +248,24 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
     query,
     sort,
     transmission,
-  }, urlBounds);
+  ]);
+
+  const nextSearchParams = serializeCatalogUrlState(
+    {
+      bodyType,
+      compare: selectedVehicles.map(({ slug }) => slug),
+      fuel,
+      make,
+      maxMileage,
+      maxPrice,
+      minMileage,
+      minPrice,
+      query,
+      sort,
+      transmission,
+    },
+    urlBounds,
+  );
 
   const syncsUrl = searchParams !== undefined;
 
@@ -264,7 +305,7 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
         vehicle_slug: vehicle.slug,
         selection_count: selectedVehicles.length - 1,
       });
-      setSelectedVehicles((current) => current.filter(({ slug }) => slug !== vehicle.slug));
+      setSelectedVehicles(current => current.filter(({ slug }) => slug !== vehicle.slug));
       return;
     }
 
@@ -274,7 +315,7 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
       vehicle_slug: vehicle.slug,
       selection_count: selectedVehicles.length + 1,
     });
-    setSelectedVehicles((current) => [...current, vehicle]);
+    setSelectedVehicles(current => [...current, vehicle]);
   };
 
   const removeVehicleComparison = (slug: string) => {
@@ -283,7 +324,7 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
       vehicle_slug: slug,
       selection_count: Math.max(0, selectedVehicles.length - 1),
     });
-    setSelectedVehicles((current) => current.filter((vehicle) => vehicle.slug !== slug));
+    setSelectedVehicles(current => current.filter(vehicle => vehicle.slug !== slug));
   };
 
   const openVehicleComparison = () => {
@@ -369,7 +410,7 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
           />
           {filteredVehicles.length > 0 ? (
             <div className="catalog-grid">
-              {filteredVehicles.map((vehicle) => {
+              {filteredVehicles.map(vehicle => {
                 const isSelected = selectedVehicleSlugs.has(vehicle.slug);
                 return (
                   <CatalogVehicleCard
@@ -385,14 +426,16 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
             </div>
           ) : (
             <CatalogEmptyState
-              alertAction={alertsEnabled ? (
-                <InventoryAlert
-                  activeFilterCount={activeFilterCount}
-                  criteria={alertCriteria}
-                  placement="empty"
-                  resultCount={0}
-                />
-              ) : null}
+              alertAction={
+                alertsEnabled ? (
+                  <InventoryAlert
+                    activeFilterCount={activeFilterCount}
+                    criteria={alertCriteria}
+                    placement="empty"
+                    resultCount={0}
+                  />
+                ) : null
+              }
               onReset={resetFilters}
             />
           )}
@@ -429,7 +472,9 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
         </div>
         <ButtonAnchor
           href={getWhatsAppUrl(WHATSAPP_CATALOG_MESSAGE)}
-          onClick={() => captureAnalyticsEvent('contact_intent_clicked', { channel: 'whatsapp', placement: 'catalog_contact' })}
+          onClick={() =>
+            captureAnalyticsEvent('contact_intent_clicked', { channel: 'whatsapp', placement: 'catalog_contact' })
+          }
           rel="noreferrer"
           target="_blank"
           variant="accent"

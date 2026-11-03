@@ -3,12 +3,7 @@ import 'server-only';
 import { failure, safeFailure, type IntegrationIncident } from './failures';
 import { parseMercadoLibreResponse } from './response';
 import { mapMercadoLibreItemToVehicle } from '@/features/vehicles/data/mercado-libre-vehicle-mapper';
-import type {
-  MercadoLibreBulkItem,
-  MercadoLibreDescription,
-  MercadoLibreItem,
-  MercadoLibrePublication,
-} from './types';
+import type { MercadoLibreBulkItem, MercadoLibreDescription, MercadoLibreItem, MercadoLibrePublication } from './types';
 
 // The Mercado Libre read API: the seller, its items, bulk item reads and categories. OAuth (authorization,
 // code exchange and token refresh) is in oauth.ts.
@@ -63,8 +58,11 @@ async function fetchMercadoLibre<T>(path: string, accessToken: string) {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-    cache: 'no-store', signal: AbortSignal.timeout(20_000),
-  }).catch(error => { throw safeFailure(error, 'catalog_query'); });
+    cache: 'no-store',
+    signal: AbortSignal.timeout(20_000),
+  }).catch(error => {
+    throw safeFailure(error, 'catalog_query');
+  });
 
   return parseMercadoLibreResponse<T>(response, 'catalog_query');
 }
@@ -74,8 +72,11 @@ async function fetchOptionalMercadoLibre<T>(path: string, accessToken: string) {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
-    cache: 'no-store', signal: AbortSignal.timeout(20_000),
-  }).catch(error => { throw safeFailure(error, 'catalog_query'); });
+    cache: 'no-store',
+    signal: AbortSignal.timeout(20_000),
+  }).catch(error => {
+    throw safeFailure(error, 'catalog_query');
+  });
 
   if (response.status === 404) return null;
 
@@ -83,9 +84,8 @@ async function fetchOptionalMercadoLibre<T>(path: string, accessToken: string) {
 }
 
 function chunks<T>(values: T[], size: number) {
-  return Array.from(
-    { length: Math.ceil(values.length / size) },
-    (_, index) => values.slice(index * size, (index + 1) * size),
+  return Array.from({ length: Math.ceil(values.length / size) }, (_, index) =>
+    values.slice(index * size, (index + 1) * size),
   );
 }
 
@@ -137,8 +137,13 @@ async function readAllItemIds(userId: number, accessToken: string) {
 
 /** Why the bulk read did not return an item. Only the per-item HTTP status is kept. */
 function unreadIncident(statusCode: unknown) {
-  const httpError = typeof statusCode === 'number' && Number.isInteger(statusCode) && statusCode >= 400 && statusCode <= 599;
-  return failure('catalog_query', httpError ? 'http_error' : 'invalid_response', httpError ? { httpStatus: statusCode } : {}).incident;
+  const httpError =
+    typeof statusCode === 'number' && Number.isInteger(statusCode) && statusCode >= 400 && statusCode <= 599;
+  return failure(
+    'catalog_query',
+    httpError ? 'http_error' : 'invalid_response',
+    httpError ? { httpStatus: statusCode } : {},
+  ).incident;
 }
 
 /**
@@ -167,7 +172,7 @@ export async function readMercadoLibrePublications(accessToken: string) {
   const user = await fetchMercadoLibre<MercadoLibreUser>('/users/me', accessToken);
   const { itemIds, total } = await readAllItemIds(user.id, accessToken);
   const { items, unread } = await readItems(itemIds, accessToken);
-  const publications = items.map((item) => mapMercadoLibreItemToVehicle(item));
+  const publications = items.map(item => mapMercadoLibreItemToVehicle(item));
 
   return {
     seller: {
@@ -187,8 +192,12 @@ export async function readMercadoLibrePublications(accessToken: string) {
 
 /** The category's ancestry, root first and ending with the category itself. */
 export async function readMercadoLibreCategoryPath(categoryId: string, accessToken: string) {
-  const category = await fetchMercadoLibre<MercadoLibreCategory>(`/categories/${encodeURIComponent(categoryId)}`, accessToken);
-  if (!Array.isArray(category.path_from_root) || !category.path_from_root.length) throw failure('catalog_query', 'invalid_response');
+  const category = await fetchMercadoLibre<MercadoLibreCategory>(
+    `/categories/${encodeURIComponent(categoryId)}`,
+    accessToken,
+  );
+  if (!Array.isArray(category.path_from_root) || !category.path_from_root.length)
+    throw failure('catalog_query', 'invalid_response');
   return category.path_from_root.map(({ id }) => id);
 }
 
@@ -201,10 +210,7 @@ export async function readMercadoLibrePublication(
       `/items/${encodeURIComponent(itemId)}?include_internal_attributes=true`,
       accessToken,
     ),
-    fetchOptionalMercadoLibre<MercadoLibreDescription>(
-      `/items/${encodeURIComponent(itemId)}/description`,
-      accessToken,
-    ),
+    fetchOptionalMercadoLibre<MercadoLibreDescription>(`/items/${encodeURIComponent(itemId)}/description`, accessToken),
   ]);
 
   return mapMercadoLibreItemToVehicle(item, description);

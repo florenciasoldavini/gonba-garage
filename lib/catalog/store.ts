@@ -5,8 +5,16 @@ import type { VehicleCategory } from '@/lib/integrations/mercado-libre/vehicle-c
 import { getSql } from '@/lib/database';
 import { parseJobLease, parseRow, parseRows } from '@/lib/database-rows';
 import {
-  NO_RECONCILIATION, parseCatalogPublication, parseCatalogVehicle, parseDueCheck, parseJobHealth, parsePublicationHealth,
-  parseQueuedNotification, parseReconciliationHealth, parseSaveResult, parseStoredSyncState,
+  NO_RECONCILIATION,
+  parseCatalogPublication,
+  parseCatalogVehicle,
+  parseDueCheck,
+  parseJobHealth,
+  parsePublicationHealth,
+  parseQueuedNotification,
+  parseReconciliationHealth,
+  parseSaveResult,
+  parseStoredSyncState,
 } from './rows';
 
 /**
@@ -36,7 +44,8 @@ function toTimestamp(value: unknown) {
 }
 
 export async function listActiveCatalogVehicles() {
-  const rows = await getSql()`SELECT publication_id, slug, status, vehicle, content_changed_at FROM public.catalog_publications
+  const rows =
+    await getSql()`SELECT publication_id, slug, status, vehicle, content_changed_at FROM public.catalog_publications
     WHERE status = 'active' ORDER BY listed_at DESC NULLS LAST, publication_id DESC`;
   return parseRows('catalog_publications', rows, parseCatalogVehicle);
 }
@@ -61,13 +70,22 @@ export async function findCatalogPublication(id: string): Promise<CatalogPublica
  * the alert work. A listing first seen more than NEW_LISTING_DAYS after it was published (a
  * backfill or a fresh database) is old stock, not news, and records nothing.
  */
-export async function savePublication(publication: MercadoLibrePublication, vehicleCategory: VehicleCategory, lease: string) {
+export async function savePublication(
+  publication: MercadoLibrePublication,
+  vehicleCategory: VehicleCategory,
+  lease: string,
+) {
   const { source, description } = publication;
   // Slug, status and updatedAt live in their own columns. updatedAt is ours, not the provider's.
   const { slug, status, ...vehicle } = publication.vehicle;
   const storedVehicle = JSON.stringify({ ...vehicle, updatedAt: undefined });
-  const publicSource = { id: source.id, title: source.title, pictures: source.pictures ?? [],
-    attributes: source.attributes ?? [], permalink: source.permalink ?? null };
+  const publicSource = {
+    id: source.id,
+    title: source.title,
+    pictures: source.pictures ?? [],
+    attributes: source.attributes ?? [],
+    permalink: source.permalink ?? null,
+  };
   const rows = await getSql()`WITH lease AS (
       SELECT 1 FROM public.catalog_sync_jobs WHERE publication_id = ${source.id}::text AND lease_id = ${lease}::uuid
     ), previous AS (
@@ -309,7 +327,9 @@ export async function readSyncHealth() {
     reconciliation: runs.length ? parseRow('catalog_sync_runs', runs[0], parseReconciliationHealth) : NO_RECONCILIATION,
     jobs: parseRow('catalog_sync_jobs', jobs[0], parseJobHealth),
     publications: Object.fromEntries(groups.map(({ status, count }) => [status, count])),
-    lastSyncedAt: groups.reduce<string | null>((latest, group) =>
-      !latest || group.lastSyncedAt > latest ? group.lastSyncedAt : latest, null),
+    lastSyncedAt: groups.reduce<string | null>(
+      (latest, group) => (!latest || group.lastSyncedAt > latest ? group.lastSyncedAt : latest),
+      null,
+    ),
   };
 }

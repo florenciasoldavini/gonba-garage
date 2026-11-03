@@ -1,4 +1,13 @@
 /* Emailed alert confirmation result */
-.alert-result-page { min-height: 100vh; overflow: clip; }
-.alert-result-layout { padding-block: var(--page-content-top) clamp(90px, 11vw, 150px); display: grid; justify-items: center; }
-.alert-result { width: min(100%, 820px); }
+.alert-result-page {
+  min-height: 100vh;
+  overflow: clip;
+}
+.alert-result-layout {
+  padding-block: var(--page-content-top) clamp(90px, 11vw, 150px);
+  display: grid;
+  justify-items: center;
+}
+.alert-result {
+  width: min(100%, 820px);
+}

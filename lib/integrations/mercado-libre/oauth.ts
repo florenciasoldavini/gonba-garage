@@ -74,8 +74,11 @@ export async function exchangeMercadoLibreAuthorizationCode(code: string, verifi
       redirect_uri: redirectUri,
       code_verifier: verifier,
     }),
-    cache: 'no-store', signal: AbortSignal.timeout(20_000),
-  }).catch(error => { throw safeFailure(error, 'authorization_exchange'); });
+    cache: 'no-store',
+    signal: AbortSignal.timeout(20_000),
+  }).catch(error => {
+    throw safeFailure(error, 'authorization_exchange');
+  });
 
   return parseMercadoLibreResponse<MercadoLibreTokenResponse>(response, 'authorization_exchange');
 }
@@ -90,7 +93,10 @@ export async function refreshMercadoLibreToken(refreshToken: string) {
       client_secret: requireMercadoLibreEnv('clientSecret'),
       refresh_token: refreshToken,
     }),
-    cache: 'no-store', signal: AbortSignal.timeout(20_000),
-  }).catch(error => { throw safeFailure(error, 'token_refresh'); });
+    cache: 'no-store',
+    signal: AbortSignal.timeout(20_000),
+  }).catch(error => {
+    throw safeFailure(error, 'token_refresh');
+  });
   return parseMercadoLibreResponse<MercadoLibreTokenResponse>(response, 'token_refresh', 'token_response');
 }

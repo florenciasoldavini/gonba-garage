@@ -107,11 +107,7 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
         { scale: 0.78, x: 14, autoAlpha: 0 },
         { scale: 1, x: 0, autoAlpha: 1, stagger: 0.055, duration: 0.42, ease: 'back.out(1.5)' },
       );
-      gsap.fromTo(
-        '.compare-dock-heading > span',
-        { scale: 0.75 },
-        { scale: 1, duration: 0.42, ease: 'back.out(1.7)' },
-      );
+      gsap.fromTo('.compare-dock-heading > span', { scale: 0.75 }, { scale: 1, duration: 0.42, ease: 'back.out(1.7)' });
     },
     { scope: root, dependencies: [vehicleKey], revertOnUpdate: false },
   );
@@ -132,7 +128,9 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
 
   return (
     <>
-      <p className="sr-only" role="status">{getStatusMessage(vehicles, maximum)}</p>
+      <p className="sr-only" role="status">
+        {getStatusMessage(vehicles, maximum)}
+      </p>
       <div
         className="compare-dock-shell"
         aria-hidden={!isVisible}
@@ -143,24 +141,39 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
         {/* The full dock wherever it fits; the compact one below 741px (see vehicle-compare-dock.css). */}
         <div className="compare-dock compare-dock-wide glass-panel">
           <div className="compare-dock-heading">
-            <span><Scale aria-hidden="true" size={17} strokeWidth={1.8} /></span>
-            <div><strong>Comparar vehículos</strong><small>{count} de {maximum} {count === 1 ? 'seleccionado' : 'seleccionados'}</small></div>
+            <span>
+              <Scale aria-hidden="true" size={17} strokeWidth={1.8} />
+            </span>
+            <div>
+              <strong>Comparar vehículos</strong>
+              <small>
+                {count} de {maximum} {count === 1 ? 'seleccionado' : 'seleccionados'}
+              </small>
+            </div>
           </div>
           <div className="compare-dock-slots">
-            {vehicles.map((vehicle) => (
+            {vehicles.map(vehicle => (
               <div className="compare-dock-thumb" key={vehicle.slug}>
                 <Image src={vehicle.image} alt="" fill sizes="76px" className="cover-image" />
-                <button type="button" aria-label={`Quitar ${getVehicleName(vehicle)}`} onClick={() => onRemove(vehicle.slug)}>
+                <button
+                  type="button"
+                  aria-label={`Quitar ${getVehicleName(vehicle)}`}
+                  onClick={() => onRemove(vehicle.slug)}
+                >
                   <X aria-hidden="true" size={11} />
                 </button>
               </div>
             ))}
             {Array.from({ length: Math.max(0, maximum - count) }, (_, index) => (
-              <div className="compare-dock-empty" aria-hidden="true" key={index}>+</div>
+              <div className="compare-dock-empty" aria-hidden="true" key={index}>
+                +
+              </div>
             ))}
           </div>
           <div className="compare-dock-actions">
-            <button className="compare-dock-clear" type="button" onClick={onClear}>Limpiar</button>
+            <button className="compare-dock-clear" type="button" onClick={onClear}>
+              Limpiar
+            </button>
             <Button type="button" disabled={!canCompare} onClick={onCompare}>
               Comparar {count > 1 ? count : ''} <Scale aria-hidden="true" size={15} strokeWidth={1.8} />
             </Button>
@@ -177,7 +190,7 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
             onClick={() => setIsSelectionOpen(true)}
           >
             <span className="compare-dock-avatars" aria-hidden="true">
-              {vehicles.map((vehicle) => (
+              {vehicles.map(vehicle => (
                 <span className="compare-dock-avatar" key={vehicle.slug}>
                   <Image src={vehicle.image} alt="" fill sizes="40px" className="cover-image" />
                 </span>
@@ -188,7 +201,14 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
             </span>
             <span className="compare-dock-copy">
               <strong>
-                {canCompare ? <>{count} de {maximum}<span className="compare-dock-copy-extra"> elegidos</span></> : hint}
+                {canCompare ? (
+                  <>
+                    {count} de {maximum}
+                    <span className="compare-dock-copy-extra"> elegidos</span>
+                  </>
+                ) : (
+                  hint
+                )}
               </strong>
               <small>
                 {canCompare ? (count >= maximum ? hint : 'Ver o quitar') : `${count} de ${maximum} · Ver selección`}
@@ -211,14 +231,21 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
         aria-labelledby={`${selectionId}-title`}
         aria-describedby={`${selectionId}-hint`}
         onClose={() => setIsSelectionOpen(false)}
-        onCancel={(event) => { event.preventDefault(); closeDialog(); }}
-        onClick={(event) => { if (event.target === event.currentTarget) closeDialog(); }}
+        onCancel={event => {
+          event.preventDefault();
+          closeDialog();
+        }}
+        onClick={event => {
+          if (event.target === event.currentTarget) closeDialog();
+        }}
       >
         <div className="compare-selection-panel">
           <header className="compare-selection-header">
             <div>
               <strong id={`${selectionId}-title`}>Tu comparación</strong>
-              <small id={`${selectionId}-hint`}>{count} de {maximum} · {hint}</small>
+              <small id={`${selectionId}-hint`}>
+                {count} de {maximum} · {hint}
+              </small>
             </div>
             <button
               className="compare-selection-icon-button"
@@ -227,7 +254,7 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
               onClick={closeDialog}
               // showModal() focuses the [autofocus] element. React's `autoFocus` prop only focuses on
               // mount and never writes the attribute.
-              ref={(button) => button?.setAttribute('autofocus', '')}
+              ref={button => button?.setAttribute('autofocus', '')}
             >
               <X aria-hidden="true" size={18} />
             </button>
@@ -254,9 +281,17 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
             ))}
           </ul>
           <footer className="compare-selection-footer">
-            <Button type="button" variant="ghost" onClick={() => closeDialogAfter(onClear)}>Limpiar</Button>
+            <Button type="button" variant="ghost" onClick={() => closeDialogAfter(onClear)}>
+              Limpiar
+            </Button>
             <Button type="button" disabled={!canCompare} onClick={() => closeDialogAfter(onCompare)}>
-              {canCompare ? <>Comparar {count} <Scale aria-hidden="true" size={15} strokeWidth={1.8} /></> : hint}
+              {canCompare ? (
+                <>
+                  Comparar {count} <Scale aria-hidden="true" size={15} strokeWidth={1.8} />
+                </>
+              ) : (
+                hint
+              )}
             </Button>
           </footer>
         </div>

@@ -20,19 +20,25 @@ function storage() {
       const result = await get(pathname, { access: 'private', useCache: false });
       if (!result) return null;
       if (result.statusCode !== 200) throw new Error('Unable to read credentials');
-      const record = await new Response(result.stream).json() as TokenRecord;
-      if (record.version !== 1 || typeof record.encryptedRefreshToken !== 'string' ||
+      const record = (await new Response(result.stream).json()) as TokenRecord;
+      if (
+        record.version !== 1 ||
+        typeof record.encryptedRefreshToken !== 'string' ||
         (record.refreshStartedAt !== null && !Number.isFinite(record.refreshStartedAt)) ||
         (record.encryptedAccessToken !== undefined && typeof record.encryptedAccessToken !== 'string') ||
-        (record.accessTokenExpiresAt !== undefined && !Number.isFinite(record.accessTokenExpiresAt))) {
+        (record.accessTokenExpiresAt !== undefined && !Number.isFinite(record.accessTokenExpiresAt))
+      ) {
         throw new Error('Invalid credential record');
       }
       return { record, etag: result.blob.etag };
     },
     async write(record: TokenRecord, etag?: string) {
       const result = await put(pathname, JSON.stringify(record), {
-        access: 'private', addRandomSuffix: false, allowOverwrite: !!etag,
-        ...(etag ? { ifMatch: etag } : {}), contentType: 'application/json',
+        access: 'private',
+        addRandomSuffix: false,
+        allowOverwrite: !!etag,
+        ...(etag ? { ifMatch: etag } : {}),
+        contentType: 'application/json',
       });
       return result.etag;
     },
@@ -45,18 +51,25 @@ function store() {
 
 /** Private, read-only health view. Does not refresh tokens or expose encrypted credentials or access tokens. */
 export async function readConnectionDiagnostics() {
-  const existing = await storage().read().catch(error => { throw safeFailure(error, 'credential_read'); });
+  const existing = await storage()
+    .read()
+    .catch(error => {
+      throw safeFailure(error, 'credential_read');
+    });
   if (!existing) return { state: 'not_connected', lastFailure: null };
   const { refreshStartedAt, lastFailure } = existing.record;
-  const lockAgeSeconds = refreshStartedAt === null ? null : Math.max(0, Math.floor((Date.now() - refreshStartedAt) / 1000));
+  const lockAgeSeconds =
+    refreshStartedAt === null ? null : Math.max(0, Math.floor((Date.now() - refreshStartedAt) / 1000));
   return {
     state: lockAgeSeconds === null ? 'connected' : lockAgeSeconds < 120 ? 'renewing' : 'reauthorization_required',
     // An unlocked record is present, but this read-only check does not prove provider acceptance.
     providerVerified: false,
     refreshStartedAt: refreshStartedAt === null ? null : new Date(refreshStartedAt).toISOString(),
     lockAgeSeconds,
-    incidentId: typeof existing.record.refreshIncidentId === 'string' && /^[a-f0-9-]{36}$/.test(existing.record.refreshIncidentId)
-      ? existing.record.refreshIncidentId : null,
+    incidentId:
+      typeof existing.record.refreshIncidentId === 'string' && /^[a-f0-9-]{36}$/.test(existing.record.refreshIncidentId)
+        ? existing.record.refreshIncidentId
+        : null,
     lastFailure: readSafeIncident(lastFailure),
   };
 }
@@ -86,10 +99,15 @@ function decrypt(value: string) {
 
 export async function saveAuthorization(sellerId: number, token: string) {
   if (String(sellerId) !== requireMercadoLibreEnv('sellerId')) throw new Error('Unexpected seller');
-  try { await store().authorize(token); }
-  catch (error) { throw safeFailure(error, 'credential_save'); }
+  try {
+    await store().authorize(token);
+  } catch (error) {
+    throw safeFailure(error, 'credential_save');
+  }
 }
 
-export async function sharedAccessToken(renew: (token: string, save: (next: string, access: AccessToken) => Promise<void>) => Promise<AccessToken>) {
+export async function sharedAccessToken(
+  renew: (token: string, save: (next: string, access: AccessToken) => Promise<void>) => Promise<AccessToken>,
+) {
   return store().accessToken(renew);
 }

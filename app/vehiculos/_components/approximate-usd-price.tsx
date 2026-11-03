@@ -15,7 +15,9 @@ export function ApproximateUsdPrice({ className, quote, vehicle }: ApproximateUs
   if (!usd) return null;
   return (
     <small className={['price-usd-approx', className].filter(Boolean).join(' ')} title="Aproximado al dólar MEP">
-      <span aria-hidden="true">≈ </span><span className="sr-only">Aproximadamente </span>{usd}
+      <span aria-hidden="true">≈ </span>
+      <span className="sr-only">Aproximadamente </span>
+      {usd}
     </small>
   );
 }

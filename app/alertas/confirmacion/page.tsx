@@ -63,7 +63,10 @@ function confirmed(type: string | undefined, vehicleSlug: string | undefined): R
         eyebrow: 'Alerta confirmada',
         title: 'Guardamos tu búsqueda.',
         text: 'Por ahora no estamos enviando avisos de búsqueda por email. Si querés que te avisemos cuando entre algo así, escribinos por WhatsApp.',
-        actions: [{ label: 'Escribinos por WhatsApp', href: getWhatsAppUrl(WHATSAPP_CATALOG_MESSAGE), external: true }, browse],
+        actions: [
+          { label: 'Escribinos por WhatsApp', href: getWhatsAppUrl(WHATSAPP_CATALOG_MESSAGE), external: true },
+          browse,
+        ],
       };
     }
     return {
@@ -88,18 +91,28 @@ function confirmed(type: string | undefined, vehicleSlug: string | undefined): R
       'Revisamos el precio todos los días.',
       'Cada aviso incluye un enlace para cancelar la alerta.',
     ],
-    actions: vehicle ? [{ label: 'Volver al vehículo', href: vehicle }, { label: 'Ver más vehículos', href: '/vehiculos' }] : [browse],
+    actions: vehicle
+      ? [
+          { label: 'Volver al vehículo', href: vehicle },
+          { label: 'Ver más vehículos', href: '/vehiculos' },
+        ]
+      : [browse],
   };
 }
 
 const single = (value: string | string[] | undefined) => (typeof value === 'string' ? value : undefined);
 
-export default async function AlertConfirmationPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+export default async function AlertConfirmationPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const params = await searchParams;
   const state = single(params.estado);
-  const result = state === 'confirmada'
-    ? confirmed(single(params.tipo), single(params.vehiculo))
-    : failures[state ?? ''] ?? failures['no-valido'];
+  const result =
+    state === 'confirmada'
+      ? confirmed(single(params.tipo), single(params.vehiculo))
+      : (failures[state ?? ''] ?? failures['no-valido']);
 
   return (
     <div className="alert-result-page" id="alert-result-top">
@@ -112,15 +125,23 @@ export default async function AlertConfirmationPage({ searchParams }: { searchPa
           <p>{result.text}</p>
           {result.steps && <StatusSteps steps={result.steps} />}
           <div className="status-actions">
-            {result.actions.map((action, index) => action.external ? (
-              <ButtonAnchor key={action.href} href={action.href} rel="noreferrer" target="_blank" variant={index === 0 ? 'accent' : 'glass'}>
-                {action.label} {index === 0 && <ArrowUpRight aria-hidden="true" size={16} />}
-              </ButtonAnchor>
-            ) : (
-              <ButtonLink key={action.href} href={action.href} variant={index === 0 ? 'accent' : 'glass'}>
-                {action.label} {index === 0 && <ArrowUpRight aria-hidden="true" size={16} />}
-              </ButtonLink>
-            ))}
+            {result.actions.map((action, index) =>
+              action.external ? (
+                <ButtonAnchor
+                  key={action.href}
+                  href={action.href}
+                  rel="noreferrer"
+                  target="_blank"
+                  variant={index === 0 ? 'accent' : 'glass'}
+                >
+                  {action.label} {index === 0 && <ArrowUpRight aria-hidden="true" size={16} />}
+                </ButtonAnchor>
+              ) : (
+                <ButtonLink key={action.href} href={action.href} variant={index === 0 ? 'accent' : 'glass'}>
+                  {action.label} {index === 0 && <ArrowUpRight aria-hidden="true" size={16} />}
+                </ButtonLink>
+              ),
+            )}
           </div>
         </AlertResultMotion>
       </main>

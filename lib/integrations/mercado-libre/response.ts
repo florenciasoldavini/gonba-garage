@@ -7,10 +7,16 @@ import { failure, providerFailure, type FailureStage } from './failures';
  * fails at `stage`, an unreadable body at `invalidResponseStage` (the token refresh reports that as
  * `token_response`).
  */
-export async function parseMercadoLibreResponse<T>(response: Response, stage: FailureStage, invalidResponseStage = stage) {
+export async function parseMercadoLibreResponse<T>(
+  response: Response,
+  stage: FailureStage,
+  invalidResponseStage = stage,
+) {
   if (!response.ok) {
     throw await providerFailure(response, stage);
   }
 
-  return response.json().catch(() => { throw failure(invalidResponseStage, 'invalid_response'); }) as Promise<T>;
+  return response.json().catch(() => {
+    throw failure(invalidResponseStage, 'invalid_response');
+  }) as Promise<T>;
 }

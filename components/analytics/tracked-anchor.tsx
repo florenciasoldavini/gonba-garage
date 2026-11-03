@@ -14,5 +14,7 @@ export function TrackedAnchor({ analyticsEvent, ...props }: TrackedProps<Compone
 }
 
 export function TrackedButtonAnchor({ analyticsEvent, ...props }: TrackedProps<ComponentProps<typeof ButtonAnchor>>) {
-  return <ButtonAnchor {...props} onClick={() => captureAnalyticsEvent(analyticsEvent.name, analyticsEvent.properties)} />;
+  return (
+    <ButtonAnchor {...props} onClick={() => captureAnalyticsEvent(analyticsEvent.name, analyticsEvent.properties)} />
+  );
 }

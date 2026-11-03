@@ -14,11 +14,14 @@ export function createSql(getDb, faults = {}) {
   function sql(strings, ...values) {
     const text = strings.reduce((result, part, i) => result + part + (i < values.length ? `$${i + 1}` : ''), '');
     return {
-      text, values,
+      text,
+      values,
       then(onFulfilled, onRejected) {
         const rows = faults.query
           ? Promise.reject(Error('Simulated database outage'))
-          : getDb().query(text, values).then(result => result.rows);
+          : getDb()
+              .query(text, values)
+              .then(result => result.rows);
         return rows.then(onFulfilled, onRejected);
       },
     };

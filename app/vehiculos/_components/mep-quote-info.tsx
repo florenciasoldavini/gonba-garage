@@ -36,15 +36,28 @@ export function MepQuoteInfo({ quote }: { quote: CatalogMepQuote }) {
         aria-label="Cotización usada para el precio en USD"
         aria-expanded={isOpen}
         aria-controls={panelId}
-        onClick={() => setIsOpen((current) => !current)}
+        onClick={() => setIsOpen(current => !current)}
       >
         <Info aria-hidden="true" size={13} strokeWidth={2} />
       </button>
       <div className="mep-quote-info-panel" id={panelId} hidden={!isOpen}>
         <dl>
-          <div><dt>Referencia</dt><dd>Dólar MEP venta, $ {arsPerUsdFormatter.format(quote.arsPerUsd)} por USD</dd></div>
-          <div><dt>Fuente</dt><dd><a href="https://dolarapi.com" target="_blank" rel="noreferrer">DolarAPI</a></dd></div>
-          <div><dt>Actualización</dt><dd>{quote.updatedAtLabel} (Argentina)</dd></div>
+          <div>
+            <dt>Referencia</dt>
+            <dd>Dólar MEP venta, $ {arsPerUsdFormatter.format(quote.arsPerUsd)} por USD</dd>
+          </div>
+          <div>
+            <dt>Fuente</dt>
+            <dd>
+              <a href="https://dolarapi.com" target="_blank" rel="noreferrer">
+                DolarAPI
+              </a>
+            </dd>
+          </div>
+          <div>
+            <dt>Actualización</dt>
+            <dd>{quote.updatedAtLabel} (Argentina)</dd>
+          </div>
         </dl>
         <p>Conversión orientativa para filtrar y ordenar; cotización de pago a confirmar con la agencia.</p>
       </div>

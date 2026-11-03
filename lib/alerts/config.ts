@@ -24,7 +24,12 @@ export function requireAlertConfig() {
  * redeploy.
  */
 export function alertEmailsConfigured() {
-  try { requireAlertConfig(); return true; } catch { return false; }
+  try {
+    requireAlertConfig();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function cronAuthorized(request: Request) {
@@ -39,4 +44,8 @@ export function cronAuthorized(request: Request) {
 /** Signup confirmation links stop working after this many hours. */
 export const confirmationLifetimeHours = 72;
 
-export const privateHeaders = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' };
+export const privateHeaders = {
+  'Cache-Control': 'private, no-store',
+  'X-Robots-Tag': 'noindex, nofollow',
+  'Referrer-Policy': 'no-referrer',
+};

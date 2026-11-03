@@ -17,10 +17,17 @@ export async function GET(request: Request) {
   }
   const basicRequest = new Request(request.url, { headers: { Authorization: `Bearer ${password}` } });
   if (!authorized(request) && !authorized(basicRequest)) {
-    return NextResponse.json({ message: 'Acceso privado' }, { status: 401, headers: {
-      'WWW-Authenticate': 'Basic realm="Gonba Garage", charset="UTF-8"',
-      'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow',
-    } });
+    return NextResponse.json(
+      { message: 'Acceso privado' },
+      {
+        status: 401,
+        headers: {
+          'WWW-Authenticate': 'Basic realm="Gonba Garage", charset="UTF-8"',
+          'Cache-Control': 'no-store',
+          'X-Robots-Tag': 'noindex, nofollow',
+        },
+      },
+    );
   }
   try {
     const attempt = createMercadoLibreOAuthAttempt();
@@ -41,10 +48,7 @@ export async function GET(request: Request) {
 
     return response;
   } catch (error) {
-    console.error(
-      'Unable to start Mercado Libre read test',
-      error instanceof Error ? error.message : error,
-    );
+    console.error('Unable to start Mercado Libre read test', error instanceof Error ? error.message : error);
     return NextResponse.json(
       { message: 'Faltan credenciales de Mercado Libre en el servidor.' },
       {

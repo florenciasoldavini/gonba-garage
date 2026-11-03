@@ -51,7 +51,8 @@ export async function readJsonResponse<T>(response: Response): Promise<JsonResul
   if (response.ok) return body === null ? { ok: false, failure: serverFailure } : { ok: true, data: body as T };
 
   const { message, field } = (body && typeof body === 'object' ? body : {}) as { message?: unknown; field?: unknown };
-  if (typeof message !== 'string' || !message.trim() || message.length > 300) return { ok: false, failure: serverFailure };
+  if (typeof message !== 'string' || !message.trim() || message.length > 300)
+    return { ok: false, failure: serverFailure };
 
   return {
     ok: false,

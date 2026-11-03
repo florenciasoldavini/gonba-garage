@@ -2,8 +2,14 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'vitest';
 import { orderFeaturedVehicles } from '@/features/vehicles/domain/featured-order';
 
-const car = (id, make, year, mileageKm, image = `https://http2.mlstatic.com/D_${id}-F.jpg`) => ({ id, make, year, mileageKm, image });
-const ids = (vehicles) => orderFeaturedVehicles(vehicles, 2026).map(({ id }) => id);
+const car = (id, make, year, mileageKm, image = `https://http2.mlstatic.com/D_${id}-F.jpg`) => ({
+  id,
+  make,
+  year,
+  mileageKm,
+  image,
+});
+const ids = vehicles => orderFeaturedVehicles(vehicles, 2026).map(({ id }) => id);
 
 describe('featured catalog order', () => {
   it('opens with the newest, least driven cars of different makes, then keeps the listing order', () => {
@@ -19,14 +25,24 @@ describe('featured catalog order', () => {
       car('suv-new', 'Toyota', 2023, 40_000),
     ];
     assert.deepEqual(ids(stock), [
-      'suv-new', 'suv', 'hatch',
-      'small', 'suv-used', 'pickup',
-      'old-high-km', 'older-classic',
+      'suv-new',
+      'suv',
+      'hatch',
+      'small',
+      'suv-used',
+      'pickup',
+      'old-high-km',
+      'older-classic',
     ]);
   });
 
   it('repeats a make only when there are not enough makes', () => {
-    const stock = [car('a', 'Toyota', 2020, 50_000), car('b', 'Toyota', 2023, 30_000), car('c', 'Ford', 2019, 60_000), car('d', 'Toyota', 2022, 40_000)];
+    const stock = [
+      car('a', 'Toyota', 2020, 50_000),
+      car('b', 'Toyota', 2023, 30_000),
+      car('c', 'Ford', 2019, 60_000),
+      car('d', 'Toyota', 2022, 40_000),
+    ];
     assert.deepEqual(ids(stock), ['b', 'c', 'd', 'a']);
   });
 

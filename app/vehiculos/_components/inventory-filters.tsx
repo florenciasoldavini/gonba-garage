@@ -71,48 +71,91 @@ export function InventoryFilters({
   className = '',
 }: InventoryFiltersProps) {
   return (
-    <aside className={`catalog-filters glass-panel${className ? ` ${className}` : ''}`} aria-label="Filtros del inventario">
+    <aside
+      className={`catalog-filters glass-panel${className ? ` ${className}` : ''}`}
+      aria-label="Filtros del inventario"
+    >
       <div className="catalog-filter-heading">
         <div>
-          <span className="catalog-kicker"><SlidersHorizontal aria-hidden="true" size={13} /> Filtrar</span>
+          <span className="catalog-kicker">
+            <SlidersHorizontal aria-hidden="true" size={13} /> Filtrar
+          </span>
           <strong>Encontrá tu auto</strong>
         </div>
         {activeFilterCount > 0 ? (
-          <button type="button" onClick={onReset}>Limpiar ({activeFilterCount})</button>
+          <button type="button" onClick={onReset}>
+            Limpiar ({activeFilterCount})
+          </button>
         ) : null}
       </div>
 
       <div className="catalog-field">
         <span>Marca</span>
-        <CustomSelect ariaLabel="Filtrar por marca" value={make} onChange={onMakeChange} options={[{ value: 'all', label: 'Todas las marcas' }, ...makes.map((value) => ({ value, label: value }))]} />
+        <CustomSelect
+          ariaLabel="Filtrar por marca"
+          value={make}
+          onChange={onMakeChange}
+          options={[{ value: 'all', label: 'Todas las marcas' }, ...makes.map(value => ({ value, label: value }))]}
+        />
       </div>
       <div className="catalog-field">
         <span>Transmisión</span>
-        <CustomSelect ariaLabel="Filtrar por transmisión" value={transmission} onChange={onTransmissionChange} options={[{ value: 'all', label: 'Todas' }, { value: 'automatic', label: 'Automática' }, { value: 'manual', label: 'Manual' }]} />
+        <CustomSelect
+          ariaLabel="Filtrar por transmisión"
+          value={transmission}
+          onChange={onTransmissionChange}
+          options={[
+            { value: 'all', label: 'Todas' },
+            { value: 'automatic', label: 'Automática' },
+            { value: 'manual', label: 'Manual' },
+          ]}
+        />
       </div>
       <div className="catalog-field">
         <span>Tipo</span>
-        <CustomSelect ariaLabel="Filtrar por tipo de carrocería" value={bodyType} onChange={onBodyTypeChange} options={[{ value: 'all', label: 'Todas las carrocerías' }, ...bodyTypes.map((value) => ({ value, label: value }))]} />
+        <CustomSelect
+          ariaLabel="Filtrar por tipo de carrocería"
+          value={bodyType}
+          onChange={onBodyTypeChange}
+          options={[
+            { value: 'all', label: 'Todas las carrocerías' },
+            ...bodyTypes.map(value => ({ value, label: value })),
+          ]}
+        />
       </div>
       <div className="catalog-field">
         <span>Combustible</span>
-        <CustomSelect ariaLabel="Filtrar por combustible" value={fuel} onChange={onFuelChange} options={[{ value: 'all', label: 'Todos los combustibles' }, ...fuelTypes.map((value) => ({ value, label: value }))]} />
+        <CustomSelect
+          ariaLabel="Filtrar por combustible"
+          value={fuel}
+          onChange={onFuelChange}
+          options={[
+            { value: 'all', label: 'Todos los combustibles' },
+            ...fuelTypes.map(value => ({ value, label: value })),
+          ]}
+        />
       </div>
 
-      {priceEnabled ? <DualRangeFilter
-        formatValue={formatVehiclePrice}
-        label="Precio equivalente en USD"
-        labelAddon={quote ? <MepQuoteInfo quote={quote} /> : null}
-        maximum={priceCeiling}
-        maximumAriaLabel="Precio máximo"
-        maximumValue={maxPrice}
-        minimum={0}
-        minimumAriaLabel="Precio mínimo"
-        minimumValue={minPrice}
-        onMaximumChange={onMaxPriceChange}
-        onMinimumChange={onMinPriceChange}
-        step={priceStep}
-      /> : <p className="catalog-filter-note" role="status">Cotización MEP no disponible. El filtro y el orden por precio están temporalmente deshabilitados.</p>}
+      {priceEnabled ? (
+        <DualRangeFilter
+          formatValue={formatVehiclePrice}
+          label="Precio equivalente en USD"
+          labelAddon={quote ? <MepQuoteInfo quote={quote} /> : null}
+          maximum={priceCeiling}
+          maximumAriaLabel="Precio máximo"
+          maximumValue={maxPrice}
+          minimum={0}
+          minimumAriaLabel="Precio mínimo"
+          minimumValue={minPrice}
+          onMaximumChange={onMaxPriceChange}
+          onMinimumChange={onMinPriceChange}
+          step={priceStep}
+        />
+      ) : (
+        <p className="catalog-filter-note" role="status">
+          Cotización MEP no disponible. El filtro y el orden por precio están temporalmente deshabilitados.
+        </p>
+      )}
       <DualRangeFilter
         formatValue={formatVehicleMileage}
         label="Rango de kilometraje"

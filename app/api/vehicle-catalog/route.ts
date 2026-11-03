@@ -8,8 +8,7 @@ import {
   type CatalogResource,
 } from '@/lib/integrations/arg-autos/catalog';
 
-const isPositiveInteger = (value: string | null) =>
-  value !== null && /^\d+$/.test(value) && Number(value) > 0;
+const isPositiveInteger = (value: string | null) => value !== null && /^\d+$/.test(value) && Number(value) > 0;
 
 function getCatalogQuery(searchParams: URLSearchParams) {
   const resource = searchParams.get('resource') as CatalogResource | null;
@@ -49,9 +48,6 @@ export async function GET(request: Request) {
     );
   } catch (error) {
     console.error('Unable to load Arg Autos catalog', error instanceof Error ? error.message : error);
-    return NextResponse.json(
-      { message: 'No pudimos cargar el catálogo de vehículos.' },
-      { status: 503 },
-    );
+    return NextResponse.json({ message: 'No pudimos cargar el catálogo de vehículos.' }, { status: 503 });
   }
 }

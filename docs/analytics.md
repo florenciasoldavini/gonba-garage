@@ -30,25 +30,25 @@ optional session replay. Update it whenever events, replay settings or the analy
 
 ## Event taxonomy
 
-| Event | Meaning |
-| --- | --- |
-| `vehicle_viewed` | A vehicle detail page was rendered in the browser. |
-| `vehicle_shared` | A vehicle was shared or its link was copied successfully. |
-| `inventory_filtered` | An inventory filter or search changed after a short debounce. |
-| `inventory_zero_results` | The selected inventory criteria returned no vehicles. |
-| `inventory_alert_opened` | The saved-search alert dialog opened. |
-| `inventory_alert_created` | The inventory-alert API confirmed a successful database write. |
-| `inventory_alert_failed` | The inventory-alert request failed. |
-| `comparison_vehicle_added` | A vehicle was added to the comparison selection. |
-| `comparison_vehicle_removed` | A vehicle was removed from the comparison selection. |
-| `comparison_opened` | The comparison dialog opened with two or more vehicles. |
-| `vehicle_contact_clicked` | A visitor clicked a WhatsApp button on a vehicle page: `placement` is `hero` (the purchase card) or `callout` (the contact section), and `vehicle_status` is `available`, `reserved`, or `sold`. This is intent, not a confirmed lead. |
-| `contact_intent_clicked` | A visitor clicked a general contact action; `placement` is `header`, `menu`, `footer`, `home_contact`, or `catalog_contact`. This is intent, not a confirmed lead. |
-| `price_alert_opened` | The price-alert dialog opened. |
-| `price_alert_created` | The price-alert API confirmed a successful database write. |
-| `price_alert_failed` | The price-alert request failed. |
-| `valuation_started` | A visitor first interacted with the valuation form. |
-| `valuation_step_completed` | A valid valuation step advanced. |
+| Event                        | Meaning                                                                                                                                                                                                                                                                                                   |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vehicle_viewed`             | A vehicle detail page was rendered in the browser.                                                                                                                                                                                                                                                        |
+| `vehicle_shared`             | A vehicle was shared or its link was copied successfully.                                                                                                                                                                                                                                                 |
+| `inventory_filtered`         | An inventory filter or search changed after a short debounce.                                                                                                                                                                                                                                             |
+| `inventory_zero_results`     | The selected inventory criteria returned no vehicles.                                                                                                                                                                                                                                                     |
+| `inventory_alert_opened`     | The saved-search alert dialog opened.                                                                                                                                                                                                                                                                     |
+| `inventory_alert_created`    | The inventory-alert API confirmed a successful database write.                                                                                                                                                                                                                                            |
+| `inventory_alert_failed`     | The inventory-alert request failed.                                                                                                                                                                                                                                                                       |
+| `comparison_vehicle_added`   | A vehicle was added to the comparison selection.                                                                                                                                                                                                                                                          |
+| `comparison_vehicle_removed` | A vehicle was removed from the comparison selection.                                                                                                                                                                                                                                                      |
+| `comparison_opened`          | The comparison dialog opened with two or more vehicles.                                                                                                                                                                                                                                                   |
+| `vehicle_contact_clicked`    | A visitor clicked a WhatsApp button on a vehicle page: `placement` is `hero` (the purchase card) or `callout` (the contact section), and `vehicle_status` is `available`, `reserved`, or `sold`. This is intent, not a confirmed lead.                                                                    |
+| `contact_intent_clicked`     | A visitor clicked a general contact action; `placement` is `header`, `menu`, `footer`, `home_contact`, or `catalog_contact`. This is intent, not a confirmed lead.                                                                                                                                        |
+| `price_alert_opened`         | The price-alert dialog opened.                                                                                                                                                                                                                                                                            |
+| `price_alert_created`        | The price-alert API confirmed a successful database write.                                                                                                                                                                                                                                                |
+| `price_alert_failed`         | The price-alert request failed.                                                                                                                                                                                                                                                                           |
+| `valuation_started`          | A visitor first interacted with the valuation form.                                                                                                                                                                                                                                                       |
+| `valuation_step_completed`   | A valid valuation step advanced.                                                                                                                                                                                                                                                                          |
 | `valuation_sent_to_whatsapp` | The completed sell-your-car form opened WhatsApp with the prefilled message. Properties are `total_steps`, `has_photos`, `year`, and `make` and `model` (empty when typed by hand instead of picked from the catalog). The visitor still has to send the message, so this is intent, not a received lead. |
 
 All WhatsApp contact clicks are `vehicle_contact_clicked` plus `contact_intent_clicked` with

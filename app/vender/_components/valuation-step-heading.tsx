@@ -11,8 +11,15 @@ type ValuationStepHeadingProps = {
 export function ValuationStepHeading({ description, icon: Icon, step, title }: ValuationStepHeadingProps) {
   return (
     <div className="valuation-step-heading">
-      <span><Icon aria-hidden="true" size={17} /></span>
-      <div><strong aria-level={2} role="heading" tabIndex={-1}>0{step} · {title}</strong><p>{description}</p></div>
+      <span>
+        <Icon aria-hidden="true" size={17} />
+      </span>
+      <div>
+        <strong aria-level={2} role="heading" tabIndex={-1}>
+          0{step} · {title}
+        </strong>
+        <p>{description}</p>
+      </div>
     </div>
   );
 }

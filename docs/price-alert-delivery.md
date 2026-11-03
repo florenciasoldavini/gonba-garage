@@ -160,7 +160,7 @@ and every later drop of that subscription. Each send attempt is classified (`Ema
 in `lib/alerts/email.ts`):
 
 - **Possibly accepted**: a timeout or dropped connection, a 5xx, a 409 (same key in flight), an
-  invalid response, or a crash after the request. The row is marked `uncertain` *before* every send,
+  invalid response, or a crash after the request. The row is marked `uncertain` _before_ every send,
   so a crash leaves it set.
 - **Definitely rejected**: a 429, another 4xx, or a connection that never reached the provider
   (DNS failure, refused). Only these restore the previous certainty.
@@ -215,7 +215,7 @@ availability events, which expire after 72 hours.
    - `ALERTS_SIGNING_SECRET` (at least 32 random characters, keep stable)
    - `CRON_SECRET` (at least 32 random characters)
    - existing database and Mercado Libre credentials, seller ID and client ID
-   As soon as a deployment has all of these, it offers and sends price and search alerts.
+     As soon as a deployment has all of these, it offers and sends price and search alerts.
 4. Use `ALERTS_TEST_RECIPIENT` in preview/local runs to permit only an explicit test address.
    Other recipients are **blocked**, never redirected to that address. **Remove it from production**
    for real sending: while it is set there, every confirmation and alert to a real person fails.

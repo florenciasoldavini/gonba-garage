@@ -50,10 +50,10 @@ export function CustomSelect({
   const menuId = useId();
   const labelId = useId();
   const valueId = useId();
-  const selectedOption = options.find((option) => option.value === value);
+  const selectedOption = options.find(option => option.value === value);
   const normalizedQuery = query.trim().toLocaleLowerCase('es');
   const filteredOptions = normalizedQuery
-    ? options.filter((option) => option.label.toLocaleLowerCase('es').includes(normalizedQuery))
+    ? options.filter(option => option.label.toLocaleLowerCase('es').includes(normalizedQuery))
     : options;
   const menuIsOpen = isOpen && !disabled;
 
@@ -104,7 +104,7 @@ export function CustomSelect({
     requestAnimationFrame(() => {
       const buttons = rootRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]');
       if (!buttons?.length) return;
-      const selectedIndex = Array.from(buttons).findIndex((button) => button.dataset.value === value);
+      const selectedIndex = Array.from(buttons).findIndex(button => button.dataset.value === value);
       const index = position === 'first' ? 0 : position === 'last' ? buttons.length - 1 : Math.max(selectedIndex, 0);
       buttons[index]?.focus();
     });
@@ -125,9 +125,12 @@ export function CustomSelect({
       event.preventDefault();
       if (!buttons.length) return;
       const direction = event.key === 'ArrowDown' ? 1 : -1;
-      const nextIndex = currentIndex < 0
-        ? (direction === 1 ? 0 : buttons.length - 1)
-        : (currentIndex + direction + buttons.length) % buttons.length;
+      const nextIndex =
+        currentIndex < 0
+          ? direction === 1
+            ? 0
+            : buttons.length - 1
+          : (currentIndex + direction + buttons.length) % buttons.length;
       buttons[nextIndex]?.focus();
     } else if (event.key === 'Home' || event.key === 'End') {
       event.preventDefault();
@@ -167,11 +170,15 @@ export function CustomSelect({
         disabled={disabled}
         data-required-select={required || undefined}
         data-value={value}
-        onClick={() => setIsOpen((current) => !current)}
+        onClick={() => setIsOpen(current => !current)}
         onKeyDown={handleTriggerKeyDown}
       >
-        <span className="sr-only" id={labelId}>{ariaLabel}</span>
-        <span className={selectedOption ? '' : 'is-placeholder'} id={valueId}>{selectedOption?.label ?? placeholder}</span>
+        <span className="sr-only" id={labelId}>
+          {ariaLabel}
+        </span>
+        <span className={selectedOption ? '' : 'is-placeholder'} id={valueId}>
+          {selectedOption?.label ?? placeholder}
+        </span>
         <ChevronDown aria-hidden="true" size={15} className={menuIsOpen ? 'is-open' : ''} />
       </button>
 
@@ -180,13 +187,15 @@ export function CustomSelect({
           {searchable && (
             <div className="custom-select-search">
               <Search aria-hidden="true" size={14} />
-              <label className="sr-only" htmlFor={`${menuId}-search`}>Buscar opción</label>
+              <label className="sr-only" htmlFor={`${menuId}-search`}>
+                Buscar opción
+              </label>
               <input
                 id={`${menuId}-search`}
                 ref={searchRef}
                 type="search"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={event => setQuery(event.target.value)}
                 placeholder={searchPlaceholder}
                 autoComplete="off"
               />
@@ -206,7 +215,7 @@ export function CustomSelect({
             </div>
           )}
           <div className="custom-select-options" id={menuId} role="listbox" aria-label={ariaLabel}>
-            {filteredOptions.map((option) => (
+            {filteredOptions.map(option => (
               <button
                 type="button"
                 role="option"

@@ -23,7 +23,8 @@ export function MobileInventoryFilters({ filters, isOpen, onClose, resultCount }
   const { closeDialog, dialogRef } = useDialogMotion({
     isOpen,
     // Stagger each filter field; the panel's own heading is hidden inside the sheet.
-    itemSelector: '.mobile-filter-header, .mobile-filter-scroll .catalog-filters > :not(.catalog-filter-heading), .mobile-filter-footer',
+    itemSelector:
+      '.mobile-filter-header, .mobile-filter-scroll .catalog-filters > :not(.catalog-filter-heading), .mobile-filter-footer',
     panelSelector: '.mobile-filter-sheet',
     variant: 'sheet',
   });
@@ -34,18 +35,30 @@ export function MobileInventoryFilters({ filters, isOpen, onClose, resultCount }
       ref={dialogRef}
       aria-labelledby="mobile-filter-title"
       onClose={onClose}
-      onCancel={(event) => { event.preventDefault(); closeDialog(); }}
-      onClick={(event) => { if (event.target === event.currentTarget) closeDialog(); }}
+      onCancel={event => {
+        event.preventDefault();
+        closeDialog();
+      }}
+      onClick={event => {
+        if (event.target === event.currentTarget) closeDialog();
+      }}
     >
       <div className="mobile-filter-sheet">
         <header className="mobile-filter-header">
           <div>
-            <span><SlidersHorizontal aria-hidden="true" size={15} /></span>
-            <div><strong id="mobile-filter-title">Filtrar vehículos</strong><small>{getActiveFilterLabel(filters.activeFilterCount)}</small></div>
+            <span>
+              <SlidersHorizontal aria-hidden="true" size={15} />
+            </span>
+            <div>
+              <strong id="mobile-filter-title">Filtrar vehículos</strong>
+              <small>{getActiveFilterLabel(filters.activeFilterCount)}</small>
+            </div>
           </div>
           <div className="mobile-filter-header-actions">
             {filters.activeFilterCount > 0 ? (
-              <button className="mobile-filter-clear" type="button" onClick={filters.onReset}>Limpiar</button>
+              <button className="mobile-filter-clear" type="button" onClick={filters.onReset}>
+                Limpiar
+              </button>
             ) : null}
             <button type="button" aria-label="Cerrar filtros" onClick={closeDialog}>
               <X aria-hidden="true" size={18} />

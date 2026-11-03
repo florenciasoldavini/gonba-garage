@@ -9,8 +9,7 @@ if (projectToken) {
     person_profiles: 'identified_only',
     capture_pageview: true,
     capture_pageleave: true,
-    disable_session_recording:
-      process.env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY !== 'true',
+    disable_session_recording: process.env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY !== 'true',
     session_recording: {
       maskAllInputs: true,
       maskTextSelector: '[data-private]',

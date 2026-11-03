@@ -23,7 +23,7 @@ const HIGHLIGHT_ATTRIBUTE_IDS = [
 ] as const;
 
 function attribute(item: MercadoLibreItem, id: string) {
-  return item.attributes?.find((candidate) => candidate.id === id);
+  return item.attributes?.find(candidate => candidate.id === id);
 }
 
 function attributeText(item: MercadoLibreItem, id: string) {
@@ -86,11 +86,11 @@ function formatTransmission(item: MercadoLibreItem) {
 }
 
 function formatEngine(item: MercadoLibreItem) {
-  return [
-    attributeText(item, 'ENGINE'),
-    attributeText(item, 'ENGINE_DISPLACEMENT'),
-    attributeText(item, 'POWER'),
-  ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).join(' · ') || 'Sin especificar';
+  return (
+    [attributeText(item, 'ENGINE'), attributeText(item, 'ENGINE_DISPLACEMENT'), attributeText(item, 'POWER')]
+      .filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index)
+      .join(' · ') || 'Sin especificar'
+  );
 }
 
 function formatBody(item: MercadoLibreItem) {
@@ -101,9 +101,7 @@ function formatBody(item: MercadoLibreItem) {
 }
 
 function highlights(attributes: MercadoLibreAttribute[] = []) {
-  const priority = new Map<string, number>(
-    HIGHLIGHT_ATTRIBUTE_IDS.map((id, index) => [id, index]),
-  );
+  const priority = new Map<string, number>(HIGHLIGHT_ATTRIBUTE_IDS.map((id, index) => [id, index]));
 
   return attributes
     .filter(({ id, value_name }) => priority.has(id) && value_name?.toLocaleLowerCase('es') === 'sí')
@@ -119,11 +117,12 @@ export function mapMercadoLibreItemToVehicle(
   const make = attributeText(item, 'BRAND') ?? 'Sin marca';
   const model = attributeText(item, 'MODEL') ?? item.title;
   const version = attributeText(item, 'TRIM') ?? attributeText(item, 'SHORT_VERSION') ?? '';
-  const primaryImage = fullSizeMercadoLibreImageUrl(item.pictures?.[0]?.secure_url)
-    ?? fullSizeMercadoLibreImageUrl(item.pictures?.[0]?.url)
-    ?? fullSizeMercadoLibreImageUrl(item.secure_thumbnail)
-    ?? fullSizeMercadoLibreImageUrl(item.thumbnail)
-    ?? VEHICLE_PHOTO_PLACEHOLDER;
+  const primaryImage =
+    fullSizeMercadoLibreImageUrl(item.pictures?.[0]?.secure_url) ??
+    fullSizeMercadoLibreImageUrl(item.pictures?.[0]?.url) ??
+    fullSizeMercadoLibreImageUrl(item.secure_thumbnail) ??
+    fullSizeMercadoLibreImageUrl(item.thumbnail) ??
+    VEHICLE_PHOTO_PLACEHOLDER;
   const descriptionText = description?.plain_text?.trim() || description?.text?.trim() || '';
 
   return {

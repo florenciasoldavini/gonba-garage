@@ -1,4 +1,7 @@
-.contact-glow { position: absolute; inset: 0; }
+.contact-glow {
+  position: absolute;
+  inset: 0;
+}
 
 .contact-section {
   position: relative;
@@ -15,20 +18,52 @@
   background: radial-gradient(circle at 80% 20%, rgba(220, 255, 0, 0.16), transparent 24rem), rgba(16, 19, 17, 0.88);
 }
 
-.contact-glow { background: radial-gradient(circle at 84% 12%, rgba(220, 255, 0, 0.13), transparent 34%); opacity: 0.8; }
-.contact-copy, .contact-actions { position: relative; z-index: 1; }
-.contact-section .eyebrow { color: var(--muted); }
-.contact-section .eyebrow > span { background: var(--accent); }
-.contact-section h2 { max-width: 850px; margin-bottom: 0; }
-.contact-actions { justify-self: end; width: min(100%, 330px); }
-.contact-actions .button { width: 100%; }
-.contact-actions p { margin: 15px 0 0; color: var(--muted); font-size: var(--text-caption); line-height: 1.5; }
+.contact-glow {
+  background: radial-gradient(circle at 84% 12%, rgba(220, 255, 0, 0.13), transparent 34%);
+  opacity: 0.8;
+}
+.contact-copy,
+.contact-actions {
+  position: relative;
+  z-index: 1;
+}
+.contact-section .eyebrow {
+  color: var(--muted);
+}
+.contact-section .eyebrow > span {
+  background: var(--accent);
+}
+.contact-section h2 {
+  max-width: 850px;
+  margin-bottom: 0;
+}
+.contact-actions {
+  justify-self: end;
+  width: min(100%, 330px);
+}
+.contact-actions .button {
+  width: 100%;
+}
+.contact-actions p {
+  margin: 15px 0 0;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
 
 @media (max-width: 1000px) {
-  .contact-section { grid-template-columns: 1fr; align-items: end; }
-  .contact-actions { justify-self: start; }
+  .contact-section {
+    grid-template-columns: 1fr;
+    align-items: end;
+  }
+  .contact-actions {
+    justify-self: start;
+  }
 }
 
 @media (max-width: 700px) {
-  .contact-section { min-height: 440px; padding: 34px 24px; }
+  .contact-section {
+    min-height: 440px;
+    padding: 34px 24px;
+  }
 }

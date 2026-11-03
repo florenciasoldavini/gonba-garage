@@ -59,9 +59,7 @@ export function useDialogMotion({
           return;
         }
 
-        const items = itemSelector
-          ? Array.from(dialog.querySelectorAll<HTMLElement>(itemSelector))
-          : [];
+        const items = itemSelector ? Array.from(dialog.querySelectorAll<HTMLElement>(itemSelector)) : [];
         const start = getPanelStart(variant);
         // The opening frame hides the dialog again, and the browser can drop the focus showModal()
         // just placed. Put it back once the dialog (and, at the end, every item) is visible.
@@ -82,12 +80,7 @@ export function useDialogMotion({
           .call(restoreFocus, undefined, 0.02);
 
         if (items.length > 0) {
-          timeline.fromTo(
-            items,
-            { y: 17, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, stagger: 0.045, duration: 0.38 },
-            0.13,
-          );
+          timeline.fromTo(items, { y: 17, autoAlpha: 0 }, { y: 0, autoAlpha: 1, stagger: 0.045, duration: 0.38 }, 0.13);
         }
 
         timelineRef.current = timeline;
@@ -113,13 +106,14 @@ export function useDialogMotion({
         }
 
         const start = getPanelStart(variant);
-        timelineRef.current = gsap.timeline({
-          defaults: { ease: 'power2.inOut' },
-          onComplete: () => {
-            dialog.close();
-            afterClose?.();
-          },
-        })
+        timelineRef.current = gsap
+          .timeline({
+            defaults: { ease: 'power2.inOut' },
+            onComplete: () => {
+              dialog.close();
+              afterClose?.();
+            },
+          })
           .to(panel, {
             xPercent: start.xPercent * 0.55,
             y: start.y * 0.65,

@@ -29,7 +29,7 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
           desktop: '(min-width: 901px)',
           reduceMotion: '(prefers-reduced-motion: reduce)',
         },
-        (context) => {
+        context => {
           const { desktop, reduceMotion } = context.conditions as {
             desktop: boolean;
             reduceMotion: boolean;
@@ -43,11 +43,7 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
             intro
               .from('.site-header', { y: -30, autoAlpha: 0, duration: 0.75 })
               .from('.catalog-hero .eyebrow', { x: -32, autoAlpha: 0, duration: 0.55 }, 0.22)
-              .from(
-                '#catalog-title',
-                { y: 62, autoAlpha: 0, clipPath: 'inset(0 0 100% 0)', duration: 0.95 },
-                0.3,
-              )
+              .from('#catalog-title', { y: 62, autoAlpha: 0, clipPath: 'inset(0 0 100% 0)', duration: 0.95 }, 0.3)
               .from('.catalog-hero-copy > *', { x: 42, autoAlpha: 0, stagger: 0.12, duration: 0.65 }, 0.58)
               .from('.catalog-filters-desktop', { x: desktop ? -38 : 0, autoAlpha: 0, duration: 0.72 }, 0.7)
               .from('.catalog-toolbar', { y: 22, autoAlpha: 0, duration: 0.58 }, 0.78)
@@ -59,13 +55,14 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
               )
               .to('.catalog-scan-line', { autoAlpha: 0, duration: 0.2 }, 1.5);
 
-            gsap.timeline({
-              scrollTrigger: {
-                trigger: '.catalog-contact',
-                start: 'top 78%',
-                once: true,
-              },
-            })
+            gsap
+              .timeline({
+                scrollTrigger: {
+                  trigger: '.catalog-contact',
+                  start: 'top 78%',
+                  once: true,
+                },
+              })
               .from('.catalog-contact > div > *', {
                 x: -38,
                 autoAlpha: 0,
@@ -83,11 +80,7 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
               .from('.site-header', { y: -30, autoAlpha: 0, duration: 0.75 })
               .from('.detail-breadcrumbs li > *', { x: -14, autoAlpha: 0, stagger: 0.06, duration: 0.42 }, 0.18)
               .from('.detail-title .eyebrow', { x: -30, autoAlpha: 0, duration: 0.52 }, 0.28)
-              .from(
-                '#vehicle-title',
-                { y: 62, autoAlpha: 0, clipPath: 'inset(0 0 100% 0)', duration: 0.95 },
-                0.34,
-              )
+              .from('#vehicle-title', { y: 62, autoAlpha: 0, clipPath: 'inset(0 0 100% 0)', duration: 0.95 }, 0.34)
               .from('.detail-title-meta span', { x: 22, autoAlpha: 0, stagger: 0.09, duration: 0.5 }, 0.67)
               .fromTo(
                 '.detail-primary-image',
@@ -96,13 +89,21 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
                 0.56,
               )
               .from('.detail-primary-image .cover-image', { scale: 1.1, duration: 1.45, ease: 'power2.out' }, 0.62)
-              .from('.detail-purchase-card', { x: desktop ? 64 : 0, y: desktop ? 0 : 28, autoAlpha: 0, duration: 0.86 }, 0.72)
+              .from(
+                '.detail-purchase-card',
+                { x: desktop ? 64 : 0, y: desktop ? 0 : 28, autoAlpha: 0, duration: 0.86 },
+                0.72,
+              )
               .from('.detail-purchase-card > *', { y: 16, autoAlpha: 0, stagger: 0.055, duration: 0.42 }, 0.91);
 
             // Cars with a single photo or none have no thumbnail strip: an empty selection would warn.
             // The strip moves as one so the thumbnails keep their own active and hover opacity.
             if (root.current?.querySelector('.detail-photo-thumbs')) {
-              intro.from('.detail-photo-thumbs', { y: 14, autoAlpha: 0, duration: 0.5, clearProps: 'transform,opacity,visibility' }, 0.9);
+              intro.from(
+                '.detail-photo-thumbs',
+                { y: 14, autoAlpha: 0, duration: 0.5, clearProps: 'transform,opacity,visibility' },
+                0.9,
+              );
             }
 
             const overview = gsap.timeline({
@@ -149,15 +150,26 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
               },
             });
 
-            gsap.timeline({
-              scrollTrigger: {
-                trigger: '.detail-contact',
-                start: 'top 78%',
-                once: true,
-              },
-            })
-              .from('.detail-contact .contact-copy > *', { y: 34, autoAlpha: 0, stagger: 0.1, duration: 0.65, ease: 'power3.out' })
-              .from('.detail-contact .contact-actions', { scale: 0.96, autoAlpha: 0, duration: 0.6, ease: 'power3.out' }, '<0.12')
+            gsap
+              .timeline({
+                scrollTrigger: {
+                  trigger: '.detail-contact',
+                  start: 'top 78%',
+                  once: true,
+                },
+              })
+              .from('.detail-contact .contact-copy > *', {
+                y: 34,
+                autoAlpha: 0,
+                stagger: 0.1,
+                duration: 0.65,
+                ease: 'power3.out',
+              })
+              .from(
+                '.detail-contact .contact-actions',
+                { scale: 0.96, autoAlpha: 0, duration: 0.6, ease: 'power3.out' },
+                '<0.12',
+              )
               .fromTo(
                 '.detail-contact .contact-glow',
                 { scale: 0.72, autoAlpha: 0 },
@@ -172,11 +184,7 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
             intro
               .from('.site-header', { y: -30, autoAlpha: 0, duration: 0.75 })
               .from('.valuation-intro .eyebrow', { x: -30, autoAlpha: 0, duration: 0.52 }, 0.24)
-              .from(
-                '#valuation-title',
-                { y: 58, autoAlpha: 0, clipPath: 'inset(0 0 100% 0)', duration: 0.92 },
-                0.3,
-              )
+              .from('#valuation-title', { y: 58, autoAlpha: 0, clipPath: 'inset(0 0 100% 0)', duration: 0.92 }, 0.3)
               .from('.valuation-lead', { x: -34, autoAlpha: 0, duration: 0.64 }, 0.6)
               .fromTo(
                 '.valuation-image',
@@ -187,12 +195,16 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
               .from('.valuation-image .cover-image', { scale: 1.09, duration: 1.35, ease: 'power2.out' }, 0.7)
               .from('.valuation-promises li', { x: -30, autoAlpha: 0, stagger: 0.1, duration: 0.52 }, 0.88)
               .from('.valuation-promises svg', { scale: 0.45, autoAlpha: 0, stagger: 0.1, duration: 0.35 }, 1.02)
-              .from('.valuation-form', {
-                x: desktop ? 54 : 0,
-                y: desktop ? 0 : 28,
-                autoAlpha: 0,
-                duration: 0.86,
-              }, 0.52);
+              .from(
+                '.valuation-form',
+                {
+                  x: desktop ? 54 : 0,
+                  y: desktop ? 0 : 28,
+                  autoAlpha: 0,
+                  duration: 0.86,
+                },
+                0.52,
+              );
           }
         },
       );

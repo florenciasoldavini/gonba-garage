@@ -23,12 +23,20 @@ client.on('error', error => console.error('Database connection error:', error.me
 await client.connect();
 try {
   console.log(`Database: ${migrationUrl.hostname}${migrationUrl.pathname}`);
-  const session = { exec: text => client.query(text), query: async (text, params) => (await client.query(text, params)).rows };
+  const session = {
+    exec: text => client.query(text),
+    query: async (text, params) => (await client.query(text, params)).rows,
+  };
   const status = args.includes('--status');
-  const { applied, skipped, baselined } = await migrate(session, undefined,
-    { baseline: args.includes('--baseline'), dryRun: status, log: message => console.log(message) });
+  const { applied, skipped, baselined } = await migrate(session, undefined, {
+    baseline: args.includes('--baseline'),
+    dryRun: status,
+    log: message => console.log(message),
+  });
   if (baselined.length > 0) {
-    console.log(`${status ? 'Would record' : 'Recorded'} a baseline of ${baselined.length} migration(s). Then run npm run db:migrate.`);
+    console.log(
+      `${status ? 'Would record' : 'Recorded'} a baseline of ${baselined.length} migration(s). Then run npm run db:migrate.`,
+    );
   } else if (status) {
     console.log(`Status only, nothing was changed: ${applied.length} pending, ${skipped.length} already applied.`);
   } else {

@@ -2,15 +2,22 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { describe, it } from 'vitest';
 import {
-  getVehicleAttributeRule, VEHICLE_ATTRIBUTE_POLICY_GROUPS, VEHICLE_ATTRIBUTE_SECTIONS,
+  getVehicleAttributeRule,
+  VEHICLE_ATTRIBUTE_POLICY_GROUPS,
+  VEHICLE_ATTRIBUTE_SECTIONS,
 } from '@/features/vehicles/presentation/mercado-libre-attribute-policy';
 import {
-  groupPublicVehicleAttributes, publicVehicleAttributes, vehicleAttributeDisplayRule, vehicleAttributeLabel,
+  groupPublicVehicleAttributes,
+  publicVehicleAttributes,
+  vehicleAttributeDisplayRule,
+  vehicleAttributeLabel,
 } from '@/features/vehicles/presentation/public-attributes';
 import { vehicleSpecificationLabels } from '@/features/vehicles/presentation/specifications';
 import { runtimeImports } from '../helpers/modules.mjs';
 
-const snapshot = JSON.parse(readFileSync(new URL('../fixtures/mercado-libre-mla1744-attributes.json', import.meta.url), 'utf8'));
+const snapshot = JSON.parse(
+  readFileSync(new URL('../fixtures/mercado-libre-mla1744-attributes.json', import.meta.url), 'utf8'),
+);
 
 describe('vehicle attribute policy', () => {
   it('reads only the policy and the listing cleanup', () => {
@@ -29,7 +36,9 @@ describe('vehicle attribute policy', () => {
       const rule = getVehicleAttributeRule(attribute.id);
       assert.ok(rule, `Official attribute without a decision: ${attribute.id} (${attribute.name})`);
       if (rule.action === 'show') {
-        assert.ok(rule.section === 'general' || VEHICLE_ATTRIBUTE_SECTIONS.some(section => section.id === rule.section));
+        assert.ok(
+          rule.section === 'general' || VEHICLE_ATTRIBUTE_SECTIONS.some(section => section.id === rule.section),
+        );
       } else {
         assert.ok(rule.reason, `Exclusion needs an explicit reason: ${attribute.id}`);
       }
@@ -47,16 +56,34 @@ describe('vehicle attribute policy', () => {
     assert.equal(new Set(rendered.map(a => a.id)).size, rendered.length);
     assert.deepEqual(rendered.map(a => a.id).sort(), publicAttrs.map(a => a.id).sort());
     assert.ok(rendered.every(attribute => attribute.value_name === 'No'));
-    assert.ok(rendered.every(attribute => attrs.includes(attribute)), 'Keep original values/units and objects');
+    assert.ok(
+      rendered.every(attribute => attrs.includes(attribute)),
+      'Keep original values/units and objects',
+    );
     assert.ok(groups.every(group => group.attributes.length > 0));
     assert.ok(!groups.some(group => /historial|antecedentes|venta|Datos de la unidad/i.test(group.title)));
-    console.log(`Attribute policy: all 322 official IDs covered; ${publicAttrs.length} displayable and ${322 - publicAttrs.length} intentionally excluded.`);
+    console.log(
+      `Attribute policy: all 322 official IDs covered; ${publicAttrs.length} displayable and ${322 - publicAttrs.length} intentionally excluded.`,
+    );
   });
 
   it('places attributes in their sections', () => {
     const expectedSections = {
-      safety: ['HAS_RAIN_SENSOR', 'HAS_CURTAIN_AIRBAG', 'HAS_ISOFIX', 'HAS_REAR_WINDOW_DEFOGGER', 'WITH_BACKUP_CAMERA', 'WITH_LANE_CHANGING_SENSOR'],
-      comfort: ['HAS_CLIMATE_CONTROL', 'HAS_USB', 'HAS_CENTRAL_POWER_DOOR_LOCKS', 'HAS_ELECTRIC_SEATS', 'HAS_AUTOPILOT'],
+      safety: [
+        'HAS_RAIN_SENSOR',
+        'HAS_CURTAIN_AIRBAG',
+        'HAS_ISOFIX',
+        'HAS_REAR_WINDOW_DEFOGGER',
+        'WITH_BACKUP_CAMERA',
+        'WITH_LANE_CHANGING_SENSOR',
+      ],
+      comfort: [
+        'HAS_CLIMATE_CONTROL',
+        'HAS_USB',
+        'HAS_CENTRAL_POWER_DOOR_LOCKS',
+        'HAS_ELECTRIC_SEATS',
+        'HAS_AUTOPILOT',
+      ],
       mechanics: ['BATTERY_TYPE', 'BATTERY_CAPACITY', 'CHARGE_TIME', 'CHARGER_TYPE', 'CARS_BATTERY_AUTONOMY', 'BRAKES'],
       dimensions: ['LUGGAGE_CAPACITY', 'PASSENGER_CAPACITY', 'FUEL_CAPACITY'],
       general: ['BRAND', 'MODEL', 'SINGLE_OWNER', 'DOORS', 'VEHICLE_BODY_TYPE'],
@@ -75,7 +102,10 @@ describe('vehicle attribute policy', () => {
         assert.deepEqual(groupPublicVehicleAttributes([attribute]), { primary: [], groups: [] });
       }
     }
-    assert.deepEqual(getVehicleAttributeRule('HAS_VEHICLE_INSPECTION'), { action: 'exclude', reason: 'history_disabled' });
+    assert.deepEqual(getVehicleAttributeRule('HAS_VEHICLE_INSPECTION'), {
+      action: 'exclude',
+      reason: 'history_disabled',
+    });
     assert.deepEqual(getVehicleAttributeRule('SALE_WITH_EXCHANGE'), { action: 'exclude', reason: 'commercial_terms' });
     assert.deepEqual(getVehicleAttributeRule('YEAR_WARRANTY'), { action: 'exclude', reason: 'unconfirmed_warranty' });
   });
@@ -83,7 +113,10 @@ describe('vehicle attribute policy', () => {
   it('hides a version already in the title', () => {
     for (const id of ['TRIM', 'SHORT_VERSION']) {
       const attribute = Object.freeze({ id, name: 'Versión', value_name: 'GR-S' });
-      assert.deepEqual(vehicleAttributeDisplayRule(attribute, 'Toyota SW4 GR S'), { action: 'exclude', reason: 'duplicate_in_title' });
+      assert.deepEqual(vehicleAttributeDisplayRule(attribute, 'Toyota SW4 GR S'), {
+        action: 'exclude',
+        reason: 'duplicate_in_title',
+      });
       assert.equal(vehicleAttributeDisplayRule(attribute, 'Toyota SW4').action, 'show');
     }
   });
@@ -94,18 +127,32 @@ describe('vehicle attribute policy', () => {
     assert.equal(vehicleAttributeLabel(drivetrain), vehicleSpecificationLabels.traction);
     assert.equal(vehicleAttributeLabel(drivetrain), 'Tracción');
     assert.equal(drivetrain.name, 'Control de tracción', 'The publication keeps its own name');
-    assert.equal(vehicleAttributeLabel({ id: 'HAS_ASR_TRACTION', name: 'Tracción ASR', value_name: 'Sí' }), 'Tracción ASR', 'The safety system keeps its name');
+    assert.equal(
+      vehicleAttributeLabel({ id: 'HAS_ASR_TRACTION', name: 'Tracción ASR', value_name: 'Sí' }),
+      'Tracción ASR',
+      'The safety system keeps its name',
+    );
     assert.equal(vehicleAttributeLabel({ id: 'COLOR', name: 'Color', value_name: 'Gris' }), 'Color');
   });
 
   it('shows the drivetrain once when another attribute already states it', () => {
     const drivetrain = { id: 'TRACTION_CONTROL', name: 'Control de tracción', value_name: '4x4' };
     const legacy = { id: 'DETAILED_MODEL', name: 'Tracción', value_name: '4X4' };
-    const { primary } = groupPublicVehicleAttributes([drivetrain, legacy, { id: 'COLOR', name: 'Color', value_name: 'Gris' }]);
-    assert.deepEqual(primary.map(attribute => attribute.id), ['TRACTION_CONTROL', 'COLOR']);
+    const { primary } = groupPublicVehicleAttributes([
+      drivetrain,
+      legacy,
+      { id: 'COLOR', name: 'Color', value_name: 'Gris' },
+    ]);
+    assert.deepEqual(
+      primary.map(attribute => attribute.id),
+      ['TRACTION_CONTROL', 'COLOR'],
+    );
     const different = { ...legacy, value_name: 'Integral' };
-    assert.deepEqual(groupPublicVehicleAttributes([drivetrain, different]).primary.map(attribute => attribute.id),
-      ['TRACTION_CONTROL', 'DETAILED_MODEL'], 'A different value still shows');
+    assert.deepEqual(
+      groupPublicVehicleAttributes([drivetrain, different]).primary.map(attribute => attribute.id),
+      ['TRACTION_CONTROL', 'DETAILED_MODEL'],
+      'A different value still shows',
+    );
   });
 
   it('excludes unknown attributes without changing them', () => {
@@ -117,12 +164,20 @@ describe('vehicle attribute policy', () => {
   });
 
   // Network check against the public category API: npm run test:live.
-  it.runIf(process.env.TEST_LIVE === '1')('covers every attribute of the live category schema', async () => {
-    const response = await fetch(snapshot.source, { signal: AbortSignal.timeout(30_000) });
-    assert.equal(response.status, 200, 'Unable to compare the live category schema');
-    const live = await response.json();
-    const missing = live.filter(attribute => !getVehicleAttributeRule(attribute.id));
-    assert.deepEqual(missing.map(a => ({ id: a.id, name: a.name })), [], 'New provider attributes need review and an explicit policy');
-    console.log(`Live schema: ${live.length} attributes covered.`);
-  }, 60_000);
+  it.runIf(process.env.TEST_LIVE === '1')(
+    'covers every attribute of the live category schema',
+    async () => {
+      const response = await fetch(snapshot.source, { signal: AbortSignal.timeout(30_000) });
+      assert.equal(response.status, 200, 'Unable to compare the live category schema');
+      const live = await response.json();
+      const missing = live.filter(attribute => !getVehicleAttributeRule(attribute.id));
+      assert.deepEqual(
+        missing.map(a => ({ id: a.id, name: a.name })),
+        [],
+        'New provider attributes need review and an explicit policy',
+      );
+      console.log(`Live schema: ${live.length} attributes covered.`);
+    },
+    60_000,
+  );
 });

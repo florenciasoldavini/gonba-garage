@@ -24,10 +24,14 @@ export function SimilarVehicleLink({ index, quote, vehicle }: SimilarVehicleLink
       <Link className="detail-similar-link" href={`/vehiculos/${vehicle.slug}`}>
         <span className="detail-similar-number">{String(index + 1).padStart(2, '0')}</span>
         <span className="detail-similar-name">
-          <h3>{vehicle.make} {vehicle.model}</h3>
+          <h3>
+            {vehicle.make} {vehicle.model}
+          </h3>
           <span>{vehicle.version}</span>
         </span>
-        <span className="detail-similar-meta">{vehicle.year} · {formatVehicleMileage(vehicle.mileageKm)}</span>
+        <span className="detail-similar-meta">
+          {vehicle.year} · {formatVehicleMileage(vehicle.mileageKm)}
+        </span>
         <span className="detail-similar-price">
           <strong>{formatVehiclePrice(vehicle.price, vehicle.currency)}</strong>
           <ApproximateUsdPrice quote={quote} vehicle={vehicle} />

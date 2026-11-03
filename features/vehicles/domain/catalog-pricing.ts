@@ -8,7 +8,14 @@ export const MAX_QUOTE_AGE_MS = 96 * 60 * 60 * 1000;
 export function parseMepQuote(value: unknown, now = Date.now()): MepQuote | null {
   if (!value || typeof value !== 'object') return null;
   const data = value as Record<string, unknown>;
-  if (data.moneda !== 'USD' || data.casa !== 'bolsa' || typeof data.venta !== 'number' || !Number.isFinite(data.venta) || data.venta <= 0 || typeof data.fechaActualizacion !== 'string') {
+  if (
+    data.moneda !== 'USD' ||
+    data.casa !== 'bolsa' ||
+    typeof data.venta !== 'number' ||
+    !Number.isFinite(data.venta) ||
+    data.venta <= 0 ||
+    typeof data.fechaActualizacion !== 'string'
+  ) {
     return null;
   }
   const timestamp = Date.parse(data.fechaActualizacion);
@@ -22,13 +29,20 @@ export function parseMepQuote(value: unknown, now = Date.now()): MepQuote | null
  * spaces, which is what browsers render.
  */
 export function formatMepQuoteUpdatedAt(updatedAt: string): string {
-  return new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', dateStyle: 'short', timeStyle: 'short' })
+  return new Intl.DateTimeFormat('es-AR', {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    dateStyle: 'short',
+    timeStyle: 'short',
+  })
     .format(new Date(updatedAt))
     .replace(/[\u00a0\u202f]/g, ' ');
 }
 
 /** Comparison value only; never mutate the original price/currency used by cards and metadata. */
-export function comparableUsdPrice(vehicle: Pick<Vehicle, 'price' | 'currency'>, quote: MepQuote | null): number | null {
+export function comparableUsdPrice(
+  vehicle: Pick<Vehicle, 'price' | 'currency'>,
+  quote: MepQuote | null,
+): number | null {
   if (vehicle.currency === 'USD') return vehicle.price;
   if (!quote || !Number.isFinite(quote.arsPerUsd) || quote.arsPerUsd <= 0) return null;
   return vehicle.price / quote.arsPerUsd;
