@@ -29,6 +29,15 @@ export const metadata: Metadata = createPageMetadata({
 
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
+// Rendered widths from page.css. On desktop the card crops a 4:3 photo to a box 34vw tall (at most
+// 470px), so the photo shows at that height × 4/3, wider than the card itself. The 600px cap (the
+// photo reaches 627px) keeps 2x screens on the 1200w file instead of jumping to 1920w.
+const VEHICLE_IMAGE_SIZES =
+  '(max-width: 760px) 100vw, (max-width: 1100px) 50vw, (max-width: 1323px) calc(34vw * 4 / 3), 600px';
+// The portrait photo fills the section's width: one column up to 1000px, then 1.08fr of the layout.
+const SELL_IMAGE_SIZES =
+  '(max-width: 700px) calc(100vw - 26px), (max-width: 1000px) calc(100vw - 50px), (max-width: 1428px) calc(54vw - 27px), 744px';
+
 export default async function Home() {
   // Rendered per request, outside the failure handler, so a failed read is never stored as the
   // page. The vehicles come from the catalog cache, which the sync worker expires.
@@ -112,7 +121,7 @@ export default async function Home() {
                         src={vehicle.image}
                         alt={formatVehicleImageAlt(vehicle)}
                         fill
-                        sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw"
+                        sizes={VEHICLE_IMAGE_SIZES}
                         className="cover-image"
                       />
                       <span className="vehicle-status">{getVehicleStatusPresentation(vehicle).label}</span>
@@ -152,7 +161,7 @@ export default async function Home() {
               src="/garage-classic.jpg"
               alt="Auto estacionado frente a un garage"
               fill
-              sizes="(max-width: 900px) 100vw, 50vw"
+              sizes={SELL_IMAGE_SIZES}
               className="cover-image"
             />
           </div>

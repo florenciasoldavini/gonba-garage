@@ -16,6 +16,11 @@ export const metadata: Metadata = createPageMetadata({
   path: '/vender',
 });
 
+// Rendered widths from page.css: the shell's width on phones, at most 760px in one column, then the
+// intro column beside the form (an over-estimate up to 1200px, where the form keeps its minimum).
+const VALUATION_IMAGE_SIZES =
+  '(max-width: 700px) calc(100vw - 26px), (max-width: 808px) calc(100vw - 50px), (max-width: 1000px) 758px, (max-width: 1428px) calc(42vw - 23px), 574px';
+
 export default function SellVehiclePage() {
   return (
     <InnerPageMotion className="valuation-page" id="valuation-top" variant="valuation">
@@ -39,7 +44,7 @@ export default function SellVehiclePage() {
                   src="/garage-classic.jpg"
                   alt="Auto clásico estacionado frente a un garage"
                   fill
-                  sizes="(max-width: 900px) 100vw, 42vw"
+                  sizes={VALUATION_IMAGE_SIZES}
                   className="cover-image"
                 />
                 <span>Tu auto puede ser el próximo.</span>

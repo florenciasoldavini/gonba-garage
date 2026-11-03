@@ -28,8 +28,17 @@ function CardHitArea() {
   return <span className="catalog-card-hit" data-pending={pending || undefined} aria-hidden="true" />;
 }
 
+/**
+ * The photo's rendered width (see inventory-catalog.css): the full-width card on phones, two columns
+ * up to 1000px, then two columns beside the 300px filters until the layout reaches its 1380px maximum.
+ */
+const CARD_IMAGE_SIZES =
+  '(max-width: 700px) calc(100vw - 46px), (max-width: 1000px) calc(50vw - 53px), (max-width: 1428px) calc(50vw - 212px), 502px';
+
 type CatalogVehicleCardProps = {
   compareDisabled?: boolean;
+  /** Cards in the first row are on screen at load; the first photo is the page's largest paint on desktop. */
+  imagePriority?: 'high' | 'eager';
   isSelected?: boolean;
   /** Without it the card has no compare button. */
   onToggleComparison?: (vehicle: Vehicle) => void;
@@ -40,6 +49,7 @@ type CatalogVehicleCardProps = {
 
 export function CatalogVehicleCard({
   compareDisabled = false,
+  imagePriority,
   isSelected = false,
   onToggleComparison,
   quote = null,
@@ -77,7 +87,9 @@ export function CatalogVehicleCard({
           src={vehicle.image}
           alt={formatVehicleImageAlt(vehicle)}
           fill
-          sizes="(max-width: 760px) 100vw, (max-width: 1080px) 50vw, 38vw"
+          sizes={CARD_IMAGE_SIZES}
+          loading={imagePriority ? 'eager' : 'lazy'}
+          fetchPriority={imagePriority === 'high' ? 'high' : undefined}
           className="cover-image"
         />
         <span className="catalog-card-status">{status.label}</span>

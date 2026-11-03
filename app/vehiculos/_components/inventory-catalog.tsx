@@ -403,11 +403,12 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
           />
           {filteredVehicles.length > 0 ? (
             <div className="catalog-grid">
-              {filteredVehicles.map(vehicle => {
+              {filteredVehicles.map((vehicle, index) => {
                 const isSelected = selectedVehicleSlugs.has(vehicle.slug);
                 return (
                   <CatalogVehicleCard
                     compareDisabled={selectedVehicles.length >= MAX_COMPARE_VEHICLES && !isSelected}
+                    imagePriority={index === 0 ? 'high' : index === 1 ? 'eager' : undefined}
                     isSelected={isSelected}
                     key={vehicle.slug}
                     onToggleComparison={toggleVehicleComparison}
