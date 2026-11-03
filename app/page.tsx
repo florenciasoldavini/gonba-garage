@@ -196,7 +196,6 @@ export default async function Home() {
                 <h3>Financiación</h3>
                 <p>Alternativas para que la operación se adapte a tus posibilidades.</p>
               </div>
-              <Arrow />
             </article>
             <article className="service-card glass-panel">
               <span className="service-icon">
@@ -206,7 +205,6 @@ export default async function Home() {
                 <h3>Permutas</h3>
                 <p>Evaluamos tu vehículo como parte de pago de forma directa y transparente.</p>
               </div>
-              <Arrow />
             </article>
             <article className="service-card glass-panel">
               <span className="service-icon">
@@ -216,7 +214,6 @@ export default async function Home() {
                 <h3>Gestoría</h3>
                 <p>Acompañamiento documental para una transferencia clara y ordenada.</p>
               </div>
-              <Arrow />
             </article>
           </div>
         </section>
