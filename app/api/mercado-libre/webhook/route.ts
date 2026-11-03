@@ -61,12 +61,16 @@ export async function POST(request: Request) {
   let drainCatalog = false;
   let drainPrices = false;
   try {
-    // The payload is only a hint: both queues read the item again from Mercado Libre.
-    if (catalogSync) drainCatalog = await enqueueCatalogSync(match[1], { verified });
-    if (priceAlerts) {
-      requireAlertConfig();
-      drainPrices = (await enqueuePriceItem(match[1])) && verified;
-    }
+    // The payload is only a hint: both queues read the item again from Mercado Libre. They are
+    // independent, so one round trip to the database stores both: functions run in São Paulo and
+    // the database in us-east-1, and Mercado Libre expects the acknowledgment within 500 ms.
+    if (priceAlerts) requireAlertConfig();
+    const [catalogQueued, priceQueued] = await Promise.all([
+      catalogSync ? enqueueCatalogSync(match[1], { verified }) : false,
+      priceAlerts ? enqueuePriceItem(match[1]) : false,
+    ]);
+    drainCatalog = catalogQueued;
+    drainPrices = priceQueued && verified;
   } catch {
     // Never acknowledge a relevant event before it is durable. Mercado Libre can retry.
     console.error('mercado_libre_webhook_enqueue_failed');

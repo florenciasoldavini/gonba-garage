@@ -47,7 +47,9 @@ Gonba's subscribed publications is delivered after deploying. No seller listing 
 The callback validates the seller, application, topic and resource shape, then coalesces work in
 `price_alert_item_jobs` **before** acknowledging it. Only subscribed IDs create jobs. Persistence
 failure returns 503 so Mercado Libre can retry. It aims for the provider's <500 ms acknowledgment
-requirement, but database cold starts can exceed that and must be measured during activation.
+requirement, but database cold starts can exceed that and must be measured during activation. The
+function runs in São Paulo and the database in `us-east-1`, so the catalog and price enqueues run in
+parallel: one database round trip (~120 ms) before the acknowledgment.
 The notification is not trusted as proof of price or ownership. The worker reads the actual API
 resource, verifies seller ownership, and reads its price, currency and active state.
 
