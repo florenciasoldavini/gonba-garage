@@ -16,7 +16,7 @@ function getFileId(file: File) {
 }
 
 function createSelectedPhotos(files: File[]) {
-  return files.map((file) => ({
+  return files.map(file => ({
     file,
     id: getFileId(file),
     previewUrl: URL.createObjectURL(file),
@@ -35,9 +35,12 @@ export function VehiclePhotoUpload() {
   const inputRef = useRef<HTMLInputElement>(null);
   const photosRef = useRef<SelectedPhoto[]>([]);
 
-  useEffect(() => () => {
-    photosRef.current.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
-  }, []);
+  useEffect(
+    () => () => {
+      photosRef.current.forEach(({ previewUrl }) => URL.revokeObjectURL(previewUrl));
+    },
+    [],
+  );
 
   const syncInputFiles = (nextPhotos: SelectedPhoto[]) => {
     if (!inputRef.current || typeof DataTransfer === 'undefined') return;
@@ -48,7 +51,7 @@ export function VehiclePhotoUpload() {
 
   const addFiles = (files: File[]) => {
     const existingIds = new Set(photosRef.current.map(({ id }) => id));
-    const newFiles = files.filter((file) => file.type.startsWith('image/') && !existingIds.has(getFileId(file)));
+    const newFiles = files.filter(file => file.type.startsWith('image/') && !existingIds.has(getFileId(file)));
     if (newFiles.length === 0) {
       syncInputFiles(photosRef.current);
       return;
@@ -89,10 +92,10 @@ export function VehiclePhotoUpload() {
   };
 
   const removePhoto = (id: string) => {
-    const photo = photosRef.current.find((item) => item.id === id);
+    const photo = photosRef.current.find(item => item.id === id);
     if (photo) URL.revokeObjectURL(photo.previewUrl);
 
-    const remainingPhotos = photosRef.current.filter((item) => item.id !== id);
+    const remainingPhotos = photosRef.current.filter(item => item.id !== id);
     photosRef.current = remainingPhotos;
     setPhotos(remainingPhotos);
 
@@ -117,8 +120,8 @@ export function VehiclePhotoUpload() {
             {isDragging
               ? 'Se agregarán a tu selección actual'
               : photoCount > 0
-              ? `Exterior, interior y tablero · ${photoCount} ${photoCount === 1 ? 'seleccionada' : 'seleccionadas'}`
-              : 'Exterior, interior y tablero · Opcional'}
+                ? `Exterior, interior y tablero · ${photoCount} ${photoCount === 1 ? 'seleccionada' : 'seleccionadas'}`
+                : 'Exterior, interior y tablero · Opcional'}
           </small>
         </span>
         <input ref={inputRef} name="photos" type="file" accept="image/*" multiple onChange={handleChange} />
@@ -126,10 +129,16 @@ export function VehiclePhotoUpload() {
 
       {photoCount > 0 ? (
         <div className="valuation-photo-previews" aria-live="polite" aria-label={`${photoCount} fotos seleccionadas`}>
-          {photos.map((photo) => (
+          {photos.map(photo => (
             <div className="valuation-photo-preview" key={photo.id}>
               <div className="valuation-photo-image">
-                <Image src={photo.previewUrl} alt={`Vista previa de ${photo.file.name}`} fill sizes="140px" unoptimized />
+                <Image
+                  src={photo.previewUrl}
+                  alt={`Vista previa de ${photo.file.name}`}
+                  fill
+                  sizes="140px"
+                  unoptimized
+                />
               </div>
               <div className="valuation-photo-meta">
                 <strong title={photo.file.name}>{photo.file.name}</strong>

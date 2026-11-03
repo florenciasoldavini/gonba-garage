@@ -24,11 +24,7 @@ type SiteFooterProps = {
   home?: boolean;
 };
 
-export function SiteFooter({
-  topHref,
-  note,
-  home = false,
-}: SiteFooterProps) {
+export function SiteFooter({ topHref, note, home = false }: SiteFooterProps) {
   return (
     <FooterMotion className="site-footer section-shell">
       <div className="footer-intro">
@@ -66,7 +62,9 @@ export function SiteFooter({
         <span className="footer-visits-label">Visitas · {BUSINESS_VISIT_POLICY}</span>
         <ul>
           <li>{BUSINESS_AREA_LABEL}</li>
-          {BUSINESS_HOURS.map((hours) => <li key={hours}>{hours}</li>)}
+          {BUSINESS_HOURS.map(hours => (
+            <li key={hours}>{hours}</li>
+          ))}
         </ul>
         <TrackedAnchor
           analyticsEvent={{ name: 'contact_intent_clicked', properties: { channel: 'whatsapp', placement: 'footer' } }}
@@ -82,8 +80,10 @@ export function SiteFooter({
         <nav className="footer-link-group" aria-label="Secciones">
           <span className="footer-link-label">Secciones</span>
           <div className="footer-link-list">
-            {siteNavigation.map((item) => (
-              <Link href={item.path} key={item.label}>{item.label}</Link>
+            {siteNavigation.map(item => (
+              <Link href={item.path} key={item.label}>
+                {item.label}
+              </Link>
             ))}
           </div>
         </nav>
@@ -91,7 +91,10 @@ export function SiteFooter({
           <span className="footer-link-label">Contacto</span>
           <div className="footer-link-list">
             <TrackedAnchor
-              analyticsEvent={{ name: 'contact_intent_clicked', properties: { channel: 'whatsapp', placement: 'footer' } }}
+              analyticsEvent={{
+                name: 'contact_intent_clicked',
+                properties: { channel: 'whatsapp', placement: 'footer' },
+              }}
               href={WHATSAPP_URL}
               aria-label={`WhatsApp ${WHATSAPP_DISPLAY_NUMBER}`}
               target="_blank"

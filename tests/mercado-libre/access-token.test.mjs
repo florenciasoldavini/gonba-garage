@@ -5,13 +5,17 @@ import { runtimeImports } from '../helpers/modules.mjs';
 
 const provider = vi.hoisted(() => ({ tokenResponse: null, shared: null }));
 vi.mock('@/lib/integrations/mercado-libre/credentials', () => ({ sharedAccessToken: renew => provider.shared(renew) }));
-vi.mock('@/lib/integrations/mercado-libre/oauth', () => ({ refreshMercadoLibreToken: async () => provider.tokenResponse }));
+vi.mock('@/lib/integrations/mercado-libre/oauth', () => ({
+  refreshMercadoLibreToken: async () => provider.tokenResponse,
+}));
 
 const secret = 'DO_NOT_LOG_ACCESS_OR_REFRESH_TOKEN';
 
 // Each step continues with the access token the previous one left in memory.
 describe('catalog access token', () => {
-  beforeEach(() => { vi.stubEnv('MERCADO_LIBRE_SELLER_ID', '123'); });
+  beforeEach(() => {
+    vi.stubEnv('MERCADO_LIBRE_SELLER_ID', '123');
+  });
 
   it('loads only its expected runtime dependencies', () => {
     for (const id of runtimeImports('lib/integrations/mercado-libre/access-token.ts')) {
@@ -20,16 +24,24 @@ describe('catalog access token', () => {
     }
   });
 
-  it('never saves another seller\'s token', async () => {
+  it("never saves another seller's token", async () => {
     provider.tokenResponse = { user_id: 456, access_token: secret, refresh_token: secret, expires_in: 21600 };
-    provider.shared = renew => renew('refresh', async () => assert.fail('Another seller\'s token must not be saved'));
+    provider.shared = renew => renew('refresh', async () => assert.fail("Another seller's token must not be saved"));
     await assert.rejects(catalogAccessToken(), error => error.incident.code === 'unexpected_seller');
   });
 
   it('shares the access token only together with the rotated refresh token', async () => {
     const saved = [];
-    provider.tokenResponse = { ...provider.tokenResponse, user_id: 123, refresh_token: 'rotated', access_token: 'live-access' };
-    provider.shared = renew => renew('refresh', async (next, access) => { saved.push({ next, access }); });
+    provider.tokenResponse = {
+      ...provider.tokenResponse,
+      user_id: 123,
+      refresh_token: 'rotated',
+      access_token: 'live-access',
+    };
+    provider.shared = renew =>
+      renew('refresh', async (next, access) => {
+        saved.push({ next, access });
+      });
     assert.equal(await catalogAccessToken(), 'live-access');
     assert.equal(saved.length, 1, 'The access token is shared only together with the rotated refresh token');
     assert.equal(saved[0].next, 'rotated');

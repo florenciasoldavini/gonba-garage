@@ -6,12 +6,19 @@ import { runtimeImports } from '../helpers/modules.mjs';
 
 // Route behavior with storage and delivery replaced: alert emails are not configured (demo mode).
 const routes = vi.hoisted(() => ({ calls: [], configured: true, failStorage: false, vehicle: null, deferred: [] }));
-vi.mock('next/server', async importOriginal => ({ ...await importOriginal(), after: task => { routes.deferred.push(task); } }));
+vi.mock('next/server', async importOriginal => ({
+  ...(await importOriginal()),
+  after: task => {
+    routes.deferred.push(task);
+  },
+}));
 vi.mock('@/lib/database', () => ({ isDatabaseConfigured: () => routes.configured }));
 vi.mock('@/lib/alerts/config', () => ({ alertEmailsConfigured: () => false }));
 vi.mock('@/lib/alerts/price-delivery', () => ({}));
 vi.mock('@/lib/alerts/signup-limit', () => ({ reserveAlertSignup: async () => true }));
-vi.mock('@/lib/alerts/confirmation', () => ({ sendSignupConfirmationSafely: async () => assert.fail('Demo mode sends no confirmation') }));
+vi.mock('@/lib/alerts/confirmation', () => ({
+  sendSignupConfirmationSafely: async () => assert.fail('Demo mode sends no confirmation'),
+}));
 vi.mock('@/lib/integrations/mercado-libre/access-token', () => ({}));
 vi.mock('@/lib/integrations/mercado-libre/api', () => ({}));
 vi.mock('@/lib/alerts/subscriptions', () => ({
@@ -20,19 +27,30 @@ vi.mock('@/lib/alerts/subscriptions', () => ({
     routes.calls.push(input);
     return { id: crypto.randomUUID(), generation: crypto.randomUUID(), status: 'pending' };
   },
-  savePriceSubscription: async input => { if (routes.failStorage) throw new Error('Private DB error'); routes.calls.push(input); },
+  savePriceSubscription: async input => {
+    if (routes.failStorage) throw new Error('Private DB error');
+    routes.calls.push(input);
+  },
 }));
 vi.mock('@/lib/integrations/mercado-libre/catalog', () => ({ findCatalogVehicle: async () => routes.vehicle }));
 
 const slug = 'toyota-sw4-mla123';
 const request = { email: ' Test@Example.invalid ', vehicleSlug: slug };
-const post = (body, headers = {}) => new Request('https://example.test/api/alerts', {
-  method: 'POST', headers: { 'Content-Type': 'application/json', ...headers }, body: JSON.stringify(body),
-});
+const post = (body, headers = {}) =>
+  new Request('https://example.test/api/alerts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...headers },
+    body: JSON.stringify(body),
+  });
 
 beforeEach(() => {
-  Object.assign(routes, { calls: [], configured: true, failStorage: false, deferred: [],
-    vehicle: { slug, price: 49900, currency: 'USD', status: 'active' } });
+  Object.assign(routes, {
+    calls: [],
+    configured: true,
+    failStorage: false,
+    deferred: [],
+    vehicle: { slug, price: 49900, currency: 'USD', status: 'active' },
+  });
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 afterEach(() => {
@@ -40,16 +58,34 @@ afterEach(() => {
 });
 
 it('loads only the dependencies replaced here, the request guard and the environment', () => {
-  const dependencies = ['server-only', 'next/server', '@/lib/database', '@/lib/alerts/config', '@/lib/alerts/price-delivery',
-    '@/lib/alerts/signup-limit', '@/lib/alerts/confirmation', '@/lib/integrations/mercado-libre/access-token',
-    '@/lib/integrations/mercado-libre/api', '@/lib/alerts/subscriptions', '@/lib/integrations/mercado-libre/catalog', '@/lib/alerts/request-guard',
-    '@/lib/env'];
-  for (const file of ['lib/alerts/request-guard.ts', 'app/api/inventory-alerts/route.ts', 'app/api/price-alerts/route.ts']) {
+  const dependencies = [
+    'server-only',
+    'next/server',
+    '@/lib/database',
+    '@/lib/alerts/config',
+    '@/lib/alerts/price-delivery',
+    '@/lib/alerts/signup-limit',
+    '@/lib/alerts/confirmation',
+    '@/lib/integrations/mercado-libre/access-token',
+    '@/lib/integrations/mercado-libre/api',
+    '@/lib/alerts/subscriptions',
+    '@/lib/integrations/mercado-libre/catalog',
+    '@/lib/alerts/request-guard',
+    '@/lib/env',
+  ];
+  for (const file of [
+    'lib/alerts/request-guard.ts',
+    'app/api/inventory-alerts/route.ts',
+    'app/api/price-alerts/route.ts',
+  ]) {
     for (const id of runtimeImports(file)) assert.ok(dependencies.includes(id), `Unexpected dependency: ${id}`);
   }
 });
 
-describe.each([{ name: 'inventory', handler: inventory }, { name: 'price', handler: price }])('$name alert signup', ({ handler }) => {
+describe.each([
+  { name: 'inventory', handler: inventory },
+  { name: 'price', handler: price },
+])('$name alert signup', ({ handler }) => {
   it('accepts same-origin JSON only', async () => {
     // A cross-site HTML form can only send simple content types, never application/json.
     const form = new Request('https://example.test/api/alerts', { method: 'POST', body: JSON.stringify(request) });
@@ -62,11 +98,23 @@ describe.each([{ name: 'inventory', handler: inventory }, { name: 'price', handl
     assert.equal((await handler(post(request, { 'Sec-Fetch-Site': 'cross-site' }))).status, 403);
     assert.equal(routes.calls.length, 0, 'Rejected cross-site requests must not touch storage');
     assert.equal((await handler(post(request, { 'Content-Type': 'Application/JSON; charset=utf-8' }))).status, 201);
-    assert.equal((await handler(post(request, { Origin: 'https://example.test', 'Sec-Fetch-Site': 'same-origin' }))).status, 201);
+    assert.equal(
+      (await handler(post(request, { Origin: 'https://example.test', 'Sec-Fetch-Site': 'same-origin' }))).status,
+      201,
+    );
     // Behind Vercel and other proxies the public host arrives in Host / X-Forwarded-Host, not request.url.
-    assert.equal((await handler(post(request, { Origin: 'https://preview-abc.vercel.app',
-      'X-Forwarded-Host': 'preview-abc.vercel.app' }))).status, 201);
-    assert.equal((await handler(post(request, { Origin: 'http://localhost:3100', Host: 'localhost:3100' }))).status, 201);
+    assert.equal(
+      (
+        await handler(
+          post(request, { Origin: 'https://preview-abc.vercel.app', 'X-Forwarded-Host': 'preview-abc.vercel.app' }),
+        )
+      ).status,
+      201,
+    );
+    assert.equal(
+      (await handler(post(request, { Origin: 'http://localhost:3100', Host: 'localhost:3100' }))).status,
+      201,
+    );
     assert.equal(routes.calls.length, 4);
   });
 

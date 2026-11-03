@@ -43,13 +43,13 @@ const sortParams: Record<string, InventorySort> = {
 };
 
 function findKey<T>(record: Record<string, T>, value: T) {
-  return Object.keys(record).find((key) => record[key] === value);
+  return Object.keys(record).find(key => record[key] === value);
 }
 
 function matchOption(value: string | null, options: string[]) {
   const normalized = value?.trim().toLocaleLowerCase('es');
   if (!normalized) return 'all';
-  return options.find((option) => option.toLocaleLowerCase('es') === normalized) ?? 'all';
+  return options.find(option => option.toLocaleLowerCase('es') === normalized) ?? 'all';
 }
 
 function parseRange(minValue: string | null, maxValue: string | null, ceiling: number, step: number) {
@@ -72,7 +72,7 @@ export function parseCatalogUrlState(params: SearchParamsLike, bounds: CatalogUr
   const mileage = parseRange(params.get('km_min'), params.get('km_max'), bounds.mileageCeiling, bounds.mileageStep);
   const sort = sortParams[params.get('orden') ?? ''] ?? 'featured';
   const compare = [...new Set((params.get('comparar') ?? '').split(','))]
-    .filter((slug) => bounds.vehicleSlugs.includes(slug))
+    .filter(slug => bounds.vehicleSlugs.includes(slug))
     .slice(0, bounds.maxCompare);
 
   return {

@@ -15,7 +15,15 @@ describe.runIf(process.env.TEST_LIVE === '1')('alert storage on the configured N
     subscriptions = await import('@/lib/alerts/subscriptions');
   });
 
-  it('deduplicates concurrent searches and confirms them once per generation', () => checkInventoryStorage(sql, subscriptions), 30_000);
+  it(
+    'deduplicates concurrent searches and confirms them once per generation',
+    () => checkInventoryStorage(sql, subscriptions),
+    30_000,
+  );
 
-  it('keeps an active price baseline and needs a new confirmation after cancelling', () => checkPriceStorage(sql, subscriptions), 30_000);
+  it(
+    'keeps an active price baseline and needs a new confirmation after cancelling',
+    () => checkPriceStorage(sql, subscriptions),
+    30_000,
+  );
 });

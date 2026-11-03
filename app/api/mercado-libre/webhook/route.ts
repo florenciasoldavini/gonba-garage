@@ -18,7 +18,8 @@ export const maxDuration = 300;
 function fromListedAddress(request: Request) {
   const listed = mercadoLibreEnv.webhookIps();
   if (!listed.length) return true;
-  const address = request.headers.get('x-vercel-forwarded-for')?.trim().replace(/^::ffff:/, '') ?? '';
+  const forwarded = request.headers.get('x-vercel-forwarded-for');
+  const address = forwarded?.trim().replace(/^::ffff:/, '') ?? '';
   if (listed.includes(address)) return true;
   // The address shows whether Mercado Libre started using one that is missing from the list.
   console.warn(JSON.stringify({ event: 'mercado_libre_webhook_unlisted_address', address: address.slice(0, 64) }));
@@ -32,14 +33,23 @@ export async function POST(request: Request) {
     const text = await request.text();
     if (text.length > 16_384) throw new Error('Oversized notification');
     notification = JSON.parse(text);
-    if (!notification || typeof notification !== 'object' || Array.isArray(notification)) throw new Error('Invalid notification');
+    if (!notification || typeof notification !== 'object' || Array.isArray(notification))
+      throw new Error('Invalid notification');
   } catch {
     return NextResponse.json({ ok: false }, { status: 400, headers: privateHeaders });
   }
-  const match = typeof notification.resource === 'string' ? notification.resource.match(/^\/items\/(MLA\d+)(?:\/prices)?$/) : null;
-  const sellerId = mercadoLibreEnv.sellerId(), clientId = mercadoLibreEnv.clientId();
-  if (!match || !['items', 'items_prices'].includes(String(notification.topic))
-    || !sellerId || String(notification.user_id) !== sellerId || !clientId || String(notification.application_id) !== clientId) {
+  const match =
+    typeof notification.resource === 'string' ? notification.resource.match(/^\/items\/(MLA\d+)(?:\/prices)?$/) : null;
+  const sellerId = mercadoLibreEnv.sellerId();
+  const clientId = mercadoLibreEnv.clientId();
+  if (
+    !match ||
+    !['items', 'items_prices'].includes(String(notification.topic)) ||
+    !sellerId ||
+    String(notification.user_id) !== sellerId ||
+    !clientId ||
+    String(notification.application_id) !== clientId
+  ) {
     return NextResponse.json({ ok: true }, { headers: privateHeaders });
   }
   const catalogSync = isDatabaseConfigured();
@@ -48,13 +58,14 @@ export async function POST(request: Request) {
   // An unlisted address is still queued, so an outdated list delays a genuine notification until the
   // daily crons but never loses it. It just starts no work here.
   const verified = fromListedAddress(request);
-  let drainCatalog = false, drainPrices = false;
+  let drainCatalog = false;
+  let drainPrices = false;
   try {
     // The payload is only a hint: both queues read the item again from Mercado Libre.
     if (catalogSync) drainCatalog = await enqueueCatalogSync(match[1], { verified });
     if (priceAlerts) {
       requireAlertConfig();
-      drainPrices = await enqueuePriceItem(match[1]) && verified;
+      drainPrices = (await enqueuePriceItem(match[1])) && verified;
     }
   } catch {
     // Never acknowledge a relevant event before it is durable. Mercado Libre can retry.
@@ -66,10 +77,14 @@ export async function POST(request: Request) {
   // Search alerts match what the sync just saved, so they run after it, within the same function.
   const searchAlerts = catalogSync && alertEmailsConfigured();
   const deadline = Date.now() + 270_000;
-  after(() => Promise.all([
-    drainCatalog && runCatalogSyncWorkSafely()
-      .then(() => searchAlerts ? runInventoryAlertWorkSafely({ budgetMs: deadline - Date.now() }) : undefined),
-    drainPrices && runPriceAlertWorkSafely(),
-  ]));
+  after(() =>
+    Promise.all([
+      drainCatalog &&
+        runCatalogSyncWorkSafely().then(() =>
+          searchAlerts ? runInventoryAlertWorkSafely({ budgetMs: deadline - Date.now() }) : undefined,
+        ),
+      drainPrices && runPriceAlertWorkSafely(),
+    ]),
+  );
   return NextResponse.json({ ok: true }, { headers: privateHeaders });
 }

@@ -14,9 +14,13 @@ type FeaturedFields = Pick<Vehicle, 'make' | 'year' | 'mileageKm' | 'image'>;
  */
 function isShowcaseGrade(vehicle: FeaturedFields, currentYear: number) {
   const knownMileage = vehicle.mileageKm > 0 || vehicle.year >= currentYear - 1;
-  return vehicle.image !== VEHICLE_PHOTO_PLACEHOLDER
-    && vehicle.year >= currentYear - SHOWCASE_MAX_AGE_YEARS && vehicle.year <= currentYear + 1
-    && knownMileage && vehicle.mileageKm <= SHOWCASE_MAX_MILEAGE_KM;
+  return (
+    vehicle.image !== VEHICLE_PHOTO_PLACEHOLDER &&
+    vehicle.year >= currentYear - SHOWCASE_MAX_AGE_YEARS &&
+    vehicle.year <= currentYear + 1 &&
+    knownMileage &&
+    vehicle.mileageKm <= SHOWCASE_MAX_MILEAGE_KM
+  );
 }
 
 /**
@@ -25,7 +29,7 @@ function isShowcaseGrade(vehicle: FeaturedFields, currentYear: number) {
  * then the other showcase-grade cars and last the rest, both still newest listing first.
  */
 export function orderFeaturedVehicles<T extends FeaturedFields>(vehicles: T[], currentYear = new Date().getFullYear()) {
-  const showcase = new Set(vehicles.filter((vehicle) => isShowcaseGrade(vehicle, currentYear)));
+  const showcase = new Set(vehicles.filter(vehicle => isShowcaseGrade(vehicle, currentYear)));
   const ranked = [...showcase].toSorted((a, b) => b.year - a.year || a.mileageKm - b.mileageKm);
   const picks: T[] = [];
   for (const vehicle of ranked) {
@@ -34,6 +38,10 @@ export function orderFeaturedVehicles<T extends FeaturedFields>(vehicles: T[], c
   for (const vehicle of ranked) {
     if (picks.length < SHOWCASE_PICKS && !picks.includes(vehicle)) picks.push(vehicle);
   }
-  const rest = vehicles.filter((vehicle) => !picks.includes(vehicle));
-  return [...picks, ...rest.filter((vehicle) => showcase.has(vehicle)), ...rest.filter((vehicle) => !showcase.has(vehicle))];
+  const rest = vehicles.filter(vehicle => !picks.includes(vehicle));
+  return [
+    ...picks,
+    ...rest.filter(vehicle => showcase.has(vehicle)),
+    ...rest.filter(vehicle => !showcase.has(vehicle)),
+  ];
 }

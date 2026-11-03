@@ -13,7 +13,11 @@ import { BUSINESS_AREA_LABEL, BUSINESS_VISIT_POLICY } from '@/constants/contact'
 import { getWhatsAppUrl } from '@/lib/contact';
 import { ButtonAnchor, ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
-import { findCatalogPublication, findCatalogVehicle, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
+import {
+  findCatalogPublication,
+  findCatalogVehicle,
+  listCatalogVehicles,
+} from '@/lib/integrations/mercado-libre/catalog';
 import { fullSizeMercadoLibreImageUrl } from '@/lib/integrations/mercado-libre/pictures';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { unbreakableVersionSegments } from '@/features/vehicles/presentation/listing-cleanup';
@@ -86,7 +90,15 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
     publication = await findCatalogPublication(slug);
   } catch {
     // A backend failure is not a missing vehicle: keep notFound() for real 404s only.
-    return <div className="section-shell"><SiteHeader active="vehicles" /><main><h1>Catálogo no disponible</h1><p>No pudimos consultar esta publicación. Volvé a intentar en unos minutos.</p></main></div>;
+    return (
+      <div className="section-shell">
+        <SiteHeader active="vehicles" />
+        <main>
+          <h1>Catálogo no disponible</h1>
+          <p>No pudimos consultar esta publicación. Volvé a intentar en unos minutos.</p>
+        </main>
+      </div>
+    );
   }
 
   // The slug is fixed at the first sync. Older or edited slugs for the same publication redirect.
@@ -94,7 +106,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   if (publication.vehicle.slug !== slug) permanentRedirect(`/vehiculos/${publication.vehicle.slug}`);
   const { vehicle } = publication;
   const pictures = publication.source.pictures ?? [];
-  const photos = pictures.map(picture => fullSizeMercadoLibreImageUrl(picture.secure_url || picture.url))
+  const photos = pictures
+    .map(picture => fullSizeMercadoLibreImageUrl(picture.secure_url || picture.url))
     .filter((src): src is string => Boolean(src));
   // A publication without pictures can still have a thumbnail. The placeholder is not a photo of the car.
   if (!photos.length && vehicle.image !== VEHICLE_PHOTO_PLACEHOLDER) photos.push(vehicle.image);
@@ -111,11 +124,14 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const vehicleName = `${vehicle.make} ${vehicle.model}`;
   const bodyType = vehicle.body.split(' · ')[0];
   // The card states the status, once. The eyebrow names what the title meta row leaves out.
-  const titleEyebrow = [bodyType, vehicle.fuel].filter(fact => fact && fact !== 'Sin especificar').join(' · ') || vehicle.make;
+  const titleEyebrow =
+    [bodyType, vehicle.fuel].filter(fact => fact && fact !== 'Sin especificar').join(' · ') || vehicle.make;
   const formattedPrice = formatVehiclePrice(vehicle.price, vehicle.currency);
   // The seller has several cars of the same model, so every message names the exact publication.
   const vehicleReference = [vehicle.make, vehicle.model, vehicle.version, vehicle.year].filter(Boolean).join(' ');
-  const vehicleContactHref = getWhatsAppUrl(`Hola, quiero consultar por el ${vehicleReference}, publicado a ${formattedPrice}. ${vehicleUrl}`);
+  const vehicleContactHref = getWhatsAppUrl(
+    `Hola, quiero consultar por el ${vehicleReference}, publicado a ${formattedPrice}. ${vehicleUrl}`,
+  );
   // Alerts are offered only where their emails can be sent (production, not previews).
   const alertsEnabled = alertEmailsConfigured();
 
@@ -124,9 +140,10 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const similarVehicles = pickSimilarVehicles(vehicle, catalog);
   const availableCount = catalog.length;
   // Only peso prices get the approximate dollar line, so the quote is fetched only when one is shown.
-  const quote = vehicle.currency === 'ARS' || similarVehicles.some(({ currency }) => currency === 'ARS')
-    ? await getMepQuote()
-    : null;
+  const quote =
+    vehicle.currency === 'ARS' || similarVehicles.some(({ currency }) => currency === 'ARS')
+      ? await getMepQuote()
+      : null;
   // Reserved: the same model coming back (the reservation fell through, or a relisting). Sold: the
   // same make and body type.
   const alertCriteria: InventoryAlertCriteria = {
@@ -140,22 +157,30 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
     minMileage: null,
     maxMileage: null,
   };
-  const contact = status.isAvailable ? {
-    href: vehicleContactHref,
-    label: 'Consultar ahora',
-    eyebrow: 'Coordiná una visita',
-    title: 'Conocelo en persona. El resto se entiende manejando.',
-  } : isReserved ? {
-    href: getWhatsAppUrl(`Hola, vi que el ${vehicleReference}, publicado a ${formattedPrice}, está reservado. Si se libera, avisame. ${vehicleUrl}`),
-    label: 'Escribinos por WhatsApp',
-    eyebrow: '¿Te interesaba este?',
-    title: 'Escribinos. Si la reserva se cae, sos el primero en saberlo.',
-  } : {
-    href: getWhatsAppUrl(`Hola, vi que el ${vehicleReference}, último precio publicado ${formattedPrice}, ya se vendió. Estoy buscando algo parecido. ${vehicleUrl}`),
-    label: 'Escribinos por WhatsApp',
-    eyebrow: '¿Buscás algo parecido?',
-    title: 'Contanos qué auto buscás. Te avisamos cuando entre.',
-  };
+  const contact = status.isAvailable
+    ? {
+        href: vehicleContactHref,
+        label: 'Consultar ahora',
+        eyebrow: 'Coordiná una visita',
+        title: 'Conocelo en persona. El resto se entiende manejando.',
+      }
+    : isReserved
+      ? {
+          href: getWhatsAppUrl(
+            `Hola, vi que el ${vehicleReference}, publicado a ${formattedPrice}, está reservado. Si se libera, avisame. ${vehicleUrl}`,
+          ),
+          label: 'Escribinos por WhatsApp',
+          eyebrow: '¿Te interesaba este?',
+          title: 'Escribinos. Si la reserva se cae, sos el primero en saberlo.',
+        }
+      : {
+          href: getWhatsAppUrl(
+            `Hola, vi que el ${vehicleReference}, último precio publicado ${formattedPrice}, ya se vendió. Estoy buscando algo parecido. ${vehicleUrl}`,
+          ),
+          label: 'Escribinos por WhatsApp',
+          eyebrow: '¿Buscás algo parecido?',
+          title: 'Contanos qué auto buscás. Te avisamos cuando entre.',
+        };
   const contactEvent = (placement: 'hero' | 'callout'): AnalyticsEvent => ({
     name: 'vehicle_contact_clicked',
     properties: {
@@ -170,8 +195,13 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   // before the closing contact callout.
   const similarRail = similarVehicles.length > 0 && (
     <section className="section-shell detail-similar" id="similares" aria-labelledby="similar-title">
-      <h2 className="eyebrow" id="similar-title"><span aria-hidden="true" />{status.isAvailable ? 'Seguí mirando' : 'Parecidos, todavía en el garage'}</h2>
-      <Link className="text-link" href="/vehiculos">Ver inventario completo <Arrow /></Link>
+      <h2 className="eyebrow" id="similar-title">
+        <span aria-hidden="true" />
+        {status.isAvailable ? 'Seguí mirando' : 'Parecidos, todavía en el garage'}
+      </h2>
+      <Link className="text-link" href="/vehiculos">
+        Ver inventario completo <Arrow />
+      </Link>
       <ol className="detail-similar-list">
         {similarVehicles.map((similar, index) => (
           <SimilarVehicleLink index={index} key={similar.slug} quote={quote} vehicle={similar} />
@@ -182,7 +212,10 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
               <span className="detail-similar-number">{String(similarVehicles.length + 1).padStart(2, '0')}</span>
               <span className="detail-similar-name">
                 <strong>Todo el inventario</strong>
-                <span>{String(availableCount).padStart(2, '0')} {availableCount === 1 ? 'auto disponible' : 'autos disponibles'} hoy</span>
+                <span>
+                  {String(availableCount).padStart(2, '0')}{' '}
+                  {availableCount === 1 ? 'auto disponible' : 'autos disponibles'} hoy
+                </span>
               </span>
               <ArrowUpRight className="detail-similar-arrow" aria-hidden="true" size={20} strokeWidth={1.8} />
             </Link>
@@ -270,171 +303,240 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
       <SiteHeader active="vehicles" />
 
       <main>
-      <nav className="section-shell detail-breadcrumbs" aria-label="Ruta de navegación">
-        <ol>
-          <li><Link href="/">Inicio</Link><span aria-hidden="true">/</span></li>
-          <li><Link href="/vehiculos">Vehículos</Link><span aria-hidden="true">/</span></li>
-          <li aria-current="page"><span>{`${vehicle.make} ${vehicle.model}`}</span></li>
-        </ol>
-      </nav>
+        <nav className="section-shell detail-breadcrumbs" aria-label="Ruta de navegación">
+          <ol>
+            <li>
+              <Link href="/">Inicio</Link>
+              <span aria-hidden="true">/</span>
+            </li>
+            <li>
+              <Link href="/vehiculos">Vehículos</Link>
+              <span aria-hidden="true">/</span>
+            </li>
+            <li aria-current="page">
+              <span>{`${vehicle.make} ${vehicle.model}`}</span>
+            </li>
+          </ol>
+        </nav>
 
-      <section className="section-shell detail-title" aria-labelledby="vehicle-title">
-        <div>
-          <Eyebrow>{titleEyebrow}</Eyebrow>
-          <h1 id="vehicle-title">{`${vehicle.make} ${vehicle.model}`}{' '}<em>{unbreakableVersionSegments(vehicle.version)}</em></h1>
-        </div>
-        <div className="detail-title-meta">
-          <span>{vehicle.year}</span>
-          <span>{formatVehicleMileage(vehicle.mileageKm)}</span>
-          <span>{vehicle.transmission.split(',')[0]}</span>
-        </div>
-      </section>
-
-      <section className="section-shell detail-showcase" data-status={status.status} aria-label="Presentación del vehículo">
-        <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} />
-        {!status.isAvailable && (
-          <p className="detail-status-banner">{isReserved ? 'Ya tiene una reserva.' : 'Esta unidad ya tiene dueño.'}</p>
-        )}
-
-        <aside className="detail-purchase-card glass-panel" aria-label={status.isAvailable ? 'Precio y consulta' : 'Estado de la publicación'}>
-          <div className="detail-purchase-top">
-            <div className="detail-availability" data-status={status.status}><span /> {status.label}</div>
-            <div className="detail-utility-actions">
-              {status.isAvailable && (
-                <Link className="detail-compare-button" href={compareHref}>
-                  <span>Comparar</span>
-                  <Scale aria-hidden="true" size={14} strokeWidth={1.8} />
-                </Link>
-              )}
-              <ShareButton
-                fallbackUrl={vehicleUrl}
-                imageSrc={vehicle.image}
-                text={`Mirá este ${vehicle.make} ${vehicle.model} ${vehicle.version} ${status.isAvailable ? 'publicado por' : 'en'} Gonba's Garage.`}
-                title={`${vehicle.make} ${vehicle.model}`}
-                vehicleMeta={`${vehicle.year} · ${vehicle.version}`}
-                vehicleSlug={vehicle.slug}
-                statusLabel={status.label}
-              />
-            </div>
+        <section className="section-shell detail-title" aria-labelledby="vehicle-title">
+          <div>
+            <Eyebrow>{titleEyebrow}</Eyebrow>
+            <h1 id="vehicle-title">
+              {`${vehicle.make} ${vehicle.model}`} <em>{unbreakableVersionSegments(vehicle.version)}</em>
+            </h1>
           </div>
-          {status.isAvailable ? (
-            <>
-              <p className="detail-price-label">Precio publicado</p>
-              <p className="detail-price">{formattedPrice}</p>
-              <ApproximateUsdPrice className="detail-price-usd" quote={quote} vehicle={vehicle} />
-              {/* The business area, not Mercado Libre's seller address, which is the same for every car. */}
-              <p className="detail-location">{`${BUSINESS_AREA_LABEL} · ${BUSINESS_VISIT_POLICY}`}</p>
-              {alertsEnabled ? (
-                <PriceAlert
-                  vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
-                  vehicleSlug={vehicle.slug}
-                  formattedPrice={formattedPrice}
-                />
-              ) : null}
-              <div className="detail-actions">
-                <TrackedButtonAnchor analyticsEvent={contactEvent('hero')} href={vehicleContactHref} rel="noreferrer" target="_blank">
-                  Consultar por este auto <Arrow />
-                </TrackedButtonAnchor>
-                <ButtonAnchor href="#ficha" variant="glass">Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
-              </div>
-            </>
-          ) : (
-            <>
-              <h2 className="detail-status-title">{isReserved ? 'Este auto está reservado.' : 'Este auto ya se vendió.'}</h2>
-              <p className="detail-status-copy">
-                {alertsEnabled ? (isReserved
-                  ? 'Alguien lo reservó, pero a veces las reservas se caen: dejanos tu email y te avisamos si se libera o si entra otro igual.'
-                  : 'Si buscás algo así, dejanos tu email y te avisamos cuando entre uno parecido.')
-                  : (isReserved
-                    ? 'Alguien lo reservó, pero a veces las reservas se caen: escribinos por WhatsApp y te avisamos si se libera.'
-                    : 'Si buscás algo así, escribinos por WhatsApp y te avisamos cuando entre uno parecido.')}
-                {similarVehicles.length > 0 && (isReserved
-                  ? ' Mientras tanto, abajo tenés autos parecidos disponibles.'
-                  : ' Abajo tenés autos parecidos que siguen en el garage.')}
-              </p>
-              <dl className="detail-last-price">
-                <dt>{isReserved ? 'Precio publicado' : 'Último precio publicado'}</dt>
-                <dd>{formattedPrice}{isReserved && <ApproximateUsdPrice quote={quote} vehicle={vehicle} />}</dd>
-              </dl>
-              {alertsEnabled ? <InventoryAlert
-                activeFilterCount={2}
-                criteria={alertCriteria}
-                placement="vehicle"
-                resultCount={similarVehicles.length}
-                vehicleCopy={isReserved ? {
-                  trigger: 'Avisame si se libera',
-                  hint: 'O si entra otro igual. Por email.',
-                  title: 'Avisame si se libera.',
-                  description: `Te avisamos por email si la reserva se cae o si entra otro ${vehicleName}.`,
-                } : {
-                  trigger: 'Avisame si entra uno parecido',
-                  hint: 'Recibí una alerta por email',
-                  title: 'Avisame si entra uno parecido.',
-                  description: `Te avisamos por email cuando entre otro ${vehicle.make} ${bodyType.toLocaleLowerCase('es')}.`,
-                }}
-              /> : null}
-              <div className="detail-actions">
-                {!alertsEnabled && (
-                  <TrackedButtonAnchor analyticsEvent={contactEvent('hero')} href={contact.href} rel="noreferrer" target="_blank">
-                    {isReserved ? 'Avisame por WhatsApp' : 'Contanos qué buscás'} <Arrow />
-                  </TrackedButtonAnchor>
-                )}
-                {similarVehicles.length > 0 ? (
-                  <ButtonAnchor href="#similares" variant={alertsEnabled ? 'accent' : 'glass'}>Ver autos similares <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} /></ButtonAnchor>
-                ) : (
-                  <ButtonLink href="/vehiculos" variant={alertsEnabled ? 'accent' : 'glass'}>Ver todo el inventario <Arrow /></ButtonLink>
-                )}
-              </div>
-            </>
+          <div className="detail-title-meta">
+            <span>{vehicle.year}</span>
+            <span>{formatVehicleMileage(vehicle.mileageKm)}</span>
+            <span>{vehicle.transmission.split(',')[0]}</span>
+          </div>
+        </section>
+
+        <section
+          className="section-shell detail-showcase"
+          data-status={status.status}
+          aria-label="Presentación del vehículo"
+        >
+          <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} />
+          {!status.isAvailable && (
+            <p className="detail-status-banner">
+              {isReserved ? 'Ya tiene una reserva.' : 'Esta unidad ya tiene dueño.'}
+            </p>
           )}
-          <p className="detail-disclaimer">
-            {status.isAvailable ? 'Precio y disponibilidad sujetos a confirmación.'
-              : isReserved ? 'Precio sujeto a confirmación.'
-              : 'Datos de la última publicación, solo como referencia.'}
-          </p>
-        </aside>
-      </section>
 
-      {!status.isAvailable && similarRail}
+          <aside
+            className="detail-purchase-card glass-panel"
+            aria-label={status.isAvailable ? 'Precio y consulta' : 'Estado de la publicación'}
+          >
+            <div className="detail-purchase-top">
+              <div className="detail-availability" data-status={status.status}>
+                <span /> {status.label}
+              </div>
+              <div className="detail-utility-actions">
+                {status.isAvailable && (
+                  <Link className="detail-compare-button" href={compareHref}>
+                    <span>Comparar</span>
+                    <Scale aria-hidden="true" size={14} strokeWidth={1.8} />
+                  </Link>
+                )}
+                <ShareButton
+                  fallbackUrl={vehicleUrl}
+                  imageSrc={vehicle.image}
+                  text={`Mirá este ${vehicle.make} ${vehicle.model} ${vehicle.version} ${status.isAvailable ? 'publicado por' : 'en'} Gonba's Garage.`}
+                  title={`${vehicle.make} ${vehicle.model}`}
+                  vehicleMeta={`${vehicle.year} · ${vehicle.version}`}
+                  vehicleSlug={vehicle.slug}
+                  statusLabel={status.label}
+                />
+              </div>
+            </div>
+            {status.isAvailable ? (
+              <>
+                <p className="detail-price-label">Precio publicado</p>
+                <p className="detail-price">{formattedPrice}</p>
+                <ApproximateUsdPrice className="detail-price-usd" quote={quote} vehicle={vehicle} />
+                {/* The business area, not Mercado Libre's seller address, which is the same for every car. */}
+                <p className="detail-location">{`${BUSINESS_AREA_LABEL} · ${BUSINESS_VISIT_POLICY}`}</p>
+                {alertsEnabled ? (
+                  <PriceAlert
+                    vehicleName={`${vehicle.make} ${vehicle.model} ${vehicle.version}`}
+                    vehicleSlug={vehicle.slug}
+                    formattedPrice={formattedPrice}
+                  />
+                ) : null}
+                <div className="detail-actions">
+                  <TrackedButtonAnchor
+                    analyticsEvent={contactEvent('hero')}
+                    href={vehicleContactHref}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Consultar por este auto <Arrow />
+                  </TrackedButtonAnchor>
+                  <ButtonAnchor href="#ficha" variant="glass">
+                    Ver ficha técnica <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} />
+                  </ButtonAnchor>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="detail-status-title">
+                  {isReserved ? 'Este auto está reservado.' : 'Este auto ya se vendió.'}
+                </h2>
+                <p className="detail-status-copy">
+                  {alertsEnabled
+                    ? isReserved
+                      ? 'Alguien lo reservó, pero a veces las reservas se caen: dejanos tu email y te avisamos si se libera o si entra otro igual.'
+                      : 'Si buscás algo así, dejanos tu email y te avisamos cuando entre uno parecido.'
+                    : isReserved
+                      ? 'Alguien lo reservó, pero a veces las reservas se caen: escribinos por WhatsApp y te avisamos si se libera.'
+                      : 'Si buscás algo así, escribinos por WhatsApp y te avisamos cuando entre uno parecido.'}
+                  {similarVehicles.length > 0 &&
+                    (isReserved
+                      ? ' Mientras tanto, abajo tenés autos parecidos disponibles.'
+                      : ' Abajo tenés autos parecidos que siguen en el garage.')}
+                </p>
+                <dl className="detail-last-price">
+                  <dt>{isReserved ? 'Precio publicado' : 'Último precio publicado'}</dt>
+                  <dd>
+                    {formattedPrice}
+                    {isReserved && <ApproximateUsdPrice quote={quote} vehicle={vehicle} />}
+                  </dd>
+                </dl>
+                {alertsEnabled ? (
+                  <InventoryAlert
+                    activeFilterCount={2}
+                    criteria={alertCriteria}
+                    placement="vehicle"
+                    resultCount={similarVehicles.length}
+                    vehicleCopy={
+                      isReserved
+                        ? {
+                            trigger: 'Avisame si se libera',
+                            hint: 'O si entra otro igual. Por email.',
+                            title: 'Avisame si se libera.',
+                            description: `Te avisamos por email si la reserva se cae o si entra otro ${vehicleName}.`,
+                          }
+                        : {
+                            trigger: 'Avisame si entra uno parecido',
+                            hint: 'Recibí una alerta por email',
+                            title: 'Avisame si entra uno parecido.',
+                            description: `Te avisamos por email cuando entre otro ${vehicle.make} ${bodyType.toLocaleLowerCase('es')}.`,
+                          }
+                    }
+                  />
+                ) : null}
+                <div className="detail-actions">
+                  {!alertsEnabled && (
+                    <TrackedButtonAnchor
+                      analyticsEvent={contactEvent('hero')}
+                      href={contact.href}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      {isReserved ? 'Avisame por WhatsApp' : 'Contanos qué buscás'} <Arrow />
+                    </TrackedButtonAnchor>
+                  )}
+                  {similarVehicles.length > 0 ? (
+                    <ButtonAnchor href="#similares" variant={alertsEnabled ? 'accent' : 'glass'}>
+                      Ver autos similares <ArrowDown aria-hidden="true" size={16} strokeWidth={1.8} />
+                    </ButtonAnchor>
+                  ) : (
+                    <ButtonLink href="/vehiculos" variant={alertsEnabled ? 'accent' : 'glass'}>
+                      Ver todo el inventario <Arrow />
+                    </ButtonLink>
+                  )}
+                </div>
+              </>
+            )}
+            <p className="detail-disclaimer">
+              {status.isAvailable
+                ? 'Precio y disponibilidad sujetos a confirmación.'
+                : isReserved
+                  ? 'Precio sujeto a confirmación.'
+                  : 'Datos de la última publicación, solo como referencia.'}
+            </p>
+          </aside>
+        </section>
 
-      <section className="section-shell detail-overview" id="ficha" aria-labelledby="overview-title">
-        <div className="detail-story">
-          <Eyebrow>La unidad</Eyebrow>
-          <h2 id="overview-title">Elegido por cómo se siente. Revisado por todo lo demás.</h2>
-          <p style={{ whiteSpace: 'pre-wrap' }}>{vehicle.description || 'Esta publicación no incluye descripción.'}</p>
-          <ul className="detail-highlights" aria-label="Puntos destacados">
-            {vehicle.highlights.map((highlight) => (
-              <li key={highlight}><Check aria-hidden="true" size={14} strokeWidth={1.8} />{highlight}</li>
-            ))}
-          </ul>
-        </div>
+        {!status.isAvailable && similarRail}
 
-        <div className="detail-specs glass-panel">
-          <div className="detail-specs-heading">
-            <p>Ficha técnica</p>
+        <section className="section-shell detail-overview" id="ficha" aria-labelledby="overview-title">
+          <div className="detail-story">
+            <Eyebrow>La unidad</Eyebrow>
+            <h2 id="overview-title">Elegido por cómo se siente. Revisado por todo lo demás.</h2>
+            <p style={{ whiteSpace: 'pre-wrap' }}>
+              {vehicle.description || 'Esta publicación no incluye descripción.'}
+            </p>
+            <ul className="detail-highlights" aria-label="Puntos destacados">
+              {vehicle.highlights.map(highlight => (
+                <li key={highlight}>
+                  <Check aria-hidden="true" size={14} strokeWidth={1.8} />
+                  {highlight}
+                </li>
+              ))}
+            </ul>
           </div>
-          <VehicleSpecificationGroups attributes={attributes} />
-        </div>
-      </section>
 
-      <section className="section-shell detail-confidence" aria-label="Proceso Gonba's Garage">
-        <div><span>01</span><strong>Selección</strong><p>Elegimos unidades con identidad y una historia clara.</p></div>
-        <div><span>02</span><strong>Revisión</strong><p>Chequeamos información, estado general y documentación.</p></div>
-        <div><span>03</span><strong>Acompañamiento</strong><p>Coordinamos la visita y te acompañamos hasta la entrega.</p></div>
-      </section>
+          <div className="detail-specs glass-panel">
+            <div className="detail-specs-heading">
+              <p>Ficha técnica</p>
+            </div>
+            <VehicleSpecificationGroups attributes={attributes} />
+          </div>
+        </section>
 
-      {status.isAvailable && similarRail}
+        <section className="section-shell detail-confidence" aria-label="Proceso Gonba's Garage">
+          <div>
+            <span>01</span>
+            <strong>Selección</strong>
+            <p>Elegimos unidades con identidad y una historia clara.</p>
+          </div>
+          <div>
+            <span>02</span>
+            <strong>Revisión</strong>
+            <p>Chequeamos información, estado general y documentación.</p>
+          </div>
+          <div>
+            <span>03</span>
+            <strong>Acompañamiento</strong>
+            <p>Coordinamos la visita y te acompañamos hasta la entrega.</p>
+          </div>
+        </section>
 
-      <ContactCallout
-        actionHref={contact.href}
-        actionLabel={contact.label}
-        analytics={contactEvent('callout')}
-        className="detail-contact"
-        eyebrow={contact.eyebrow}
-        id="consulta"
-        title={contact.title}
-        titleId="contact-title"
-      />
+        {status.isAvailable && similarRail}
+
+        <ContactCallout
+          actionHref={contact.href}
+          actionLabel={contact.label}
+          analytics={contactEvent('callout')}
+          className="detail-contact"
+          eyebrow={contact.eyebrow}
+          id="consulta"
+          title={contact.title}
+          titleId="contact-title"
+        />
       </main>
 
       <SiteFooter topHref="#vehicle-title" />

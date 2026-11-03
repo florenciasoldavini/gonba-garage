@@ -1,0 +1,6 @@
+# Formatting-only commits, skipped by git blame. GitHub reads this file automatically; locally run
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# Keep each SHA in sync with the commit on main: a rebase that rewrites the commit changes its SHA.
+
+# style: format the repository with Prettier
+af46eccd59bf85f011b0826b0dd2eed6386dd01a

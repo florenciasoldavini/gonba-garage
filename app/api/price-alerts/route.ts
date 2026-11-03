@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   let body: PriceAlertRequest;
 
   try {
-    body = await request.json() as PriceAlertRequest;
+    body = (await request.json()) as PriceAlertRequest;
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Invalid body');
   } catch {
     return NextResponse.json({ message: 'La solicitud no es válida.' }, { status: 400 });
@@ -55,35 +55,47 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (!await reserveAlertSignup('price', email, request)) {
+    if (!(await reserveAlertSignup('price', email, request))) {
       return NextResponse.json({ message: 'Recibimos demasiadas solicitudes. Probá más tarde.' }, { status: 429 });
     }
     // Price/currency come from our catalog, never from client-supplied amounts.
     const deliveryEnabled = alertEmailsConfigured();
     const id = vehicleSlug.match(/-(MLA\d+)$/i)?.[1]?.toUpperCase();
-    if (deliveryEnabled && !id) return NextResponse.json({ message: 'El vehículo ya no está disponible.' }, { status: 400 });
+    if (deliveryEnabled && !id)
+      return NextResponse.json({ message: 'El vehículo ya no está disponible.' }, { status: 400 });
     // Resolve real subscriptions directly through Mercado Libre, not through the synced copy.
     const publication = deliveryEnabled ? await readMercadoLibrePublication(id!, await catalogAccessToken()) : null;
     if (publication && String(publication.source.seller_id) !== mercadoLibreEnv.sellerId()) {
       return NextResponse.json({ message: 'El vehículo ya no está disponible.' }, { status: 400 });
     }
-    const vehicle = publication?.vehicle ?? await findCatalogVehicle(vehicleSlug);
+    const vehicle = publication?.vehicle ?? (await findCatalogVehicle(vehicleSlug));
     if (!vehicle || vehicle.status !== 'active') {
       return NextResponse.json({ message: 'El vehículo ya no está disponible.' }, { status: 400 });
     }
     if (alertEmailsConfigured()) {
       // Pending until the owner confirms by email. The response does not reveal which case applied.
       const alert = await requestPriceAlert(email, vehicle);
-      if (alert.status === 'pending') after(() => sendSignupConfirmationSafely({ scope: 'price', id: alert.id, generation: alert.generation, email, title: alert.vehicle_title }));
+      if (alert.status === 'pending')
+        after(() =>
+          sendSignupConfirmationSafely({
+            scope: 'price',
+            id: alert.id,
+            generation: alert.generation,
+            email,
+            title: alert.vehicle_title,
+          }),
+        );
     } else {
-      await savePriceSubscription({ email, vehicleSlug: vehicle.slug, price: vehicle.price, currency: vehicle.currency });
+      await savePriceSubscription({
+        email,
+        vehicleSlug: vehicle.slug,
+        price: vehicle.price,
+        currency: vehicle.currency,
+      });
     }
   } catch {
     console.error('Unable to create price alert');
-    return NextResponse.json(
-      { message: 'No pudimos guardar la alerta. Probá otra vez.' },
-      { status: 500 },
-    );
+    return NextResponse.json({ message: 'No pudimos guardar la alerta. Probá otra vez.' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true }, { status: 201 });

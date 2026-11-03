@@ -36,14 +36,14 @@ docs/screenshots/vehicle.png, docs/screenshots/alert-email.png. Do not use mock 
 
 ## Stack
 
-| Layer | Choice |
-| --- | --- |
-| Framework | Next.js 16 App Router, React 19 Server Components, TypeScript |
-| Styling and motion | Hand-written CSS with design tokens ([`styles/tokens.css`](styles/tokens.css)), GSAP as progressive enhancement, self-hosted Geist fonts |
-| Data | Neon serverless PostgreSQL, plain SQL migrations ([`database/migrations/`](database/migrations)) |
-| Hosting | Vercel (Hobby plan): functions, cron jobs, private Blob storage |
-| Integrations | Mercado Libre API (OAuth 2.0 + PKCE), Resend (email), PostHog (analytics), DolarAPI (MEP exchange rate), Arg Autos (make/model catalog for the sell-your-car form) |
-| Testing | Scripted checks in [`scripts/`](scripts), with SQL run against in-memory PostgreSQL (PGlite) |
+| Layer              | Choice                                                                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Framework          | Next.js 16 App Router, React 19 Server Components, TypeScript                                                                                                      |
+| Styling and motion | Hand-written CSS with design tokens ([`styles/tokens.css`](styles/tokens.css)), GSAP as progressive enhancement, self-hosted Geist fonts                           |
+| Data               | Neon serverless PostgreSQL, plain SQL migrations ([`database/migrations/`](database/migrations))                                                                   |
+| Hosting            | Vercel (Hobby plan): functions, cron jobs, private Blob storage                                                                                                    |
+| Integrations       | Mercado Libre API (OAuth 2.0 + PKCE), Resend (email), PostHog (analytics), DolarAPI (MEP exchange rate), Arg Autos (make/model catalog for the sell-your-car form) |
+| Testing            | Scripted checks in [`scripts/`](scripts), with SQL run against in-memory PostgreSQL (PGlite)                                                                       |
 
 ## Architecture
 
@@ -109,7 +109,7 @@ The full design lives in [docs/architecture.md](docs/architecture.md), with aler
 Every page and the share-image route read through one boundary,
 [`lib/integrations/mercado-libre/catalog.ts`](lib/integrations/mercado-libre/catalog.ts), which reads
 [`lib/catalog/store.ts`](lib/catalog/store.ts). Traffic, crawlers and share previews therefore never
-use up API quota or wait on the provider. *Trade-off:* on the Hobby plan, the cron that repairs a
+use up API quota or wait on the provider. _Trade-off:_ on the Hobby plan, the cron that repairs a
 missed notification only runs once a day, so the copy can be up to a day stale until the next run.
 On a Pro plan, a one-line schedule change in [`vercel.json`](vercel.json) brings that down to 15
 minutes.
@@ -120,13 +120,13 @@ minutes.
 resource shape, stores the item ID in the queue and only then answers 200. If the job cannot be
 stored, it answers 503 so Mercado Libre retries. The worker then re-reads the item with the
 seller's token, so a forged, duplicated or out-of-order notification cannot write wrong data.
-*Trade-off:* every notification costs one extra API read.
+_Trade-off:_ every notification costs one extra API read.
 
 **A Postgres job queue instead of a queue service.** [`catalog_sync_jobs`](database/migrations/20261031_catalog_sync.sql)
 has one row per item, with a revision counter: a notification that arrives during a read makes the
 item due again. Workers claim jobs with `FOR UPDATE SKIP LOCKED` and a time-limited lease. A write is
 only accepted while the worker still holds that lease, failures back off exponentially up to an hour,
-and a job is given up after eight attempts with the error kept for diagnostics. *Trade-off:* the
+and a job is given up after eight attempts with the error kept for diagnostics. _Trade-off:_ the
 queue is drained inside `after()` and the cron instead of by long-running consumers. That is enough
 for a single dealer's stock and needs no extra infrastructure.
 
@@ -140,7 +140,7 @@ has ever listed keeps a page.
 based on the Mercado Libre category tree. A CHECK constraint
 ([`20261102_catalog_vehicle_category.sql`](database/migrations/20261102_catalog_vehicle_category.sql))
 mirrors [`vehicle-categories.ts`](lib/integrations/mercado-libre/vehicle-categories.ts), so no code
-path can store the seller's scale models or accessories. *Trade-off:* the category list lives in two
+path can store the seller's scale models or accessories. _Trade-off:_ the category list lives in two
 places, and both must be changed together.
 
 **Fail closed with one-use refresh tokens.** OAuth uses PKCE (S256) and a state value compared in
@@ -175,7 +175,7 @@ share cards keep working in the meantime.
 
 **No demo vehicles, anywhere.** Every environment shows the real catalog. Local development reads
 it from the deployed backend through a key-protected endpoint, and tests use their own fixtures,
-which the app never imports. *Trade-off:* local development needs that key, but nothing fake can
+which the app never imports. _Trade-off:_ local development needs that key, but nothing fake can
 ever ship. ([local setup](docs/mercado-libre-local.md#desarrollo-local))
 
 **Content first, motion as an extra.** Prices, vehicle data and contact actions are
@@ -202,13 +202,16 @@ Neon. `npm run db:migrate` applies pending migrations in file-name order and rec
 ## Quality checks
 
 ```bash
+npm run format:check
 npm run lint
 npm run typecheck
 npm test
 npm run build
 ```
 
-[CI](.github/workflows/ci.yml) runs all four on every pull request.
+[CI](.github/workflows/ci.yml) runs all five on every pull request. Formatting is owned by Prettier
+([`.prettierrc.json`](.prettierrc.json)); `npm run format` rewrites files in place, and ESLint leaves
+style to it.
 
 `npm test` runs the Vitest suites in `tests/`. They need no credentials or network: database code
 runs against real PostgreSQL in memory (PGlite), migrated by the same runner as `npm run db:migrate`,

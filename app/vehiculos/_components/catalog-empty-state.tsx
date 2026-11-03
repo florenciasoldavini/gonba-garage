@@ -13,9 +13,11 @@ export function CatalogEmptyState({ alertAction, onReset }: { alertAction: React
     <div className="catalog-empty status-panel glass-panel">
       <Eyebrow>0 resultados</Eyebrow>
       <h2>No encontramos una unidad con esos criterios.</h2>
-      <p>{alertAction
-        ? 'Guardá esta búsqueda y te avisamos cuando ingrese una unidad compatible, o ampliá los filtros para seguir explorando.'
-        : 'Ampliá los filtros para seguir explorando, o contanos qué buscás: el inventario cambia seguido.'}</p>
+      <p>
+        {alertAction
+          ? 'Guardá esta búsqueda y te avisamos cuando ingrese una unidad compatible, o ampliá los filtros para seguir explorando.'
+          : 'Ampliá los filtros para seguir explorando, o contanos qué buscás: el inventario cambia seguido.'}
+      </p>
       <div className="status-actions">
         {alertAction}
         <Button type="button" variant="ghost" onClick={onReset}>

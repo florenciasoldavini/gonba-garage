@@ -24,18 +24,28 @@ export function requireAlertConfig() {
  * redeploy.
  */
 export function alertEmailsConfigured() {
-  try { requireAlertConfig(); return true; } catch { return false; }
+  try {
+    requireAlertConfig();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function cronAuthorized(request: Request) {
   const expected = cronEnv.secret();
   const supplied = request.headers.get('authorization') || '';
   if (!expected) return false;
-  const a = Buffer.from(`Bearer ${expected}`), b = Buffer.from(supplied);
+  const a = Buffer.from(`Bearer ${expected}`);
+  const b = Buffer.from(supplied);
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
 /** Signup confirmation links stop working after this many hours. */
 export const confirmationLifetimeHours = 72;
 
-export const privateHeaders = { 'Cache-Control': 'private, no-store', 'X-Robots-Tag': 'noindex, nofollow', 'Referrer-Policy': 'no-referrer' };
+export const privateHeaders = {
+  'Cache-Control': 'private, no-store',
+  'X-Robots-Tag': 'noindex, nofollow',
+  'Referrer-Policy': 'no-referrer',
+};

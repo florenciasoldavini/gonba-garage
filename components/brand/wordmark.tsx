@@ -14,11 +14,7 @@ type WordmarkProps = {
 
 export function Wordmark({ href = '/', className = '', preload = false }: WordmarkProps) {
   return (
-    <Link
-      className={`wordmark${className ? ` ${className}` : ''}`}
-      href={href}
-      aria-label="Gonba's Garage, inicio"
-    >
+    <Link className={`wordmark${className ? ` ${className}` : ''}`} href={href} aria-label="Gonba's Garage, inicio">
       <Image
         src={LOGO_MARK_SRC}
         alt=""

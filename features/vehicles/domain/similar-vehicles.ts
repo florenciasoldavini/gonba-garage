@@ -13,12 +13,13 @@ export function pickSimilarVehicles(vehicle: Vehicle, candidates: Vehicle[], lim
     (bodyType(candidate) === bodyType(vehicle) ? 4 : 0) +
     (candidate.make === vehicle.make ? 2 : 0) +
     (Math.abs(candidate.year - vehicle.year) <= 3 ? 1 : 0);
-  const priceGap = (candidate: Vehicle) => candidate.currency === vehicle.currency && vehicle.price > 0
-    ? Math.abs(candidate.price - vehicle.price) / vehicle.price
-    : Infinity;
+  const priceGap = (candidate: Vehicle) =>
+    candidate.currency === vehicle.currency && vehicle.price > 0
+      ? Math.abs(candidate.price - vehicle.price) / vehicle.price
+      : Infinity;
 
   return candidates
-    .filter((candidate) => candidate.status === 'active' && candidate.slug !== vehicle.slug)
+    .filter(candidate => candidate.status === 'active' && candidate.slug !== vehicle.slug)
     .map((candidate, order) => ({ candidate, order, score: score(candidate), gap: priceGap(candidate) }))
     .sort((a, b) => b.score - a.score || a.gap - b.gap || a.order - b.order)
     .slice(0, limit)

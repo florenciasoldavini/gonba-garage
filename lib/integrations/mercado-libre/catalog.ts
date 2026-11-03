@@ -28,8 +28,10 @@ async function remoteCatalog<T>(item?: string): Promise<T | null> {
   if (url.protocol !== 'https:') throw new Error('Catalog backend requires HTTPS');
   if (item) url.searchParams.set('item', item);
   const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${key}` }, cache: 'no-store',
-    redirect: 'error', signal: AbortSignal.timeout(30_000),
+    headers: { Authorization: `Bearer ${key}` },
+    cache: 'no-store',
+    redirect: 'error',
+    signal: AbortSignal.timeout(30_000),
   });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error('Remote catalog unavailable');
@@ -52,7 +54,8 @@ function presentVehicle(vehicle: Vehicle, attributes?: CatalogPublication['sourc
 
 /** Available vehicles in the default ("Destacados") order, which the home page also uses. */
 export const listCatalogVehicles = cache(async () => {
-  if (!readsRemoteBackend()) return orderFeaturedVehicles((await listActiveCatalogVehicles()).map(vehicle => presentVehicle(vehicle)));
+  if (!readsRemoteBackend())
+    return orderFeaturedVehicles((await listActiveCatalogVehicles()).map(vehicle => presentVehicle(vehicle)));
   const result = await remoteCatalog<{ vehicles: Vehicle[] }>();
   if (!result) throw new Error('Missing catalog');
   return orderFeaturedVehicles(result.vehicles.map(vehicle => presentVehicle(vehicle)));

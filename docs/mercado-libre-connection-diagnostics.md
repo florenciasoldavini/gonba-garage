@@ -29,15 +29,15 @@ remain after recovery; use the current state and timestamps when interpreting it
 
 ## Distinguishing causes
 
-| Stage | Evidence |
-| --- | --- |
-| `configuration` | A required server setting is missing. |
-| `credential_read` / `credential_decrypt` | Reading or decrypting our credential failed. |
-| `credential_lock` | Competing renewal, interrupted renewal or conditional lock-write failure. |
-| `token_refresh` | Provider HTTP rejection, request timeout, network error or unclassified renewal failure. |
-| `token_response` | Invalid response, unexpected seller or absent replacement token. |
-| `credential_save` | The replacement credential could not be encrypted or saved. |
-| `catalog_query` / `publication_diagnostics` | Publication request failed after the token step. |
+| Stage                                       | Evidence                                                                                 |
+| ------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `configuration`                             | A required server setting is missing.                                                    |
+| `credential_read` / `credential_decrypt`    | Reading or decrypting our credential failed.                                             |
+| `credential_lock`                           | Competing renewal, interrupted renewal or conditional lock-write failure.                |
+| `token_refresh`                             | Provider HTTP rejection, request timeout, network error or unclassified renewal failure. |
+| `token_response`                            | Invalid response, unexpected seller or absent replacement token.                         |
+| `credential_save`                           | The replacement credential could not be encrypted or saved.                              |
+| `catalog_query` / `publication_diagnostics` | Publication request failed after the token step.                                         |
 
 An HTTP rejection records what the provider returned; it does not by itself assign blame.
 For example, `invalid_client` can indicate our application configuration, while a 5xx or

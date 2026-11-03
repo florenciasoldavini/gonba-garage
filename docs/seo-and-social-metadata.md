@@ -26,20 +26,20 @@ check when applicable.
 
 ## Source files and ownership
 
-| Concern | Source of truth |
-| --- | --- |
-| Shared page metadata | `lib/metadata.ts` |
-| Canonical origin | `lib/site-url.ts` and `NEXT_PUBLIC_SITE_URL` |
-| Site-wide indexing gate | `lib/site-indexing.ts` and `SITE_INDEXING_ENABLED` |
-| Site and dealer JSON-LD | `lib/structured-data.ts` |
-| Safe JSON-LD rendering | `components/seo/json-ld.tsx` |
-| Vehicle Product/Offer/Breadcrumb JSON-LD | `app/vehiculos/[slug]/page.tsx` |
-| Dynamic vehicle share cards | `app/og/vehiculos/[slug]/route.ts` |
-| Crawler rules | `app/robots.ts` |
-| Discoverable URLs and freshness | `app/sitemap.ts` (empty until the indexing launch) |
-| Favicon, Apple icon, and manifest | `public/favicon.svg`, `app/apple-icon.tsx`, and `app/manifest.ts` (GG icons in `public/brand/`; the round logo with the car is not used) |
-| Brand logo files (header, footer, share cards, dealer `logo`) | `public/brand/` |
-| End-to-end metadata contract | `scripts/check-social-metadata.mjs` |
+| Concern                                                       | Source of truth                                                                                                                          |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Shared page metadata                                          | `lib/metadata.ts`                                                                                                                        |
+| Canonical origin                                              | `lib/site-url.ts` and `NEXT_PUBLIC_SITE_URL`                                                                                             |
+| Site-wide indexing gate                                       | `lib/site-indexing.ts` and `SITE_INDEXING_ENABLED`                                                                                       |
+| Site and dealer JSON-LD                                       | `lib/structured-data.ts`                                                                                                                 |
+| Safe JSON-LD rendering                                        | `components/seo/json-ld.tsx`                                                                                                             |
+| Vehicle Product/Offer/Breadcrumb JSON-LD                      | `app/vehiculos/[slug]/page.tsx`                                                                                                          |
+| Dynamic vehicle share cards                                   | `app/og/vehiculos/[slug]/route.ts`                                                                                                       |
+| Crawler rules                                                 | `app/robots.ts`                                                                                                                          |
+| Discoverable URLs and freshness                               | `app/sitemap.ts` (empty until the indexing launch)                                                                                       |
+| Favicon, Apple icon, and manifest                             | `public/favicon.svg`, `app/apple-icon.tsx`, and `app/manifest.ts` (GG icons in `public/brand/`; the round logo with the car is not used) |
+| Brand logo files (header, footer, share cards, dealer `logo`) | `public/brand/`                                                                                                                          |
+| End-to-end metadata contract                                  | `scripts/check-social-metadata.mjs`                                                                                                      |
 
 Keep shared policy in these files instead of duplicating URL construction or metadata objects across
 routes.
@@ -119,12 +119,12 @@ the car in person and usually leaves it paused after the sale until it expires a
 therefore shows a paused car as reserved only for `RESERVATION_WINDOW_DAYS` (14) after the pause,
 measured from `updatedAt`, and as sold afterwards. A closed publication always shows as sold.
 
-| Stored status | Shown as | Page behavior | Offer availability |
-| --- | --- | --- | --- |
-| `active` | Disponible | Listed in the catalog and on the home page | `InStock` |
-| `paused`, within the window | Reservado | Kept, not listed | `Reserved` |
-| `paused`, past the window | Vendido | Kept, not listed | `SoldOut` |
-| `closed` or `sold` | Vendido | Kept, not listed | `SoldOut` |
+| Stored status               | Shown as   | Page behavior                              | Offer availability |
+| --------------------------- | ---------- | ------------------------------------------ | ------------------ |
+| `active`                    | Disponible | Listed in the catalog and on the home page | `InStock`          |
+| `paused`, within the window | Reservado  | Kept, not listed                           | `Reserved`         |
+| `paused`, past the window   | Vendido    | Kept, not listed                           | `SoldOut`          |
+| `closed` or `sold`          | Vendido    | Kept, not listed                           | `SoldOut`          |
 
 Every car page is `noindex, nofollow` and the sitemap is empty until the final version of the site
 (see the catalog indexing hold below). The policy to restore at the indexing launch: active cars are

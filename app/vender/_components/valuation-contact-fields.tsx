@@ -12,8 +12,14 @@ export function ValuationContactFields({ hidden }: { hidden: boolean }) {
         title="Tus datos"
       />
       <div className="valuation-fields">
-        <label><span>Nombre y apellido *</span><input name="name" required autoComplete="name" placeholder="Tu nombre" /></label>
-        <label><span>Teléfono *</span><input name="phone" required autoComplete="tel" type="tel" placeholder="11 0000 0000" /></label>
+        <label>
+          <span>Nombre y apellido *</span>
+          <input name="name" required autoComplete="name" placeholder="Tu nombre" />
+        </label>
+        <label>
+          <span>Teléfono *</span>
+          <input name="phone" required autoComplete="tel" type="tel" placeholder="11 0000 0000" />
+        </label>
       </div>
     </section>
   );

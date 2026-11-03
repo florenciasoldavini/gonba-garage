@@ -72,7 +72,10 @@ export function SiteMenu({ active, contactHref }: SiteMenuProps) {
         ref={dialogRef}
         aria-label="Menú"
         onClose={() => setIsOpen(false)}
-        onCancel={(event) => { event.preventDefault(); closeDialog(); }}
+        onCancel={event => {
+          event.preventDefault();
+          closeDialog();
+        }}
         onClick={closeOnLinkClick}
       >
         <div className="site-menu-panel">
@@ -86,7 +89,7 @@ export function SiteMenu({ active, contactHref }: SiteMenuProps) {
               // showModal() focuses the [autofocus] element before the open animation hides the
               // panel, so focus starts here rather than on the wordmark. React's `autoFocus` prop
               // only focuses on mount and never writes the attribute.
-              ref={(button) => button?.setAttribute('autofocus', '')}
+              ref={button => button?.setAttribute('autofocus', '')}
             >
               Cerrar
               <X aria-hidden="true" size={18} strokeWidth={2} />
@@ -101,17 +104,17 @@ export function SiteMenu({ active, contactHref }: SiteMenuProps) {
 
                 return (
                   <li key={item.label}>
-                    <Link
-                      className="site-menu-link"
-                      href={item.path}
-                      aria-current={isCurrent ? 'page' : undefined}
-                    >
+                    <Link className="site-menu-link" href={item.path} aria-current={isCurrent ? 'page' : undefined}>
                       <span className="site-menu-index" aria-hidden="true">
                         {String(index + 1).padStart(2, '0')}
                       </span>
                       <span className="site-menu-link-text">
                         <span className="site-menu-link-label">{item.label}</span>
-                        {isCurrent && <span className="site-menu-current" aria-hidden="true">Estás acá</span>}
+                        {isCurrent && (
+                          <span className="site-menu-current" aria-hidden="true">
+                            Estás acá
+                          </span>
+                        )}
                       </span>
                       {!isCurrent && <ArrowRight aria-hidden="true" size={20} strokeWidth={1.8} />}
                     </Link>
@@ -124,7 +127,9 @@ export function SiteMenu({ active, contactHref }: SiteMenuProps) {
           <div className="site-menu-contact">
             <ButtonAnchor
               href={contactHref}
-              onClick={() => captureAnalyticsEvent('contact_intent_clicked', { channel: 'whatsapp', placement: 'menu' })}
+              onClick={() =>
+                captureAnalyticsEvent('contact_intent_clicked', { channel: 'whatsapp', placement: 'menu' })
+              }
               target="_blank"
               rel="noreferrer"
             >

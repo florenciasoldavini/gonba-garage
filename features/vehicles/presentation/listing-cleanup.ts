@@ -10,10 +10,40 @@ import type { MercadoLibreAttribute } from '@/lib/integrations/mercado-libre/typ
 
 // Trim and engine names Mercado Libre returns in title case ("Tdi", "Gr-s"), keyed in lowercase.
 const VERSION_WORDS: Record<string, string> = {
-  amg: 'AMG', awd: 'AWD', 'b.eff': 'BlueEFFICIENCY', bt: 'BT', cd: 'CD', cvt: 'CVT', ecoboost: 'EcoBoost',
-  ecvt: 'e-CVT', ex: 'EX', 'ex-l': 'EX-L', gl: 'GL', 'gr-s': 'GR-S', 'gt-line': 'GT-Line', gti: 'GTI', hev: 'HEV',
-  hv: 'HV', jcw: 'JCW', ls: 'LS', ltz: 'LTZ', lx: 'LX', mt: 'MT', at: 'AT', sce: 'SCe', se: 'SE', seg: 'SEG',
-  srx: 'SRX', stronic: 'S tronic', tdi: 'TDI', tfsi: 'TFSI', thp: 'THP', tsi: 'TSI', vti: 'VTi', vx: 'VX', xli: 'XLi',
+  amg: 'AMG',
+  awd: 'AWD',
+  'b.eff': 'BlueEFFICIENCY',
+  bt: 'BT',
+  cd: 'CD',
+  cvt: 'CVT',
+  ecoboost: 'EcoBoost',
+  ecvt: 'e-CVT',
+  ex: 'EX',
+  'ex-l': 'EX-L',
+  gl: 'GL',
+  'gr-s': 'GR-S',
+  'gt-line': 'GT-Line',
+  gti: 'GTI',
+  hev: 'HEV',
+  hv: 'HV',
+  jcw: 'JCW',
+  ls: 'LS',
+  ltz: 'LTZ',
+  lx: 'LX',
+  mt: 'MT',
+  at: 'AT',
+  sce: 'SCe',
+  se: 'SE',
+  seg: 'SEG',
+  srx: 'SRX',
+  stronic: 'S tronic',
+  tdi: 'TDI',
+  tfsi: 'TFSI',
+  thp: 'THP',
+  tsi: 'TSI',
+  vti: 'VTi',
+  vx: 'VX',
+  xli: 'XLi',
   '(mexico)': '(México)',
 };
 
@@ -50,7 +80,8 @@ function versionToken(token: string): string[] {
 /** "1.4 Lounge 105cv At" → "1.4 Lounge 105 CV AT"; "2.8 Tdi Gr-s 4x4 7as 6at" → "2.8 TDI GR-S 4x4 · 7 asientos · 6AT". */
 export function formatVehicleVersion(version: string) {
   const parts = version.trim().split(/\s+/).filter(Boolean).flatMap(versionToken);
-  return parts.join(' ')
+  return parts
+    .join(' ')
     .replace(new RegExp(`(\\s*${SEGMENT}\\s*)+`, 'g'), ` ${SEGMENT} `)
     .replace(new RegExp(`^\\s*${SEGMENT}\\s*|\\s*${SEGMENT}\\s*$`, 'g'), '')
     .trim();
@@ -71,7 +102,8 @@ export function unbreakableVersionSegments(version: string) {
 
 // The seller ends most descriptions with "Gonba's Garage / Compra - venta - consignación", with a
 // straight or typographic apostrophe. The site already says who is selling.
-const DESCRIPTION_SIGN_OFF = /\s*Gonba[’'‘`´]?s\s+Garage\s*\n\s*Compra\s*[-–—]\s*venta\s*[-–—]\s*consignaci[oó]n\.?\s*$/i;
+const DESCRIPTION_SIGN_OFF =
+  /\s*Gonba[’'‘`´]?s\s+Garage\s*\n\s*Compra\s*[-–—]\s*venta\s*[-–—]\s*consignaci[oó]n\.?\s*$/i;
 
 /** The seller's text stays verbatim except for the repeated sign-off at the end. */
 export function cleanVehicleDescription(description: string) {
@@ -88,7 +120,10 @@ const has = (id: string, label: string): Highlight => ({ label, matches: attribu
 // fills the slots that remain; airbags never show, since every car has them.
 const HIGHLIGHTS: Highlight[] = [
   has('SINGLE_OWNER', 'Único dueño'),
-  { label: 'Tracción 4x4', matches: attribute => /^(4x4|4wd|awd|integral)$/i.test(attribute('TRACTION_CONTROL')?.value_name?.trim() ?? '') },
+  {
+    label: 'Tracción 4x4',
+    matches: attribute => /^(4x4|4wd|awd|integral)$/i.test(attribute('TRACTION_CONTROL')?.value_name?.trim() ?? ''),
+  },
   ...[7, 8, 9].map((seats): Highlight => ({
     label: `${seats} asientos`,
     matches: attribute => Number.parseInt(attribute('PASSENGER_CAPACITY')?.value_name ?? '', 10) === seats,
@@ -102,7 +137,10 @@ const HIGHLIGHTS: Highlight[] = [
   has('HAS_ANDROID_AUTO', 'Android Auto'),
   has('HAS_PARKING_SENSOR', 'Sensor de estacionamiento'),
   // Only when the car does not already list a parking sensor, which covers the rear one.
-  { label: 'Sensor de estacionamiento trasero', matches: attribute => isYes(attribute('HAS_REAR_PARKING_SENSOR')) && !isYes(attribute('HAS_PARKING_SENSOR')) },
+  {
+    label: 'Sensor de estacionamiento trasero',
+    matches: attribute => isYes(attribute('HAS_REAR_PARKING_SENSOR')) && !isYes(attribute('HAS_PARKING_SENSOR')),
+  },
   has('HAS_CURTAIN_AIRBAG', 'Airbags de cortina'),
   has('HAS_RAIN_SENSOR', 'Sensor de lluvia'),
   has('HAS_AUTOPILOT', 'Piloto automático'),
@@ -117,7 +155,9 @@ export const MAX_VEHICLE_HIGHLIGHTS = 6;
 /** "Puntos destacados": up to six, preferring what tells this car apart from the others. */
 export function pickVehicleHighlights(attributes: MercadoLibreAttribute[]) {
   const attribute = (id: string) => attributes.find(candidate => candidate.id === id);
-  return HIGHLIGHTS.filter(({ matches }) => matches(attribute)).map(({ label }) => label).slice(0, MAX_VEHICLE_HIGHLIGHTS);
+  return HIGHLIGHTS.filter(({ matches }) => matches(attribute))
+    .map(({ label }) => label)
+    .slice(0, MAX_VEHICLE_HIGHLIGHTS);
 }
 
 /** The vehicle as pages show it. Highlights need the attributes, which only a single publication carries. */

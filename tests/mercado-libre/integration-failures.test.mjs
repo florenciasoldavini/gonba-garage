@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it, vi } from 'vitest';
-import { providerFailure, readSafeIncident, reportIntegrationFailure, safeFailure } from '@/lib/integrations/mercado-libre/failures';
+import {
+  providerFailure,
+  readSafeIncident,
+  reportIntegrationFailure,
+  safeFailure,
+} from '@/lib/integrations/mercado-libre/failures';
 import { createRefreshTokenStore } from '@/lib/integrations/mercado-libre/refresh-token-store';
 import { readConnectionDiagnostics } from '@/lib/integrations/mercado-libre/credentials';
 import { runtimeImports } from '../helpers/modules.mjs';
@@ -13,14 +18,26 @@ vi.mock('@vercel/blob', () => ({
 vi.mock('@/lib/integrations/mercado-libre/oauth', () => ({ securelyMatches: () => true }));
 
 const secret = 'DO_NOT_LOG_ACCESS_OR_REFRESH_TOKEN';
-const tokenRejection = () => providerFailure(Response.json({ error: 'invalid_grant', error_description: secret,
-  access_token: secret, refresh_token: secret }, { status: 400 }), 'token_refresh');
+const tokenRejection = () =>
+  providerFailure(
+    Response.json(
+      { error: 'invalid_grant', error_description: secret, access_token: secret, refresh_token: secret },
+      { status: 400 },
+    ),
+    'token_refresh',
+  );
 
 it('loads only its expected runtime dependencies', () => {
   const allowed = {
     'lib/integrations/mercado-libre/failures.ts': [],
     'lib/integrations/mercado-libre/refresh-token-store.ts': ['./failures'],
-    'lib/integrations/mercado-libre/credentials.ts': ['@vercel/blob', '@/lib/env', './oauth', './refresh-token-store', './failures'],
+    'lib/integrations/mercado-libre/credentials.ts': [
+      '@vercel/blob',
+      '@/lib/env',
+      './oauth',
+      './refresh-token-store',
+      './failures',
+    ],
   };
   for (const [file, dependencies] of Object.entries(allowed)) {
     for (const id of runtimeImports(file)) {
@@ -43,12 +60,17 @@ describe('safe failure reports', () => {
   it('classifies timeouts, network errors and storage statuses', () => {
     assert.equal(safeFailure(new DOMException(secret, 'TimeoutError'), 'token_refresh').incident.code, 'timeout');
     assert.equal(safeFailure(new TypeError(secret), 'catalog_query').incident.code, 'network_error');
-    assert.equal(safeFailure(Object.assign(new Error(secret), { statusCode: 403 }), 'credential_save').incident.httpStatus, 403);
+    assert.equal(
+      safeFailure(Object.assign(new Error(secret), { statusCode: 403 }), 'credential_save').incident.httpStatus,
+      403,
+    );
   });
 
   it('logs without the secret', () => {
     const captured = [];
-    vi.spyOn(console, 'error').mockImplementation(message => { captured.push(message); });
+    vi.spyOn(console, 'error').mockImplementation(message => {
+      captured.push(message);
+    });
     reportIntegrationFailure(new Error(secret), 'catalog_query');
     assert.ok(captured.length);
     assert.equal(captured.join('').includes(secret), false);
@@ -66,15 +88,23 @@ describe('renewal diagnostics', () => {
   let revision = 0;
   let failSavingReplacement = false;
   const storage = {
-    async read() { return record ? { record: structuredClone(record), etag: String(revision) } : null; },
+    async read() {
+      return record ? { record: structuredClone(record), etag: String(revision) } : null;
+    },
     async write(next, etag) {
       if (record ? etag !== String(revision) : etag !== undefined) throw new Error(secret);
-      if (failSavingReplacement && next.refreshStartedAt === null) throw Object.assign(new Error(secret), { statusCode: 503 });
+      if (failSavingReplacement && next.refreshStartedAt === null)
+        throw Object.assign(new Error(secret), { statusCode: 503 });
       record = structuredClone(next);
       return String(++revision);
     },
   };
-  const store = createRefreshTokenStore(storage, token => `cipher:${token}`, value => value.slice(7), { pollMs: 5, waitMs: 100 });
+  const store = createRefreshTokenStore(
+    storage,
+    token => `cipher:${token}`,
+    value => value.slice(7),
+    { pollMs: 5, waitMs: 100 },
+  );
   // Saved as already expired, so each call below renews instead of reusing it.
   const expired = value => ({ value, expiresAt: Date.now() - 1 });
   let upstream;
@@ -83,30 +113,45 @@ describe('renewal diagnostics', () => {
   it('records a provider rejection and reports it while the renewal is blocked', async () => {
     upstream = await tokenRejection();
     await store.authorize('original');
-    await assert.rejects(store.accessToken(async () => { throw upstream; }));
+    await assert.rejects(
+      store.accessToken(async () => {
+        throw upstream;
+      }),
+    );
     providerIncident = record.lastFailure;
     assert.equal(providerIncident.stage, 'token_refresh');
     assert.equal(providerIncident.providerCode, 'invalid_grant');
     assert.equal(record.refreshIncidentId, providerIncident.incidentId);
     const lockedRevision = revision;
-    await assert.rejects(store.accessToken(async () => assert.fail('Blocked renewal must not contact the provider')),
-      error => error.incident.code === 'renewal_in_progress' && error.incident.incidentId === providerIncident.incidentId);
+    await assert.rejects(
+      store.accessToken(async () => assert.fail('Blocked renewal must not contact the provider')),
+      error =>
+        error.incident.code === 'renewal_in_progress' && error.incident.incidentId === providerIncident.incidentId,
+    );
     assert.equal(revision, lockedRevision, 'Blocked requests must preserve the original failure');
     record.refreshStartedAt = Date.now() - 121000;
-    await assert.rejects(store.accessToken(async () => assert.fail()), error => error.incident.code === 'renewal_interrupted');
+    await assert.rejects(
+      store.accessToken(async () => assert.fail()),
+      error => error.incident.code === 'renewal_interrupted',
+    );
   });
 
   it('keeps the last incident through reauthorization and a successful refresh', async () => {
     await store.authorize('new');
     assert.deepEqual(record.lastFailure, providerIncident);
-    await store.accessToken(async (_token, save) => { await save('next', expired('access')); return expired('access'); });
+    await store.accessToken(async (_token, save) => {
+      await save('next', expired('access'));
+      return expired('access');
+    });
     assert.deepEqual(record.lastFailure, providerIncident, 'A successful refresh also keeps the last incident');
     assert.equal(record.refreshIncidentId, undefined);
   });
 
   it('reports a renewal that never saved its replacement', async () => {
-    await assert.rejects(store.accessToken(async () => expired('forgot to save')),
-      error => error.incident.stage === 'credential_save' && error.incident.code === 'replacement_not_saved');
+    await assert.rejects(
+      store.accessToken(async () => expired('forgot to save')),
+      error => error.incident.stage === 'credential_save' && error.incident.code === 'replacement_not_saved',
+    );
   });
 
   it('keeps an ambiguous rotation locked when storage fails', async () => {
@@ -130,6 +175,10 @@ describe('renewal diagnostics', () => {
     assert.equal(connection.providerVerified, false);
     assert.equal(JSON.stringify(connection).includes('cipher:'), false);
     assert.equal('encryptedRefreshToken' in connection, false);
-    assert.equal(JSON.stringify(connection).includes('access'), false, 'Diagnostics never expose the shared access token');
+    assert.equal(
+      JSON.stringify(connection).includes('access'),
+      false,
+      'Diagnostics never expose the shared access token',
+    );
   });
 });

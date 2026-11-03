@@ -45,7 +45,13 @@ type InventoryAlertProps = {
 
 type SubmissionState = 'idle' | 'submitting' | 'success' | 'error';
 
-export function InventoryAlert({ activeFilterCount, criteria, placement, resultCount, vehicleCopy }: InventoryAlertProps) {
+export function InventoryAlert({
+  activeFilterCount,
+  criteria,
+  placement,
+  resultCount,
+  vehicleCopy,
+}: InventoryAlertProps) {
   const titleId = useId();
   const successTitleId = useId();
   const emailErrorId = useId();
@@ -54,7 +60,11 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
   const [email, setEmail] = useState('');
   const [state, setState] = useState<SubmissionState>('idle');
   const [failure, setFailure] = useState<RequestFailure | null>(null);
-  const { closeDialog, dialogRef, openDialog: animateDialogOpen } = useDialogMotion({
+  const {
+    closeDialog,
+    dialogRef,
+    openDialog: animateDialogOpen,
+  } = useDialogMotion({
     contentKey: state === 'success' ? 'success' : undefined,
     itemSelector: '.price-alert-form > :not(.price-alert-honeypot)',
     panelSelector: '.price-alert-panel',
@@ -117,12 +127,16 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
     <>
       {vehicleCopy ? (
         <button className="detail-alert-card" type="button" onClick={openDialog}>
-          <span className="detail-alert-symbol" aria-hidden="true"><BellRing size={20} strokeWidth={2} /></span>
+          <span className="detail-alert-symbol" aria-hidden="true">
+            <BellRing size={20} strokeWidth={2} />
+          </span>
           <span className="detail-alert-copy">
             <strong>{vehicleCopy.trigger}</strong>
             <small>{vehicleCopy.hint}</small>
           </span>
-          <span className="detail-alert-arrow" aria-hidden="true"><ArrowRight size={18} strokeWidth={1.8} /></span>
+          <span className="detail-alert-arrow" aria-hidden="true">
+            <ArrowRight size={18} strokeWidth={1.8} />
+          </span>
         </button>
       ) : (
         <Button
@@ -140,13 +154,21 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
         className="price-alert-dialog inventory-alert-dialog"
         ref={dialogRef}
         aria-labelledby={state === 'success' ? successTitleId : titleId}
-        onCancel={(event) => { event.preventDefault(); closeDialog(); }}
-        onClick={(event) => {
+        onCancel={event => {
+          event.preventDefault();
+          closeDialog();
+        }}
+        onClick={event => {
           if (event.target === event.currentTarget) closeDialog();
         }}
       >
         <div className="price-alert-panel glass-panel">
-          <button className="price-alert-close" type="button" onClick={closeDialog} aria-label="Cerrar alerta de búsqueda">
+          <button
+            className="price-alert-close"
+            type="button"
+            onClick={closeDialog}
+            aria-label="Cerrar alerta de búsqueda"
+          >
             <X aria-hidden="true" size={18} strokeWidth={1.8} />
           </button>
 
@@ -155,21 +177,31 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
               <Eyebrow>Revisá tu email</Eyebrow>
               <h2 id={successTitleId}>Confirmá la alerta desde tu correo.</h2>
               {/* The API answers the same whether or not it sent an email (an active alert gets none). */}
-              <p>Si es una alerta nueva, te enviamos un enlace para activarla. Después te escribiremos cuando ingrese una unidad que coincida con estos criterios.</p>
+              <p>
+                Si es una alerta nueva, te enviamos un enlace para activarla. Después te escribiremos cuando ingrese una
+                unidad que coincida con estos criterios.
+              </p>
               <div className="status-actions">
-                <Button type="button" onClick={closeDialog}>Seguir viendo vehículos <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} /></Button>
+                <Button type="button" onClick={closeDialog}>
+                  Seguir viendo vehículos <ArrowRight aria-hidden="true" size={16} strokeWidth={1.8} />
+                </Button>
               </div>
             </div>
           ) : (
             <form className="price-alert-form ph-no-capture" data-dialog-view data-private onSubmit={handleSubmit}>
               <Eyebrow>Alerta de inventario</Eyebrow>
               <h2 id={titleId}>{vehicleCopy?.title ?? 'Avisame cuando aparezca.'}</h2>
-              <p>{vehicleCopy?.description ?? 'Guardamos tu búsqueda y te avisamos por email cuando ingrese una unidad compatible.'}</p>
+              <p>
+                {vehicleCopy?.description ??
+                  'Guardamos tu búsqueda y te avisamos por email cuando ingrese una unidad compatible.'}
+              </p>
 
               <div className="inventory-alert-criteria" aria-label="Criterios de la alerta">
-                {criteriaLabels.length > 0
-                  ? criteriaLabels.map((label) => <span key={label}>{label}</span>)
-                  : <span>Todos los vehículos nuevos</span>}
+                {criteriaLabels.length > 0 ? (
+                  criteriaLabels.map(label => <span key={label}>{label}</span>)
+                ) : (
+                  <span>Todos los vehículos nuevos</span>
+                )}
               </div>
 
               <label>
@@ -179,7 +211,7 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
                   type="email"
                   name="email"
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
+                  onChange={event => setEmail(event.target.value)}
                   placeholder="tu@email.com"
                   autoComplete="email"
                   maxLength={320}
@@ -190,7 +222,8 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
               </label>
               {emailInvalid && (
                 <p className="price-alert-field-error" id={emailErrorId} role="alert">
-                  <CircleAlert aria-hidden="true" size={15} strokeWidth={2} />{shownFailure.title}
+                  <CircleAlert aria-hidden="true" size={15} strokeWidth={2} />
+                  {shownFailure.title}
                 </p>
               )}
 
@@ -201,19 +234,29 @@ export function InventoryAlert({ activeFilterCount, criteria, placement, resultC
 
               <Button ref={submitRef} type="submit" disabled={state === 'submitting'}>
                 <span>{state === 'submitting' ? 'Enviando…' : retry ? 'Reintentar' : 'Crear alerta'}</span>
-                {retry
-                  ? <RotateCw aria-hidden="true" size={16} strokeWidth={1.8} />
-                  : <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />}
+                {retry ? (
+                  <RotateCw aria-hidden="true" size={16} strokeWidth={1.8} />
+                ) : (
+                  <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
+                )}
               </Button>
               {shownFailure && !emailInvalid && (
                 <div className="price-alert-error" role="alert">
-                  {shownFailure.kind === 'connection'
-                    ? <WifiOff aria-hidden="true" size={18} strokeWidth={2} />
-                    : <CircleAlert aria-hidden="true" size={18} strokeWidth={2} />}
-                  <p><strong>{shownFailure.title}</strong>{shownFailure.detail && <span>{shownFailure.detail}</span>}</p>
+                  {shownFailure.kind === 'connection' ? (
+                    <WifiOff aria-hidden="true" size={18} strokeWidth={2} />
+                  ) : (
+                    <CircleAlert aria-hidden="true" size={18} strokeWidth={2} />
+                  )}
+                  <p>
+                    <strong>{shownFailure.title}</strong>
+                    {shownFailure.detail && <span>{shownFailure.detail}</span>}
+                  </p>
                 </div>
               )}
-              <p className="price-alert-privacy">Usaremos tu email únicamente para avisarte sobre esta búsqueda, una vez por auto. Podés cancelar la alerta desde cualquier aviso. Al suscribirte aceptás la <PrivacyPolicyLink />.</p>
+              <p className="price-alert-privacy">
+                Usaremos tu email únicamente para avisarte sobre esta búsqueda, una vez por auto. Podés cancelar la
+                alerta desde cualquier aviso. Al suscribirte aceptás la <PrivacyPolicyLink />.
+              </p>
             </form>
           )}
         </div>

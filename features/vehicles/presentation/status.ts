@@ -29,11 +29,14 @@ const vehicleStatusPresentation = {
     schemaAvailability: 'https://schema.org/SoldOut',
     isAvailable: false,
   },
-} as const satisfies Record<VehicleDisplayStatus, {
-  label: string;
-  schemaAvailability: string;
-  isAvailable: boolean;
-}>;
+} as const satisfies Record<
+  VehicleDisplayStatus,
+  {
+    label: string;
+    schemaAvailability: string;
+    isAvailable: boolean;
+  }
+>;
 
 /**
  * `updatedAt` is the last real content or availability change, so for a paused car it is when the

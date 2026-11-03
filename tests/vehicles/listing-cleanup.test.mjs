@@ -1,10 +1,17 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'vitest';
 import {
-  cleanCatalogVehicle, cleanVehicleDescription, formatVehicleVersion, MAX_VEHICLE_HIGHLIGHTS, pickVehicleHighlights,
+  cleanCatalogVehicle,
+  cleanVehicleDescription,
+  formatVehicleVersion,
+  MAX_VEHICLE_HIGHLIGHTS,
+  pickVehicleHighlights,
   unbreakableVersionSegments,
 } from '@/features/vehicles/presentation/listing-cleanup';
-import { formatVehicleAttributeValue, vehicleAttributeDisplayRule } from '@/features/vehicles/presentation/public-attributes';
+import {
+  formatVehicleAttributeValue,
+  vehicleAttributeDisplayRule,
+} from '@/features/vehicles/presentation/public-attributes';
 import { formatVehicleImageAlt } from '@/features/vehicles/presentation/formatters';
 import { VEHICLE_PHOTO_PLACEHOLDER } from '@/features/vehicles/domain/vehicle';
 
@@ -31,47 +38,116 @@ describe('listing cleanup', () => {
   });
 
   it('formats a version only once and keeps its segments together', () => {
-    assert.equal(formatVehicleVersion(formatVehicleVersion('2.8 Tdi Gr-s 4x4 7as 6at')), '2.8 TDI GR-S 4x4 · 7 asientos · 6AT', 'Cleaning twice changes nothing');
-    assert.equal(unbreakableVersionSegments('2.8 TDI GR-S 4x4 · 7 asientos · 6AT 204 CV'), '2.8 TDI GR-⁠S 4x4 · 7 asientos · 6AT 204 CV');
+    assert.equal(
+      formatVehicleVersion(formatVehicleVersion('2.8 Tdi Gr-s 4x4 7as 6at')),
+      '2.8 TDI GR-S 4x4 · 7 asientos · 6AT',
+      'Cleaning twice changes nothing',
+    );
+    assert.equal(
+      unbreakableVersionSegments('2.8 TDI GR-S 4x4 · 7 asientos · 6AT 204 CV'),
+      '2.8 TDI GR-⁠S 4x4 · 7 asientos · 6AT 204 CV',
+    );
   });
 
   // Descriptions: verbatim except for the trailing sign-off, with either apostrophe.
-  it.each(["Gonba's Garage\nCompra - venta - consignación", 'Gonba’s Garage \nCompra - venta - consignación', 'Gonba’s Garage\nCompra – venta – consignacion.'])(
-    'removes the trailing sign-off %j', signOff => {
-      assert.equal(cleanVehicleDescription(`${body} \n\n${signOff}`), body, signOff);
-    });
+  it.each([
+    "Gonba's Garage\nCompra - venta - consignación",
+    'Gonba’s Garage \nCompra - venta - consignación',
+    'Gonba’s Garage\nCompra – venta – consignacion.',
+  ])('removes the trailing sign-off %j', signOff => {
+    assert.equal(cleanVehicleDescription(`${body} \n\n${signOff}`), body, signOff);
+  });
 
   it('keeps any other description text', () => {
     assert.equal(cleanVehicleDescription(`${body}\n\nNo financio.`), `${body}\n\nNo financio.`, 'Other endings stay');
-    assert.equal(cleanVehicleDescription(`Visitá Gonba's Garage.\n${body}`), `Visitá Gonba's Garage.\n${body}`, 'Only the trailing sign-off goes');
+    assert.equal(
+      cleanVehicleDescription(`Visitá Gonba's Garage.\n${body}`),
+      `Visitá Gonba's Garage.\n${body}`,
+      'Only the trailing sign-off goes',
+    );
   });
 
   // Highlights: distinguishing attributes first, common equipment last, never more than six.
   it('picks distinguishing highlights first, at most six', () => {
-    const common = ['HAS_ABS_BRAKES', 'HAS_AIR_CONDITIONING', 'HAS_ALLOY_WHEELS', 'HAS_BLUETOOTH', 'HAS_AUTOPILOT', 'HAS_PASSENGER_AIRBAG'].map(yes);
-    const distinct = [yes('SINGLE_OWNER'), { id: 'TRACTION_CONTROL', value_name: '4x4' }, { id: 'PASSENGER_CAPACITY', value_name: '7' }, yes('HAS_LEATHER_UPHOLSTERY')];
-    assert.deepEqual(pickVehicleHighlights([...common, ...distinct]),
-      ['Único dueño', 'Tracción 4x4', '7 asientos', 'Tapizado de cuero', 'Piloto automático', 'Bluetooth']);
+    const common = [
+      'HAS_ABS_BRAKES',
+      'HAS_AIR_CONDITIONING',
+      'HAS_ALLOY_WHEELS',
+      'HAS_BLUETOOTH',
+      'HAS_AUTOPILOT',
+      'HAS_PASSENGER_AIRBAG',
+    ].map(yes);
+    const distinct = [
+      yes('SINGLE_OWNER'),
+      { id: 'TRACTION_CONTROL', value_name: '4x4' },
+      { id: 'PASSENGER_CAPACITY', value_name: '7' },
+      yes('HAS_LEATHER_UPHOLSTERY'),
+    ];
+    assert.deepEqual(pickVehicleHighlights([...common, ...distinct]), [
+      'Único dueño',
+      'Tracción 4x4',
+      '7 asientos',
+      'Tapizado de cuero',
+      'Piloto automático',
+      'Bluetooth',
+    ]);
     assert.equal(pickVehicleHighlights([...common, ...distinct]).length, MAX_VEHICLE_HIGHLIGHTS);
-    assert.deepEqual(pickVehicleHighlights([{ id: 'SINGLE_OWNER', value_name: 'No' }, yes('HAS_PASSENGER_AIRBAG')]), [], 'No and airbags never show');
-    assert.deepEqual(pickVehicleHighlights([yes('HAS_PARKING_SENSOR'), yes('HAS_REAR_PARKING_SENSOR')]), ['Sensor de estacionamiento'], 'The rear sensor is not repeated');
+    assert.deepEqual(
+      pickVehicleHighlights([{ id: 'SINGLE_OWNER', value_name: 'No' }, yes('HAS_PASSENGER_AIRBAG')]),
+      [],
+      'No and airbags never show',
+    );
+    assert.deepEqual(
+      pickVehicleHighlights([yes('HAS_PARKING_SENSOR'), yes('HAS_REAR_PARKING_SENSOR')]),
+      ['Sensor de estacionamiento'],
+      'The rear sensor is not repeated',
+    );
   });
 
   it('cleans a stored catalog vehicle', () => {
     const vehicle = {
-      make: 'Fiat', model: '500', version: '1.4 Lounge 105cv At', imageAlt: 'Fiat 500 1.4 Lounge 105cv At',
-      description: `${body}\n\nGonba’s Garage\nCompra - venta - consignación`, highlights: ['Frenos ABS'],
+      make: 'Fiat',
+      model: '500',
+      version: '1.4 Lounge 105cv At',
+      imageAlt: 'Fiat 500 1.4 Lounge 105cv At',
+      description: `${body}\n\nGonba’s Garage\nCompra - venta - consignación`,
+      highlights: ['Frenos ABS'],
     };
-    assert.deepEqual(cleanCatalogVehicle(vehicle), {
-      make: 'Fiat', model: '500', version: '1.4 Lounge 105 CV AT', imageAlt: 'Fiat 500 1.4 Lounge 105 CV AT', description: body, highlights: ['Frenos ABS'],
-    }, 'Without attributes the stored highlights stay');
+    assert.deepEqual(
+      cleanCatalogVehicle(vehicle),
+      {
+        make: 'Fiat',
+        model: '500',
+        version: '1.4 Lounge 105 CV AT',
+        imageAlt: 'Fiat 500 1.4 Lounge 105 CV AT',
+        description: body,
+        highlights: ['Frenos ABS'],
+      },
+      'Without attributes the stored highlights stay',
+    );
     assert.deepEqual(cleanCatalogVehicle(vehicle, [yes('SINGLE_OWNER')]).highlights, ['Único dueño']);
   });
 
   // Photo alt text: the name the headings show, never the publication title as typed in Mercado Libre.
   it.each([
-    ['Toyota SW4 2.8 TDI GR-S 4x4 · 7 asientos · 6AT', { make: 'Toyota', model: 'SW4', version: '2.8 Tdi Gr-s 4x4 7as 6at', imageAlt: 'Toyota Sw4 2.8 Tdi Gr-s 4x4 7as 6at' }],
-    ['Mercedes-Benz Clase A 1.3 A200 163 CV Progressive Hatch', { make: 'Mercedes-Benz', model: 'Clase A', version: '1.3 A200 163cv Progressive Hatch', imageAlt: 'Mercedes-benz Clase A 1.3 A200 163cv Progressive Hatch' }],
+    [
+      'Toyota SW4 2.8 TDI GR-S 4x4 · 7 asientos · 6AT',
+      {
+        make: 'Toyota',
+        model: 'SW4',
+        version: '2.8 Tdi Gr-s 4x4 7as 6at',
+        imageAlt: 'Toyota Sw4 2.8 Tdi Gr-s 4x4 7as 6at',
+      },
+    ],
+    [
+      'Mercedes-Benz Clase A 1.3 A200 163 CV Progressive Hatch',
+      {
+        make: 'Mercedes-Benz',
+        model: 'Clase A',
+        version: '1.3 A200 163cv Progressive Hatch',
+        imageAlt: 'Mercedes-benz Clase A 1.3 A200 163cv Progressive Hatch',
+      },
+    ],
     ['Volkswagen Golf', { make: 'Volkswagen', model: 'Golf', version: '', imageAlt: 'Volkswagen Golf Advance' }],
   ])('names the photos "%s" as the headings do', (alt, vehicle) => {
     const clean = cleanCatalogVehicle({ ...vehicle, description: '', highlights: [] });
@@ -88,7 +164,12 @@ describe('listing cleanup', () => {
     assert.equal(formatVehicleAttributeValue({ id: 'ENGINE_DISPLACEMENT', value_name: '1400 cc' }), '1400 cc');
     assert.equal(formatVehicleAttributeValue({ id: 'COLOR', values: [{ name: 'Azul' }] }), 'Azul');
     // The version attribute still counts as already in the title once the title carries the cleaned version.
-    assert.deepEqual(vehicleAttributeDisplayRule({ id: 'TRIM', value_name: '1.4 Lounge 105cv At' }, `Fiat 500 ${formatVehicleVersion('1.4 Lounge 105cv At')}`),
-      { action: 'exclude', reason: 'duplicate_in_title' });
+    assert.deepEqual(
+      vehicleAttributeDisplayRule(
+        { id: 'TRIM', value_name: '1.4 Lounge 105cv At' },
+        `Fiat 500 ${formatVehicleVersion('1.4 Lounge 105cv At')}`,
+      ),
+      { action: 'exclude', reason: 'duplicate_in_title' },
+    );
   });
 });

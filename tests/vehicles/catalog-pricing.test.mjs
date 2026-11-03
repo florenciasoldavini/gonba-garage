@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'vitest';
-import { comparableUsdPrice, formatMepQuoteUpdatedAt, MAX_QUOTE_AGE_MS, parseMepQuote } from '@/features/vehicles/domain/catalog-pricing';
+import {
+  comparableUsdPrice,
+  formatMepQuoteUpdatedAt,
+  MAX_QUOTE_AGE_MS,
+  parseMepQuote,
+} from '@/features/vehicles/domain/catalog-pricing';
 
 const now = Date.parse('2026-10-28T18:00:00Z');
 const payload = { moneda: 'USD', casa: 'bolsa', venta: 1566, compra: 1500, fechaActualizacion: '2026-10-28T17:57:00Z' };
@@ -13,16 +18,24 @@ describe('MEP quote', () => {
   });
 
   it.each([
-    { venta: 0 }, { venta: -1 }, { venta: Infinity }, { venta: '1566' }, { casa: 'blue' }, { moneda: 'ARS' },
-    { fechaActualizacion: 'invalid' }, { fechaActualizacion: new Date(now + 3_600_000).toISOString() },
+    { venta: 0 },
+    { venta: -1 },
+    { venta: Infinity },
+    { venta: '1566' },
+    { casa: 'blue' },
+    { moneda: 'ARS' },
+    { fechaActualizacion: 'invalid' },
+    { fechaActualizacion: new Date(now + 3_600_000).toISOString() },
     { fechaActualizacion: new Date(now - MAX_QUOTE_AGE_MS - 1).toISOString() },
   ])('rejects an invalid or stale quote: %o', patch => {
     assert.equal(parseMepQuote({ ...payload, ...patch }, now), null);
   });
 
   it('keeps a weekend quote usable with its original timestamp', () => {
-    assert.ok(parseMepQuote({ ...payload, fechaActualizacion: new Date(now - 72 * 3_600_000).toISOString() }, now),
-      'Weekend quote remains usable with its original timestamp');
+    assert.ok(
+      parseMepQuote({ ...payload, fechaActualizacion: new Date(now - 72 * 3_600_000).toISOString() }, now),
+      'Weekend quote remains usable with its original timestamp',
+    );
   });
 
   // Formatted on the server with plain spaces, so the text matches what browsers render on hydration.
@@ -38,8 +51,14 @@ describe('comparable USD price', () => {
   it('sorts and filters ARS and USD cars in USD without touching the card price', () => {
     assert.ok(comparableUsdPrice(ars, quote) < comparableUsdPrice(usd, quote));
     const cars = [usd, ars];
-    assert.deepEqual(cars.toSorted((a, b) => comparableUsdPrice(a, quote) - comparableUsdPrice(b, quote)), [ars, usd]);
-    assert.deepEqual(cars.filter(v => comparableUsdPrice(v, quote) <= 9000), [ars]);
+    assert.deepEqual(
+      cars.toSorted((a, b) => comparableUsdPrice(a, quote) - comparableUsdPrice(b, quote)),
+      [ars, usd],
+    );
+    assert.deepEqual(
+      cars.filter(v => comparableUsdPrice(v, quote) <= 9000),
+      [ars],
+    );
     assert.equal(ars.price, 13_700_000, 'Original card price must remain untouched');
   });
 

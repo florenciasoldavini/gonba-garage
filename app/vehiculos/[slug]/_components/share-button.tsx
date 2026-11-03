@@ -29,7 +29,15 @@ const selectAll = (input: HTMLInputElement) => {
   input.setSelectionRange(0, input.value.length);
 };
 
-export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, vehicleMeta, vehicleSlug }: ShareButtonProps) {
+export function ShareButton({
+  fallbackUrl,
+  imageSrc,
+  statusLabel,
+  text,
+  title,
+  vehicleMeta,
+  vehicleSlug,
+}: ShareButtonProps) {
   const [shareUrl, setShareUrl] = useState(fallbackUrl);
   const [feedback, setFeedback] = useState<CopyFeedback>('idle');
   const [failure, setFailure] = useState({ message: '', hint: '' });
@@ -37,7 +45,11 @@ export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, v
   const linkInputRef = useRef<HTMLInputElement>(null);
   const feedbackRef = useRef<HTMLDivElement>(null);
   const feedbackTimerRef = useRef<number | undefined>(undefined);
-  const { closeDialog, dialogRef, openDialog: animateDialogOpen } = useDialogMotion({
+  const {
+    closeDialog,
+    dialogRef,
+    openDialog: animateDialogOpen,
+  } = useDialogMotion({
     itemSelector: '.share-dialog-content > :not(.share-dialog-close), .share-dialog-vehicle > *',
     panelSelector: '.share-dialog-panel',
   });
@@ -130,12 +142,7 @@ export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, v
 
   return (
     <>
-      <button
-        className="detail-share-button"
-        type="button"
-        onClick={openDialog}
-        aria-label={`Compartir ${title}`}
-      >
+      <button className="detail-share-button" type="button" onClick={openDialog} aria-label={`Compartir ${title}`}>
         <span>Compartir</span>
         <Share2 aria-hidden="true" size={14} strokeWidth={1.8} />
       </button>
@@ -145,8 +152,11 @@ export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, v
         ref={dialogRef}
         aria-labelledby="share-dialog-title"
         aria-describedby="share-dialog-description"
-        onCancel={(event) => { event.preventDefault(); closeDialog(); }}
-        onClick={(event) => {
+        onCancel={event => {
+          event.preventDefault();
+          closeDialog();
+        }}
+        onClick={event => {
           if (event.target === event.currentTarget) closeDialog();
         }}
       >
@@ -154,7 +164,9 @@ export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, v
           <div className="share-dialog-preview">
             <Image src={imageSrc} alt="" fill sizes="(max-width: 700px) 100vw, 360px" className="cover-image" />
             <div className="share-dialog-preview-overlay" />
-            <span className="share-dialog-status"><i /> {statusLabel}</span>
+            <span className="share-dialog-status">
+              <i /> {statusLabel}
+            </span>
             <div className="share-dialog-vehicle">
               <p>{vehicleMeta}</p>
               <h2>{title}</h2>
@@ -162,7 +174,12 @@ export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, v
           </div>
 
           <div className="share-dialog-content">
-            <button className="share-dialog-close" type="button" onClick={closeDialog} aria-label="Cerrar opciones para compartir">
+            <button
+              className="share-dialog-close"
+              type="button"
+              onClick={closeDialog}
+              aria-label="Cerrar opciones para compartir"
+            >
               <X aria-hidden="true" size={18} strokeWidth={1.8} />
             </button>
 
@@ -171,21 +188,26 @@ export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, v
             <p id="share-dialog-description">Mandáselo a esa persona que sabés que lo va a entender.</p>
 
             <div className="share-dialog-routes">
-            <a
-              className="share-dialog-route share-dialog-route-primary"
-              href={whatsappUrl}
-              target="_blank"
-              rel="noreferrer"
-              onClick={() => {
-                captureAnalyticsEvent('vehicle_shared', { method: 'whatsapp', vehicle_slug: vehicleSlug });
-                closeDialog();
-              }}
-            >
-              <MessageCircle aria-hidden="true" size={18} strokeWidth={1.8} />
-              <span><small>01 · Enviar ahora</small><strong>WhatsApp</strong></span>
-              <ArrowUpRight aria-hidden="true" size={17} strokeWidth={1.8} />
-            </a>
-              <div className={`share-dialog-secondary-routes${canNativeShare ? '' : ' share-dialog-secondary-routes-single'}`}>
+              <a
+                className="share-dialog-route share-dialog-route-primary"
+                href={whatsappUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => {
+                  captureAnalyticsEvent('vehicle_shared', { method: 'whatsapp', vehicle_slug: vehicleSlug });
+                  closeDialog();
+                }}
+              >
+                <MessageCircle aria-hidden="true" size={18} strokeWidth={1.8} />
+                <span>
+                  <small>01 · Enviar ahora</small>
+                  <strong>WhatsApp</strong>
+                </span>
+                <ArrowUpRight aria-hidden="true" size={17} strokeWidth={1.8} />
+              </a>
+              <div
+                className={`share-dialog-secondary-routes${canNativeShare ? '' : ' share-dialog-secondary-routes-single'}`}
+              >
                 <a
                   className="share-dialog-route"
                   href={emailUrl}
@@ -195,12 +217,18 @@ export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, v
                   }}
                 >
                   <Mail aria-hidden="true" size={17} strokeWidth={1.8} />
-                  <span><small>02</small><strong>Correo</strong></span>
+                  <span>
+                    <small>02</small>
+                    <strong>Correo</strong>
+                  </span>
                 </a>
                 {canNativeShare ? (
                   <button className="share-dialog-route" type="button" onClick={handleNativeShare}>
                     <Share2 aria-hidden="true" size={17} strokeWidth={1.8} />
-                    <span><small>03</small><strong>Más apps</strong></span>
+                    <span>
+                      <small>03</small>
+                      <strong>Más apps</strong>
+                    </span>
                   </button>
                 ) : null}
               </div>
@@ -215,8 +243,8 @@ export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, v
                     value={shareUrl}
                     readOnly
                     spellCheck={false}
-                    onFocus={(event) => selectAll(event.currentTarget)}
-                    onClick={(event) => selectAll(event.currentTarget)}
+                    onFocus={event => selectAll(event.currentTarget)}
+                    onClick={event => selectAll(event.currentTarget)}
                   />
                   <button
                     className="share-dialog-copy"
@@ -233,11 +261,15 @@ export function ShareButton({ fallbackUrl, imageSrc, statusLabel, text, title, v
 
             <div ref={feedbackRef} className={`share-dialog-feedback is-${feedback}`} role="status">
               {feedback === 'copied' ? (
-                <p><Check aria-hidden="true" size={16} strokeWidth={2} /> Enlace copiado. Ya podés pegarlo donde quieras.</p>
+                <p>
+                  <Check aria-hidden="true" size={16} strokeWidth={2} /> Enlace copiado. Ya podés pegarlo donde quieras.
+                </p>
               ) : null}
               {feedback === 'failed' ? (
                 <>
-                  <p><AlertCircle aria-hidden="true" size={16} strokeWidth={1.8} /> {failure.message}</p>
+                  <p>
+                    <AlertCircle aria-hidden="true" size={16} strokeWidth={1.8} /> {failure.message}
+                  </p>
                   <p className="share-dialog-feedback-hint">{failure.hint}</p>
                 </>
               ) : null}

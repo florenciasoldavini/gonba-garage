@@ -3,7 +3,13 @@ import Link from 'next/link';
 
 import { LegalPage } from '@/components/layout/legal-page';
 import { WHATSAPP_DISPLAY_NUMBER, WHATSAPP_GENERAL_MESSAGE } from '@/constants/contact';
-import { BUSINESS_LOCATION, LEGAL_BUSINESS_HOURS_TEXT, LEGAL_OWNER_CUIT, LEGAL_OWNER_NAME, LEGAL_PAGES } from '@/constants/legal';
+import {
+  BUSINESS_LOCATION,
+  LEGAL_BUSINESS_HOURS_TEXT,
+  LEGAL_OWNER_CUIT,
+  LEGAL_OWNER_NAME,
+  LEGAL_PAGES,
+} from '@/constants/legal';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { createPageMetadata } from '@/lib/metadata';
 
@@ -33,64 +39,68 @@ export default function TermsPage() {
       <section id="alcance">
         <h2>Quiénes somos</h2>
         <p>
-          Este sitio pertenece a Gonba&apos;s Garage, de {LEGAL_OWNER_NAME} (<span className="legal-nowrap">CUIT {LEGAL_OWNER_CUIT}</span>), con domicilio en
-          {' '}{BUSINESS_LOCATION}. Al usarlo aceptás estos términos; si no estás de acuerdo, te pedimos que no lo uses.
+          Este sitio pertenece a Gonba&apos;s Garage, de {LEGAL_OWNER_NAME} (
+          <span className="legal-nowrap">CUIT {LEGAL_OWNER_CUIT}</span>), con domicilio en {BUSINESS_LOCATION}. Al
+          usarlo aceptás estos términos; si no estás de acuerdo, te pedimos que no lo uses.
         </p>
       </section>
 
       <section id="informacion">
         <h2>La información es orientativa</h2>
         <p>
-          Las fichas de los vehículos, con sus fotos, especificaciones, kilometraje y descripciones, se publican con fines
-          informativos. Provienen de nuestras publicaciones en Mercado Libre y pueden tener errores u omisiones, o no reflejar
-          cambios recientes. Antes de decidir, confirmá con nosotros los datos que sean importantes para vos.
+          Las fichas de los vehículos, con sus fotos, especificaciones, kilometraje y descripciones, se publican con
+          fines informativos. Provienen de nuestras publicaciones en Mercado Libre y pueden tener errores u omisiones, o
+          no reflejar cambios recientes. Antes de decidir, confirmá con nosotros los datos que sean importantes para
+          vos.
         </p>
       </section>
 
       <section id="precios">
         <h2>Precios</h2>
         <p>
-          Los precios publicados son de referencia y pueden cambiar sin aviso previo. El precio final y las condiciones de la
-          operación, como la forma de pago y los gastos de transferencia, se confirman únicamente en persona, antes de reservar
-          o firmar.
+          Los precios publicados son de referencia y pueden cambiar sin aviso previo. El precio final y las condiciones
+          de la operación, como la forma de pago y los gastos de transferencia, se confirman únicamente en persona,
+          antes de reservar o firmar.
         </p>
         <p>
-          Cuando el catálogo convierte precios entre pesos y dólares, usa la cotización del dólar MEP solo como referencia para
-          filtrar y ordenar. La cotización para el pago se acuerda con nosotros.
+          Cuando el catálogo convierte precios entre pesos y dólares, usa la cotización del dólar MEP solo como
+          referencia para filtrar y ordenar. La cotización para el pago se acuerda con nosotros.
         </p>
       </section>
 
       <section id="disponibilidad">
         <h2>Disponibilidad</h2>
         <p>
-          Que un vehículo esté publicado no garantiza que esté disponible: puede venderse o reservarse antes de que el sitio se
-          actualice. Las etiquetas «Reservado» y «Vendido» siguen el estado de la publicación y también pueden demorarse.
-          Confirmá la disponibilidad antes de visitarnos. Las reservas no se hacen a través del sitio: se acuerdan en persona.
+          Que un vehículo esté publicado no garantiza que esté disponible: puede venderse o reservarse antes de que el
+          sitio se actualice. Las etiquetas «Reservado» y «Vendido» siguen el estado de la publicación y también pueden
+          demorarse. Confirmá la disponibilidad antes de visitarnos. Las reservas no se hacen a través del sitio: se
+          acuerdan en persona.
         </p>
       </section>
 
       <section id="visitas">
         <h2>Visitas</h2>
         <p>
-          Atendemos solo con turno previo, {LEGAL_BUSINESS_HOURS_TEXT}, en {BUSINESS_LOCATION}. Coordinamos el turno por {whatsapp}. Te
-          recomendamos revisar el vehículo y su documentación en persona antes de cerrar la operación.
+          Atendemos solo con turno previo, {LEGAL_BUSINESS_HOURS_TEXT}, en {BUSINESS_LOCATION}. Coordinamos el turno por{' '}
+          {whatsapp}. Te recomendamos revisar el vehículo y su documentación en persona antes de cerrar la operación.
         </p>
       </section>
 
       <section id="tasacion">
         <h2>Tasación de tu auto</h2>
         <p>
-          La estimación que te damos a partir del formulario «Vendé tu auto» es preliminar y no obliga a ninguna de las partes.
-          Se basa en los datos que nos compartís y solo se confirma después de ver el auto en persona.
+          La estimación que te damos a partir del formulario «Vendé tu auto» es preliminar y no obliga a ninguna de las
+          partes. Se basa en los datos que nos compartís y solo se confirma después de ver el auto en persona.
         </p>
       </section>
 
       <section id="alertas">
         <h2>Alertas por email</h2>
         <p>
-          Las alertas de precio y de búsqueda son gratuitas e informativas. Un aviso puede llegar con demora respecto del
-          cambio de precio o del ingreso de una unidad, y no garantiza que el vehículo siga disponible. Podés cancelarlas cuando
-          quieras, como se explica en la <Link href={`${LEGAL_PAGES.privacy.path}#baja`}>política de privacidad</Link>.
+          Las alertas de precio y de búsqueda son gratuitas e informativas. Un aviso puede llegar con demora respecto
+          del cambio de precio o del ingreso de una unidad, y no garantiza que el vehículo siga disponible. Podés
+          cancelarlas cuando quieras, como se explica en la{' '}
+          <Link href={`${LEGAL_PAGES.privacy.path}#baja`}>política de privacidad</Link>.
         </p>
       </section>
 
@@ -101,8 +111,9 @@ export default function TermsPage() {
           funcionamiento. Podemos bloquear las solicitudes abusivas.
         </p>
         <p>
-          Los textos, el diseño, la marca Gonba&apos;s Garage y las fotos del sitio no pueden copiarse ni usarse con fines
-          comerciales sin nuestra autorización. Las marcas de los vehículos pertenecen a sus respectivos titulares.
+          Los textos, el diseño, la marca Gonba&apos;s Garage y las fotos del sitio no pueden copiarse ni usarse con
+          fines comerciales sin nuestra autorización. Las marcas de los vehículos pertenecen a sus respectivos
+          titulares.
         </p>
       </section>
 
@@ -133,8 +144,8 @@ export default function TermsPage() {
       <section id="cambios">
         <h2>Cambios y ley aplicable</h2>
         <p>
-          Podemos actualizar estos términos. La versión vigente es la publicada en esta página, con su fecha. Se rigen por las
-          leyes de la República Argentina. Por cualquier consulta, escribinos por {whatsapp}.
+          Podemos actualizar estos términos. La versión vigente es la publicada en esta página, con su fecha. Se rigen
+          por las leyes de la República Argentina. Por cualquier consulta, escribinos por {whatsapp}.
         </p>
       </section>
     </LegalPage>

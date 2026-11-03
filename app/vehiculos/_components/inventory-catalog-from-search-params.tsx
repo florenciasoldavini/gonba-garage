@@ -19,5 +19,13 @@ export function InventoryCatalogFromSearchParams({
 }: InventoryCatalogFromSearchParamsProps) {
   const searchParams = useSearchParams();
 
-  return <InventoryCatalog key={quote?.updatedAt ?? 'no-quote'} vehicles={vehicles} quote={quote} alertsEnabled={alertsEnabled} searchParams={searchParams.toString()} />;
+  return (
+    <InventoryCatalog
+      key={quote?.updatedAt ?? 'no-quote'}
+      vehicles={vehicles}
+      quote={quote}
+      alertsEnabled={alertsEnabled}
+      searchParams={searchParams.toString()}
+    />
+  );
 }

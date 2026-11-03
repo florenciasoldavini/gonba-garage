@@ -9,8 +9,7 @@ import './faq-accordion.css';
 const faqs = [
   {
     question: '¿Los vehículos están revisados?',
-    answer:
-      'Cada unidad se presenta con la información disponible sobre su estado, historial y documentación.',
+    answer: 'Cada unidad se presenta con la información disponible sobre su estado, historial y documentación.',
   },
   {
     question: '¿Puedo entregar mi auto como parte de pago?',
@@ -18,13 +17,11 @@ const faqs = [
   },
   {
     question: '¿Trabajan con financiación?',
-    answer:
-      'Podemos analizar distintas alternativas según el vehículo y las condiciones de la operación.',
+    answer: 'Podemos analizar distintas alternativas según el vehículo y las condiciones de la operación.',
   },
   {
     question: '¿Cómo coordino una visita?',
-    answer:
-      'Contactanos por WhatsApp para confirmar disponibilidad y reservar un horario de atención.',
+    answer: 'Contactanos por WhatsApp para confirmar disponibilidad y reservar un horario de atención.',
   },
 ];
 

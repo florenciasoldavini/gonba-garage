@@ -7,10 +7,18 @@ const indexingEnabled = process.env.SITE_INDEXING_ENABLED === 'true';
 const alertsEnabled = (() => {
   try {
     const origin = new URL(process.env.ALERTS_PUBLIC_URL || '');
-    return origin.protocol === 'https:' && origin.pathname === '/' && !origin.search && !origin.hash && !origin.username
-      && Boolean(process.env.DATABASE_URL && process.env.RESEND_API_KEY && process.env.ALERTS_EMAIL_FROM)
-      && (process.env.ALERTS_SIGNING_SECRET?.length ?? 0) >= 32;
-  } catch { return false; }
+    return (
+      origin.protocol === 'https:' &&
+      origin.pathname === '/' &&
+      !origin.search &&
+      !origin.hash &&
+      !origin.username &&
+      Boolean(process.env.DATABASE_URL && process.env.RESEND_API_KEY && process.env.ALERTS_EMAIL_FROM) &&
+      (process.env.ALERTS_SIGNING_SECRET?.length ?? 0) >= 32
+    );
+  } catch {
+    return false;
+  }
 })();
 for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect', '/api/mercado-libre/diagnostics']) {
   const response = await fetch(new URL(path, targetOrigin));
@@ -19,8 +27,13 @@ for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect', 
   assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
 }
 // Alert management and catalog sync are never indexable, even when production indexing is enabled.
-for (const [path, status] of [['/api/alerts/daily', 401], ['/api/mercado-libre/sync', 401], ['/api/price-alerts/cancel', 400],
-  ['/api/inventory-alerts/cancel', 400], ['/api/alerts/confirm', 303]]) {
+for (const [path, status] of [
+  ['/api/alerts/daily', 401],
+  ['/api/mercado-libre/sync', 401],
+  ['/api/price-alerts/cancel', 400],
+  ['/api/inventory-alerts/cancel', 400],
+  ['/api/alerts/confirm', 303],
+]) {
   const response = await fetch(new URL(path, targetOrigin), { redirect: 'manual' });
   assert.equal(response.status, status, path);
   assert.match(response.headers.get('cache-control') ?? '', /no-store/);
@@ -43,14 +56,21 @@ for (const path of ['/api/price-alerts/cancel', '/api/inventory-alerts/cancel'])
 
 // The site ships no demo cars: the car pages under test are the real ones the server lists.
 const catalogHtml = await (await fetch(new URL('/vehiculos', targetOrigin))).text();
-const listedVehiclePaths = [...new Set([...catalogHtml.matchAll(/href="(\/vehiculos\/[^"/?#]+)"/g)].map(([, path]) => path))];
-assert.ok(listedVehiclePaths.length > 0,
-  'The catalog lists no cars. Run this check against a server that reads the real catalog (docs/mercado-libre-local.md).');
+const listedVehiclePaths = [
+  ...new Set([...catalogHtml.matchAll(/href="(\/vehiculos\/[^"/?#]+)"/g)].map(([, path]) => path)),
+];
+assert.ok(
+  listedVehiclePaths.length > 0,
+  'The catalog lists no cars. Run this check against a server that reads the real catalog (docs/mercado-libre-local.md).',
+);
 const [listedVehiclePath] = listedVehiclePaths;
 const listedVehicleSlug = listedVehiclePath.slice('/vehiculos/'.length);
 // Reserved and sold cars are listed nowhere, so their slugs can only be passed in (comma-separated).
-const unlistedVehiclePaths = (process.env.METADATA_UNLISTED_VEHICLES ?? '').split(',')
-  .map((slug) => slug.trim()).filter(Boolean).map((slug) => `/vehiculos/${slug}`);
+const unlistedVehiclePaths = (process.env.METADATA_UNLISTED_VEHICLES ?? '')
+  .split(',')
+  .map(slug => slug.trim())
+  .filter(Boolean)
+  .map(slug => `/vehiculos/${slug}`);
 
 // The catalog and car pages stay noindex until the final version of the site, even with
 // SITE_INDEXING_ENABLED=true. Car titles are checked against the page's own structured data.
@@ -60,7 +80,7 @@ const routes = [
   { path: '/vender', title: "Vendé tu auto | Gonba's Garage", indexable: true },
   { path: '/privacidad', title: "Política de privacidad | Gonba's Garage", indexable: true },
   { path: '/terminos', title: "Términos y condiciones | Gonba's Garage", indexable: true },
-  ...listedVehiclePaths.slice(0, 3).map((path) => ({ path, title: null, indexable: false })),
+  ...listedVehiclePaths.slice(0, 3).map(path => ({ path, title: null, indexable: false })),
 ];
 
 function decodeHtml(value) {
@@ -74,16 +94,13 @@ function decodeHtml(value) {
 
 function getAttributes(tag) {
   return Object.fromEntries(
-    [...tag.matchAll(/([\w:-]+)="([^"]*)"/g)].map(([, name, value]) => [
-      name,
-      decodeHtml(value),
-    ]),
+    [...tag.matchAll(/([\w:-]+)="([^"]*)"/g)].map(([, name, value]) => [name, decodeHtml(value)]),
   );
 }
 
 function getMetadata(html) {
   const tags = [...html.matchAll(/<(?:meta|link)\b[^>]*>/g)].map(([tag]) => getAttributes(tag));
-  const find = (attribute, value) => tags.find((tag) => tag[attribute] === value);
+  const find = (attribute, value) => tags.find(tag => tag[attribute] === value);
   const title = decodeHtml(html.match(/<title>(.*?)<\/title>/)?.[1] || '');
 
   return {
@@ -116,8 +133,8 @@ function getMetadata(html) {
 }
 
 function getJsonLd(html) {
-  return [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map(
-    ([, json]) => JSON.parse(json),
+  return [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map(([, json]) =>
+    JSON.parse(json),
   );
 }
 
@@ -142,9 +159,12 @@ for (const route of routes) {
     assert.ok(metadata.canonical, 'Home should define a canonical URL');
     canonicalOrigin = new URL(metadata.canonical).origin;
 
-    const siteGraph = jsonLd.flatMap((entry) => entry['@graph'] || []);
-    assert.ok(siteGraph.some((entry) => entry['@type'] === 'WebSite'), 'Home should describe the website');
-    const dealer = siteGraph.find((entry) => entry['@type'] === 'AutoDealer');
+    const siteGraph = jsonLd.flatMap(entry => entry['@graph'] || []);
+    assert.ok(
+      siteGraph.some(entry => entry['@type'] === 'WebSite'),
+      'Home should describe the website',
+    );
+    const dealer = siteGraph.find(entry => entry['@type'] === 'AutoDealer');
     assert.ok(dealer, 'Home should describe the business');
     // The dealer is located by locality only and receives visits by appointment, so the graph must
     // never publish a street address or opening hours that would read as walk-in hours.
@@ -162,25 +182,49 @@ for (const route of routes) {
     assert.equal(dealerLogo.status, 200, 'The AutoDealer logo should return 200');
     assert.equal(dealerLogo.headers.get('content-type'), 'image/png', 'The AutoDealer logo should be PNG');
     const dealerLogoBytes = Buffer.from(await dealerLogo.arrayBuffer());
-    assert.equal(dealerLogoBytes.readUInt32BE(16), dealerLogoBytes.readUInt32BE(20), 'The AutoDealer logo should be square');
+    assert.equal(
+      dealerLogoBytes.readUInt32BE(16),
+      dealerLogoBytes.readUInt32BE(20),
+      'The AutoDealer logo should be square',
+    );
     assert.ok(dealerLogoBytes.readUInt32BE(16) >= 112, 'The AutoDealer logo should be at least 112px');
     // The address and the telephone are visible facts: the footer shows the same area beside the
     // appointment-only hours, and the WhatsApp number behind the dealer telephone.
-    const footerText = decodeHtml(html.match(/<footer\b.*?<\/footer>/s)?.[0].replace(/<!--.*?-->/g, '').replace(/<[^>]+>/g, ' ') ?? '').replace(/\s+/g, ' ');
-    for (const fact of ['Villa Pueyrredón, CABA', 'Lunes a viernes de 10 a 18 h', 'Sábados de 10 a 13 h', 'Siempre con cita previa', 'Pedí tu cita', '+54 9 11 4414-8316']) {
+    const footerText = decodeHtml(
+      html
+        .match(/<footer\b.*?<\/footer>/s)?.[0]
+        .replace(/<!--.*?-->/g, '')
+        .replace(/<[^>]+>/g, ' ') ?? '',
+    ).replace(/\s+/g, ' ');
+    for (const fact of [
+      'Villa Pueyrredón, CABA',
+      'Lunes a viernes de 10 a 18 h',
+      'Sábados de 10 a 13 h',
+      'Siempre con cita previa',
+      'Pedí tu cita',
+      '+54 9 11 4414-8316',
+    ]) {
       assert.ok(footerText.includes(fact), `Footer must show "${fact}"`);
     }
     assert.ok(metadata.icon, 'Home should link the branded favicon');
     assert.ok(metadata.appleIcon, 'Home should link the Apple touch icon');
     assert.ok(metadata.manifest, 'Home should link the web manifest');
-    assert.ok(!html.includes('Demo visual · Contenido e información comercial a confirmar'), 'Home footer must omit the obsolete demo note');
+    assert.ok(
+      !html.includes('Demo visual · Contenido e información comercial a confirmar'),
+      'Home footer must omit the obsolete demo note',
+    );
 
-    const featuredLinks = [...html.matchAll(/<a\b[^>]*class="[^"]*vehicle-card-link[^"]*"[^>]*>/g)]
-      .map(([tag]) => getAttributes(tag).href);
-    assert.ok(featuredLinks.length > 0 && featuredLinks.length <= 3, 'Home must show up to three available catalog vehicles');
+    const featuredLinks = [...html.matchAll(/<a\b[^>]*class="[^"]*vehicle-card-link[^"]*"[^>]*>/g)].map(
+      ([tag]) => getAttributes(tag).href,
+    );
+    assert.ok(
+      featuredLinks.length > 0 && featuredLinks.length <= 3,
+      'Home must show up to three available catalog vehicles',
+    );
     assert.equal(new Set(featuredLinks).size, featuredLinks.length, 'Home vehicle links must be unique');
-    const featuredBadges = [...html.matchAll(/<span class="vehicle-status">([^<]*)<\/span>/g)]
-      .map(([, label]) => decodeHtml(label));
+    const featuredBadges = [...html.matchAll(/<span class="vehicle-status">([^<]*)<\/span>/g)].map(([, label]) =>
+      decodeHtml(label),
+    );
     assert.equal(featuredBadges.length, featuredLinks.length, 'Every home vehicle card must show a status badge');
     for (const [index, href] of featuredLinks.entries()) {
       assert.match(href, /^\/vehiculos\/[^/?#]+$/);
@@ -188,9 +232,12 @@ for (const route of routes) {
       assert.equal(detail.status, 200, `Home vehicle link ${href} must resolve`);
       // The badge comes from the vehicle's status, the same one behind the detail label and Offer.
       const detailHtml = await detail.text();
-      const detailLabel = decodeHtml(detailHtml.match(/class="detail-availability"[^>]*><span><\/span> ?(?:<!-- -->)?([^<]*)</)?.[1] ?? '');
-      const offer = getJsonLd(detailHtml).flatMap((entry) => entry['@graph'] || [])
-        .find((entry) => Array.isArray(entry['@type']) && entry['@type'].includes('Product'))?.offers;
+      const detailLabel = decodeHtml(
+        detailHtml.match(/class="detail-availability"[^>]*><span><\/span> ?(?:<!-- -->)?([^<]*)</)?.[1] ?? '',
+      );
+      const offer = getJsonLd(detailHtml)
+        .flatMap(entry => entry['@graph'] || [])
+        .find(entry => Array.isArray(entry['@type']) && entry['@type'].includes('Product'))?.offers;
       assert.equal(featuredBadges[index], detailLabel, `Home badge for ${href} must match its detail page status`);
       assert.equal(featuredBadges[index], 'Disponible', `Home must only feature available vehicles (${href})`);
       assert.equal(offer?.availability, 'https://schema.org/InStock', `Featured ${href} must be InStock`);
@@ -198,19 +245,29 @@ for (const route of routes) {
   }
 
   if (route.path === '/vehiculos') {
-    assert.match(response.headers.get('cache-control') || '', /no-store/,
-      'The catalog must render at request time from the synced copy');
+    assert.match(
+      response.headers.get('cache-control') || '',
+      /no-store/,
+      'The catalog must render at request time from the synced copy',
+    );
   }
 
   if (route.path.startsWith('/vehiculos/')) {
-    assert.match(response.headers.get('cache-control') || '', /no-store/,
-      'Vehicle details must render at request time, including live slugs absent during build');
-    const vehicleGraph = jsonLd.flatMap((entry) => entry['@graph'] || []);
-    const product = vehicleGraph.find((entry) => Array.isArray(entry['@type']) && entry['@type'].includes('Product'));
-    const breadcrumb = vehicleGraph.find((entry) => entry['@type'] === 'BreadcrumbList');
+    assert.match(
+      response.headers.get('cache-control') || '',
+      /no-store/,
+      'Vehicle details must render at request time, including live slugs absent during build',
+    );
+    const vehicleGraph = jsonLd.flatMap(entry => entry['@graph'] || []);
+    const product = vehicleGraph.find(entry => Array.isArray(entry['@type']) && entry['@type'].includes('Product'));
+    const breadcrumb = vehicleGraph.find(entry => entry['@type'] === 'BreadcrumbList');
 
     assert.ok(product, `${route.path} should describe a Product and Vehicle`);
-    assert.equal(product.offers?.itemCondition, 'https://schema.org/UsedCondition', `${route.path} should identify a used vehicle`);
+    assert.equal(
+      product.offers?.itemCondition,
+      'https://schema.org/UsedCondition',
+      `${route.path} should identify a used vehicle`,
+    );
     assert.ok(product.offers?.availability, `${route.path} should expose lifecycle availability`);
     assert.equal(breadcrumb?.itemListElement?.length, 3, `${route.path} should expose three breadcrumb levels`);
     route.title = `${breadcrumb.itemListElement[2].name} ${product.vehicleModelDate} | Gonba's Garage`;
@@ -220,7 +277,11 @@ for (const route of routes) {
   assert.equal(metadata.title, route.title, `${route.path} should have its page title`);
   assert.ok(metadata.description, `${route.path} should have a description`);
   assert.equal(normalizeUrl(metadata.canonical), expectedCanonical, `${route.path} canonical should match its route`);
-  assert.equal(normalizeUrl(metadata.openGraph.url), expectedCanonical, `${route.path} og:url should match its canonical`);
+  assert.equal(
+    normalizeUrl(metadata.openGraph.url),
+    expectedCanonical,
+    `${route.path} og:url should match its canonical`,
+  );
   assert.equal(metadata.openGraph.title, metadata.title, `${route.path} OG title should match its title`);
   assert.equal(metadata.openGraph.description, metadata.description, `${route.path} OG description should match`);
   assert.equal(metadata.openGraph.siteName, "Gonba's Garage", `${route.path} should identify the site`);
@@ -231,7 +292,11 @@ for (const route of routes) {
   assert.equal(metadata.twitter.title, metadata.title, `${route.path} Twitter title should match`);
   assert.equal(metadata.twitter.description, metadata.description, `${route.path} Twitter description should match`);
   assert.equal(metadata.twitter.image, metadata.openGraph.image, `${route.path} should use the same social image`);
-  assert.equal(metadata.twitter.imageAlt, metadata.openGraph.imageAlt, `${route.path} social image alt text should match`);
+  assert.equal(
+    metadata.twitter.imageAlt,
+    metadata.openGraph.imageAlt,
+    `${route.path} social image alt text should match`,
+  );
 
   if (indexingEnabled && route.indexable) {
     assert.match(metadata.robots || '', /index/, `${route.path} should be indexable`);
@@ -262,7 +327,11 @@ for (const route of routes) {
   }
 
   {
-    assert.equal(imageResponse.headers.get('content-type'), 'image/png', `${route.path} generated social card should be PNG`);
+    assert.equal(
+      imageResponse.headers.get('content-type'),
+      'image/png',
+      `${route.path} generated social card should be PNG`,
+    );
     assert.equal(imageBytes.readUInt32BE(16), 1200, `${route.path} social card should be 1200px wide`);
     assert.equal(imageBytes.readUInt32BE(20), 630, `${route.path} social card should be 630px tall`);
   }
@@ -294,13 +363,26 @@ const sitemapText = await sitemapResponse.text();
 
 const manifestResponse = await fetch(new URL('/manifest.webmanifest', targetOrigin));
 assert.equal(manifestResponse.status, 200, 'Web manifest should return 200');
-assert.match(manifestResponse.headers.get('content-type') || '', /application\/manifest\+json/, 'Manifest should have its expected content type');
+assert.match(
+  manifestResponse.headers.get('content-type') || '',
+  /application\/manifest\+json/,
+  'Manifest should have its expected content type',
+);
 const manifest = await manifestResponse.json();
 assert.equal(manifest.name, "Gonba's Garage", 'Manifest should use the brand name');
-assert.ok(manifest.icons?.some((icon) => icon.src === '/favicon.svg'), 'Manifest should include the branded icon');
+assert.ok(
+  manifest.icons?.some(icon => icon.src === '/favicon.svg'),
+  'Manifest should include the branded icon',
+);
 // Android Chrome only offers installation with 192 and 512 PNG icons; the maskable one survives its circular crop.
-for (const [sizes, purpose] of [['192x192', 'any'], ['512x512', 'any'], ['512x512', 'maskable']]) {
-  const icon = manifest.icons.find((entry) => entry.sizes === sizes && entry.type === 'image/png' && (entry.purpose ?? 'any') === purpose);
+for (const [sizes, purpose] of [
+  ['192x192', 'any'],
+  ['512x512', 'any'],
+  ['512x512', 'maskable'],
+]) {
+  const icon = manifest.icons.find(
+    entry => entry.sizes === sizes && entry.type === 'image/png' && (entry.purpose ?? 'any') === purpose,
+  );
   assert.ok(icon, `Manifest should list a ${sizes} ${purpose} PNG icon`);
   const response = await fetch(new URL(icon.src, targetOrigin));
   assert.equal(response.status, 200, `${icon.src} should return 200`);
@@ -345,7 +427,9 @@ for (const query of [`?estado=confirmada&tipo=precio&vehiculo=${listedVehicleSlu
   assert.equal(new URL(metadata.canonical).search, '');
 }
 // Catalog filters, sort and comparison live in the query string; they never create a canonical.
-const filteredCatalog = await fetch(new URL(`/vehiculos?marca=BMW&orden=anio&comparar=${listedVehicleSlug}`, targetOrigin));
+const filteredCatalog = await fetch(
+  new URL(`/vehiculos?marca=BMW&orden=anio&comparar=${listedVehicleSlug}`, targetOrigin),
+);
 assert.equal(filteredCatalog.status, 200);
 assert.equal(
   normalizeUrl(getMetadata(await filteredCatalog.text()).canonical),
@@ -369,12 +453,18 @@ assert.equal(
 for (const path of ['/vehiculos/vehiculo-inexistente-2000', '/vehiculos/vehiculo-inexistente-mla1']) {
   const missingVehicle = await fetch(new URL(path, targetOrigin));
   assert.equal(missingVehicle.status, 404, `A missing vehicle should return 404 (${path})`);
-  assert.equal(getMetadata(await missingVehicle.text()).canonical, undefined, 'A missing vehicle should not claim a canonical URL');
+  assert.equal(
+    getMetadata(await missingVehicle.text()).canonical,
+    undefined,
+    'A missing vehicle should not claim a canonical URL',
+  );
 }
 // The slug is fixed at the first sync: another slug for the same publication redirects to it.
 const publicationId = listedVehicleSlug.match(/-(mla\d+)$/i)?.[1];
 assert.ok(publicationId, `${listedVehiclePath} should end in its Mercado Libre publication ID`);
-const legacySlug = await fetch(new URL(`/vehiculos/otro-titulo-${publicationId}`, targetOrigin), { redirect: 'manual' });
+const legacySlug = await fetch(new URL(`/vehiculos/otro-titulo-${publicationId}`, targetOrigin), {
+  redirect: 'manual',
+});
 assert.equal(legacySlug.status, 308, 'A non-canonical slug should redirect permanently');
 assert.equal(new URL(legacySlug.headers.get('location'), targetOrigin).pathname, listedVehiclePath);
 
@@ -386,15 +476,23 @@ const assertSimilarRail = (html, path) => {
   assert.match(html, /id="similares"/, `${path} shows other available cars`);
   const start = html.indexOf('id="similares"');
   const rail = html.slice(start, html.indexOf('</section>', start));
-  const railLinks = [...rail.matchAll(/<a\b[^>]*class="detail-similar-link"[^>]*>/g)].map(([tag]) => getAttributes(tag).href);
+  const railLinks = [...rail.matchAll(/<a\b[^>]*class="detail-similar-link"[^>]*>/g)].map(
+    ([tag]) => getAttributes(tag).href,
+  );
   assert.ok(railLinks.length > 0 && railLinks.length <= 3, `${path} rail shows up to three cars`);
   assert.ok(!railLinks.includes(path), `${path} rail never suggests the car itself`);
   assert.ok(!rail.match(/data-status="(?!active)/), `${path} rail only suggests available cars`);
 };
 if (listedVehiclePaths.length > 1) {
   assertSimilarRail(activeDetail, listedVehiclePath);
-  assert.ok(activeDetail.indexOf('id="similares"') > activeDetail.indexOf('id="ficha"'), 'An available car shows the rail after its own details');
-  assert.ok(activeDetail.indexOf('id="similares"') < activeDetail.indexOf('id="consulta"'), 'An available car keeps the contact callout as the closing section');
+  assert.ok(
+    activeDetail.indexOf('id="similares"') > activeDetail.indexOf('id="ficha"'),
+    'An available car shows the rail after its own details',
+  );
+  assert.ok(
+    activeDetail.indexOf('id="similares"') < activeDetail.indexOf('id="consulta"'),
+    'An available car keeps the contact callout as the closing section',
+  );
   assert.match(activeDetail, /Seguí mirando/, 'An available car frames the rail as other cars to keep browsing');
 } else {
   assert.doesNotMatch(activeDetail, /id="similares"/, 'The only available car has no rail');
@@ -413,9 +511,12 @@ for (const path of unlistedVehiclePaths) {
   assert.match(response.headers.get('cache-control') || '', /no-store/);
   const html = await response.text();
   const metadata = getMetadata(html);
-  const label = decodeHtml(html.match(/class="detail-availability"[^>]*><span><\/span> ?(?:<!-- -->)?([^<]*)</)?.[1] ?? '');
-  const offer = getJsonLd(html).flatMap((entry) => entry['@graph'] || [])
-    .find((entry) => Array.isArray(entry['@type']) && entry['@type'].includes('Product'))?.offers;
+  const label = decodeHtml(
+    html.match(/class="detail-availability"[^>]*><span><\/span> ?(?:<!-- -->)?([^<]*)</)?.[1] ?? '',
+  );
+  const offer = getJsonLd(html)
+    .flatMap(entry => entry['@graph'] || [])
+    .find(entry => Array.isArray(entry['@type']) && entry['@type'].includes('Product'))?.offers;
   const state = lifecycleStates[label];
   assert.ok(state, `${path} should be a reserved or sold car, not "${label}"`);
   const fixture = { path, ...state };
@@ -428,9 +529,15 @@ for (const path of unlistedVehiclePaths) {
   assert.equal(new URL(metadata.canonical).pathname, fixture.path, `${fixture.path} keeps its canonical`);
   assert.match(metadata.robots || '', /noindex/, `${fixture.path} stays out of search results`);
   assert.match(metadata.robots || '', /nofollow/, `${fixture.path} stays nofollow until the final version of the site`);
-  assert.doesNotMatch(html, /Consultar por este auto|comparar=|Ver publicación en Mercado Libre/, `${fixture.path} must not offer the car`);
+  assert.doesNotMatch(
+    html,
+    /Consultar por este auto|comparar=|Ver publicación en Mercado Libre/,
+    `${fixture.path} must not offer the car`,
+  );
   // The email alert is offered only where alert emails can be sent; otherwise WhatsApp is.
-  const statusCard = decodeHtml(html.slice(html.indexOf('detail-status-title'), html.indexOf('detail-disclaimer')).replace(/<[^>]+>/g, ''));
+  const statusCard = decodeHtml(
+    html.slice(html.indexOf('detail-status-title'), html.indexOf('detail-disclaimer')).replace(/<[^>]+>/g, ''),
+  );
   if (alertsEnabled) {
     assert.match(statusCard, /dejanos tu email/, `${fixture.path} offers the email alert`);
     assert.match(html, /class="detail-alert-card"/, `${fixture.path} shows the alert card`);
@@ -438,7 +545,11 @@ for (const path of unlistedVehiclePaths) {
     assert.doesNotMatch(statusCard, /email/i, `${fixture.path} promises no email`);
     assert.doesNotMatch(html, /class="detail-alert-card"|inventory-alert-dialog/, `${fixture.path} offers no alert`);
     assert.match(statusCard, /escribinos por WhatsApp/, `${fixture.path} points to WhatsApp instead`);
-    assert.match(html, /href="https:\/\/wa\.me\/[^"]*"[^>]*>(?:Avisame por WhatsApp|Contanos qué buscás)/, `${fixture.path} links WhatsApp`);
+    assert.match(
+      html,
+      /href="https:\/\/wa\.me\/[^"]*"[^>]*>(?:Avisame por WhatsApp|Contanos qué buscás)/,
+      `${fixture.path} links WhatsApp`,
+    );
   }
   assertSimilarRail(html, fixture.path);
   assert.match(html, /Parecidos, todavía en el garage/, `${fixture.path} frames the rail as alternatives`);
@@ -455,7 +566,7 @@ for (const path of unlistedVehiclePaths) {
 // The legal pages are public and indexable once indexing is enabled, linked from every footer and
 // from both alert forms.
 const legalPaths = ['/privacidad', '/terminos'];
-const visibleText = (html) => decodeHtml((html.match(/<main\b[\s\S]*<\/main>/)?.[0] ?? '').replace(/<[^>]+>/g, ''));
+const visibleText = html => decodeHtml((html.match(/<main\b[\s\S]*<\/main>/)?.[0] ?? '').replace(/<[^>]+>/g, ''));
 for (const path of legalPaths) {
   const html = await (await fetch(new URL(path, targetOrigin))).text();
   const text = visibleText(html);
@@ -465,26 +576,50 @@ for (const path of legalPaths) {
   assert.match(html, /<time dateTime="\d{4}-\d{2}-\d{2}">/i, `${path} shows its last update`);
 }
 const privacyHtml = await (await fetch(new URL('/privacidad', targetOrigin))).text();
-for (const required of ['Ley 25.326', 'Agencia de Acceso a la Información Pública', 'PostHog', 'Resend', 'Neon', 'Vercel', 'Cancelar alerta']) {
+for (const required of [
+  'Ley 25.326',
+  'Agencia de Acceso a la Información Pública',
+  'PostHog',
+  'Resend',
+  'Neon',
+  'Vercel',
+  'Cancelar alerta',
+]) {
   assert.ok(visibleText(privacyHtml).includes(required), `/privacidad mentions ${required}`);
 }
-for (const [label, html] of [['Home', homeHtml], ['Catalog', catalogHtml], ['Vehicle', activeDetail], ['/privacidad', privacyHtml]]) {
+for (const [label, html] of [
+  ['Home', homeHtml],
+  ['Catalog', catalogHtml],
+  ['Vehicle', activeDetail],
+  ['/privacidad', privacyHtml],
+]) {
   const footer = html.match(/<footer\b[\s\S]*<\/footer>/)?.[0] ?? '';
   for (const path of legalPaths) assert.ok(footer.includes(`href="${path}"`), `${label} footer links ${path}`);
 }
 // Each alert form is offered only where alert emails can be sent, and then states that subscribing
 // accepts the privacy policy (price on detail, search on catalog).
-for (const [label, html, enabled] of [['Price alert', activeDetail, alertsEnabled], ['Inventory alert', catalogHtml, alertsEnabled]]) {
+for (const [label, html, enabled] of [
+  ['Price alert', activeDetail, alertsEnabled],
+  ['Inventory alert', catalogHtml, alertsEnabled],
+]) {
   if (enabled) {
-    assert.match(html, /class="price-alert-privacy">[^<]*Al suscribirte aceptás la (?:<!-- -->)?<a [^>]*href="\/privacidad"/, `${label} links the privacy policy`);
+    assert.match(
+      html,
+      /class="price-alert-privacy">[^<]*Al suscribirte aceptás la (?:<!-- -->)?<a [^>]*href="\/privacidad"/,
+      `${label} links the privacy policy`,
+    );
   } else {
-    assert.doesNotMatch(html, /price-alert-dialog|price-alert-privacy|detail-alert-card|inventory-alert-trigger/, `${label} is not offered without the email configuration`);
+    assert.doesNotMatch(
+      html,
+      /price-alert-dialog|price-alert-privacy|detail-alert-card|inventory-alert-trigger/,
+      `${label} is not offered without the email configuration`,
+    );
   }
 }
 
 console.table(results);
 console.log(
-  `\nSocial metadata and ${indexingEnabled ? 'enabled' : 'disabled'} indexing verification passed for ${routes.length} public routes`
-    + ` and ${unlistedVehiclePaths.length} reserved or sold car pages (alert emails ${alertsEnabled ? 'configured' : 'not configured'}).`
-    + (unlistedVehiclePaths.length ? '' : ' Reserved and sold pages not covered: set METADATA_UNLISTED_VEHICLES.'),
+  `\nSocial metadata and ${indexingEnabled ? 'enabled' : 'disabled'} indexing verification passed for ${routes.length} public routes` +
+    ` and ${unlistedVehiclePaths.length} reserved or sold car pages (alert emails ${alertsEnabled ? 'configured' : 'not configured'}).` +
+    (unlistedVehiclePaths.length ? '' : ' Reserved and sold pages not covered: set METADATA_UNLISTED_VEHICLES.'),
 );

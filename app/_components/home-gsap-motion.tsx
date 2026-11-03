@@ -22,7 +22,7 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
           desktop: '(min-width: 901px)',
           reduceMotion: '(prefers-reduced-motion: reduce)',
         },
-        (context) => {
+        context => {
           const { desktop, reduceMotion } = context.conditions as {
             desktop: boolean;
             reduceMotion: boolean;
@@ -142,9 +142,9 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
             .fromTo(
               inventoryCards,
               {
-                x: (index) => [-110, 0, 110][index] ?? 0,
-                y: (index) => (index === 1 ? 76 : 28),
-                rotation: (index) => [-1.2, 0, 1.2][index] ?? 0,
+                x: index => [-110, 0, 110][index] ?? 0,
+                y: index => (index === 1 ? 76 : 28),
+                rotation: index => [-1.2, 0, 1.2][index] ?? 0,
                 autoAlpha: 0,
               },
               {
@@ -161,7 +161,7 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
               '.vehicle-card .vehicle-image',
               {
                 scale: 1.055,
-                xPercent: (index) => [-3, 0, 3][index] ?? 0,
+                xPercent: index => [-3, 0, 3][index] ?? 0,
                 duration: 1.3,
                 stagger: 0.1,
                 ease: 'power2.out',
@@ -183,11 +183,7 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
             .from('.sell-content h2', { x: 58, autoAlpha: 0, duration: 0.82 }, '<0.08')
             .from('.sell-content > p:not(.eyebrow)', { x: 38, autoAlpha: 0, duration: 0.62 }, '<0.14')
             .from('.process-list li', { x: 34, autoAlpha: 0, stagger: 0.12, duration: 0.52 }, '<0.12')
-            .from(
-              '.sell-content .button',
-              { autoAlpha: 0, duration: 0.55 },
-              '<0.08',
-            );
+            .from('.sell-content .button', { autoAlpha: 0, duration: 0.55 }, '<0.08');
 
           const services = gsap.timeline({
             defaults: { ease: 'power3.out' },
@@ -240,19 +236,16 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
 
           faq
             .from('.faq-intro > *', { x: -44, autoAlpha: 0, stagger: 0.1, duration: 0.64 })
-            .from(
-              '.faq-list summary',
-              { x: 42, autoAlpha: 0, stagger: 0.1, duration: 0.66 },
-              '<0.12',
-            );
+            .from('.faq-list summary', { x: 42, autoAlpha: 0, stagger: 0.1, duration: 0.66 }, '<0.12');
 
-          gsap.timeline({
-            scrollTrigger: {
-              trigger: '.contact-section',
-              start: 'top 78%',
-              once: true,
-            },
-          })
+          gsap
+            .timeline({
+              scrollTrigger: {
+                trigger: '.contact-section',
+                start: 'top 78%',
+                once: true,
+              },
+            })
             .from('.contact-copy > *', { y: 36, autoAlpha: 0, stagger: 0.1, duration: 0.7, ease: 'power3.out' })
             .from('.contact-actions', { scale: 0.94, autoAlpha: 0, duration: 0.68, ease: 'power3.out' }, '<0.12')
             .fromTo(

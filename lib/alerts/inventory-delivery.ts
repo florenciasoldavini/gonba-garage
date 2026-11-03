@@ -9,7 +9,11 @@ import { getSql } from '@/lib/database';
 import { alertEmailsConfigured } from './config';
 import { buildSearchMatchEmail, EmailFailure, sendAlertEmail, type SearchMatchVehicle } from './email';
 import {
-  parseAlertEmail, parseFrozenInventoryDelivery, parseInventoryAlert, parseInventoryDelivery, parseInventoryEvent,
+  parseAlertEmail,
+  parseFrozenInventoryDelivery,
+  parseInventoryAlert,
+  parseInventoryDelivery,
+  parseInventoryEvent,
   parseMatchedPublication,
 } from './rows';
 
@@ -51,13 +55,15 @@ export async function matchingAlerts(vehicle: StoredVehicle, eventId: string) {
   // Price bounds are USD comparison amounts, so an ARS listing needs the MEP quote, as in the catalog.
   const usdPrice = comparableUsdPrice(vehicle, vehicle.currency === 'ARS' && needsPrice ? await getMepQuote() : null);
   if (needsPrice && usdPrice === null) throw new Error('mep_quote_unavailable');
-  return candidates.filter(({ criteria }) => matchesInventorySearch(vehicle, criteria, usdPrice))
+  return candidates
+    .filter(({ criteria }) => matchesInventorySearch(vehicle, criteria, usdPrice))
     .map(({ id, generation }) => ({ id, generation }));
 }
 
 /** Matches one due event. Returns false when nothing is due. */
 export async function processNextEvent() {
-  const sql = getSql(), lease = randomUUID();
+  const sql = getSql();
+  const lease = randomUUID();
   const events = await sql`UPDATE public.inventory_alert_events SET lease_id = ${lease}::uuid,
       lease_until = now() + interval '90 seconds', attempts = attempts + 1
     WHERE id = (SELECT id FROM public.inventory_alert_events
@@ -67,10 +73,16 @@ export async function processNextEvent() {
   if (!events.length) return false;
   const event = parseRow('inventory_alert_events', events[0], parseInventoryEvent);
   try {
-    const rows = await sql`SELECT publication_id, status, vehicle FROM public.catalog_publications WHERE publication_id = ${event.publication_id}`;
+    const rows =
+      await sql`SELECT publication_id, status, vehicle FROM public.catalog_publications WHERE publication_id = ${event.publication_id}`;
     // Reserved or sold again before matching: nothing to announce.
-    const matched = rows[0]?.status === 'active'
-      ? await matchingAlerts(parseRow('catalog_publications', rows[0], row => parseStoredVehicle(row.vehicle)), event.id) : null;
+    const matched =
+      rows[0]?.status === 'active'
+        ? await matchingAlerts(
+            parseRow('catalog_publications', rows[0], row => parseStoredVehicle(row.vehicle)),
+            event.id,
+          )
+        : null;
     // The insert and the completion happen only while this worker still holds the event's lease.
     await sql`WITH lease AS (
         SELECT 1 FROM public.inventory_alert_events WHERE id = ${event.id}::uuid AND lease_id = ${lease}::uuid
@@ -87,7 +99,10 @@ export async function processNextEvent() {
         last_error = NULL, processed_at = now()
       WHERE id = ${event.id}::uuid AND lease_id = ${lease}::uuid`;
   } catch (error) {
-    const code = error instanceof Error && error.message === 'mep_quote_unavailable' ? 'mep_quote_unavailable' : 'processing_failure';
+    const code =
+      error instanceof Error && error.message === 'mep_quote_unavailable'
+        ? 'mep_quote_unavailable'
+        : 'processing_failure';
     await sql`UPDATE public.inventory_alert_events SET lease_id = NULL, lease_until = NULL, last_error = ${code},
         next_attempt_at = now() + ${backoffSeconds(Number(event.attempts))}::int * interval '1 second'
       WHERE id = ${event.id}::uuid AND lease_id = ${lease}::uuid`;
@@ -153,15 +168,21 @@ async function maintainDeliveries() {
 function emailVehicle(row: ReturnType<typeof parseMatchedPublication>): SearchMatchVehicle {
   const { vehicle } = row;
   return {
-    slug: String(row.slug), title: [vehicle.make, vehicle.model, vehicle.version, vehicle.year].filter(Boolean).join(' '),
-    mileageKm: vehicle.mileageKm, transmission: vehicle.transmission, fuel: vehicle.fuel,
-    price: vehicle.price, currency: vehicle.currency, released: row.previous_status === 'paused',
+    slug: String(row.slug),
+    title: [vehicle.make, vehicle.model, vehicle.version, vehicle.year].filter(Boolean).join(' '),
+    mileageKm: vehicle.mileageKm,
+    transmission: vehicle.transmission,
+    fuel: vehicle.fuel,
+    price: vehicle.price,
+    currency: vehicle.currency,
+    released: row.previous_status === 'paused',
   };
 }
 
 /** Sends one due email. Returns false when nothing is due. */
 export async function processNextDelivery() {
-  const sql = getSql(), lease = randomUUID();
+  const sql = getSql();
+  const lease = randomUUID();
   await maintainDeliveries();
   const rows = await sql`UPDATE public.inventory_alert_deliveries SET state = 'sending', lease_id = ${lease}::uuid,
       lease_until = now() + interval '2 minutes', attempts = attempts + 1
@@ -179,7 +200,8 @@ export async function processNextDelivery() {
       await sql`UPDATE public.inventory_alert_deliveries SET state = 'cancelled' WHERE id = ${row.id}::uuid AND lease_id = ${lease}::uuid`;
       return true;
     }
-    let payload = row.request_payload, count = null as number | null;
+    let payload = row.request_payload;
+    let count = null as number | null;
     if (!payload) {
       // Before the first send of a series only: cars reserved or sold since they matched are dropped
       // and forgotten, so they can be announced if they come back.
@@ -187,7 +209,8 @@ export async function processNextDelivery() {
         WHERE m.delivery_id = ${row.id}::uuid
           AND EXISTS (SELECT 1 FROM public.inventory_alert_deliveries WHERE id = ${row.id}::uuid AND lease_id = ${lease}::uuid)
           AND NOT EXISTS (SELECT 1 FROM public.catalog_publications p WHERE p.publication_id = m.publication_id AND p.status = 'active')`;
-      const matches = await sql`SELECT p.publication_id, p.slug, p.vehicle, m.previous_status FROM public.inventory_alert_matches m
+      const matches =
+        await sql`SELECT p.publication_id, p.slug, p.vehicle, m.previous_status FROM public.inventory_alert_matches m
         JOIN public.catalog_publications p ON p.publication_id = m.publication_id
         WHERE m.delivery_id = ${row.id}::uuid AND p.status = 'active'
         ORDER BY m.created_at, m.publication_id`;
@@ -199,9 +222,13 @@ export async function processNextDelivery() {
         return true;
       }
       count = vehicles.length;
-      payload = buildSearchMatchEmail({ id: row.alert_id, generation: row.generation,
+      payload = buildSearchMatchEmail({
+        id: row.alert_id,
+        generation: row.generation,
         email: parseRow('vehicle_inventory_alerts', alerts[0], parseAlertEmail),
-        vehicles: vehicles.slice(0, MAX_VEHICLES_PER_EMAIL), more: Math.max(0, vehicles.length - MAX_VEHICLES_PER_EMAIL) });
+        vehicles: vehicles.slice(0, MAX_VEHICLES_PER_EMAIL),
+        more: Math.max(0, vehicles.length - MAX_VEHICLES_PER_EMAIL),
+      });
     }
     // Immutable bytes before the first send of a series, and `uncertain` before every send: a crash
     // from here on leaves the outcome unknown, and only the same key may retry it.
@@ -211,7 +238,11 @@ export async function processNextDelivery() {
         series_started_at = COALESCE(series_started_at, now()), uncertain = true
       WHERE id = ${row.id}::uuid AND lease_id = ${lease}::uuid RETURNING request_payload, key_series`;
     if (!frozen.length) return true;
-    const { request_payload: frozenPayload, key_series: series } = parseRow('inventory_alert_deliveries', frozen[0], parseFrozenInventoryDelivery);
+    const { request_payload: frozenPayload, key_series: series } = parseRow(
+      'inventory_alert_deliveries',
+      frozen[0],
+      parseFrozenInventoryDelivery,
+    );
     const providerId = await sendAlertEmail(frozenPayload, `gonba-search-${row.id}-${series}`);
     await sql.transaction([
       sql`UPDATE public.inventory_alert_deliveries SET state = 'accepted', provider_id = ${providerId}, accepted_at = now(),
@@ -230,7 +261,10 @@ export async function processNextDelivery() {
         WHERE id = ${row.id}::uuid AND lease_id = ${lease}::uuid`;
     }
     // Unknown or database failures keep the lease and `uncertain`, so the retry reuses the same key.
-    console.error('inventory_alert_delivery_failure', { deliveryId: row.id, code: error instanceof EmailFailure ? error.code : 'processing_failure' });
+    console.error('inventory_alert_delivery_failure', {
+      deliveryId: row.id,
+      code: error instanceof EmailFailure ? error.code : 'processing_failure',
+    });
   }
   return true;
 }
@@ -253,15 +287,19 @@ export async function runInventoryAlertWork({ budgetMs = 200_000 } = {}) {
   if (!alertEmailsConfigured()) return;
   const deadline = Date.now() + budgetMs;
   await expireEvents();
-  let events = 0, deliveries = 0;
-  while (Date.now() < deadline && events < MAX_EVENTS_PER_RUN && await processNextEvent()) events++;
+  let events = 0;
+  let deliveries = 0;
+  while (Date.now() < deadline && events < MAX_EVENTS_PER_RUN && (await processNextEvent())) events++;
   await batchMatches();
-  while (Date.now() < deadline && deliveries < MAX_DELIVERIES_PER_RUN && await processNextDelivery()) deliveries++;
+  while (Date.now() < deadline && deliveries < MAX_DELIVERIES_PER_RUN && (await processNextDelivery())) deliveries++;
 }
 
 export async function runInventoryAlertWorkSafely(options?: { budgetMs?: number }) {
-  try { await runInventoryAlertWork(options); }
-  catch { console.error('inventory_alert_worker_failure'); }
+  try {
+    await runInventoryAlertWork(options);
+  } catch {
+    console.error('inventory_alert_worker_failure');
+  }
 }
 
 /** Cancels one alert generation. Unsent emails are dropped. A send already in progress may finish. */

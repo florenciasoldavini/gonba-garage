@@ -8,7 +8,9 @@ describe('refresh-token store', () => {
   let value = null;
   let revision = 0;
   const storage = {
-    async read() { return value ? { record: structuredClone(value), etag: String(revision) } : null; },
+    async read() {
+      return value ? { record: structuredClone(value), etag: String(revision) } : null;
+    },
     async write(next, etag) {
       if (value ? etag !== String(revision) : etag !== undefined) throw new Error('Precondition failed');
       value = structuredClone(next);
@@ -16,10 +18,18 @@ describe('refresh-token store', () => {
     },
   };
   const options = { pollMs: 5, waitMs: 2_000 };
-  const instance = () => createRefreshTokenStore(storage, t => `encrypted:${t}`, t => t.slice(10), options);
+  const instance = () =>
+    createRefreshTokenStore(
+      storage,
+      t => `encrypted:${t}`,
+      t => t.slice(10),
+      options,
+    );
   const store = instance();
   const access = (value, ms = 3_600_000) => ({ value, expiresAt: Date.now() + ms });
-  const expire = () => { value.accessTokenExpiresAt = Date.now() - 1; };
+  const expire = () => {
+    value.accessTokenExpiresAt = Date.now() - 1;
+  };
   const mustNotRun = async () => assert.fail('Must not consume the refresh token');
   let originalIncidentId;
   let lockedRevision;
@@ -37,7 +47,11 @@ describe('refresh-token store', () => {
     };
     const parallel = await Promise.all([instance().accessToken(operation), instance().accessToken(operation)]);
     assert.equal(consumed, 1, 'Only one instance may consume the one-use token');
-    assert.deepEqual(parallel.map(token => token.value), ['access', 'access'], 'The concurrent instance waits for the renewal');
+    assert.deepEqual(
+      parallel.map(token => token.value),
+      ['access', 'access'],
+      'The concurrent instance waits for the renewal',
+    );
     assert.equal(value.encryptedRefreshToken, 'encrypted:rotated');
     assert.equal(value.encryptedAccessToken, 'encrypted:access', 'The access token is stored encrypted');
     assert.equal(value.refreshStartedAt, null);
@@ -49,10 +63,12 @@ describe('refresh-token store', () => {
     assert.equal(revision, storedRevision, 'Reusing a valid access token does not write');
   });
 
-  it('waits through another instance\'s renewal and picks up the new token', async () => {
+  it("waits through another instance's renewal and picks up the new token", async () => {
     expire();
     let release;
-    const gate = new Promise(resolve => { release = resolve; });
+    const gate = new Promise(resolve => {
+      release = resolve;
+    });
     const renewing = instance().accessToken(async (token, save) => {
       assert.equal(token, 'rotated');
       await gate;
@@ -70,13 +86,20 @@ describe('refresh-token store', () => {
     expire();
     let finish;
     const slow = instance().accessToken(async (_token, save) => {
-      await new Promise(resolve => { finish = resolve; });
+      await new Promise(resolve => {
+        finish = resolve;
+      });
       const next = access('slow');
       await save('rotated-slow', next);
       return next;
     });
     while (value.refreshStartedAt === null) await new Promise(resolve => setTimeout(resolve, 1));
-    const impatient = createRefreshTokenStore(storage, t => `encrypted:${t}`, t => t.slice(10), { pollMs: 5, waitMs: 30 });
+    const impatient = createRefreshTokenStore(
+      storage,
+      t => `encrypted:${t}`,
+      t => t.slice(10),
+      { pollMs: 5, waitMs: 30 },
+    );
     await assert.rejects(impatient.accessToken(mustNotRun), error => error.incident.code === 'renewal_in_progress');
     finish();
     assert.equal((await slow).value, 'slow');
@@ -84,13 +107,20 @@ describe('refresh-token store', () => {
 
   it('never reuses the old token after a failed or interrupted renewal', async () => {
     expire();
-    await assert.rejects(store.accessToken(async () => { throw new Error('Ambiguous provider timeout'); }));
+    await assert.rejects(
+      store.accessToken(async () => {
+        throw new Error('Ambiguous provider timeout');
+      }),
+    );
     assert.equal(value.lastFailure.stage, 'token_refresh');
     assert.equal(value.lastFailure.code, 'operation_failed');
     originalIncidentId = value.lastFailure.incidentId;
     lockedRevision = revision;
-    await assert.rejects(instance().accessToken(mustNotRun), error => error.incident.incidentId === originalIncidentId,
-      'A failed renewal is reported immediately instead of waiting');
+    await assert.rejects(
+      instance().accessToken(mustNotRun),
+      error => error.incident.incidentId === originalIncidentId,
+      'A failed renewal is reported immediately instead of waiting',
+    );
     value.refreshStartedAt = Date.now() - 121_000;
     await assert.rejects(instance().accessToken(mustNotRun), error => error.incident.code === 'renewal_interrupted');
     assert.equal(revision, lockedRevision, 'An interrupted refresh must not reuse the old token');
@@ -111,15 +141,21 @@ describe('refresh-token store', () => {
     await store.authorize('reauthorized');
     assert.equal(value.refreshStartedAt, null);
     assert.equal(value.encryptedAccessToken, undefined, 'Reauthorization discards the stored access token');
-    assert.equal(value.lastFailure.incidentId, originalIncidentId, 'Reauthorization must preserve the original diagnostic');
+    assert.equal(
+      value.lastFailure.incidentId,
+      originalIncidentId,
+      'Reauthorization must preserve the original diagnostic',
+    );
   });
 
   it('rejects a stale writer after the record was replaced', async () => {
-    await assert.rejects(store.accessToken(async (_token, save) => {
-      // Simulate a late writer after an administrator has replaced the record.
-      revision++;
-      await save('obsolete', access('obsolete'));
-    }));
+    await assert.rejects(
+      store.accessToken(async (_token, save) => {
+        // Simulate a late writer after an administrator has replaced the record.
+        revision++;
+        await save('obsolete', access('obsolete'));
+      }),
+    );
     assert.equal(value.encryptedRefreshToken, 'encrypted:reauthorized');
   });
 });

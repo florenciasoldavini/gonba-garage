@@ -31,13 +31,16 @@ export function ValuationForm() {
     const currentSection = formRef.current?.querySelector<HTMLElement>('[data-step]:not([hidden])');
     if (!currentSection) return;
 
-    const requiredControls = currentSection.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('[required]');
+    const requiredControls = currentSection.querySelectorAll<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >('[required]');
     const requiredCustomSelects = currentSection.querySelectorAll<HTMLButtonElement>('[data-required-select="true"]');
-    const nativeFieldsAreComplete = Array.from(requiredControls).every((control) => control.checkValidity());
-    const customSelectsAreComplete = Array.from(requiredCustomSelects).every((control) => Boolean(control.dataset.value));
+    const nativeFieldsAreComplete = Array.from(requiredControls).every(control => control.checkValidity());
+    const customSelectsAreComplete = Array.from(requiredCustomSelects).every(control => Boolean(control.dataset.value));
     const consentControl = formRef.current?.elements.namedItem('consent');
-    const consentIsComplete = currentSection.dataset.step !== String(TOTAL_STEPS)
-      || consentControl instanceof HTMLInputElement && consentControl.checked;
+    const consentIsComplete =
+      currentSection.dataset.step !== String(TOTAL_STEPS) ||
+      (consentControl instanceof HTMLInputElement && consentControl.checked);
 
     setIsStepComplete(nativeFieldsAreComplete && customSelectsAreComplete && consentIsComplete);
   }, []);
@@ -50,7 +53,9 @@ export function ValuationForm() {
   useEffect(() => {
     if (previousStepRef.current === step) return;
     previousStepRef.current = step;
-    formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"] [role="heading"]`)?.focus({ preventScroll: true });
+    formRef.current
+      ?.querySelector<HTMLElement>(`[data-step="${step}"] [role="heading"]`)
+      ?.focus({ preventScroll: true });
   }, [step]);
 
   useGSAP(
@@ -87,14 +92,18 @@ export function ValuationForm() {
 
   const continueToNextStep = () => {
     const currentSection = formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"]`);
-    const missingCustomSelect = currentSection?.querySelector<HTMLButtonElement>('[data-required-select="true"][data-value=""]');
+    const missingCustomSelect = currentSection?.querySelector<HTMLButtonElement>(
+      '[data-required-select="true"][data-value=""]',
+    );
     if (missingCustomSelect) {
       missingCustomSelect.setAttribute('aria-invalid', 'true');
       missingCustomSelect.focus();
       return;
     }
 
-    const controls = currentSection?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input, select, textarea');
+    const controls = currentSection?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
+      'input, select, textarea',
+    );
     for (const control of controls ?? []) {
       if (!control.checkValidity()) {
         control.reportValidity();
@@ -117,10 +126,7 @@ export function ValuationForm() {
     const contactSection = event.currentTarget.querySelector<HTMLElement>('[data-step="3"]');
     const contactControls = contactSection?.querySelectorAll<HTMLInputElement>('input') ?? [];
     const consentControl = event.currentTarget.elements.namedItem('consent');
-    const controls = [
-      ...contactControls,
-      ...(consentControl instanceof HTMLInputElement ? [consentControl] : []),
-    ];
+    const controls = [...contactControls, ...(consentControl instanceof HTMLInputElement ? [consentControl] : [])];
 
     for (const control of controls) {
       if (!control.checkValidity()) {
@@ -132,7 +138,7 @@ export function ValuationForm() {
     const data = new FormData(event.currentTarget);
     const value = (name: string) => String(data.get(name) ?? '').trim();
     const mileage = Number(value('mileage')).toLocaleString('es-AR');
-    const optionalLine = (label: string, name: string) => value(name) ? `${label}: ${value(name)}` : null;
+    const optionalLine = (label: string, name: string) => (value(name) ? `${label}: ${value(name)}` : null);
     const message = [
       `Hola, Gonba's Garage. Soy ${value('name')} y me gustaría que evalúen mi auto para venderlo.`,
       '',
@@ -146,7 +152,9 @@ export function ValuationForm() {
       optionalLine('Comentarios', 'notes'),
       '',
       `Teléfono de contacto: ${value('phone')}`,
-    ].filter((line) => line !== null).join('\n');
+    ]
+      .filter(line => line !== null)
+      .join('\n');
 
     // Catalog picks arrive in hidden inputs; a hand-typed make or model is free text and stays out.
     const form = event.currentTarget;
@@ -155,7 +163,7 @@ export function ValuationForm() {
       return control instanceof HTMLInputElement && control.type === 'hidden' ? value(name) : '';
     };
     captureAnalyticsEvent('valuation_sent_to_whatsapp', {
-      has_photos: data.getAll('photos').some((photo) => photo instanceof File && photo.size > 0),
+      has_photos: data.getAll('photos').some(photo => photo instanceof File && photo.size > 0),
       make: catalogValue('make'),
       model: catalogValue('model'),
       total_steps: TOTAL_STEPS,
@@ -196,7 +204,9 @@ export function ValuationForm() {
         {step === TOTAL_STEPS ? (
           <label className="valuation-consent">
             <input required type="checkbox" name="consent" />
-            <span><Check aria-hidden="true" size={11} /></span>
+            <span>
+              <Check aria-hidden="true" size={11} />
+            </span>
             Acepto que me contacten para evaluar este vehículo.
           </label>
         ) : null}
@@ -211,7 +221,9 @@ export function ValuationForm() {
               Continuar <ArrowUpRight aria-hidden="true" size={16} />
             </Button>
           ) : (
-            <Button type="submit" disabled={!isStepComplete}>Enviar mensaje <ArrowUpRight aria-hidden="true" size={16} /></Button>
+            <Button type="submit" disabled={!isStepComplete}>
+              Enviar mensaje <ArrowUpRight aria-hidden="true" size={16} />
+            </Button>
           )}
         </div>
         <small>Se abrirá WhatsApp con los datos del auto, sin fotos. Revisá el mensaje y envialo cuando quieras.</small>

@@ -1,9 +1,21 @@
 import 'server-only';
 import { randomUUID } from 'node:crypto';
 import {
-  acquireNotificationDrain, acquireReconciliation, completeCatalogJob, enqueueCatalogJobs, enqueueCatalogNotification,
-  failCatalogJob, finishReconciliation, hasDueNotificationJobs, leaseCatalogJob, markPublicationRemoved, pruneCatalogJobs,
-  readStoredSyncState, releaseNotificationDrain, renewNotificationDrain, savePublication,
+  acquireNotificationDrain,
+  acquireReconciliation,
+  completeCatalogJob,
+  enqueueCatalogJobs,
+  enqueueCatalogNotification,
+  failCatalogJob,
+  finishReconciliation,
+  hasDueNotificationJobs,
+  leaseCatalogJob,
+  markPublicationRemoved,
+  pruneCatalogJobs,
+  readStoredSyncState,
+  releaseNotificationDrain,
+  renewNotificationDrain,
+  savePublication,
 } from '@/lib/catalog/store';
 import { requireMercadoLibreEnv } from '@/lib/env';
 import { catalogAccessToken } from './access-token';
@@ -31,7 +43,8 @@ const vehicleCategories = new Map<string, Promise<VehicleCategory | null>>();
  */
 async function vehicleCategory(item: MercadoLibreItem) {
   const categoryId = item.category_id;
-  if (typeof categoryId !== 'string' || !/^MLA\d+$/.test(categoryId)) throw failure('catalog_query', 'invalid_response');
+  if (typeof categoryId !== 'string' || !/^MLA\d+$/.test(categoryId))
+    throw failure('catalog_query', 'invalid_response');
   let result = vehicleCategories.get(categoryId);
   if (!result) {
     result = catalogAccessToken()
@@ -67,7 +80,13 @@ async function readCurrentPublication(id: string) {
   try {
     return await readMercadoLibrePublication(id, await catalogAccessToken());
   } catch (error) {
-    if (error instanceof IntegrationFailure && error.incident.stage === 'catalog_query' && error.incident.httpStatus === 404) return null;
+    if (
+      error instanceof IntegrationFailure &&
+      error.incident.stage === 'catalog_query' &&
+      error.incident.httpStatus === 404
+    ) {
+      return null;
+    }
     throw error;
   }
 }
@@ -104,12 +123,22 @@ export async function processNextCatalogJob({ includeDeferred = true } = {}) {
  * Drains due items within a time budget. Items in backoff wait for the next run. Deferred items
  * come last, and only with `includeDeferred`. `renew` is checked before each item.
  */
-export async function runCatalogSyncWork({ budgetMs = 200_000, maxItems = 200, includeDeferred = true,
-  renew = async () => true } = {}) {
+export async function runCatalogSyncWork({
+  budgetMs = 200_000,
+  maxItems = 200,
+  includeDeferred = true,
+  renew = async () => true,
+} = {}) {
   const deadline = Date.now() + budgetMs;
   let processed = 0;
-  while (Date.now() < deadline && processed < maxItems && await renew()
-    && await processNextCatalogJob({ includeDeferred })) processed++;
+  while (
+    Date.now() < deadline &&
+    processed < maxItems &&
+    (await renew()) &&
+    (await processNextCatalogJob({ includeDeferred }))
+  ) {
+    processed++;
+  }
   return processed;
 }
 
@@ -126,13 +155,19 @@ export async function runCatalogSyncWorkSafely({ budgetMs = 200_000, maxItems = 
       const lease = randomUUID();
       if (!(await acquireNotificationDrain(lease))) return;
       try {
-        processed += await runCatalogSyncWork({ budgetMs: deadline - Date.now(), maxItems: maxItems - processed,
-          includeDeferred: false, renew: () => renewNotificationDrain(lease) });
+        processed += await runCatalogSyncWork({
+          budgetMs: deadline - Date.now(),
+          maxItems: maxItems - processed,
+          includeDeferred: false,
+          renew: () => renewNotificationDrain(lease),
+        });
       } finally {
         await releaseNotificationDrain(lease);
       }
-    } while (Date.now() < deadline && processed < maxItems && await hasDueNotificationJobs());
-  } catch { console.error(JSON.stringify({ event: 'catalog_sync_worker_failure' })); }
+    } while (Date.now() < deadline && processed < maxItems && (await hasDueNotificationJobs()));
+  } catch {
+    console.error(JSON.stringify({ event: 'catalog_sync_worker_failure' }));
+  }
 }
 
 /**
@@ -157,7 +192,7 @@ export async function reconcileCatalog() {
     for (const { source, vehicle } of items) {
       if (String(source.seller_id) !== seller) continue;
       // An unresolved category is compared anyway: the item's own job decides, and retries.
-      if (await vehicleCategory(source).catch(() => undefined) === null) continue;
+      if ((await vehicleCategory(source).catch(() => undefined)) === null) continue;
       listed.set(source.id, { status: vehicle.status, lastUpdated: lastUpdatedTime(source.last_updated) });
     }
     const stored = await readStoredSyncState();

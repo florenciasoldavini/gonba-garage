@@ -9,7 +9,12 @@ import { mercadoLibreEnv } from '@/lib/env';
 import { alertEmailsConfigured, requireAlertConfig } from './config';
 import { buildAlertEmail, EmailFailure, sendAlertEmail } from './email';
 import {
-  parseAlertEmail, parseAlertPublication, parseAlertSlug, parseFrozenPriceDelivery, parseNextPriceAttempt, parsePriceDelivery,
+  parseAlertEmail,
+  parseAlertPublication,
+  parseAlertSlug,
+  parseFrozenPriceDelivery,
+  parseNextPriceAttempt,
+  parsePriceDelivery,
   parsePriceSignup,
 } from './rows';
 
@@ -21,10 +26,12 @@ import {
 export async function requestPriceAlert(email: string, vehicle: Vehicle) {
   requireAlertConfig();
   if (!vehicle.mercadoLibreId || !/^MLA\d+$/.test(vehicle.mercadoLibreId)) throw new Error('Missing publication ID');
-  if (!Number.isFinite(vehicle.price) || vehicle.price <= 0 || !['ARS', 'USD'].includes(vehicle.currency)) throw new Error('Invalid publication price');
+  if (!Number.isFinite(vehicle.price) || vehicle.price <= 0 || !['ARS', 'USD'].includes(vehicle.currency))
+    throw new Error('Invalid publication price');
   const sql = getSql();
   const title = [vehicle.make, vehicle.model, vehicle.version, vehicle.year].filter(Boolean).join(' ');
-  const rows = await sql`INSERT INTO public.vehicle_price_alerts (email, vehicle_slug, publication_id, vehicle_title, current_price, currency, source, status)
+  const rows =
+    await sql`INSERT INTO public.vehicle_price_alerts (email, vehicle_slug, publication_id, vehicle_title, current_price, currency, source, status)
     VALUES (${email}, ${vehicle.slug}, ${vehicle.mercadoLibreId}, ${title}, ${vehicle.price}, ${vehicle.currency}, 'mercado_libre', 'pending')
     ON CONFLICT (publication_id, email) WHERE publication_id IS NOT NULL DO UPDATE SET
       vehicle_slug = EXCLUDED.vehicle_slug, vehicle_title = EXCLUDED.vehicle_title,
@@ -52,7 +59,8 @@ export async function confirmPriceAlert(id: string, generation: string) {
   ) INSERT INTO public.price_alert_deliveries (alert_id, generation, kind, price, previous_price, currency, title, vehicle_slug)
     SELECT id, generation, 'welcome', current_price, current_price, currency, vehicle_title, vehicle_slug FROM confirmed
     ON CONFLICT DO NOTHING`;
-  const rows = await sql`SELECT vehicle_slug FROM public.vehicle_price_alerts WHERE id = ${id} AND generation = ${generation} AND status = 'active'`;
+  const rows =
+    await sql`SELECT vehicle_slug FROM public.vehicle_price_alerts WHERE id = ${id} AND generation = ${generation} AND status = 'active'`;
   return rows.length ? parseRow('vehicle_price_alerts', rows[0], parseAlertSlug) : null;
 }
 
@@ -99,18 +107,24 @@ export async function recordPriceObservation(id: string, vehicle: Vehicle) {
 }
 
 async function processItem() {
-  const sql = getSql(), lease = randomUUID();
-  const jobs = await sql`UPDATE public.price_alert_item_jobs SET lease_id = ${lease}, lease_until = now() + interval '90 seconds', attempts = attempts + 1
+  const sql = getSql();
+  const lease = randomUUID();
+  const jobs =
+    await sql`UPDATE public.price_alert_item_jobs SET lease_id = ${lease}, lease_until = now() + interval '90 seconds', attempts = attempts + 1
     WHERE publication_id = (SELECT publication_id FROM public.price_alert_item_jobs
       WHERE revision > processed_revision AND next_attempt_at <= now() AND (lease_until IS NULL OR lease_until < now())
       ORDER BY updated_at LIMIT 1 FOR UPDATE SKIP LOCKED) RETURNING publication_id, revision, attempts`;
   if (!jobs.length) return false;
   const job = parseRow('price_alert_item_jobs', jobs[0], parseJobLease);
   try {
-    const subscriptions = await sql`SELECT id FROM public.vehicle_price_alerts WHERE publication_id = ${job.publication_id} AND status = 'active' LIMIT 1`;
+    const subscriptions =
+      await sql`SELECT id FROM public.vehicle_price_alerts WHERE publication_id = ${job.publication_id} AND status = 'active' LIMIT 1`;
     if (subscriptions.length) {
       const publication = await readMercadoLibrePublication(job.publication_id, await catalogAccessToken());
-      if (String(publication.source.seller_id) !== mercadoLibreEnv.sellerId() || publication.source.id !== job.publication_id) {
+      if (
+        String(publication.source.seller_id) !== mercadoLibreEnv.sellerId() ||
+        publication.source.id !== job.publication_id
+      ) {
         throw new Error('Publication ownership mismatch');
       }
       await recordPriceObservation(job.publication_id, publication.vehicle);
@@ -127,7 +141,8 @@ async function processItem() {
 }
 
 export async function processPriceDelivery() {
-  const sql = getSql(), lease = randomUUID();
+  const sql = getSql();
+  const lease = randomUUID();
   // A stable idempotency key protects only 24h at the provider. Never blind-retry an ambiguous send beyond 23h.
   await sql`UPDATE public.price_alert_deliveries SET state = 'blocked', failure_code = 'ambiguous_send_window_expired'
     WHERE state IN ('pending','sending') AND first_attempt_at < now() - interval '23 hours'
@@ -144,7 +159,8 @@ export async function processPriceDelivery() {
   if (!rows.length) return false;
   const row = parseRow('price_alert_deliveries', rows[0], parsePriceDelivery);
   try {
-    const alerts = await sql`SELECT email FROM public.vehicle_price_alerts WHERE id = ${row.alert_id} AND status = 'active' AND generation = ${row.generation}`;
+    const alerts =
+      await sql`SELECT email FROM public.vehicle_price_alerts WHERE id = ${row.alert_id} AND status = 'active' AND generation = ${row.generation}`;
     if (!alerts.length) {
       await sql`UPDATE public.price_alert_deliveries SET state = 'cancelled' WHERE id = ${row.id} AND lease_id = ${lease}`;
       return true;
@@ -153,7 +169,12 @@ export async function processPriceDelivery() {
       const subscription = await sql`SELECT publication_id FROM public.vehicle_price_alerts WHERE id = ${row.alert_id}`;
       const publicationId = parseRow('vehicle_price_alerts', subscription[0], parseAlertPublication);
       const publication = await readMercadoLibrePublication(publicationId, await catalogAccessToken());
-      if (String(publication.source.seller_id) !== mercadoLibreEnv.sellerId() || publication.source.id !== publicationId) throw new Error('Publication ownership mismatch');
+      if (
+        String(publication.source.seller_id) !== mercadoLibreEnv.sellerId() ||
+        publication.source.id !== publicationId
+      ) {
+        throw new Error('Publication ownership mismatch');
+      }
       const current = publication.vehicle;
       if (current.status !== 'active' || current.currency !== row.currency || current.price > Number(row.price)) {
         await sql`UPDATE public.price_alert_deliveries SET state = 'cancelled', failure_code = 'price_no_longer_available'
@@ -161,12 +182,22 @@ export async function processPriceDelivery() {
         return true;
       }
     }
-    const payload = row.request_payload || buildAlertEmail({ ...row, id: row.alert_id, email: parseRow('vehicle_price_alerts', alerts[0], parseAlertEmail) });
+    const payload =
+      row.request_payload ||
+      buildAlertEmail({
+        ...row,
+        id: row.alert_id,
+        email: parseRow('vehicle_price_alerts', alerts[0], parseAlertEmail),
+      });
     // Persist immutable bytes before the first send. Retries use the same payload and key.
-    const frozen = await sql`UPDATE public.price_alert_deliveries SET request_payload = ${JSON.stringify(payload)}::jsonb, first_attempt_at = COALESCE(first_attempt_at, now())
+    const frozen =
+      await sql`UPDATE public.price_alert_deliveries SET request_payload = ${JSON.stringify(payload)}::jsonb, first_attempt_at = COALESCE(first_attempt_at, now())
       WHERE id = ${row.id} AND lease_id = ${lease} RETURNING request_payload`;
     if (!frozen.length) return true;
-    const providerId = await sendAlertEmail(parseRow('price_alert_deliveries', frozen[0], parseFrozenPriceDelivery).request_payload, `gonba-price-${row.id}`);
+    const providerId = await sendAlertEmail(
+      parseRow('price_alert_deliveries', frozen[0], parseFrozenPriceDelivery).request_payload,
+      `gonba-price-${row.id}`,
+    );
     await sql.transaction([
       sql`UPDATE public.price_alert_deliveries SET state = 'accepted', provider_id = ${providerId}, lease_until = NULL, failure_code = NULL
         WHERE id = ${row.id} AND lease_id = ${lease}`,
@@ -182,7 +213,10 @@ export async function processPriceDelivery() {
         WHERE id = ${row.id} AND lease_id = ${lease}`;
     }
     // Unknown/DB failures retain the lease, so acceptance is recoverable with the same provider key.
-    console.error('price_alert_delivery_failure', { deliveryId: row.id, code: error instanceof EmailFailure ? error.code : 'processing_failure' });
+    console.error('price_alert_delivery_failure', {
+      deliveryId: row.id,
+      code: error instanceof EmailFailure ? error.code : 'processing_failure',
+    });
   }
   return true;
 }
@@ -190,11 +224,18 @@ export async function processPriceDelivery() {
 export async function runPriceAlertWork() {
   if (!alertEmailsConfigured()) return;
   const deadline = Date.now() + 200_000;
-  let items = 0, deliveries = 0;
+  let items = 0;
+  let deliveries = 0;
   while (Date.now() < deadline && items < 50 && deliveries < 150) {
     // Clear durable outbox work before observing fresh prices.
-    if (await processPriceDelivery()) { deliveries++; continue; }
-    if (await processItem()) { items++; continue; }
+    if (await processPriceDelivery()) {
+      deliveries++;
+      continue;
+    }
+    if (await processItem()) {
+      items++;
+      continue;
+    }
     const sql = getSql();
     const due = await sql`SELECT min(next_attempt_at) AS next FROM (
       SELECT next_attempt_at FROM public.price_alert_deliveries WHERE state = 'pending'
@@ -209,6 +250,9 @@ export async function runPriceAlertWork() {
 }
 
 export async function runPriceAlertWorkSafely() {
-  try { await runPriceAlertWork(); }
-  catch { console.error('price_alert_worker_failure'); }
+  try {
+    await runPriceAlertWork();
+  } catch {
+    console.error('price_alert_worker_failure');
+  }
 }

@@ -16,6 +16,12 @@ export async function GET(request: Request) {
     return NextResponse.json(result, { status: result ? 200 : 404, headers });
   } catch (error) {
     const incident = reportIntegrationFailure(error, 'catalog_query');
-    return NextResponse.json({ message: 'Catálogo temporalmente no disponible. Revisá la conexión del servidor.', incidentId: incident.incidentId }, { status: 503, headers });
+    return NextResponse.json(
+      {
+        message: 'Catálogo temporalmente no disponible. Revisá la conexión del servidor.',
+        incidentId: incident.incidentId,
+      },
+      { status: 503, headers },
+    );
   }
 }
