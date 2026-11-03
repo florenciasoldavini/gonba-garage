@@ -42,9 +42,9 @@ optional session replay. Update it whenever events, replay settings or the analy
 | `comparison_vehicle_added`   | A vehicle was added to the comparison selection.                                                                                                                                                                                                                                            |
 | `comparison_vehicle_removed` | A vehicle was removed from the comparison selection.                                                                                                                                                                                                                                        |
 | `comparison_opened`          | The comparison dialog opened with two or more vehicles.                                                                                                                                                                                                                                     |
-| `vehicle_contact_clicked`    | A visitor clicked a WhatsApp button on a vehicle page: `placement` is `hero` (the purchase card) or `callout` (the contact section), and `vehicle_status` is `available`, `reserved`, or `sold`. This is intent, not a confirmed lead.                                                      |
+| `vehicle_contact_clicked`    | A visitor clicked a WhatsApp button on a vehicle page: `placement` is `hero` (the purchase card), `dock` (the floating contact dock) or `callout` (the contact section), and `vehicle_status` is `available`, `reserved`, or `sold`. This is intent, not a confirmed lead.                  |
 | `contact_intent_clicked`     | A visitor clicked a general contact action; `placement` is `header`, `menu`, `footer`, `home_contact`, or `catalog_contact`. This is intent, not a confirmed lead.                                                                                                                          |
-| `price_alert_opened`         | The price-alert dialog opened.                                                                                                                                                                                                                                                              |
+| `price_alert_opened`         | The price-alert dialog opened: `placement` is `card` (the purchase card's button) or `dock` (the contact dock's bell).                                                                                                                                                                      |
 | `price_alert_created`        | The price-alert API confirmed a successful database write.                                                                                                                                                                                                                                  |
 | `price_alert_failed`         | The price-alert request failed.                                                                                                                                                                                                                                                             |
 | `valuation_started`          | A visitor first interacted with the valuation form.                                                                                                                                                                                                                                         |
@@ -54,7 +54,8 @@ optional session replay. Update it whenever events, replay settings or the analy
 All WhatsApp contact clicks are `vehicle_contact_clicked` plus `contact_intent_clicked` with
 `channel` `whatsapp`; vehicle pages report only the first. Earlier data recorded the vehicle page's
 contact section as `contact_intent_clicked` with placement `vehicle_detail`, and did not record its
-main button at all.
+main button at all. `price_alert_opened` events from before the contact dock have no `placement`;
+they all came from the purchase card.
 
 The sell-your-car form is sent from the visitor's own WhatsApp, so the site never receives the lead.
 Only introduce `valuation_submitted` if a server endpoint ever accepts and persists it. Record
