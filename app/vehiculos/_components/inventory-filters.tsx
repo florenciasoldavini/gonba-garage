@@ -76,12 +76,9 @@ export function InventoryFilters({
       aria-label="Filtros del inventario"
     >
       <div className="catalog-filter-heading">
-        <div>
-          <span className="catalog-kicker">
-            <SlidersHorizontal aria-hidden="true" size={13} /> Filtrar
-          </span>
-          <strong>Encontrá tu auto</strong>
-        </div>
+        <span className="catalog-kicker">
+          <SlidersHorizontal aria-hidden="true" size={13} /> Filtrar
+        </span>
         {activeFilterCount > 0 ? (
           <button type="button" onClick={onReset}>
             Limpiar ({activeFilterCount})
