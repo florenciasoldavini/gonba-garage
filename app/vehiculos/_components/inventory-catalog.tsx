@@ -153,6 +153,23 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
     return () => media.revert();
   });
 
+  // ScrollTrigger measures where its reveals start only on load and on window resize. Filtering changes
+  // the page height without either, so the contact block's and footer's reveals keep positions from the
+  // old layout: on a shorter page (no results) they sit past the last scroll position and those elements
+  // never appear; on a taller one they play before the elements are in view. Measure again whenever the
+  // page height changes. During a scroll, ScrollTrigger waits for it to end.
+  useEffect(() => {
+    let height = document.body.offsetHeight;
+    const observer = new ResizeObserver(() => {
+      if (document.body.offsetHeight === height) return;
+      height = document.body.offsetHeight;
+      ScrollTrigger.refresh();
+    });
+
+    observer.observe(document.body);
+    return () => observer.disconnect();
+  }, []);
+
   useGSAP(
     () => {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
