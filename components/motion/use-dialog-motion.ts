@@ -49,7 +49,16 @@ export function useDialogMotion({
         // The close animation leaves the dialog hidden. Clear that first, or showModal() finds
         // nothing focusable and focus stays on the page behind it.
         gsap.set(panel ? [dialog, panel] : dialog, { clearProps: 'opacity,visibility' });
-        if (!dialog.open) dialog.showModal();
+        if (!dialog.open) {
+          const openedByKeyboard = document.activeElement?.matches(':focus-visible') ?? false;
+          dialog.showModal();
+          // A tap gives the browser no focus to go on, so it rings whatever showModal() focused.
+          // Tap and click opens start on the dialog itself; keyboard opens keep the [autofocus] control.
+          if (!openedByKeyboard) {
+            dialog.tabIndex = -1;
+            dialog.focus({ preventScroll: true });
+          }
+        }
         const initialFocus = document.activeElement;
 
         if (!panel) return;

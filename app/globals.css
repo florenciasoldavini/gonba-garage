@@ -34,6 +34,10 @@ dialog::backdrop {
 dialog[open]::backdrop {
   opacity: 1;
 }
+/* Tap and click opens focus the dialog itself (see useDialogMotion); its controls keep their ring. */
+dialog:focus {
+  outline: none;
+}
 
 @starting-style {
   dialog[open]::backdrop {

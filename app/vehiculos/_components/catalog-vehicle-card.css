@@ -1,4 +1,5 @@
 .catalog-card {
+  position: relative;
   min-width: 0;
   padding: 10px 10px 0;
   overflow: hidden;
@@ -24,8 +25,10 @@
   border-radius: 11px;
   background: #111411;
 }
-.catalog-card-image-link {
+/* The name link's hit area covers the whole card; Comparar (z-index 2) stays above it. */
+.catalog-card-hit {
   position: absolute;
+  z-index: 1;
   inset: 0;
 }
 .catalog-card:hover .cover-image {
@@ -124,6 +127,29 @@
   place-items: center;
   border: 1px solid var(--line);
   border-radius: 50%;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+/* While the detail page loads after a tap. */
+.catalog-card:has(.catalog-card-hit[data-pending]) {
+  border-color: var(--accent);
+}
+.catalog-card:has(.catalog-card-hit[data-pending]) .catalog-card-arrow {
+  color: var(--accent-dark);
+  border-color: var(--accent);
+  background: var(--accent);
+  animation: catalog-card-pending 1.1s var(--ease-standard) infinite;
+}
+@keyframes catalog-card-pending {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 255, 0, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(220, 255, 0, 0);
+  }
 }
 .catalog-card-facts {
   min-height: 60px;

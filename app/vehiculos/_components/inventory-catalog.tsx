@@ -159,6 +159,8 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
 
       const cards = gsap.utils.toArray<HTMLElement>('.catalog-card');
 
+      // Each tween clears what it animated once it lands. A leftover transform or clip-path would trap the
+      // card's stretched link inside that element, or lift the photo (and its Comparar button) under the link.
       cards.forEach((card, index) => {
         const image = card.querySelector('.catalog-card-image');
         const copy = card.querySelector('.catalog-card-copy');
@@ -174,6 +176,7 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
               delay: index * 0.07,
               duration: 0.72,
               ease: 'power3.inOut',
+              clearProps: 'clipPath',
             },
           );
         }
@@ -183,7 +186,15 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
           gsap.fromTo(
             content,
             { x: 24, autoAlpha: 0 },
-            { x: 0, autoAlpha: 1, delay: 0.18 + index * 0.07, stagger: 0.07, duration: 0.48, ease: 'power3.out' },
+            {
+              x: 0,
+              autoAlpha: 1,
+              delay: 0.18 + index * 0.07,
+              stagger: 0.07,
+              duration: 0.48,
+              ease: 'power3.out',
+              clearProps: 'transform',
+            },
           );
         }
       });

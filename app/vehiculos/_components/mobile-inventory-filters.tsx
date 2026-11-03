@@ -54,21 +54,19 @@ export function MobileInventoryFilters({ filters, isOpen, onClose, resultCount }
               <small>{getActiveFilterLabel(filters.activeFilterCount)}</small>
             </div>
           </div>
-          <div className="mobile-filter-header-actions">
-            {filters.activeFilterCount > 0 ? (
-              <button className="mobile-filter-clear" type="button" onClick={filters.onReset}>
-                Limpiar
-              </button>
-            ) : null}
-            <button type="button" aria-label="Cerrar filtros" onClick={closeDialog}>
-              <X aria-hidden="true" size={18} />
-            </button>
-          </div>
+          <button className="mobile-filter-close" type="button" aria-label="Cerrar filtros" onClick={closeDialog}>
+            <X aria-hidden="true" size={18} />
+          </button>
         </header>
         <div className="mobile-filter-scroll">
           <InventoryFilters {...filters} className="catalog-filters-mobile" />
         </div>
         <footer className="mobile-filter-footer">
+          {filters.activeFilterCount > 0 ? (
+            <Button type="button" variant="ghost" onClick={filters.onReset}>
+              Limpiar
+            </Button>
+          ) : null}
           <Button type="button" onClick={closeDialog}>
             Ver {resultCount} {resultCount === 1 ? 'vehículo' : 'vehículos'}
           </Button>

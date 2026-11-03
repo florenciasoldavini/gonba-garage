@@ -1,6 +1,6 @@
+/* Not the catalog card photo: will-change would keep it a layer above the card's stretched link. */
 .inner-page-motion .detail-primary-image,
-.inner-page-motion .valuation-image,
-.inner-page-motion .catalog-card-image {
+.inner-page-motion .valuation-image {
   will-change: clip-path;
 }
 
