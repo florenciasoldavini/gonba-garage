@@ -108,7 +108,7 @@ describe('catalog filter state', () => {
   it('counts each filter and each range once', () => {
     assert.equal(countActiveCatalogFilters(defaults, bounds), 0);
     assert.equal(countActiveCatalogFilters({ ...defaults, sort: 'year' }, bounds), 0, 'The sort is not a filter');
-    assert.equal(countActiveCatalogFilters({ ...defaults, query: '  ' }, bounds), 1, 'Typed text counts as typed');
+    assert.equal(countActiveCatalogFilters({ ...defaults, query: ' 911 ' }, bounds), 1, 'Typed text counts as typed');
     assert.equal(
       countActiveCatalogFilters(
         {
@@ -125,6 +125,14 @@ describe('catalog filter state', () => {
       ),
       6,
     );
+  });
+
+  it('ignores a blank search, as the URL does', () => {
+    const state = catalogFilterStateFromUrl(parseCatalogUrlState(new URLSearchParams('q=+'), bounds));
+    assert.equal(state.query, ' ');
+    assert.equal(countActiveCatalogFilters(state, bounds), 0);
+    assert.equal(serializeCatalogUrlState({ ...state, compare: [] }, bounds), '');
+    assert.equal(countActiveCatalogFilters({ ...defaults, query: ' \t ' }, bounds), 0);
   });
 
   it('turns the filters into alert criteria', () => {

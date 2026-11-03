@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowUpRight } from 'lucide-react';
 
 import { ButtonAnchor } from '@/components/ui/button';
@@ -33,7 +34,7 @@ import { VehicleCompareDock } from './vehicle-compare-dock';
 import './inventory-catalog.css';
 
 if (typeof window !== 'undefined') {
-  gsap.registerPlugin(useGSAP);
+  gsap.registerPlugin(useGSAP, ScrollTrigger);
 }
 
 type InventoryCatalogProps = {
@@ -51,7 +52,9 @@ const MILEAGE_STEP = 5000;
 const URL_SYNC_DELAY_MS = 300;
 
 export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams }: InventoryCatalogProps) {
+  const layoutRef = useRef<HTMLElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const contactRef = useRef<HTMLElement>(null);
   const priceEnabled = quote !== null || vehicles.every(v => v.currency === 'USD');
   const comparisonPrices = useMemo(
     () => new Map(vehicles.map(v => [v.slug, comparableUsdPrice(v, quote)])),
@@ -97,6 +100,58 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
     [vehicles, filters, comparisonPrices, priceEnabled],
   );
   const filteredVehicleKey = filteredVehicles.map(({ slug }) => slug).join('|');
+
+  // The catalog's part of the page intro (InnerPageMotion), with the same timings. It runs here, once
+  // this component has hydrated inside its Suspense boundary: styles written before then would not
+  // match the server HTML. The page intro keeps these elements hidden until this takes over.
+  useGSAP(() => {
+    const media = gsap.matchMedia();
+
+    media.add(
+      {
+        desktop: '(min-width: 901px)',
+        reduceMotion: '(prefers-reduced-motion: reduce)',
+      },
+      context => {
+        const { desktop, reduceMotion } = context.conditions as {
+          desktop: boolean;
+          reduceMotion: boolean;
+        };
+        const layout = layoutRef.current;
+        const contact = contactRef.current;
+
+        if (reduceMotion || !layout || !contact) return;
+
+        gsap
+          .timeline({ defaults: { ease: 'power3.out' } })
+          .from(
+            layout.querySelector('.catalog-filters-desktop'),
+            { x: desktop ? -38 : 0, autoAlpha: 0, duration: 0.72 },
+            0.7,
+          )
+          .from(layout.querySelector('.catalog-toolbar'), { y: 22, autoAlpha: 0, duration: 0.58 }, 0.78);
+
+        gsap
+          .timeline({
+            scrollTrigger: {
+              trigger: contact,
+              start: 'top 78%',
+              once: true,
+            },
+          })
+          .from(contact.querySelectorAll(':scope > div > *'), {
+            x: -38,
+            autoAlpha: 0,
+            stagger: 0.1,
+            duration: 0.68,
+            ease: 'power3.out',
+          })
+          .from(contact.querySelector(':scope > .button'), { autoAlpha: 0, duration: 0.52 }, '<0.16');
+      },
+    );
+
+    return () => media.revert();
+  });
 
   useGSAP(
     () => {
@@ -297,7 +352,12 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
 
   return (
     <>
-      <section className="section-shell catalog-layout" id="inventario" aria-label="Catálogo de vehículos">
+      <section
+        className="section-shell catalog-layout"
+        id="inventario"
+        aria-label="Catálogo de vehículos"
+        ref={layoutRef}
+      >
         <InventoryFilters {...filterProps} className="catalog-filters-desktop" />
 
         <div className="catalog-results" ref={resultsRef}>
@@ -369,7 +429,11 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
         />
       </section>
 
-      <section className="section-shell catalog-contact glass-panel" aria-labelledby="catalog-contact-title">
+      <section
+        className="section-shell catalog-contact glass-panel"
+        aria-labelledby="catalog-contact-title"
+        ref={contactRef}
+      >
         <div>
           <Eyebrow>¿No encontraste lo que buscabas?</Eyebrow>
           <h2 id="catalog-contact-title">Contanos qué auto tenés en mente.</h2>

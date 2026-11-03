@@ -80,7 +80,14 @@ export function useDialogMotion({
           .call(restoreFocus, undefined, 0.02);
 
         if (items.length > 0) {
-          timeline.fromTo(items, { y: 17, autoAlpha: 0 }, { y: 0, autoAlpha: 1, stagger: 0.045, duration: 0.38 }, 0.13);
+          // A leftover transform makes each item a stacking context, so a later item would paint over
+          // an earlier one's popup (a select's option list). Clear it once the item has landed.
+          timeline.fromTo(
+            items,
+            { y: 17, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, stagger: 0.045, duration: 0.38, clearProps: 'transform' },
+            0.13,
+          );
         }
 
         timelineRef.current = timeline;
@@ -151,7 +158,7 @@ export function useDialogMotion({
       gsap.fromTo(
         Array.from(view.children),
         { y: 18, autoAlpha: 0 },
-        { y: 0, autoAlpha: 1, stagger: 0.055, duration: 0.42, ease: 'power3.out' },
+        { y: 0, autoAlpha: 1, stagger: 0.055, duration: 0.42, ease: 'power3.out', clearProps: 'transform' },
       );
     },
     { scope: dialogRef, dependencies: [contentKey], revertOnUpdate: true },

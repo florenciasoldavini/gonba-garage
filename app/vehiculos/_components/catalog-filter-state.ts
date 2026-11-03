@@ -63,7 +63,8 @@ export function catalogFilterReducer(state: CatalogFilterState, action: CatalogF
 
 export function countActiveCatalogFilters(filters: CatalogFilterState, bounds: CatalogFilterBounds) {
   return [
-    filters.query,
+    // Blank text is no search: the URL and the alert criteria trim it away too.
+    filters.query.trim(),
     filters.make !== 'all',
     filters.transmission !== 'all',
     filters.bodyType !== 'all',

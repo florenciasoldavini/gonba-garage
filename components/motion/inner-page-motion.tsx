@@ -38,15 +38,21 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
           if (reduceMotion) return;
 
           if (variant === 'catalog') {
-            const intro = gsap.timeline({ defaults: { ease: 'power3.out' } });
+            // InventoryCatalog animates the filters, toolbar and contact block itself: it hydrates a few
+            // frames after this runs, inside a Suspense boundary, and styles written here first would
+            // fail that hydration. Until it takes over, a CSS rule on this root keeps them hidden
+            // (inner-page-motion.css). The intro's end releases them.
+            const page = root.current;
+            const releaseCatalog = () => page?.removeAttribute('data-catalog-intro');
+            page?.setAttribute('data-catalog-intro', '');
+
+            const intro = gsap.timeline({ defaults: { ease: 'power3.out' }, onComplete: releaseCatalog });
 
             intro
               .from('.site-header', { y: -30, autoAlpha: 0, duration: 0.75 })
               .from('.catalog-hero .eyebrow', { x: -32, autoAlpha: 0, duration: 0.55 }, 0.22)
               .from('#catalog-title', { y: 62, autoAlpha: 0, clipPath: 'inset(0 0 100% 0)', duration: 0.95 }, 0.3)
               .from('.catalog-hero-copy > *', { x: 42, autoAlpha: 0, stagger: 0.12, duration: 0.65 }, 0.58)
-              .from('.catalog-filters-desktop', { x: desktop ? -38 : 0, autoAlpha: 0, duration: 0.72 }, 0.7)
-              .from('.catalog-toolbar', { y: 22, autoAlpha: 0, duration: 0.58 }, 0.78)
               .fromTo(
                 '.catalog-scan-line',
                 { xPercent: -120, autoAlpha: 0 },
@@ -55,22 +61,7 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
               )
               .to('.catalog-scan-line', { autoAlpha: 0, duration: 0.2 }, 1.5);
 
-            gsap
-              .timeline({
-                scrollTrigger: {
-                  trigger: '.catalog-contact',
-                  start: 'top 78%',
-                  once: true,
-                },
-              })
-              .from('.catalog-contact > div > *', {
-                x: -38,
-                autoAlpha: 0,
-                stagger: 0.1,
-                duration: 0.68,
-                ease: 'power3.out',
-              })
-              .from('.catalog-contact > .button', { autoAlpha: 0, duration: 0.52 }, '<0.16');
+            return releaseCatalog;
           }
 
           if (variant === 'detail') {
