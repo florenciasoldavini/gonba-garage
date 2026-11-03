@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ArrowUpRight } from 'lucide-react';
@@ -10,20 +10,23 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { WHATSAPP_CATALOG_MESSAGE } from '@/constants/contact';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { comparableUsdPrice, type CatalogMepQuote } from '@/features/vehicles/domain/catalog-pricing';
-import {
-  matchesSearchText,
-  vehicleBodyType,
-  vehicleTransmissionType,
-} from '@/features/vehicles/domain/inventory-search';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { CatalogEmptyState } from './catalog-empty-state';
+import {
+  catalogAlertCriteria,
+  catalogFilterReducer,
+  catalogFilterStateFromUrl,
+  countActiveCatalogFilters,
+  filterCatalogVehicles,
+  type CatalogFilterState,
+} from './catalog-filter-state';
 import { usePublishCatalogResultCount } from './catalog-result-count';
 import { CatalogVehicleCard } from './catalog-vehicle-card';
 import { parseCatalogUrlState, serializeCatalogUrlState, type CatalogUrlBounds } from './catalog-url-state';
-import { InventoryAlert, type InventoryAlertCriteria } from './inventory-alert';
+import { InventoryAlert } from './inventory-alert';
 import { InventoryFilters, type InventoryFiltersProps } from './inventory-filters';
-import { InventoryToolbar, type InventorySort } from './inventory-toolbar';
+import { InventoryToolbar } from './inventory-toolbar';
 import { MobileInventoryFilters } from './mobile-inventory-filters';
 import { VehicleCompareDialog } from './vehicle-compare-dialog';
 import { VehicleCompareDock } from './vehicle-compare-dock';
@@ -43,9 +46,7 @@ type InventoryCatalogProps = {
 };
 
 const MAX_COMPARE_VEHICLES = 3;
-const MIN_PRICE = 0;
 const PRICE_STEP = 5000;
-const MIN_MILEAGE = 0;
 const MILEAGE_STEP = 5000;
 const URL_SYNC_DELAY_MS = 300;
 
@@ -83,16 +84,7 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
     vehicleSlugs: vehicles.map(({ slug }) => slug),
   };
   const [initialState] = useState(() => parseCatalogUrlState(new URLSearchParams(searchParams), urlBounds));
-  const [query, setQuery] = useState(initialState.query);
-  const [make, setMake] = useState(initialState.make);
-  const [transmission, setTransmission] = useState(initialState.transmission);
-  const [bodyType, setBodyType] = useState(initialState.bodyType);
-  const [fuel, setFuel] = useState(initialState.fuel);
-  const [minPrice, setMinPrice] = useState(initialState.minPrice);
-  const [maxPrice, setMaxPrice] = useState(initialState.maxPrice);
-  const [minMileage, setMinMileage] = useState(initialState.minMileage);
-  const [maxMileage, setMaxMileage] = useState(initialState.maxMileage);
-  const [sort, setSort] = useState<InventorySort>(initialState.sort);
+  const [filters, dispatchFilters] = useReducer(catalogFilterReducer, initialState, catalogFilterStateFromUrl);
   const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>(() =>
     initialState.compare.flatMap(slug => vehicles.filter(vehicle => vehicle.slug === slug)),
   );
@@ -100,47 +92,10 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const lastAnalyticsPayloadRef = useRef('');
 
-  const filteredVehicles = useMemo(() => {
-    // Same text, transmission and body rules as saved search alerts (inventory-search.ts).
-    const result = vehicles.filter(vehicle => {
-      return (
-        matchesSearchText(vehicle, query) &&
-        (make === 'all' || vehicle.make === make) &&
-        (transmission === 'all' || vehicleTransmissionType(vehicle) === transmission) &&
-        (bodyType === 'all' || vehicleBodyType(vehicle) === bodyType) &&
-        (fuel === 'all' || vehicle.fuel === fuel) &&
-        (!priceEnabled ||
-          ((comparisonPrices.get(vehicle.slug) ?? 0) >= minPrice &&
-            (comparisonPrices.get(vehicle.slug) ?? 0) <= maxPrice)) &&
-        vehicle.mileageKm >= minMileage &&
-        vehicle.mileageKm <= maxMileage
-      );
-    });
-
-    return result.toSorted((a, b) => {
-      if (sort === 'year') return b.year - a.year;
-      if (priceEnabled && sort === 'price-asc')
-        return (comparisonPrices.get(a.slug) ?? 0) - (comparisonPrices.get(b.slug) ?? 0);
-      if (priceEnabled && sort === 'price-desc')
-        return (comparisonPrices.get(b.slug) ?? 0) - (comparisonPrices.get(a.slug) ?? 0);
-      if (sort === 'mileage') return a.mileageKm - b.mileageKm;
-      return vehicles.indexOf(a) - vehicles.indexOf(b);
-    });
-  }, [
-    bodyType,
-    fuel,
-    make,
-    maxMileage,
-    maxPrice,
-    minMileage,
-    minPrice,
-    query,
-    sort,
-    transmission,
-    vehicles,
-    priceEnabled,
-    comparisonPrices,
-  ]);
+  const filteredVehicles = useMemo(
+    () => filterCatalogVehicles(vehicles, filters, { comparisonPrices, priceEnabled }),
+    [vehicles, filters, comparisonPrices, priceEnabled],
+  );
   const filteredVehicleKey = filteredVehicles.map(({ slug }) => slug).join('|');
 
   useGSAP(
@@ -186,20 +141,13 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
     { scope: resultsRef, dependencies: [filteredVehicleKey], revertOnUpdate: true },
   );
 
-  const activeFilterCount = [
-    query,
-    make !== 'all',
-    transmission !== 'all',
-    bodyType !== 'all',
-    fuel !== 'all',
-    minPrice !== MIN_PRICE || maxPrice !== priceCeiling,
-    minMileage !== MIN_MILEAGE || maxMileage !== mileageCeiling,
-  ].filter(Boolean).length;
+  const activeFilterCount = countActiveCatalogFilters(filters, urlBounds);
   usePublishCatalogResultCount(activeFilterCount > 0 ? filteredVehicles.length : null);
 
   useEffect(() => {
     if (activeFilterCount === 0) return;
 
+    const { bodyType, fuel, make, maxMileage, maxPrice, minMileage, minPrice, query, sort, transmission } = filters;
     const properties = {
       active_filter_count: activeFilterCount,
       body_type: bodyType,
@@ -235,35 +183,10 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
     }, 500);
 
     return () => window.clearTimeout(timeout);
-  }, [
-    activeFilterCount,
-    bodyType,
-    filteredVehicles.length,
-    fuel,
-    make,
-    maxMileage,
-    maxPrice,
-    minMileage,
-    minPrice,
-    query,
-    sort,
-    transmission,
-  ]);
+  }, [activeFilterCount, filteredVehicles.length, filters]);
 
   const nextSearchParams = serializeCatalogUrlState(
-    {
-      bodyType,
-      compare: selectedVehicles.map(({ slug }) => slug),
-      fuel,
-      make,
-      maxMileage,
-      maxPrice,
-      minMileage,
-      minPrice,
-      query,
-      sort,
-      transmission,
-    },
+    { ...filters, compare: selectedVehicles.map(({ slug }) => slug) },
     urlBounds,
   );
 
@@ -284,17 +207,8 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
     return () => window.clearTimeout(timeout);
   }, [nextSearchParams, syncsUrl]);
 
-  const resetFilters = () => {
-    setQuery('');
-    setMake('all');
-    setTransmission('all');
-    setBodyType('all');
-    setFuel('all');
-    setMinPrice(MIN_PRICE);
-    setMaxPrice(priceCeiling);
-    setMinMileage(MIN_MILEAGE);
-    setMaxMileage(mileageCeiling);
-  };
+  const updateFilters = (changes: Partial<CatalogFilterState>) => dispatchFilters({ type: 'update', changes });
+  const resetFilters = () => dispatchFilters({ type: 'reset', bounds: urlBounds });
 
   const selectedVehicleSlugs = useMemo(() => new Set(selectedVehicles.map(({ slug }) => slug)), [selectedVehicles]);
 
@@ -342,45 +256,35 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
 
   const filterProps: InventoryFiltersProps = {
     activeFilterCount,
-    bodyType,
+    bodyType: filters.bodyType,
     bodyTypes,
-    fuel,
+    fuel: filters.fuel,
     fuelTypes,
-    make,
+    make: filters.make,
     makes,
-    maxMileage,
-    maxPrice,
+    maxMileage: filters.maxMileage,
+    maxPrice: filters.maxPrice,
     mileageCeiling,
     mileageStep: MILEAGE_STEP,
-    minMileage,
-    minPrice,
-    onBodyTypeChange: setBodyType,
-    onFuelChange: setFuel,
-    onMakeChange: setMake,
-    onMaxMileageChange: setMaxMileage,
-    onMaxPriceChange: setMaxPrice,
-    onMinMileageChange: setMinMileage,
-    onMinPriceChange: setMinPrice,
+    minMileage: filters.minMileage,
+    minPrice: filters.minPrice,
+    onBodyTypeChange: bodyType => updateFilters({ bodyType }),
+    onFuelChange: fuel => updateFilters({ fuel }),
+    onMakeChange: make => updateFilters({ make }),
+    onMaxMileageChange: maxMileage => updateFilters({ maxMileage }),
+    onMaxPriceChange: maxPrice => updateFilters({ maxPrice }),
+    onMinMileageChange: minMileage => updateFilters({ minMileage }),
+    onMinPriceChange: minPrice => updateFilters({ minPrice }),
     onReset: resetFilters,
-    onTransmissionChange: setTransmission,
+    onTransmissionChange: transmission => updateFilters({ transmission }),
     priceCeiling,
     priceStep: PRICE_STEP,
     priceEnabled,
     quote,
-    transmission,
+    transmission: filters.transmission,
   };
 
-  const alertCriteria: InventoryAlertCriteria = {
-    query: query.trim(),
-    make: make === 'all' ? '' : make,
-    transmission: transmission === 'all' ? '' : transmission,
-    bodyType: bodyType === 'all' ? '' : bodyType,
-    fuel: fuel === 'all' ? '' : fuel,
-    minPrice: minPrice === MIN_PRICE ? null : minPrice,
-    maxPrice: maxPrice === priceCeiling ? null : maxPrice,
-    minMileage: minMileage === MIN_MILEAGE ? null : minMileage,
-    maxMileage: maxMileage === mileageCeiling ? null : maxMileage,
-  };
+  const alertCriteria = catalogAlertCriteria(filters, urlBounds);
 
   const toolbarAlert = alertsEnabled ? (
     <InventoryAlert
@@ -402,10 +306,10 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
             alertAction={toolbarAlert}
             count={filteredVehicles.length}
             onOpenFilters={() => setIsMobileFiltersOpen(true)}
-            onQueryChange={setQuery}
-            onSortChange={setSort}
-            query={query}
-            sort={sort}
+            onQueryChange={query => updateFilters({ query })}
+            onSortChange={sort => updateFilters({ sort })}
+            query={filters.query}
+            sort={filters.sort}
             priceEnabled={priceEnabled}
           />
           {filteredVehicles.length > 0 ? (
