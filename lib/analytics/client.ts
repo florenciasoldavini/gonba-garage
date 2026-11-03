@@ -65,7 +65,7 @@ type AnalyticsEventProperties = {
   valuation_started: Record<string, never>;
   valuation_step_completed: { step: number };
   /** Make and model are empty when typed by hand rather than picked from the catalog: free text stays out. */
-  valuation_sent_to_whatsapp: { has_photos: boolean; make: string; model: string; total_steps: number; year: number };
+  valuation_sent_to_whatsapp: { make: string; model: string; total_steps: number; year: number };
 };
 
 /** An event as plain data, so a server component can hand it to a client link. */

@@ -43,20 +43,21 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px 14px;
 }
-.valuation-fields > label:not(.valuation-file-field),
+.valuation-fields > label,
 .valuation-select-field {
   display: grid;
+  align-content: start;
   gap: 8px;
 }
 .valuation-fields > label > span,
 .valuation-select-field > span,
-.valuation-consent {
+.valuation-summary > span {
   color: #9ca198;
   font: 600 var(--text-label) var(--font-mono);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-.valuation-fields > label:not(.valuation-file-field) > input,
+.valuation-fields > label > input,
 .valuation-fields > label > textarea {
   width: 100%;
   min-height: 49px;
@@ -81,12 +82,12 @@
 .valuation-fields > label > textarea::placeholder {
   color: var(--color-text-tertiary);
 }
-.valuation-fields > label:not(.valuation-file-field) > input:hover,
+.valuation-fields > label > input:hover,
 .valuation-fields > label > textarea:hover {
   border-color: rgba(220, 255, 0, 0.42);
   background: rgba(255, 255, 255, 0.07);
 }
-.valuation-fields > label:not(.valuation-file-field) > input:focus,
+.valuation-fields > label > input:focus,
 .valuation-fields > label > textarea:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(220, 255, 0, 0.11);
@@ -106,46 +107,59 @@
 .valuation-field-wide {
   grid-column: 1 / -1;
 }
+.valuation-summary {
+  padding-top: 14px;
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--line);
+}
+.valuation-summary dl {
+  margin: 0;
+}
+.valuation-summary dl > div {
+  padding: 11px 0;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 0.72rem;
+}
+.valuation-summary dt {
+  align-self: center;
+  color: #8d9289;
+  font: 600 var(--text-label) var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.valuation-summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.valuation-photo-note {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+.valuation-photo-note > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--accent);
+}
+.valuation-photo-note strong {
+  color: var(--text);
+  font-weight: 600;
+}
 .valuation-form-submit {
   position: relative;
   z-index: 1;
   padding: clamp(25px, 4vw, 38px) clamp(20px, 3vw, 32px);
   display: grid;
   gap: 17px;
-}
-.valuation-consent {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  line-height: 1.45;
-  text-transform: none;
-  font-size: var(--text-caption);
-}
-.valuation-consent input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-.valuation-consent > span {
-  width: 18px;
-  height: 18px;
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  color: transparent;
-  border: 1px solid var(--color-border-control);
-  border-radius: 5px;
-}
-.valuation-consent input:checked + span {
-  color: var(--accent-dark);
-  border-color: var(--accent);
-  background: var(--accent);
-}
-.valuation-consent input:focus-visible + span {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
 }
 .valuation-step-actions {
   display: flex;
@@ -183,10 +197,10 @@
   outline-offset: 3px;
   border-radius: 8px;
 }
-.valuation-form-submit > small {
-  color: var(--color-text-tertiary);
-  font-size: var(--text-fine);
-  text-align: center;
+/* Replaces the form in place, so it keeps the form's radius and background (docs/design-system.md). */
+.valuation-success {
+  border-radius: var(--radius-feature);
+  background: rgba(14, 17, 15, 0.88);
 }
 
 @media (max-width: 700px) {
@@ -199,13 +213,18 @@
   .valuation-field-wide {
     grid-column: auto;
   }
+  .valuation-summary dl > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
   .valuation-form-step {
     min-height: 0;
   }
   .valuation-step-actions {
     flex-direction: column-reverse;
   }
-  .valuation-form {
+  .valuation-form,
+  .valuation-success {
     border-radius: var(--radius-card);
   }
 }
