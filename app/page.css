@@ -393,11 +393,13 @@
   line-height: 1.65;
 }
 .faq-contact-link {
-  color: var(--text);
   text-decoration: underline;
   text-underline-offset: 3px;
-  text-decoration-color: var(--accent);
   transition: color var(--duration-default) ease;
+}
+.faq-contact-link svg {
+  margin-left: 2px;
+  vertical-align: -0.125em;
 }
 @media (hover: hover) {
   .faq-contact-link:hover {

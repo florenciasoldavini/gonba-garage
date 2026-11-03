@@ -262,6 +262,7 @@ export default async function Home() {
                 target="_blank"
               >
                 escribinos
+                <ArrowUpRight aria-hidden="true" size={14} strokeWidth={1.8} />
               </TrackedAnchor>{' '}
               y la resolvemos juntos.
             </p>
