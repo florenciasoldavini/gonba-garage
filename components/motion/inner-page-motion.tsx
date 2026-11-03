@@ -88,10 +88,11 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
               .from('.detail-purchase-card > *', { y: 16, autoAlpha: 0, stagger: 0.055, duration: 0.42 }, 0.91);
 
             // Cars with a single photo or none have no thumbnail strip: an empty selection would warn.
-            // The strip moves as one so the thumbnails keep their own active and hover opacity.
-            if (root.current?.querySelector('.detail-photo-thumbs')) {
+            // The rail moves as one so the thumbnails keep their own active and hover opacity, and its
+            // edge fades and arrows travel with them.
+            if (root.current?.querySelector('.detail-photo-rail')) {
               intro.from(
-                '.detail-photo-thumbs',
+                '.detail-photo-rail',
                 { y: 14, autoAlpha: 0, duration: 0.5, clearProps: 'transform,opacity,visibility' },
                 0.9,
               );

@@ -240,7 +240,7 @@
   gap: 4px;
 }
 .detail-alert-copy strong {
-  font-size: 0.76rem;
+  font-size: 0.875rem;
 }
 .detail-alert-copy small {
   color: var(--muted);
@@ -411,7 +411,7 @@
   overflow: hidden;
   border-radius: 10px;
   background: #111411;
-  transition: filter var(--duration-default) ease;
+  transition: box-shadow var(--duration-default) ease;
 }
 .detail-similar-arrow {
   grid-area: arrow;
@@ -421,12 +421,14 @@
     color var(--duration-default) ease,
     transform var(--duration-default) var(--ease-standard);
 }
+/* The rail only lists available cars, so their photos stay in color: grey means unavailable everywhere else. */
 @media (hover: hover) {
-  .detail-similar-photo {
-    filter: grayscale(1) brightness(0.6);
-  }
+  /* The same zoom and lime edge as a catalog card's photo. */
   .detail-similar-link:hover .detail-similar-photo {
-    filter: none;
+    box-shadow: 0 0 0 1px rgba(220, 255, 0, 0.36);
+  }
+  .detail-similar-link:hover .detail-similar-photo .cover-image {
+    transform: scale(1.035);
   }
   .detail-similar-link:hover .detail-similar-name {
     transform: translateX(8px);

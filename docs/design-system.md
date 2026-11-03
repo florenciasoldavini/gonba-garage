@@ -42,7 +42,9 @@ Meaning must never depend on color alone. Pair status colors with text or an ico
   fontTools (`pip install fonttools brotli`):
   `pyftsubset <font>.ttf --unicodes="U+0000-036F,U+0E3F,U+1E00-1EFF,U+2000-23FF,U+25A0-27BF,U+FB00-FB06,U+FEFF,U+FFFD" --layout-features='*' --glyph-names --notdef-outline --name-IDs='*' --name-languages='*' --flavor=woff2 --output-file=<font>.woff2`
 - Display tokens are fluid; body and control text remain stable and readable.
-- Avoid meaningful text below `--text-micro`.
+- Avoid meaningful text below `--text-micro`. The label, micro, fine and eyebrow tokens are all 12px (0.75rem) and
+  caption is 13px (0.8125rem); nothing on the site reads below 12px.
+- Buttons, navigation links, select triggers and text inputs use at least 14px (0.875rem).
 - Sentence case is the default. Uppercase is limited to short metadata labels.
 
 ### Spacing and shape
@@ -117,6 +119,8 @@ Deliberate differences:
   destination.
 - Specifications use consistent label/value rows and mono labels.
 - Availability, reserved, and sold states must have distinct text in addition to color.
+- Greyscale photos mean a car is not available (reserved or sold). Photos of available cars are always in color,
+  including the car page's "Seguí mirando" rail.
 - Mono numbers (`01`, `02`…) mark real sequences only: the sell steps, the `/vender` stepper and
   the car page's Selección / Revisión / Acompañamiento process. Unordered items don't get numbers:
   the hero qualities use the eyebrow's lime bar, the home services a lucide icon tile, and Mercado
