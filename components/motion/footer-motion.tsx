@@ -4,6 +4,7 @@ import { useRef, type ReactNode } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { scrollReveal } from '@/components/motion/scroll-reveal';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -25,28 +26,30 @@ export function FooterMotion({ children, className }: FooterMotionProps) {
 
       const media = gsap.matchMedia();
 
-      media.add('(prefers-reduced-motion: no-preference)', () => {
-        // Explicit end state: the Instagram card has a CSS transform transition, so a `from` tween could
-        // read a mid-transition offset as its resting position. Clearing the transform afterwards leaves
-        // the layout to the stylesheet and lets the card's hover lift work.
-        gsap.fromTo(
-          footer.children,
-          { y: 24, autoAlpha: 0 },
-          {
-            y: 0,
-            autoAlpha: 1,
-            stagger: 0.07,
-            duration: 0.58,
-            ease: 'power3.out',
-            clearProps: 'transform',
-            scrollTrigger: {
-              trigger: footer,
-              start: 'top 90%',
-              once: true,
-            },
-          },
-        );
-      });
+      media.add(
+        {
+          desktop: '(min-width: 901px)',
+          mobile: '(max-width: 900px)',
+          reduceMotion: '(prefers-reduced-motion: reduce)',
+        },
+        (context, contextSafe) => {
+          const { desktop, reduceMotion } = context.conditions as {
+            desktop: boolean;
+            reduceMotion: boolean;
+          };
+
+          if (reduceMotion) return;
+
+          // Explicit end state: the Instagram card has a CSS transform transition, so a `from` tween could
+          // read a mid-transition offset as its resting position. Clearing the transform afterwards leaves
+          // the layout to the stylesheet and lets the card's hover lift work.
+          scrollReveal(footer, { start: 'top 90%', stacked: !desktop, contextSafe }).fromTo(
+            footer.children,
+            { y: 24, autoAlpha: 0 },
+            { y: 0, autoAlpha: 1, stagger: 0.07, duration: 0.58, clearProps: 'transform' },
+          );
+        },
+      );
 
       return () => media.revert();
     },

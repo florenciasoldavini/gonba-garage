@@ -6,6 +6,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowUpRight } from 'lucide-react';
 
+import { IN_VIEW_START, scrollReveal } from '@/components/motion/scroll-reveal';
 import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { WHATSAPP_CATALOG_MESSAGE } from '@/constants/contact';
@@ -110,9 +111,10 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
     media.add(
       {
         desktop: '(min-width: 901px)',
+        mobile: '(max-width: 900px)',
         reduceMotion: '(prefers-reduced-motion: reduce)',
       },
-      context => {
+      (context, contextSafe) => {
         const { desktop, reduceMotion } = context.conditions as {
           desktop: boolean;
           reduceMotion: boolean;
@@ -131,14 +133,7 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
           )
           .from(layout.querySelector('.catalog-toolbar'), { y: 22, autoAlpha: 0, duration: 0.58 }, 0.78);
 
-        gsap
-          .timeline({
-            scrollTrigger: {
-              trigger: contact,
-              start: 'top 78%',
-              once: true,
-            },
-          })
+        scrollReveal(contact, { start: 'top 78%', stacked: !desktop, contextSafe })
           .from(contact.querySelectorAll(':scope > div > *'), {
             x: -38,
             autoAlpha: 0,
@@ -175,6 +170,13 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
       const cards = gsap.utils.toArray<HTMLElement>('.catalog-card');
+      const stacked = !window.matchMedia('(min-width: 901px)').matches;
+      // Stacked, the cards run past the fold, and the ones down there would finish before anyone scrolls to
+      // them: an element below the fold plays as it comes into view instead of after `delay`.
+      const timing = (element: Element, delay: number) =>
+        stacked && element.getBoundingClientRect().top >= window.innerHeight
+          ? { scrollTrigger: { trigger: element, start: IN_VIEW_START, once: true } }
+          : { delay };
 
       // Each tween clears what it animated once it lands. A leftover transform or clip-path would trap the
       // card's stretched link inside that element, or lift the photo (and its Comparar button) under the link.
@@ -190,30 +192,29 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
             {
               clipPath: 'inset(0 0% 0 0)',
               autoAlpha: 1,
-              delay: index * 0.07,
               duration: 0.72,
               ease: 'power3.inOut',
               clearProps: 'clipPath',
+              ...timing(image, index * 0.07),
             },
           );
         }
 
-        const content = [copy, facts].filter((element): element is Element => element !== null);
-        if (content.length > 0) {
+        [copy, facts].forEach((element, contentIndex) => {
+          if (!element) return;
           gsap.fromTo(
-            content,
+            element,
             { x: 24, autoAlpha: 0 },
             {
               x: 0,
               autoAlpha: 1,
-              delay: 0.18 + index * 0.07,
-              stagger: 0.07,
               duration: 0.48,
               ease: 'power3.out',
               clearProps: 'transform',
+              ...timing(element, 0.18 + index * 0.07 + contentIndex * 0.07),
             },
           );
-        }
+        });
       });
 
       const emptyState = resultsRef.current?.querySelector('.catalog-empty');
