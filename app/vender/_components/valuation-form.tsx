@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
-import { ArrowLeft, ArrowUpRight, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
-import { getWhatsAppUrl } from '@/lib/contact';
 import { ValuationContactFields } from './valuation-contact-fields';
+import { getValuationDetails, getValuationWhatsAppUrl, type ValuationDetail } from './valuation-message';
 import { ValuationStepper } from './valuation-stepper';
+import { ValuationSuccess } from './valuation-success';
 import { VehicleCatalogFields } from './vehicle-catalog-fields';
 import { VehicleConditionFields } from './vehicle-condition-fields';
 import './valuation-form.css';
@@ -21,8 +22,10 @@ if (typeof window !== 'undefined') {
 const TOTAL_STEPS = 3;
 
 export function ValuationForm() {
+  const [whatsAppUrl, setWhatsAppUrl] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [isStepComplete, setIsStepComplete] = useState(false);
+  const [details, setDetails] = useState<ValuationDetail[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
   const hasStartedRef = useRef(false);
   const previousStepRef = useRef(step);
@@ -37,12 +40,12 @@ export function ValuationForm() {
     const requiredCustomSelects = currentSection.querySelectorAll<HTMLButtonElement>('[data-required-select="true"]');
     const nativeFieldsAreComplete = Array.from(requiredControls).every(control => control.checkValidity());
     const customSelectsAreComplete = Array.from(requiredCustomSelects).every(control => Boolean(control.dataset.value));
-    const consentControl = formRef.current?.elements.namedItem('consent');
-    const consentIsComplete =
-      currentSection.dataset.step !== String(TOTAL_STEPS) ||
-      (consentControl instanceof HTMLInputElement && consentControl.checked);
 
-    setIsStepComplete(nativeFieldsAreComplete && customSelectsAreComplete && consentIsComplete);
+    setIsStepComplete(nativeFieldsAreComplete && customSelectsAreComplete);
+  }, []);
+
+  const updateDetails = useCallback(() => {
+    if (formRef.current) setDetails(getValuationDetails(new FormData(formRef.current)));
   }, []);
 
   useEffect(() => {
@@ -80,7 +83,10 @@ export function ValuationForm() {
   );
 
   const scheduleCompletenessUpdate = () => {
-    requestAnimationFrame(updateStepCompleteness);
+    requestAnimationFrame(() => {
+      updateStepCompleteness();
+      updateDetails();
+    });
   };
 
   const moveToStep = (nextStep: number) => {
@@ -90,7 +96,7 @@ export function ValuationForm() {
     formRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   };
 
-  const continueToNextStep = () => {
+  const validateCurrentStep = () => {
     const currentSection = formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"]`);
     const missingCustomSelect = currentSection?.querySelector<HTMLButtonElement>(
       '[data-required-select="true"][data-value=""]',
@@ -98,7 +104,7 @@ export function ValuationForm() {
     if (missingCustomSelect) {
       missingCustomSelect.setAttribute('aria-invalid', 'true');
       missingCustomSelect.focus();
-      return;
+      return false;
     }
 
     const controls = currentSection?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
@@ -107,9 +113,15 @@ export function ValuationForm() {
     for (const control of controls ?? []) {
       if (!control.checkValidity()) {
         control.reportValidity();
-        return;
+        return false;
       }
     }
+
+    return true;
+  };
+
+  const continueToNextStep = () => {
+    if (!validateCurrentStep()) return;
 
     captureAnalyticsEvent('valuation_step_completed', { step });
     moveToStep(Math.min(step + 1, TOTAL_STEPS));
@@ -123,38 +135,10 @@ export function ValuationForm() {
       return;
     }
 
-    const contactSection = event.currentTarget.querySelector<HTMLElement>('[data-step="3"]');
-    const contactControls = contactSection?.querySelectorAll<HTMLInputElement>('input') ?? [];
-    const consentControl = event.currentTarget.elements.namedItem('consent');
-    const controls = [...contactControls, ...(consentControl instanceof HTMLInputElement ? [consentControl] : [])];
-
-    for (const control of controls) {
-      if (!control.checkValidity()) {
-        control.reportValidity();
-        return;
-      }
-    }
+    if (!validateCurrentStep()) return;
 
     const data = new FormData(event.currentTarget);
     const value = (name: string) => String(data.get(name) ?? '').trim();
-    const mileage = Number(value('mileage')).toLocaleString('es-AR');
-    const optionalLine = (label: string, name: string) => (value(name) ? `${label}: ${value(name)}` : null);
-    const message = [
-      `Hola, Gonba's Garage. Soy ${value('name')} y me gustaría que evalúen mi auto para venderlo.`,
-      '',
-      `Marca: ${value('make')}`,
-      `Modelo: ${value('model')}`,
-      `Año: ${value('year')}`,
-      optionalLine('Versión', 'version'),
-      optionalLine('Color', 'color'),
-      `Kilometraje: ${mileage} km`,
-      `Estado general: ${value('condition')}`,
-      optionalLine('Comentarios', 'notes'),
-      '',
-      `Teléfono de contacto: ${value('phone')}`,
-    ]
-      .filter(line => line !== null)
-      .join('\n');
 
     // Catalog picks arrive in hidden inputs; a hand-typed make or model is free text and stays out.
     const form = event.currentTarget;
@@ -163,14 +147,29 @@ export function ValuationForm() {
       return control instanceof HTMLInputElement && control.type === 'hidden' ? value(name) : '';
     };
     captureAnalyticsEvent('valuation_sent_to_whatsapp', {
-      has_photos: data.getAll('photos').some(photo => photo instanceof File && photo.size > 0),
       make: catalogValue('make'),
       model: catalogValue('model'),
       total_steps: TOTAL_STEPS,
       year: Number(value('year')),
     });
-    window.open(getWhatsAppUrl(message), '_blank', 'noopener,noreferrer');
+    const nextWhatsAppUrl = getValuationWhatsAppUrl(data);
+    window.open(nextWhatsAppUrl, '_blank', 'noopener,noreferrer');
+    setWhatsAppUrl(nextWhatsAppUrl);
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    form.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   };
+
+  if (whatsAppUrl) {
+    return (
+      <ValuationSuccess
+        whatsAppUrl={whatsAppUrl}
+        onReset={() => {
+          setWhatsAppUrl(null);
+          setStep(1);
+        }}
+      />
+    );
+  }
 
   return (
     <form
@@ -190,26 +189,17 @@ export function ValuationForm() {
     >
       <div className="valuation-form-heading">
         <div>
-          <span>Formulario de tasación · 3 min</span>
-          <strong>Te pedimos el auto, su estado y cómo contactarte.</strong>
+          <span>Formulario de tasación · 1 min</span>
+          <strong>Te pedimos el auto, su estado y tu nombre.</strong>
         </div>
       </div>
 
       <ValuationStepper currentStep={step} />
       <VehicleCatalogFields hidden={step !== 1} />
       <VehicleConditionFields hidden={step !== 2} />
-      <ValuationContactFields hidden={step !== 3} />
+      <ValuationContactFields hidden={step !== 3} details={details} />
 
       <div className="valuation-form-submit">
-        {step === TOTAL_STEPS ? (
-          <label className="valuation-consent">
-            <input required type="checkbox" name="consent" />
-            <span>
-              <Check aria-hidden="true" size={11} />
-            </span>
-            Acepto que me contacten para evaluar este vehículo.
-          </label>
-        ) : null}
         <div className="valuation-step-actions">
           {step > 1 ? (
             <button className="valuation-back-button" type="button" onClick={() => moveToStep(step - 1)}>
@@ -218,15 +208,14 @@ export function ValuationForm() {
           ) : null}
           {step < TOTAL_STEPS ? (
             <Button type="button" disabled={!isStepComplete} onClick={continueToNextStep}>
-              Continuar <ArrowUpRight aria-hidden="true" size={16} />
+              Continuar <ArrowRight aria-hidden="true" size={16} />
             </Button>
           ) : (
             <Button type="submit" disabled={!isStepComplete}>
-              Enviar mensaje <ArrowUpRight aria-hidden="true" size={16} />
+              Enviar por WhatsApp <ArrowUpRight aria-hidden="true" size={16} />
             </Button>
           )}
         </div>
-        <small>Se abrirá WhatsApp con los datos del auto, sin fotos. Revisá el mensaje y envialo cuando quieras.</small>
       </div>
     </form>
   );

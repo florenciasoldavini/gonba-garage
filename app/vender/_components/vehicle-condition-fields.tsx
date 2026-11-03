@@ -5,7 +5,6 @@ import { Gauge } from 'lucide-react';
 
 import { CustomSelect } from '@/components/ui/custom-select';
 import { ValuationStepHeading } from './valuation-step-heading';
-import { VehiclePhotoUpload } from './vehicle-photo-upload';
 
 const conditionOptions = [
   { value: 'Excelente', label: 'Excelente' },
@@ -49,7 +48,6 @@ export function VehicleConditionFields({ hidden }: { hidden: boolean }) {
             placeholder="Service, detalles de pintura, cubiertas, equipamiento o cualquier información relevante."
           />
         </label>
-        <VehiclePhotoUpload />
       </div>
     </section>
   );
