@@ -238,7 +238,8 @@ custom-domain checklist contains the separate live-launch verification.
 
 The home page, the catalog and vehicle details render at request time, including publication slugs
 that were unknown during the build. Do not generate a static-parameter list for these pages: they
-read the synced database copy at request time, so Mercado Libre API calls do not grow with page
+read the synced database copy at request time, through the catalog cache the sync worker expires
+(docs/architecture.md), so neither Mercado Libre API calls nor database queries grow with page
 views, crawlers or share-image requests. The home page and the catalog opt into request-time rendering
 before their catalog error handler.
 

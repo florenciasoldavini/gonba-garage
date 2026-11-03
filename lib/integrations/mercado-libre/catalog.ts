@@ -3,18 +3,17 @@ import { cache } from 'react';
 import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle } from '@/features/vehicles/domain/vehicle';
 import { orderFeaturedVehicles } from '@/features/vehicles/domain/featured-order';
 import { cleanCatalogVehicle } from '@/features/vehicles/presentation/listing-cleanup';
-import {
-  findCatalogPublication as findStoredPublication,
-  listActiveCatalogVehicles,
-  type CatalogPublication,
-} from '@/lib/catalog/store';
+import { readActiveCatalogVehicles, readCatalogPublication } from '@/lib/catalog/cache';
+import type { CatalogPublication } from '@/lib/catalog/store';
 import { mercadoLibreEnv } from '@/lib/env';
 import { fullSizeMercadoLibreImageUrl } from './pictures';
 
 /**
  * A server with MERCADO_LIBRE_BACKEND_URL (local development) reads the synced catalog through
- * the deployed backend. Otherwise the server reads its own synced copy from the database.
- * Neither path calls Mercado Libre during a page request.
+ * the deployed backend. Otherwise the server reads its own synced copy from the database, through
+ * the cross-request cache that the sync worker expires (lib/catalog/cache.ts). The backend path is
+ * not cached: the deployed worker cannot expire a local cache, so local pages always show the copy
+ * as it is. Neither path calls Mercado Libre during a page request.
  */
 function readsRemoteBackend() {
   return Boolean(mercadoLibreEnv.backendUrl());
@@ -55,7 +54,7 @@ function presentVehicle(vehicle: Vehicle, attributes?: CatalogPublication['sourc
 /** Available vehicles in the default ("Destacados") order, which the home page also uses. */
 export const listCatalogVehicles = cache(async () => {
   if (!readsRemoteBackend())
-    return orderFeaturedVehicles((await listActiveCatalogVehicles()).map(vehicle => presentVehicle(vehicle)));
+    return orderFeaturedVehicles((await readActiveCatalogVehicles()).map(vehicle => presentVehicle(vehicle)));
   const result = await remoteCatalog<{ vehicles: Vehicle[] }>();
   if (!result) throw new Error('Missing catalog');
   return orderFeaturedVehicles(result.vehicles.map(vehicle => presentVehicle(vehicle)));
@@ -68,7 +67,7 @@ export const listCatalogVehicles = cache(async () => {
 export const findCatalogPublication = cache(async (slug: string): Promise<CatalogPublication | null> => {
   const id = slug.match(/-(mla\d+)$/i)?.[1]?.toUpperCase();
   if (!id) return null;
-  const result = readsRemoteBackend() ? await remoteCatalog<CatalogPublication>(id) : await findStoredPublication(id);
+  const result = readsRemoteBackend() ? await remoteCatalog<CatalogPublication>(id) : await readCatalogPublication(id);
   return result ? { ...result, vehicle: presentVehicle(result.vehicle, result.source.attributes) } : null;
 });
 

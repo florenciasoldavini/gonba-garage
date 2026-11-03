@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { afterAll, beforeAll, beforeEach, describe, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, it, vi } from 'vitest';
 import { mapMercadoLibreItemToVehicle } from '@/features/vehicles/data/mercado-libre-vehicle-mapper';
 import * as store from '@/lib/catalog/store';
 import * as sync from '@/lib/integrations/mercado-libre/inventory-sync';
@@ -25,6 +25,29 @@ const mercadoLibre = vi.hoisted(() => ({
   listTotal: null,
   // Items the scan lists but the bulk read does not return.
   bulkFails: new Set(),
+}));
+// The Next.js data cache behind unstable_cache, which reads it from globalThis outside a server.
+// Off, it stores nothing and every read reaches the database. `expired` records each
+// revalidateTag call, which drops the entries carrying the tag, as the platform cache does.
+const dataCache = vi.hoisted(() => {
+  const dataCache = { enabled: false, entries: new Map(), expired: [], expiryFails: false };
+  globalThis.__incrementalCache = {
+    isOnDemandRevalidate: false,
+    generateSimpleCacheKey: async key => key,
+    get: async key => (dataCache.enabled ? (dataCache.entries.get(key)?.entry ?? null) : null),
+    set: async (key, value, { tags }) => {
+      if (dataCache.enabled) dataCache.entries.set(key, { entry: { value, isStale: false }, tags });
+    },
+  };
+  return dataCache;
+});
+vi.mock('next/cache', async importOriginal => ({
+  ...(await importOriginal()),
+  revalidateTag: (tag, profile) => {
+    if (dataCache.expiryFails) throw Error('Simulated cache outage');
+    dataCache.expired.push([tag, profile]);
+    for (const [key, { tags }] of dataCache.entries) if (tags.includes(tag)) dataCache.entries.delete(key);
+  },
 }));
 vi.mock('next/server', async importOriginal => ({
   ...(await importOriginal()),
@@ -1038,5 +1061,131 @@ describe('catalog sync', () => {
     mercadoLibre.listTotal = null;
     assert.equal((await jobIds()).has('MLA51'), false, 'A complete listing still prunes them');
     await sync.runCatalogSyncWork();
+  });
+
+  describe('page cache', () => {
+    // The two statements pages read the copy with (listActiveCatalogVehicles, findCatalogPublication).
+    let pageReads = 0;
+    const slug = 'toyota-corolla-xei-mla70';
+    const expiredTags = () => dataCache.expired.map(([tag]) => tag).sort();
+    const pageTags = ['catalog:active', 'catalog:publication:MLA70'];
+    const pageView = async () => ({
+      listed: (await catalog.listCatalogVehicles()).filter(vehicle => vehicle.slug === slug),
+      vehicle: await catalog.findCatalogVehicle(slug),
+    });
+    beforeEach(() => {
+      Object.assign(dataCache, { enabled: true, expiryFails: false });
+      dataCache.entries.clear();
+      dataCache.expired.length = 0;
+      pageReads = 0;
+      state.beforeQuery = text => {
+        if (text.startsWith('SELECT publication_id, slug, status, vehicle')) pageReads++;
+      };
+    });
+    afterEach(() => {
+      Object.assign(dataCache, { enabled: false, expiryFails: false });
+      state.beforeQuery = null;
+    });
+
+    it('serves page reads from the cache until a write changes the publication', async () => {
+      assert.equal((await pageView()).vehicle, undefined);
+      items.set('MLA70', item('MLA70'));
+      await notify('MLA70');
+      await runDeferred();
+      assert.deepEqual(expiredTags(), pageTags, 'A new row expires its page and the list');
+      assert.ok(
+        dataCache.expired.every(([, profile]) => profile?.expire === 0),
+        'The next view waits for fresh data instead of being served the old entry',
+      );
+      assert.equal((await pageView()).vehicle.price, 20000, 'The missing publication cached before is read again');
+      pageReads = 0;
+      const view = await pageView();
+      assert.equal(view.listed.length, 1);
+      assert.equal(pageReads, 0, 'Repeated views never reach the database');
+
+      dataCache.expired.length = 0;
+      await notify('MLA70');
+      await runDeferred();
+      assert.ok(calls.item.at(-1) === 'MLA70' && (await job('MLA70')).attempts === 0, 'The item was read again');
+      assert.deepEqual(dataCache.expired, [], 'An identical read changes nothing, so nothing expires');
+      await sync.reconcileCatalog();
+      await query(
+        "UPDATE public.catalog_publications SET synced_at = now() - interval '2 days' WHERE publication_id = 'MLA70'",
+      );
+      await sync.reconcileCatalog();
+      await sync.runCatalogSyncWork();
+      assert.deepEqual(dataCache.expired, [], 'Nor does the daily refresh of an unchanged row');
+      pageReads = 0;
+      assert.deepEqual(await pageView(), view);
+      assert.equal(pageReads, 0);
+
+      items.set('MLA70', item('MLA70', { price: 19000, last_updated: '2026-10-22T10:00:00.000Z' }));
+      await notify('MLA70');
+      await runDeferred();
+      assert.deepEqual(expiredTags(), pageTags, 'A price change expires the page and the list');
+      assert.equal((await pageView()).vehicle.price, 19000, 'The next view shows the new price');
+      assert.equal((await pageView()).listed[0].price, 19000);
+
+      dataCache.expired.length = 0;
+      items.set('MLA70', item('MLA70', { price: 19000, status: 'paused' }));
+      await notify('MLA70');
+      await runDeferred();
+      assert.deepEqual(expiredTags(), pageTags);
+      assert.deepEqual((await pageView()).listed, [], 'A paused car leaves the list at once');
+      assert.equal((await pageView()).vehicle.status, 'paused');
+
+      dataCache.expired.length = 0;
+      items.delete('MLA70');
+      await notify('MLA70');
+      await runDeferred();
+      assert.deepEqual(expiredTags(), pageTags, 'Closing a car expires its page');
+      assert.equal((await pageView()).vehicle.status, 'closed');
+      dataCache.expired.length = 0;
+      await sync.enqueueCatalogSync('MLA70');
+      await sync.runCatalogSyncWork();
+      assert.equal((await row('MLA70')).status, 'closed');
+      assert.deepEqual(dataCache.expired, [], 'A car already closed changes nothing');
+    });
+
+    it('never stores a failed read', async () => {
+      faults.query = true;
+      try {
+        await assert.rejects(catalog.listCatalogVehicles());
+        await assert.rejects(catalog.findCatalogPublication(slug));
+        // The similar cars under a car page swallow the failure.
+        assert.deepEqual(await catalog.listCatalogVehicles().catch(() => []), []);
+      } finally {
+        faults.query = false;
+      }
+      assert.equal(dataCache.entries.size, 0, 'Nothing is cached, not even an empty catalog');
+      assert.ok((await catalog.listCatalogVehicles()).length > 0, 'The next view reads the database again');
+      assert.ok(await catalog.findCatalogPublication(slug));
+    });
+
+    it('keeps the write when the expiry cannot be queued', async () => {
+      items.set('MLA71', item('MLA71'));
+      dataCache.expiryFails = true;
+      await sync.enqueueCatalogSync('MLA71');
+      await sync.runCatalogSyncWork();
+      const stored = await job('MLA71');
+      assert.equal(Number(stored.processed_revision), Number(stored.revision), 'The job completes');
+      assert.equal(stored.last_error, null);
+      assert.equal((await row('MLA71')).status, 'active');
+      assert.ok(
+        console.error.mock.calls.some(([line]) => JSON.parse(line).event === 'catalog_cache_expiry_failure'),
+        'The failure is logged',
+      );
+    });
+
+    it('does not cache the deployed backend read by local development', async () => {
+      vi.stubEnv('MERCADO_LIBRE_BACKEND_URL', 'https://backend.example.test');
+      vi.stubEnv('MERCADO_LIBRE_CATALOG_API_KEY', apiKey);
+      const fetch = vi.fn(async () => Response.json({ vehicles: [] }));
+      vi.stubGlobal('fetch', fetch);
+      await catalog.listCatalogVehicles();
+      await catalog.listCatalogVehicles();
+      assert.equal(fetch.mock.calls.length, 2, 'Every view shows the copy as the backend has it');
+      assert.equal(dataCache.entries.size, 0);
+    });
   });
 });

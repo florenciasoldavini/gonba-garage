@@ -29,7 +29,8 @@ export const metadata: Metadata = createPageMetadata({
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
 export default async function Home() {
-  // Live inventory must be read at request time, outside the provider error handler.
+  // Rendered per request, outside the failure handler, so a failed read is never stored as the
+  // page. The vehicles come from the catalog cache, which the sync worker expires.
   await connection();
   let vehicles: Vehicle[] = [];
   let inventoryUnavailable = false;

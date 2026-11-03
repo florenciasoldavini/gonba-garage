@@ -27,7 +27,8 @@ export const metadata: Metadata = {
 };
 
 export default async function VehiclesPage() {
-  // Keep Next.js request-time rendering outside the API failure handler.
+  // Rendered per request, outside the failure handler, so a failed read is never stored as the
+  // page. The vehicles come from the catalog cache, which the sync worker expires.
   await connection();
   let vehicles;
   const quotePromise = getMepQuote();

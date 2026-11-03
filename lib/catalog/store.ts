@@ -13,6 +13,7 @@ import {
   parsePublicationHealth,
   parseQueuedNotification,
   parseReconciliationHealth,
+  parseRemovalResult,
   parseSaveResult,
   parseStoredSyncState,
 } from './rows';
@@ -62,8 +63,8 @@ export async function findCatalogPublication(id: string): Promise<CatalogPublica
 /**
  * Saves an authoritative read while the caller still holds the item's job lease, so a worker whose
  * lease expired cannot overwrite a newer read. The slug is kept from the first sync. Returns
- * whether the row was written, whether a new price was recorded and whether the car became
- * available.
+ * whether the row was written, whether it changed anything pages read (content, status or listing
+ * order), whether a new price was recorded and whether the car became available.
  *
  * Becoming available (a new active listing, or a paused, closed or sold one turning active) is
  * recorded for search alerts in the same statement, so it can never be lost between the save and
@@ -89,7 +90,7 @@ export async function savePublication(
   const rows = await getSql()`WITH lease AS (
       SELECT 1 FROM public.catalog_sync_jobs WHERE publication_id = ${source.id}::text AND lease_id = ${lease}::uuid
     ), previous AS (
-      SELECT price, currency, status FROM public.catalog_publications WHERE publication_id = ${source.id}::text
+      SELECT price, currency, status, listed_at FROM public.catalog_publications WHERE publication_id = ${source.id}::text
     ), saved AS (
       INSERT INTO public.catalog_publications (publication_id, slug, status, price, currency, vehicle, source, description,
         listed_at, source_updated_at, published_at, closed_at, vehicle_category)
@@ -110,7 +111,7 @@ export async function savePublication(
         published_at = COALESCE(catalog_publications.published_at, EXCLUDED.published_at),
         closed_at = CASE WHEN EXCLUDED.status IN ('closed', 'sold') THEN COALESCE(catalog_publications.closed_at, now()) END,
         vehicle_category = EXCLUDED.vehicle_category, synced_at = now()
-      RETURNING publication_id, price, currency, status, listed_at
+      RETURNING publication_id, price, currency, status, listed_at, content_changed_at
     ), history AS (
       INSERT INTO public.catalog_price_history (publication_id, price, currency)
       SELECT publication_id, price, currency FROM saved
@@ -125,13 +126,17 @@ export async function savePublication(
       RETURNING 1
     )
     SELECT (SELECT count(*) FROM saved)::int AS saved, (SELECT count(*) FROM history)::int AS price_changes,
-      (SELECT count(*) FROM available)::int AS available`;
+      (SELECT count(*) FROM available)::int AS available,
+      -- content_changed_at is now() only when this statement inserted the row or changed its content.
+      (SELECT count(*) FROM saved WHERE saved.content_changed_at = now()
+        OR saved.listed_at IS DISTINCT FROM (SELECT listed_at FROM previous))::int AS changed`;
   return parseRow('catalog_publications', rows[0], parseSaveResult);
 }
 
 /**
  * The item no longer exists on Mercado Libre. Its page stays, marked as no longer available.
- * Returns false when there is no stored row (or the lease was lost).
+ * Returns null when there is no stored row (or the lease was lost), and whether the row was still
+ * open, so pages showed it as available or reserved.
  */
 export async function markPublicationRemoved(id: string, lease: string) {
   const rows = await getSql()`UPDATE public.catalog_publications SET status = 'closed',
@@ -140,8 +145,8 @@ export async function markPublicationRemoved(id: string, lease: string) {
       synced_at = now()
     WHERE publication_id = ${id} AND EXISTS (SELECT 1 FROM public.catalog_sync_jobs
       WHERE publication_id = ${id} AND lease_id = ${lease}::uuid)
-    RETURNING 1`;
-  return rows.length === 1;
+    RETURNING content_changed_at = now() AS changed`;
+  return rows.length === 1 ? parseRow('catalog_publications', rows[0], parseRemovalResult) : null;
 }
 
 /**

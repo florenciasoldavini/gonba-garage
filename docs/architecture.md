@@ -83,9 +83,20 @@ that a sync worker keeps current. Sync is one-way; nothing is edited on the site
    is retried, never guessed. Each row records its qualifying category in `vehicle_category`, and
    the database rejects any insert or update without one of those categories
    (`catalog_publications_vehicle_category_check`), so no other code path can store anything else.
-5. Pages and the share-image route read the copy at request time, so a change is visible on the next
-   request. There is no page cache to invalidate. The price alert signup reads the copy only while
-   alert delivery is disabled (see below).
+5. Pages and the share-image route render at request time but read the copy through a data cache
+   shared across requests and instances (`lib/catalog/cache.ts`, `unstable_cache`; on Vercel, the
+   Runtime Cache), so page views do not query the database. The list of available cars is tagged
+   `catalog:active` and each publication `catalog:publication:<ID>` (both also `catalog`). The
+   worker expires a publication's tag and the list tag right after a write that changed what pages
+   show (`savePublication` and `markPublicationRemoved` report it), with `{ expire: 0 }`, so the
+   next view reads the database. An identical re-read or the daily refresh of an unchanged row
+   expires nothing. Next.js applies the expiry when the cron request or the webhook's `after()`
+   work finishes, so a change shows a few seconds after its sync, at worst at the end of that
+   invocation (`maxDuration`, 300 s). A failed read throws and is never cached. Each deploy starts its
+   own entries, and a one-day backstop bounds an expiry that never went through. A row edited by
+   hand in the database is not expired: purge it with `vercel cache invalidate --tag catalog`. Local
+   development reads the deployed backend uncached. The price alert signup reads the copy only
+   while alert delivery is disabled (see below).
 6. `/api/mercado-libre/sync` (Vercel cron, `CRON_SECRET`) reconciles: it scans every publication of
    the seller in any status, keeps the vehicles, and queues each one that is missing from the copy,
    changed (status or last update), no longer listed or not refreshed for a day, then drains the
