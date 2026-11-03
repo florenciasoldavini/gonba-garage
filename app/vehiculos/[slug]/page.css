@@ -646,34 +646,59 @@
     justify-self: start;
     margin-top: 6px;
   }
-  /* The name gets the full width; the arrow sits in the corner instead of taking a column. */
+  /* Name, year and price stack beside a small photo; the arrow sits on the photo's corner instead of
+     taking a column. */
   .detail-similar-link {
     min-height: 0;
-    grid-template-columns: 28px minmax(0, 1fr) auto;
-    grid-template-areas: 'number name name' 'number meta price';
+    grid-template-columns: 28px minmax(0, 1fr) 112px;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: 'number name photo' 'number meta photo' 'number price photo';
     align-items: start;
-    gap: 10px 14px;
-  }
-  .detail-similar-name {
-    padding-right: 30px;
+    gap: 8px 14px;
   }
   .detail-similar-arrow {
     position: absolute;
-    top: 20px;
-    right: 0;
+    top: 24px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    padding: 5px;
+    border-radius: 50%;
+    background: rgba(5, 7, 5, 0.72);
+    backdrop-filter: blur(10px);
+    color: #dfe1dc;
   }
   .detail-similar-number {
-    padding-top: 6px;
+    padding-top: 5px;
   }
   .detail-similar-name h3,
   .detail-similar-name strong {
-    font-size: 1.5rem;
+    font-size: 1.375rem;
   }
   .detail-similar-meta {
     align-self: end;
   }
-  .detail-similar-photo {
-    display: none;
+  .detail-similar-price {
+    justify-items: start;
+  }
+  /* The closing "Todo el inventario" row has no photo: the name takes the width, the arrow its corner. */
+  .detail-similar-more {
+    grid-template-columns: 28px minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas: 'number name';
+  }
+  .detail-similar-more .detail-similar-name {
+    padding-right: 30px;
+  }
+  .detail-similar-more .detail-similar-arrow {
+    top: 20px;
+    right: 0;
+    width: auto;
+    height: auto;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+    color: var(--muted);
   }
   .detail-overview {
     padding-block: 100px;
