@@ -47,7 +47,9 @@ type VehicleDetailPageProps = {
 
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
-// Live publications are read at request time from the synced database copy.
+// Rendered per request: a reserved car turns sold by the passing of time, and a failed read must
+// never be stored as the page. The publication and the list come from the catalog cache, which the
+// sync worker expires (lib/catalog/cache.ts).
 export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: VehicleDetailPageProps): Promise<Metadata> {

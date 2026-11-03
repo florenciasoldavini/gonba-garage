@@ -17,6 +17,7 @@ import {
   renewNotificationDrain,
   savePublication,
 } from '@/lib/catalog/store';
+import { expireCatalogPublication } from '@/lib/catalog/cache';
 import { requireMercadoLibreEnv } from '@/lib/env';
 import { catalogAccessToken } from './access-token';
 import { failure, IntegrationFailure, safeFailure, type IntegrationIncident } from './failures';
@@ -91,6 +92,19 @@ async function readCurrentPublication(id: string) {
   }
 }
 
+/**
+ * Expires the pages' cached reads of a publication right after a write changed it, before anything
+ * else can fail: a retried job finds the row already written and changes nothing. An expiry that
+ * cannot be queued never fails the job; the cache backstop (lib/catalog/cache.ts) bounds it.
+ */
+function expireCachedPages(id: string) {
+  try {
+    expireCatalogPublication(id);
+  } catch {
+    console.error(JSON.stringify({ event: 'catalog_cache_expiry_failure', publicationId: id }));
+  }
+}
+
 /** Processes one due item. Returns false when nothing is due. */
 export async function processNextCatalogJob({ includeDeferred = true } = {}) {
   const lease = randomUUID();
@@ -102,10 +116,12 @@ export async function processNextCatalogJob({ includeDeferred = true } = {}) {
     let skipSeconds = 0;
     if (!publication) {
       // A stored vehicle is closed, and never skipped. Only an item never stored is.
-      if (!(await markPublicationRemoved(job.id, lease))) skipSeconds = SKIP_NOT_FOUND_SECONDS;
+      const removed = await markPublicationRemoved(job.id, lease);
+      if (!removed) skipSeconds = SKIP_NOT_FOUND_SECONDS;
+      if (removed?.changed) expireCachedPages(job.id);
     } else if (String(publication.source.seller_id) === seller && publication.source.id === job.id) {
       const category = await vehicleCategory(publication.source);
-      if (category) await savePublication(publication, category, lease);
+      if (category && (await savePublication(publication, category, lease)).changed) expireCachedPages(job.id);
     } else if (String(publication.source.seller_id) !== seller) {
       skipSeconds = SKIP_OTHER_SELLER_SECONDS;
     }

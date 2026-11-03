@@ -108,8 +108,9 @@ The full design lives in [docs/architecture.md](docs/architecture.md), with aler
 **Pages read a synced copy, never Mercado Libre directly.**
 Every page and the share-image route read through one boundary,
 [`lib/integrations/mercado-libre/catalog.ts`](lib/integrations/mercado-libre/catalog.ts), which reads
-[`lib/catalog/store.ts`](lib/catalog/store.ts). Traffic, crawlers and share previews therefore never
-use up API quota or wait on the provider. _Trade-off:_ on the Hobby plan, the cron that repairs a
+[`lib/catalog/store.ts`](lib/catalog/store.ts) through a tagged cache that the sync worker expires on
+each change ([`lib/catalog/cache.ts`](lib/catalog/cache.ts)). Traffic, crawlers and share previews
+therefore never use up API quota or wait on the provider, and do not query the database. _Trade-off:_ on the Hobby plan, the cron that repairs a
 missed notification only runs once a day, so the copy can be up to a day stale until the next run.
 On a Pro plan, a one-line schedule change in [`vercel.json`](vercel.json) brings that down to 15
 minutes.

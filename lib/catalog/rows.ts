@@ -126,7 +126,13 @@ export function parseSaveResult(row: Row) {
     saved: integer(row.saved, 'saved') === 1,
     priceChanged: integer(row.price_changes, 'price_changes') === 1,
     becameAvailable: integer(row.available, 'available') === 1,
+    changed: integer(row.changed, 'changed') === 1,
   };
+}
+
+/** The result of markPublicationRemoved's statement. */
+export function parseRemovalResult(row: Row) {
+  return { changed: boolean(row.changed, 'changed') };
 }
 
 export function parseQueuedNotification(row: Row) {
