@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { connection } from 'next/server';
 import { ArrowDown, ArrowLeftRight, ArrowUpRight, FileCheck, HandCoins } from 'lucide-react';
 
+import { TrackedAnchor } from '@/components/analytics/tracked-anchor';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { ContactCallout } from '@/components/marketing/contact-callout';
@@ -248,7 +249,23 @@ export default async function Home() {
           <div className="faq-intro">
             <Eyebrow>Preguntas frecuentes</Eyebrow>
             <h2 id="faq-title">Lo que conviene saber antes de empezar.</h2>
-            <p>Si tu pregunta no está acá, escribinos y la resolvemos juntos.</p>
+            <p>
+              Si tu pregunta no está acá,{' '}
+              <TrackedAnchor
+                analyticsEvent={{
+                  name: 'contact_intent_clicked',
+                  properties: { channel: 'whatsapp', placement: 'home_faq' },
+                }}
+                className="faq-contact-link"
+                href={getWhatsAppUrl(WHATSAPP_GENERAL_MESSAGE)}
+                rel="noreferrer"
+                target="_blank"
+              >
+                escribinos
+                <ArrowUpRight aria-hidden="true" size={14} strokeWidth={1.8} />
+              </TrackedAnchor>{' '}
+              y la resolvemos juntos.
+            </p>
           </div>
           <FaqAccordion />
         </section>

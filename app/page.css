@@ -392,6 +392,20 @@
   color: var(--muted);
   line-height: 1.65;
 }
+.faq-contact-link {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--duration-default) ease;
+}
+.faq-contact-link svg {
+  margin-left: 2px;
+  vertical-align: -0.125em;
+}
+@media (hover: hover) {
+  .faq-contact-link:hover {
+    color: var(--accent);
+  }
+}
 
 @media (max-width: 1000px) {
   .hero-content {

@@ -6,7 +6,7 @@ import posthog from 'posthog-js';
 type InventoryAlertPlacement = 'toolbar' | 'empty' | 'vehicle';
 
 /** General contact actions. Vehicle pages report `vehicle_contact_clicked` instead. */
-type ContactPlacement = 'header' | 'menu' | 'footer' | 'home_contact' | 'catalog_contact';
+type ContactPlacement = 'header' | 'menu' | 'footer' | 'home_contact' | 'home_faq' | 'catalog_contact';
 
 type AnalyticsEventProperties = {
   contact_intent_clicked: {
