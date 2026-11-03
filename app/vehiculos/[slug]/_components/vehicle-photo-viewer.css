@@ -1,5 +1,8 @@
+/* A grid item with an aspect ratio may size to its content instead of stretching (current Safari on
+   iPhone does), and everything inside is absolutely positioned, so without a set width it collapses. */
 .detail-primary-image {
   position: relative;
+  width: 100%;
   min-height: 0;
   aspect-ratio: 4 / 3;
   overflow: hidden;
