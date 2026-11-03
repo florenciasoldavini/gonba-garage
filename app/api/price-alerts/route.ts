@@ -11,14 +11,13 @@ import { reserveAlertSignup } from '@/lib/alerts/signup-limit';
 import { requestPriceAlert } from '@/lib/alerts/price-delivery';
 import { sendSignupConfirmationSafely } from '@/lib/alerts/confirmation';
 import { rejectCrossSiteJson } from '@/lib/alerts/request-guard';
+import { emailPattern } from '@/lib/email-address';
 
 type PriceAlertRequest = {
   email?: unknown;
   vehicleSlug?: unknown;
   website?: unknown;
 };
-
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
   const rejected = rejectCrossSiteJson(request);

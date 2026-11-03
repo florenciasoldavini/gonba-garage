@@ -6,6 +6,7 @@ import { alertEmailsConfigured } from '@/lib/alerts/config';
 import { reserveAlertSignup } from '@/lib/alerts/signup-limit';
 import { sendSignupConfirmationSafely } from '@/lib/alerts/confirmation';
 import { rejectCrossSiteJson } from '@/lib/alerts/request-guard';
+import { emailPattern } from '@/lib/email-address';
 
 type InventoryAlertRequest = {
   email?: unknown;
@@ -21,7 +22,6 @@ type InventoryAlertRequest = {
   maxMileage?: unknown;
 };
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const allowedTransmissions = new Set(['', 'automatic', 'manual']);
 
 function normalizeText(value: unknown, maximumLength: number) {

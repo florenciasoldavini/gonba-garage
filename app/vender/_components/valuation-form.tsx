@@ -11,6 +11,7 @@ import { ValuationContactFields } from './valuation-contact-fields';
 import { getValuationDetails, getValuationWhatsAppUrl, type ValuationDetail } from './valuation-message';
 import { ValuationStepper } from './valuation-stepper';
 import { ValuationSuccess } from './valuation-success';
+import { getStepErrors, recheckErrors, type ValuationErrors } from './valuation-validation';
 import { VehicleCatalogFields } from './vehicle-catalog-fields';
 import { VehicleConditionFields } from './vehicle-condition-fields';
 import './valuation-form.css';
@@ -24,33 +25,15 @@ const TOTAL_STEPS = 3;
 export function ValuationForm() {
   const [whatsAppUrl, setWhatsAppUrl] = useState<string | null>(null);
   const [step, setStep] = useState(1);
-  const [isStepComplete, setIsStepComplete] = useState(false);
+  const [errors, setErrors] = useState<ValuationErrors>({});
   const [details, setDetails] = useState<ValuationDetail[]>([]);
   const formRef = useRef<HTMLFormElement>(null);
   const hasStartedRef = useRef(false);
   const previousStepRef = useRef(step);
 
-  const updateStepCompleteness = useCallback(() => {
-    const currentSection = formRef.current?.querySelector<HTMLElement>('[data-step]:not([hidden])');
-    if (!currentSection) return;
-
-    const requiredControls = currentSection.querySelectorAll<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >('[required]');
-    const requiredCustomSelects = currentSection.querySelectorAll<HTMLButtonElement>('[data-required-select="true"]');
-    const nativeFieldsAreComplete = Array.from(requiredControls).every(control => control.checkValidity());
-    const customSelectsAreComplete = Array.from(requiredCustomSelects).every(control => Boolean(control.dataset.value));
-
-    setIsStepComplete(nativeFieldsAreComplete && customSelectsAreComplete);
-  }, []);
-
   const updateDetails = useCallback(() => {
     if (formRef.current) setDetails(getValuationDetails(new FormData(formRef.current)));
   }, []);
-
-  useEffect(() => {
-    updateStepCompleteness();
-  }, [updateStepCompleteness]);
 
   // Move focus to the new step's heading, but not on first load.
   useEffect(() => {
@@ -82,42 +65,36 @@ export function ValuationForm() {
     { scope: formRef, dependencies: [step], revertOnUpdate: true },
   );
 
-  const scheduleCompletenessUpdate = () => {
+  const scheduleFormUpdate = () => {
     requestAnimationFrame(() => {
-      updateStepCompleteness();
+      const form = formRef.current;
+      if (form) setErrors(current => (Object.keys(current).length ? recheckErrors(form, current) : current));
       updateDetails();
     });
   };
 
   const moveToStep = (nextStep: number) => {
-    setIsStepComplete(false);
+    setErrors({});
     setStep(nextStep);
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     formRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
   };
 
   const validateCurrentStep = () => {
-    const currentSection = formRef.current?.querySelector<HTMLElement>(`[data-step="${step}"]`);
-    const missingCustomSelect = currentSection?.querySelector<HTMLButtonElement>(
-      '[data-required-select="true"][data-value=""]',
-    );
-    if (missingCustomSelect) {
-      missingCustomSelect.setAttribute('aria-invalid', 'true');
-      missingCustomSelect.focus();
-      return false;
-    }
+    const form = formRef.current;
+    if (!form) return false;
 
-    const controls = currentSection?.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>(
-      'input, select, textarea',
-    );
-    for (const control of controls ?? []) {
-      if (!control.checkValidity()) {
-        control.reportValidity();
-        return false;
-      }
-    }
+    const stepErrors = getStepErrors(form, step);
+    setErrors(stepErrors);
+    if (Object.keys(stepErrors).length === 0) return true;
 
-    return true;
+    // Focus the first flagged control once React has rendered its error state.
+    requestAnimationFrame(() => {
+      form
+        .querySelector<HTMLElement>(`[data-step="${step}"] :is([aria-invalid="true"], [data-invalid="true"])`)
+        ?.focus();
+    });
+    return false;
   };
 
   const continueToNextStep = () => {
@@ -177,9 +154,9 @@ export function ValuationForm() {
       data-private
       ref={formRef}
       noValidate
-      onChange={scheduleCompletenessUpdate}
-      onClick={scheduleCompletenessUpdate}
-      onInput={scheduleCompletenessUpdate}
+      onChange={scheduleFormUpdate}
+      onClick={scheduleFormUpdate}
+      onInput={scheduleFormUpdate}
       onFocusCapture={() => {
         if (hasStartedRef.current) return;
         hasStartedRef.current = true;
@@ -195,9 +172,9 @@ export function ValuationForm() {
       </div>
 
       <ValuationStepper currentStep={step} />
-      <VehicleCatalogFields hidden={step !== 1} />
-      <VehicleConditionFields hidden={step !== 2} />
-      <ValuationContactFields hidden={step !== 3} details={details} />
+      <VehicleCatalogFields hidden={step !== 1} errors={errors} />
+      <VehicleConditionFields hidden={step !== 2} errors={errors} />
+      <ValuationContactFields hidden={step !== 3} details={details} errors={errors} />
 
       <div className="valuation-form-submit">
         <div className="valuation-step-actions">
@@ -206,12 +183,14 @@ export function ValuationForm() {
               <ArrowLeft aria-hidden="true" size={15} /> Volver
             </button>
           ) : null}
+          {/* Both are submit buttons: React reuses this node across steps, and a type="button" that turns into
+              type="submit" mid-click would submit the next step as soon as it appears. */}
           {step < TOTAL_STEPS ? (
-            <Button type="button" disabled={!isStepComplete} onClick={continueToNextStep}>
+            <Button type="submit">
               Continuar <ArrowRight aria-hidden="true" size={16} />
             </Button>
           ) : (
-            <Button type="submit" disabled={!isStepComplete}>
+            <Button type="submit">
               Enviar por WhatsApp <ArrowUpRight aria-hidden="true" size={16} />
             </Button>
           )}

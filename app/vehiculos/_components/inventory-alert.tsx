@@ -9,6 +9,7 @@ import { PrivacyPolicyLink } from '@/components/ui/privacy-policy-link';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import { getEmailError } from '@/lib/email-address';
 import { postJson, type RequestFailure } from '@/lib/json-request';
 import './alert-dialog.css';
 import './inventory-alert.css';
@@ -60,6 +61,8 @@ export function InventoryAlert({
   const [email, setEmail] = useState('');
   const [state, setState] = useState<SubmissionState>('idle');
   const [failure, setFailure] = useState<RequestFailure | null>(null);
+  // Caught before sending, so the browser's own validation bubble never shows.
+  const [emailError, setEmailError] = useState<string | null>(null);
   const {
     closeDialog,
     dialogRef,
@@ -84,6 +87,7 @@ export function InventoryAlert({
   const openDialog = () => {
     setState('idle');
     setFailure(null);
+    setEmailError(null);
     captureAnalyticsEvent('inventory_alert_opened', {
       active_filter_count: activeFilterCount,
       placement,
@@ -101,6 +105,15 @@ export function InventoryAlert({
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const nextEmailError = getEmailError(email);
+    if (nextEmailError) {
+      setState('idle');
+      setFailure(null);
+      setEmailError(nextEmailError);
+      emailRef.current?.focus();
+      return;
+    }
+
     setState('submitting');
     const form = new FormData(event.currentTarget);
     const result = await postJson('/api/inventory-alerts', { email, website: form.get('website'), ...criteria });
@@ -120,7 +133,8 @@ export function InventoryAlert({
   };
 
   const shownFailure = state === 'error' ? failure : null;
-  const emailInvalid = shownFailure?.field === 'email';
+  const emailMessage = emailError ?? (shownFailure?.field === 'email' ? shownFailure.title : null);
+  const emailInvalid = emailMessage !== null;
   const retry = shownFailure?.retryable === true;
 
   return (
@@ -188,7 +202,13 @@ export function InventoryAlert({
               </div>
             </div>
           ) : (
-            <form className="price-alert-form ph-no-capture" data-dialog-view data-private onSubmit={handleSubmit}>
+            <form
+              className="price-alert-form ph-no-capture"
+              data-dialog-view
+              data-private
+              noValidate
+              onSubmit={handleSubmit}
+            >
               <Eyebrow>Alerta de inventario</Eyebrow>
               <h2 id={titleId}>{vehicleCopy?.title ?? 'Avisame cuando aparezca.'}</h2>
               <p>
@@ -205,13 +225,16 @@ export function InventoryAlert({
               </div>
 
               <label>
-                <span>Email</span>
+                <span>Email *</span>
                 <input
                   ref={emailRef}
                   type="email"
                   name="email"
                   value={email}
-                  onChange={event => setEmail(event.target.value)}
+                  onChange={event => {
+                    setEmail(event.target.value);
+                    setEmailError(null);
+                  }}
                   placeholder="tu@email.com"
                   autoComplete="email"
                   maxLength={320}
@@ -223,7 +246,7 @@ export function InventoryAlert({
               {emailInvalid && (
                 <p className="price-alert-field-error" id={emailErrorId} role="alert">
                   <CircleAlert aria-hidden="true" size={15} strokeWidth={2} />
-                  {shownFailure.title}
+                  {emailMessage}
                 </p>
               )}
 
@@ -240,7 +263,7 @@ export function InventoryAlert({
                   <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
                 )}
               </Button>
-              {shownFailure && !emailInvalid && (
+              {shownFailure && shownFailure.field !== 'email' && (
                 <div className="price-alert-error" role="alert">
                   {shownFailure.kind === 'connection' ? (
                     <WifiOff aria-hidden="true" size={18} strokeWidth={2} />

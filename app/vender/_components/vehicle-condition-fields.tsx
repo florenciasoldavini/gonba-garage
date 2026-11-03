@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { Gauge } from 'lucide-react';
 
 import { CustomSelect } from '@/components/ui/custom-select';
+import { ValuationFieldError } from './valuation-field-error';
 import { ValuationStepHeading } from './valuation-step-heading';
+import { fieldErrorProps, type ValuationErrors } from './valuation-validation';
 
 const conditionOptions = [
   { value: 'Excelente', label: 'Excelente' },
@@ -13,7 +15,7 @@ const conditionOptions = [
   { value: 'Necesita reparaciones', label: 'Necesita reparaciones' },
 ];
 
-export function VehicleConditionFields({ hidden }: { hidden: boolean }) {
+export function VehicleConditionFields({ hidden, errors }: { hidden: boolean; errors: ValuationErrors }) {
   const [condition, setCondition] = useState('');
 
   return (
@@ -27,18 +29,28 @@ export function VehicleConditionFields({ hidden }: { hidden: boolean }) {
       <div className="valuation-fields">
         <label>
           <span>Kilometraje *</span>
-          <input name="mileage" required inputMode="numeric" type="number" min="0" placeholder="48000" />
+          <input
+            name="mileage"
+            required
+            inputMode="numeric"
+            type="number"
+            min="0"
+            placeholder="48000"
+            {...fieldErrorProps('mileage', errors.mileage)}
+          />
+          <ValuationFieldError field="mileage" message={errors.mileage} />
         </label>
         <div className="valuation-select-field">
           <span>Estado general *</span>
           <CustomSelect
             name="condition"
             ariaLabel="Estado general"
-            required
             value={condition}
             onChange={setCondition}
             options={conditionOptions}
+            {...fieldErrorProps('condition', errors.condition)}
           />
+          <ValuationFieldError field="condition" message={errors.condition} />
         </div>
         <label className="valuation-field-wide">
           <span>Comentarios sobre el estado</span>

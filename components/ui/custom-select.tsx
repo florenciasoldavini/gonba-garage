@@ -22,11 +22,12 @@ type CustomSelectProps = {
   ariaLabel: string;
   name?: string;
   placeholder?: string;
-  required?: boolean;
   disabled?: boolean;
   searchable?: boolean;
   searchPlaceholder?: string;
   emptyMessage?: string;
+  'aria-invalid'?: boolean;
+  'aria-describedby'?: string;
 };
 
 export function CustomSelect({
@@ -36,11 +37,12 @@ export function CustomSelect({
   ariaLabel,
   name,
   placeholder = 'Seleccionar',
-  required = false,
   disabled = false,
   searchable = false,
   searchPlaceholder = 'Buscar…',
   emptyMessage = 'No hay resultados.',
+  'aria-invalid': ariaInvalid,
+  'aria-describedby': ariaDescribedBy,
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -152,7 +154,6 @@ export function CustomSelect({
     onChange(nextValue);
     setIsOpen(false);
     setQuery('');
-    triggerRef.current?.removeAttribute('aria-invalid');
     triggerRef.current?.focus();
   };
 
@@ -167,8 +168,10 @@ export function CustomSelect({
         aria-haspopup="listbox"
         aria-expanded={menuIsOpen}
         aria-controls={menuId}
+        // aria-invalid is not valid on a button; the message still reaches screen readers through aria-describedby.
+        data-invalid={ariaInvalid || undefined}
+        aria-describedby={ariaDescribedBy}
         disabled={disabled}
-        data-required-select={required || undefined}
         data-value={value}
         onClick={() => setIsOpen(current => !current)}
         onKeyDown={handleTriggerKeyDown}

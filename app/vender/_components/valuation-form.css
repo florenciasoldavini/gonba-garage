@@ -92,6 +92,24 @@
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(220, 255, 0, 0.11);
 }
+.valuation-fields > label > input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+.valuation-fields > label > input[aria-invalid='true']:focus {
+  box-shadow: 0 0 0 2px var(--color-danger-soft);
+}
+.valuation-field-error {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  color: var(--color-danger);
+  font-size: var(--text-caption);
+  line-height: 1.45;
+}
+.valuation-field-error svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
 .valuation-select-field .custom-select-trigger {
   min-height: 49px;
 }
