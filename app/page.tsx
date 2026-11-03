@@ -16,7 +16,7 @@ import { HomeGsapMotion } from '@/app/_components/home-gsap-motion';
 import { FaqAccordion } from '@/app/_components/faq-accordion';
 import { isLiveCatalog, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
-import { formatVehicleMileage } from '@/features/vehicles/presentation/formatters';
+import { VehicleGrid } from '@/components/vehicles/vehicle-grid';
 
 export const metadata: Metadata = createPageMetadata({
   title: "Gonba's Garage | Autos usados seleccionados",
@@ -78,24 +78,7 @@ export default async function Home() {
             <Link className="text-link" href="/vehiculos">Ver inventario completo <Arrow /></Link>
           </div>
         </div>
-        {vehicles.length > 0 ? <div className="vehicle-grid">
-          {vehicles.map((vehicle, index) => (
-            <Link className="vehicle-card-link" href={`/vehiculos/${vehicle.slug}`} key={vehicle.slug}>
-              <article className="vehicle-card glass-panel">
-                <div className="vehicle-image">
-                  <Image src={vehicle.image} alt={vehicle.imageAlt} fill sizes="(max-width: 760px) 100vw, (max-width: 1100px) 50vw, 33vw" className="cover-image" />
-                  <span className="vehicle-index">0{index + 1}</span>
-                  {index === 0 && <span className="vehicle-status">Disponible</span>}
-                </div>
-                <div className="vehicle-copy">
-                  <div><p>{vehicle.year}</p><h3>{vehicle.make} {vehicle.model}</h3></div>
-                  <span className="vehicle-arrow"><Arrow /></span>
-                </div>
-                <p className="vehicle-detail">{[vehicle.version, vehicle.transmission, vehicle.fuel, formatVehicleMileage(vehicle.mileageKm)].filter(Boolean).join(' · ')}</p>
-              </article>
-            </Link>
-          ))}
-        </div> : (
+        {vehicles.length > 0 ? <VehicleGrid vehicles={vehicles} /> : (
           <p role="status">{inventoryUnavailable
             ? 'No pudimos cargar las unidades en este momento. Consultá el inventario completo o escribinos por WhatsApp.'
             : 'No hay unidades disponibles en este momento. Escribinos y contanos qué auto buscás.'}</p>
