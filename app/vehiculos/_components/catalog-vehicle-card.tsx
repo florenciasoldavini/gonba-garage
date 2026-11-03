@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
+import Link, { useLinkStatus } from 'next/link';
 import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
@@ -20,6 +20,12 @@ import './catalog-vehicle-card.css';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP);
+}
+
+/** The card's hit area. The detail page renders on demand, so it lights the card up until it arrives. */
+function CardHitArea() {
+  const { pending } = useLinkStatus();
+  return <span className="catalog-card-hit" data-pending={pending || undefined} aria-hidden="true" />;
 }
 
 type CatalogVehicleCardProps = {
@@ -67,15 +73,13 @@ export function CatalogVehicleCard({
       ref={cardRef}
     >
       <div className="catalog-card-image">
-        <Link className="catalog-card-image-link" href={href} aria-hidden="true" tabIndex={-1}>
-          <Image
-            src={vehicle.image}
-            alt={formatVehicleImageAlt(vehicle)}
-            fill
-            sizes="(max-width: 760px) 100vw, (max-width: 1080px) 50vw, 38vw"
-            className="cover-image"
-          />
-        </Link>
+        <Image
+          src={vehicle.image}
+          alt={formatVehicleImageAlt(vehicle)}
+          fill
+          sizes="(max-width: 760px) 100vw, (max-width: 1080px) 50vw, 38vw"
+          className="cover-image"
+        />
         <span className="catalog-card-status">{status.label}</span>
         {onToggleComparison && (
           <button
@@ -96,15 +100,17 @@ export function CatalogVehicleCard({
             {vehicle.year} · {vehicle.body.split(' · ')[0]}
           </p>
           <h2>
+            {/* Its hit area covers the whole card, so a tap anywhere but Comparar opens it. */}
             <Link href={href} aria-label={`${vehicleName} ${vehicle.year}`}>
               {vehicleName}
+              <CardHitArea />
             </Link>
           </h2>
           <span>{vehicle.version}</span>
         </div>
-        <Link className="catalog-card-arrow" href={href} aria-hidden="true" tabIndex={-1}>
-          <ArrowUpRight aria-hidden="true" size={17} strokeWidth={1.8} />
-        </Link>
+        <span className="catalog-card-arrow" aria-hidden="true">
+          <ArrowUpRight size={17} strokeWidth={1.8} />
+        </span>
       </div>
       <div className="catalog-card-facts">
         <span>{formatVehicleMileage(vehicle.mileageKm)}</span>
