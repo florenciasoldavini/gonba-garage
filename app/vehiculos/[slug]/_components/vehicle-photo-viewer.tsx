@@ -54,6 +54,7 @@ function Photo({
 export function VehiclePhotoViewer({ photos, title }: Props) {
   const [index, setIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const [focusClose, setFocusClose] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
   const gesture = useRef<{ x: number; y: number } | null>(null);
@@ -88,8 +89,13 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
   const move = (direction: number) => setIndex(current => (current + direction + count) % count);
   const open = (photoIndex: number, timeStamp: number) => {
     if (timeStamp < ignoreClickUntil.current) return;
+    // A tap gives the browser no focus to go on, so it would ring the close button. Tap and click opens
+    // start on the dialog itself; keyboard opens start on the close button.
+    const openedByKeyboard = document.activeElement?.matches(':focus-visible') ?? false;
     setIndex(photoIndex);
+    setFocusClose(openedByKeyboard);
     dialogRef.current?.showModal();
+    if (!openedByKeyboard) dialogRef.current?.focus({ preventScroll: true });
     setExpanded(true);
   };
   const close = () => dialogRef.current?.close();
@@ -205,6 +211,7 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
       <dialog
         ref={dialogRef}
         className="vehicle-photo-dialog"
+        tabIndex={-1}
         aria-label={`Fotos ampliadas de ${title}`}
         onClose={() => setExpanded(false)}
         onKeyDown={onKeyDown}
@@ -221,7 +228,7 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
                 className="vehicle-photo-close"
                 onClick={close}
                 aria-label="Cerrar fotos ampliadas"
-                autoFocus
+                autoFocus={focusClose}
               >
                 <X size={18} strokeWidth={1.8} aria-hidden="true" />
               </button>
