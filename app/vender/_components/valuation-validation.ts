@@ -7,6 +7,13 @@ const stepFields: Record<number, ValuationField[]> = {
   3: ['name'],
 };
 
+/** Each catalog select unlocks once the field before it holds a value. */
+const catalogParent: Partial<Record<ValuationField, ValuationField>> = {
+  model: 'make',
+  year: 'model',
+  version: 'year',
+};
+
 type FieldCopy = {
   /** Nothing picked in a catalog select (a hidden input), or nothing typed. */
   missing: string;
@@ -33,10 +40,20 @@ const fieldCopy: Record<ValuationField, FieldCopy> = {
   name: { missing: 'Ingresá tu nombre.' },
 };
 
+/** A catalog select (a hidden input) whose parent is still empty can't be used yet, so it stays neutral. */
+function isLockedCatalogSelect(form: HTMLFormElement, field: ValuationField, control: HTMLInputElement) {
+  const parent = catalogParent[field];
+  if (!parent || control.type !== 'hidden') return false;
+
+  const parentControl = form.elements.namedItem(parent);
+  return parentControl instanceof HTMLInputElement && !parentControl.value.trim();
+}
+
 /** Our own copy for a required field, so the browser's validation bubble never shows. */
 function getFieldError(form: HTMLFormElement, field: ValuationField) {
   const control = form.elements.namedItem(field);
   if (!(control instanceof HTMLInputElement)) return null;
+  if (isLockedCatalogSelect(form, field, control)) return null;
 
   const copy = fieldCopy[field];
   // A number input holding text reports an empty value, so check badInput before treating it as missing.
