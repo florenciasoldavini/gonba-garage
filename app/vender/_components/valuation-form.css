@@ -161,19 +161,6 @@
   display: grid;
   gap: 17px;
 }
-/* The only place that says the form hands off to WhatsApp, right where the visitor sends it. */
-.valuation-handoff-note {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--text-caption);
-  line-height: 1.45;
-  text-align: center;
-  text-wrap: pretty;
-}
-.valuation-handoff-note strong {
-  color: var(--text);
-  font-weight: 600;
-}
 .valuation-step-actions {
   display: flex;
   gap: 10px;
