@@ -392,6 +392,18 @@
   color: var(--muted);
   line-height: 1.65;
 }
+.faq-contact-link {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--accent);
+  transition: color var(--duration-default) ease;
+}
+@media (hover: hover) {
+  .faq-contact-link:hover {
+    color: var(--accent);
+  }
+}
 
 @media (max-width: 1000px) {
   .hero-content {
