@@ -12,6 +12,13 @@ price, description, and contact action must remain usable without WebGL or clien
   "Styles"); no CSS framework. GSAP is the only animation dependency (see "Motion and 3D strategy").
 - Hosted on Vercel (Hobby plan): Node.js route handlers, the cron jobs in `vercel.json`, and a
   private Blob store for the encrypted Mercado Libre credentials.
+- Functions run in São Paulo (`gru1`, `regions` in `vercel.json`; Hobby allows one region), near
+  the Argentine audience, while Neon stays in `us-east-1`. Every page is rendered per request but
+  reads the catalog from the Runtime Cache (`lib/catalog/cache.ts`), so most renders never reach the
+  database and save a São Paulo ↔ US East round trip (~120 ms). The cost falls on code that queries
+  Neon: about 120 ms per sequential query on cache misses, alert sign-ups, the webhook and the crons.
+  Keep queries before a response in parallel or in one statement. Moving Neon to `aws-sa-east-1`
+  would remove the tradeoff.
 - Neon PostgreSQL is the only database: the synced catalog, alert subscriptions and their queues
   (`database/migrations/`, applied with `npm run db:migrate`).
 - Mercado Libre is the source of truth for inventory. The site reads a synced copy in Neon.
