@@ -70,6 +70,11 @@
   --layout-gutter: 24px;
   --layout-gutter-compact: 12px;
   --page-content-top: clamp(46px, 6vw, 82px);
+  /* The floating site header: its distance from the viewport top and its height. */
+  --header-offset: 14px;
+  --header-height: 68px;
+  /* Sticky elements clear the header with the same gap the header keeps above itself. */
+  --header-clearance: calc(var(--header-offset) * 2 + var(--header-height));
 
   /* Motion and elevation */
   --duration-fast: 120ms;
@@ -97,6 +102,8 @@
   :root {
     --layout-gutter: var(--layout-gutter-compact);
     --page-content-top: 44px;
+    --header-offset: 8px;
+    --header-height: 60px;
     /* Phones read every label, badge and note at caption size or larger. */
     --text-fine: var(--text-caption);
     --text-micro: var(--text-caption);

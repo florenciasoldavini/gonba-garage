@@ -483,7 +483,7 @@
 }
 .detail-specs {
   position: sticky;
-  top: 28px;
+  top: var(--header-clearance);
   border-radius: var(--radius);
   overflow: hidden;
 }

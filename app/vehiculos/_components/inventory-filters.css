@@ -11,23 +11,16 @@
 }
 .catalog-filters {
   position: sticky;
-  top: 14px;
+  top: var(--header-clearance);
   padding: 24px;
   border-radius: var(--radius);
 }
 .catalog-filter-heading {
   margin-bottom: 28px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 14px;
-}
-.catalog-filter-heading > div {
-  display: grid;
-  gap: 7px;
-}
-.catalog-filter-heading strong {
-  font-size: 1.125rem;
 }
 .catalog-filter-heading button {
   margin: -5px -7px;
