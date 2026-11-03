@@ -411,7 +411,6 @@
   overflow: hidden;
   border-radius: 10px;
   background: #111411;
-  transition: filter var(--duration-default) ease;
 }
 .detail-similar-arrow {
   grid-area: arrow;
@@ -421,13 +420,8 @@
     color var(--duration-default) ease,
     transform var(--duration-default) var(--ease-standard);
 }
+/* The rail only lists available cars, so their photos stay in color: grey means unavailable everywhere else. */
 @media (hover: hover) {
-  .detail-similar-photo {
-    filter: grayscale(1) brightness(0.6);
-  }
-  .detail-similar-link:hover .detail-similar-photo {
-    filter: none;
-  }
   .detail-similar-link:hover .detail-similar-name {
     transform: translateX(8px);
   }

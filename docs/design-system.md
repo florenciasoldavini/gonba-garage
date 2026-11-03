@@ -119,6 +119,8 @@ Deliberate differences:
   destination.
 - Specifications use consistent label/value rows and mono labels.
 - Availability, reserved, and sold states must have distinct text in addition to color.
+- Greyscale photos mean a car is not available (reserved or sold). Photos of available cars are always in color,
+  including the car page's "Seguí mirando" rail.
 - Mono numbers (`01`, `02`…) mark real sequences only: the sell steps, the `/vender` stepper and
   the car page's Selección / Revisión / Acompañamiento process. Unordered items don't get numbers:
   the hero qualities use the eyebrow's lime bar, the home services a lucide icon tile, and Mercado
