@@ -32,7 +32,15 @@ Meaning must never depend on color alone. Pair status colors with text or an ico
 
 - Geist Sans is the primary interface and editorial family, with Arial and Helvetica as fallbacks.
 - Geist Mono is reserved for metadata and technical values.
-- Both families are self-hosted as variable fonts with normal and italic styles.
+- Both families are self-hosted from `app/fonts/` as variable WOFF2 files (weights 100–900, upright only; the
+  OFL licences sit next to them). No interface text is italic, so the italic files are not shipped; `<em>` is
+  styled `font-style: normal`. Adding italic text needs the Geist italic files again, or the browser synthesizes
+  a slanted face.
+- The WOFF2 files are subsets of Geist 1.800 and Geist Mono 1.701 (variable TTF releases). They keep Basic Latin,
+  Latin-1, Latin Extended A/B and Additional, IPA and combining marks, punctuation, currency, arrows, math and
+  technical symbols; Cyrillic, Greek and box-drawing glyphs were dropped. To regenerate from the TTFs with
+  fontTools (`pip install fonttools brotli`):
+  `pyftsubset <font>.ttf --unicodes="U+0000-036F,U+0E3F,U+1E00-1EFF,U+2000-23FF,U+25A0-27BF,U+FB00-FB06,U+FEFF,U+FFFD" --layout-features='*' --glyph-names --notdef-outline --name-IDs='*' --name-languages='*' --flavor=woff2 --output-file=<font>.woff2`
 - Display tokens are fluid; body and control text remain stable and readable.
 - Avoid meaningful text below `--text-micro`.
 - Sentence case is the default. Uppercase is limited to short metadata labels.

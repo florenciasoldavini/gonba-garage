@@ -9,36 +9,18 @@ import { getSiteStructuredData } from '@/lib/structured-data';
 import './globals.css';
 
 const geistSans = localFont({
-  src: [
-    {
-      path: './fonts/geist-sans-variable.ttf',
-      weight: '100 900',
-      style: 'normal',
-    },
-    {
-      path: './fonts/geist-sans-variable-italic.ttf',
-      weight: '100 900',
-      style: 'italic',
-    },
-  ],
+  src: './fonts/geist-sans-variable.woff2',
+  weight: '100 900',
+  style: 'normal',
   variable: '--font-geist-sans',
   display: 'swap',
   fallback: ['Arial', 'Helvetica', 'sans-serif'],
 });
 
 const geistMono = localFont({
-  src: [
-    {
-      path: './fonts/geist-mono-variable.ttf',
-      weight: '100 900',
-      style: 'normal',
-    },
-    {
-      path: './fonts/geist-mono-variable-italic.ttf',
-      weight: '100 900',
-      style: 'italic',
-    },
-  ],
+  src: './fonts/geist-mono-variable.woff2',
+  weight: '100 900',
+  style: 'normal',
   variable: '--font-geist-mono',
   display: 'swap',
   fallback: ['monospace'],
