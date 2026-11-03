@@ -1,6 +1,6 @@
 'use client';
 
-import posthog from 'posthog-js';
+import type { PostHog } from 'posthog-js';
 
 /** Catalog toolbar, catalog empty state, or the page of a car that is no longer for sale. */
 type InventoryAlertPlacement = 'toolbar' | 'empty' | 'vehicle';
@@ -73,11 +73,36 @@ export type AnalyticsEvent = {
   [EventName in keyof AnalyticsEventProperties]: { name: EventName; properties: AnalyticsEventProperties[EventName] };
 }[keyof AnalyticsEventProperties];
 
+/** Resolves to the initialized client, or to nothing if it failed to load. Unset while analytics is off. */
+let analytics: Promise<PostHog | undefined> | undefined;
+
+function afterLoadAndIdle() {
+  return new Promise<void>(resolve => {
+    const whenIdle = () =>
+      'requestIdleCallback' in window
+        ? requestIdleCallback(() => resolve(), { timeout: 2000 })
+        : setTimeout(resolve, 1);
+    if (document.readyState === 'complete') whenIdle();
+    else window.addEventListener('load', whenIdle, { once: true });
+  });
+}
+
+/** Called once by instrumentation-client.ts. `init` runs after the page has loaded and the browser is idle. */
+export function startAnalytics(init: () => Promise<PostHog>) {
+  analytics = afterLoadAndIdle()
+    .then(init)
+    // posthog-js sends the first $pageview on a 1ms timer after init. Waiting for the same timer keeps
+    // events that fired while it loaded after their page's view, as they were before the deferral.
+    .then(posthog => new Promise<PostHog>(resolve => setTimeout(() => resolve(posthog), 1)))
+    .catch(() => undefined);
+}
+
 export function captureAnalyticsEvent<EventName extends keyof AnalyticsEventProperties>(
   eventName: EventName,
   properties: AnalyticsEventProperties[EventName],
 ) {
-  if (!process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN) return;
+  if (!analytics) return;
 
-  posthog.capture(eventName, properties);
+  // Events from before the client is ready wait for it and are sent in the order they happened.
+  void analytics.then(posthog => posthog?.capture(eventName, properties));
 }

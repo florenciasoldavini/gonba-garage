@@ -18,6 +18,14 @@ Analytics remains disabled when `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` is empty. Ke
 local development unless intentionally testing analytics, and avoid configuring it on disposable
 preview deployments so they do not pollute production data.
 
+`instrumentation-client.ts` loads `posthog-js` only after the page's `load` event, once the browser
+is idle, so the SDK never competes with hydration. The first `$pageview` is sent then. Send events
+through `captureAnalyticsEvent` (`lib/analytics/client.ts`), never by importing `posthog-js` directly:
+events fired before the SDK is ready (such as `vehicle_viewed`) wait for it and are sent in order
+right after the first `$pageview`, timestamped when sent. An event fired by a visitor who leaves
+before the SDK has loaded is lost, as is that page's `$pageview`. Surveys are disabled (`disable_surveys`), so PostHog doesn't fetch
+its survey script.
+
 Session replay is disabled independently by default. Before enabling it, verify the project-level
 privacy settings and inspect test recordings. Inputs are masked by the SDK, and the valuation and
 price-alert forms are explicitly excluded from autocapture.
