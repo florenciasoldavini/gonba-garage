@@ -55,6 +55,7 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
   const [index, setIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [focusClose, setFocusClose] = useState(false);
+  const [thumbEdges, setThumbEdges] = useState({ start: false, end: false });
   const dialogRef = useRef<HTMLDialogElement>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
   const gesture = useRef<{ x: number; y: number } | null>(null);
@@ -79,6 +80,25 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
     strip.scrollTo({ left: thumb.offsetLeft - (strip.clientWidth - thumb.offsetWidth) / 2, behavior: 'smooth' });
   }, [index]);
 
+  // Tracks whether the strip has hidden thumbnails on either side, which shows that side's fade and arrow.
+  useEffect(() => {
+    const strip = thumbsRef.current;
+    if (!strip) return;
+    const update = () =>
+      setThumbEdges({
+        start: strip.scrollLeft > 1,
+        end: strip.scrollLeft + strip.clientWidth < strip.scrollWidth - 1,
+      });
+    update();
+    strip.addEventListener('scroll', update, { passive: true });
+    const resize = new ResizeObserver(update);
+    resize.observe(strip);
+    return () => {
+      strip.removeEventListener('scroll', update);
+      resize.disconnect();
+    };
+  }, [count]);
+
   // Without photos the main slot shows the placeholder, with nothing to enlarge, count or pick.
   if (!count)
     return (
@@ -99,6 +119,10 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
     setExpanded(true);
   };
   const close = () => dialogRef.current?.close();
+  const scrollThumbs = (direction: number) => {
+    const strip = thumbsRef.current;
+    strip?.scrollBy({ left: direction * strip.clientWidth * 0.8, behavior: 'smooth' });
+  };
   const onKeyDown = (event: KeyboardEvent) => {
     if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
@@ -192,19 +216,48 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
         </span>
       </div>
       {count > 1 && (
-        <div className="detail-photo-thumbs" ref={thumbsRef} role="group" aria-label={`Elegir foto de ${title}`}>
-          {photos.map((src, photoIndex) => (
+        <div
+          className="detail-photo-rail"
+          data-more-before={thumbEdges.start || undefined}
+          data-more-after={thumbEdges.end || undefined}
+        >
+          <div className="detail-photo-thumbs" ref={thumbsRef} role="group" aria-label={`Elegir foto de ${title}`}>
+            {photos.map((src, photoIndex) => (
+              <button
+                type="button"
+                className="detail-photo-thumb"
+                key={`${src}-${photoIndex}`}
+                onClick={() => setIndex(photoIndex)}
+                aria-label={`Ver foto ${photoIndex + 1} de ${count}`}
+                aria-current={photoIndex === index ? 'true' : undefined}
+              >
+                <Image src={src} alt="" fill sizes="104px" className="cover-image" draggable={false} />
+              </button>
+            ))}
+          </div>
+          {/* Pointer shortcuts only: the keyboard reaches every thumbnail by Tab, which scrolls it into view. */}
+          {thumbEdges.start && (
             <button
               type="button"
-              className="detail-photo-thumb"
-              key={`${src}-${photoIndex}`}
-              onClick={() => setIndex(photoIndex)}
-              aria-label={`Ver foto ${photoIndex + 1} de ${count}`}
-              aria-current={photoIndex === index ? 'true' : undefined}
+              className="detail-photo-rail-arrow detail-photo-rail-arrow-prev"
+              onClick={() => scrollThumbs(-1)}
+              tabIndex={-1}
+              aria-hidden="true"
             >
-              <Image src={src} alt="" fill sizes="104px" className="cover-image" draggable={false} />
+              <ChevronLeft size={20} strokeWidth={1.8} />
             </button>
-          ))}
+          )}
+          {thumbEdges.end && (
+            <button
+              type="button"
+              className="detail-photo-rail-arrow detail-photo-rail-arrow-next"
+              onClick={() => scrollThumbs(1)}
+              tabIndex={-1}
+              aria-hidden="true"
+            >
+              <ChevronRight size={20} strokeWidth={1.8} />
+            </button>
+          )}
         </div>
       )}
 

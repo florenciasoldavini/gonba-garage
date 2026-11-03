@@ -21,10 +21,72 @@
   color: var(--accent);
 }
 
-.detail-photo-thumbs {
+/* The strip scrolls; the rail around it fades the side that hides more thumbnails and puts an arrow
+   over that fade, so a cut-off last thumbnail reads as "more" instead of a layout glitch. */
+.detail-photo-rail {
   position: relative;
   grid-column: 1;
   grid-row: 2;
+  min-width: 0;
+}
+.detail-photo-rail::before,
+.detail-photo-rail::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  width: 132px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-default) ease;
+}
+.detail-photo-rail::before {
+  left: 0;
+  background: linear-gradient(270deg, transparent, rgba(8, 10, 9, 0.86) 62%, var(--background));
+}
+.detail-photo-rail::after {
+  right: 0;
+  background: linear-gradient(90deg, transparent, rgba(8, 10, 9, 0.86) 62%, var(--background));
+}
+.detail-photo-rail[data-more-before]::before,
+.detail-photo-rail[data-more-after]::after {
+  opacity: 1;
+}
+.detail-photo-rail-arrow {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #dfe1dc;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(5, 7, 5, 0.82);
+  backdrop-filter: blur(15px);
+  cursor: pointer;
+  transition:
+    color var(--duration-default) ease,
+    background var(--duration-default) ease,
+    border-color var(--duration-default) ease;
+}
+.detail-photo-rail-arrow:hover {
+  color: var(--background);
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.detail-photo-rail-arrow-prev {
+  left: 6px;
+}
+.detail-photo-rail-arrow-next {
+  right: 6px;
+}
+.detail-photo-thumbs {
+  position: relative;
   display: flex;
   gap: 8px;
   overflow-x: auto;
