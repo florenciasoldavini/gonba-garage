@@ -3,3 +3,9 @@
 .inner-page-motion .catalog-card-image {
   will-change: clip-path;
 }
+
+/* Set by the catalog intro until InventoryCatalog hydrates and animates these itself. */
+.inner-page-motion-catalog[data-catalog-intro]
+  :is(.catalog-filters-desktop, .catalog-toolbar, .catalog-contact > div > *, .catalog-contact > .button) {
+  visibility: hidden;
+}
