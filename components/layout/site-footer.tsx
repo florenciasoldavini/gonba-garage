@@ -20,11 +20,10 @@ import './site-footer.css';
 
 type SiteFooterProps = {
   topHref: string;
-  note?: string;
   home?: boolean;
 };
 
-export function SiteFooter({ topHref, note, home = false }: SiteFooterProps) {
+export function SiteFooter({ topHref, home = false }: SiteFooterProps) {
   return (
     <FooterMotion className="site-footer section-shell">
       <div className="footer-intro">
@@ -115,7 +114,6 @@ export function SiteFooter({ topHref, note, home = false }: SiteFooterProps) {
           Volver arriba <ArrowUp aria-hidden="true" size={13} />
         </Link>
       </div>
-      {note && <small className="footer-note">{note}</small>}
     </FooterMotion>
   );
 }

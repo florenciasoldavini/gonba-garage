@@ -211,11 +211,16 @@ export function ValuationForm() {
               Continuar <ArrowRight aria-hidden="true" size={16} />
             </Button>
           ) : (
-            <Button type="submit" disabled={!isStepComplete}>
+            <Button type="submit" disabled={!isStepComplete} aria-describedby="valuation-handoff-note">
               Enviar por WhatsApp <ArrowUpRight aria-hidden="true" size={16} />
             </Button>
           )}
         </div>
+        {step === TOTAL_STEPS && (
+          <p className="valuation-handoff-note" id="valuation-handoff-note">
+            <strong>Se abre tu WhatsApp con el mensaje listo.</strong> Lo revisás y lo mandás vos · Sin compromiso.
+          </p>
+        )}
       </div>
     </form>
   );

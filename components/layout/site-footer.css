@@ -194,12 +194,6 @@
   margin-left: auto;
   font-size: var(--text-fine);
 }
-.footer-note {
-  grid-column: 1 / -1;
-  justify-self: end;
-  color: var(--color-text-tertiary);
-  font-size: var(--text-fine);
-}
 
 @media (max-width: 1000px) {
   .site-footer {
@@ -211,9 +205,6 @@
 }
 
 @media (max-width: 700px) {
-  .footer-note {
-    justify-self: start;
-  }
   .footer-instagram-copy > strong {
     font-size: 1.45rem;
   }
