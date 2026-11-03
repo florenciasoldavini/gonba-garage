@@ -8,6 +8,7 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { isLiveCatalog, listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { createPageMetadata } from '@/lib/metadata';
 import { getMepQuote } from '@/lib/integrations/mep-quote';
+import { CatalogUnavailable } from './_components/catalog-unavailable';
 import { InventoryCatalog } from './_components/inventory-catalog';
 import { InventoryCatalogFromSearchParams } from './_components/inventory-catalog-from-search-params';
 
@@ -26,7 +27,7 @@ export default async function VehiclesPage() {
   try {
     vehicles = await listCatalogVehicles();
   } catch {
-    return <main className="section-shell"><SiteHeader active="vehicles" /><h1>Catálogo no disponible</h1><p>No pudimos consultar las publicaciones. Revisá la conexión del backend y volvé a intentar.</p></main>;
+    return <CatalogUnavailable title="No pudimos cargar el catálogo." />;
   }
   const quote = await quotePromise;
   return (
