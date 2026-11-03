@@ -12,12 +12,7 @@
 .catalog-filters {
   position: sticky;
   top: var(--header-clearance);
-  /* On short screens the panel scrolls on its own so the range sliders and the note stay reachable. */
-  max-height: calc(100dvh - var(--header-clearance) - var(--header-offset));
   padding: 24px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-color: #4b514b transparent;
   border-radius: var(--radius);
 }
 .catalog-filter-heading {
@@ -73,8 +68,6 @@
 @media (max-width: 1000px) {
   .catalog-filters {
     position: static;
-    max-height: none;
-    overflow-y: visible;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0 16px;
