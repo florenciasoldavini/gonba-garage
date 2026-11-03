@@ -168,6 +168,9 @@
 .valuation-step-actions .button {
   width: 100%;
   flex: 1;
+  /* Beside "Volver" on a phone the shared 30px gap would wrap "Enviar por WhatsApp"; space-between still
+     pushes the arrow to the edge whenever there is room. */
+  gap: 12px;
   cursor: pointer;
 }
 .valuation-step-actions .button:disabled {
@@ -219,9 +222,6 @@
   }
   .valuation-form-step {
     min-height: 0;
-  }
-  .valuation-step-actions {
-    flex-direction: column-reverse;
   }
   .valuation-form,
   .valuation-success {
