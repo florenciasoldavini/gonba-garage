@@ -4,6 +4,7 @@ import { useRef, type ReactNode } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { scrollReveal } from '@/components/motion/scroll-reveal';
 import './home-gsap-motion.css';
 
 if (typeof window !== 'undefined') {
@@ -20,15 +21,19 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
       media.add(
         {
           desktop: '(min-width: 901px)',
+          mobile: '(max-width: 900px)',
           reduceMotion: '(prefers-reduced-motion: reduce)',
         },
-        context => {
+        (context, contextSafe) => {
           const { desktop, reduceMotion } = context.conditions as {
             desktop: boolean;
             reduceMotion: boolean;
           };
 
           if (reduceMotion) return;
+
+          const reveal = (trigger: string, start: string) =>
+            scrollReveal(trigger, { start, stacked: !desktop, contextSafe });
 
           const intro = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
@@ -126,14 +131,7 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
           }
 
           const inventoryCards = gsap.utils.toArray<HTMLElement>('.vehicle-card-link');
-          const inventory = gsap.timeline({
-            defaults: { ease: 'power3.out' },
-            scrollTrigger: {
-              trigger: '.inventory-section',
-              start: 'top 72%',
-              once: true,
-            },
-          });
+          const inventory = reveal('.inventory-section', 'top 72%');
 
           inventory
             .from('.inventory-section .eyebrow', { x: -34, autoAlpha: 0, duration: 0.58 })
@@ -142,9 +140,10 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
             .fromTo(
               inventoryCards,
               {
-                x: index => [-110, 0, 110][index] ?? 0,
-                y: index => (index === 1 ? 76 : 28),
-                rotation: index => [-1.2, 0, 1.2][index] ?? 0,
+                // Stacked, the cards come into view one at a time: each rises in rather than fanning out.
+                x: index => (desktop ? ([-110, 0, 110][index] ?? 0) : 0),
+                y: index => (desktop && index === 1 ? 76 : 28),
+                rotation: index => (desktop ? ([-1.2, 0, 1.2][index] ?? 0) : 0),
                 autoAlpha: 0,
               },
               {
@@ -161,7 +160,7 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
               '.vehicle-card .vehicle-image',
               {
                 scale: 1.055,
-                xPercent: index => [-3, 0, 3][index] ?? 0,
+                xPercent: index => (desktop ? ([-3, 0, 3][index] ?? 0) : 0),
                 duration: 1.3,
                 stagger: 0.1,
                 ease: 'power2.out',
@@ -169,14 +168,7 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
               '<0.34',
             );
 
-          const sell = gsap.timeline({
-            defaults: { ease: 'power3.out' },
-            scrollTrigger: {
-              trigger: '.sell-section',
-              start: 'top 72%',
-              once: true,
-            },
-          });
+          const sell = reveal('.sell-section', 'top 72%');
 
           sell
             .from('.sell-content .eyebrow', { x: 34, autoAlpha: 0, duration: 0.55 })
@@ -185,14 +177,7 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
             .from('.process-list li', { x: 34, autoAlpha: 0, stagger: 0.12, duration: 0.52 }, '<0.12')
             .from('.sell-content .button', { autoAlpha: 0, duration: 0.55 }, '<0.08');
 
-          const services = gsap.timeline({
-            defaults: { ease: 'power3.out' },
-            scrollTrigger: {
-              trigger: '.services-section',
-              start: 'top 72%',
-              once: true,
-            },
-          });
+          const services = reveal('.services-section', 'top 72%');
 
           services
             .from('.services-section .eyebrow', { x: -30, autoAlpha: 0, duration: 0.52 })
@@ -211,41 +196,20 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
             )
             .from('.service-icon', { scale: 0.4, autoAlpha: 0, stagger: 0.14, duration: 0.42 }, '<0.22');
 
-          const trust = gsap.timeline({
-            defaults: { ease: 'power3.out' },
-            scrollTrigger: {
-              trigger: '.trust-section',
-              start: 'top 70%',
-              once: true,
-            },
-          });
+          const trust = reveal('.trust-section', 'top 70%');
 
           trust
             .from('.trust-copy > *', { x: -48, autoAlpha: 0, stagger: 0.1, duration: 0.68 })
             .from('.trust-metrics > div', { x: 68, autoAlpha: 0, stagger: 0.13, duration: 0.72 }, '<0.12')
             .from('.trust-metrics strong', { yPercent: 70, autoAlpha: 0, stagger: 0.13, duration: 0.58 }, '<0.16');
 
-          const faq = gsap.timeline({
-            defaults: { ease: 'power3.out' },
-            scrollTrigger: {
-              trigger: '.faq-section',
-              start: 'top 72%',
-              once: true,
-            },
-          });
+          const faq = reveal('.faq-section', 'top 72%');
 
           faq
             .from('.faq-intro > *', { x: -44, autoAlpha: 0, stagger: 0.1, duration: 0.64 })
             .from('.faq-list summary', { x: 42, autoAlpha: 0, stagger: 0.1, duration: 0.66 }, '<0.12');
 
-          gsap
-            .timeline({
-              scrollTrigger: {
-                trigger: '.contact-section',
-                start: 'top 78%',
-                once: true,
-              },
-            })
+          reveal('.contact-section', 'top 78%')
             .from('.contact-copy > *', { y: 36, autoAlpha: 0, stagger: 0.1, duration: 0.7, ease: 'power3.out' })
             .from('.contact-actions', { scale: 0.94, autoAlpha: 0, duration: 0.68, ease: 'power3.out' }, '<0.12')
             .fromTo(

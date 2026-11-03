@@ -4,6 +4,7 @@ import { useRef, type ReactNode } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { introReveal, scrollReveal } from '@/components/motion/scroll-reveal';
 import './inner-page-motion.css';
 
 if (typeof window !== 'undefined') {
@@ -27,15 +28,19 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
       media.add(
         {
           desktop: '(min-width: 901px)',
+          mobile: '(max-width: 900px)',
           reduceMotion: '(prefers-reduced-motion: reduce)',
         },
-        context => {
+        (context, contextSafe) => {
           const { desktop, reduceMotion } = context.conditions as {
             desktop: boolean;
             reduceMotion: boolean;
           };
 
           if (reduceMotion) return;
+
+          const reveal = (trigger: string, start: string) =>
+            scrollReveal(trigger, { start, stacked: !desktop, contextSafe });
 
           if (variant === 'catalog') {
             // InventoryCatalog animates the filters, toolbar and contact block itself: it hydrates a few
@@ -65,7 +70,10 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
           }
 
           if (variant === 'detail') {
-            const intro = gsap.timeline({ defaults: { ease: 'power3.out' } });
+            const intro = introReveal(gsap.timeline({ defaults: { ease: 'power3.out' } }), {
+              stacked: !desktop,
+              contextSafe,
+            });
 
             intro
               .from('.site-header', { y: -30, autoAlpha: 0, duration: 0.75 })
@@ -98,16 +106,7 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
               );
             }
 
-            const overview = gsap.timeline({
-              defaults: { ease: 'power3.out' },
-              scrollTrigger: {
-                trigger: '.detail-overview',
-                start: 'top 72%',
-                once: true,
-              },
-            });
-
-            overview
+            reveal('.detail-overview', 'top 72%')
               .from('.detail-story > :not(.detail-highlights)', { x: -46, autoAlpha: 0, stagger: 0.1, duration: 0.66 })
               .from('.detail-highlights li', { x: -28, autoAlpha: 0, stagger: 0.1, duration: 0.5 }, '<0.16')
               .from('.detail-specs', { x: desktop ? 58 : 0, y: desktop ? 0 : 32, autoAlpha: 0, duration: 0.76 }, '<0.1')
@@ -115,41 +114,22 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
 
             // Only some cars have the rail: an empty selection would warn.
             if (root.current?.querySelector('.detail-similar')) {
-              gsap.from('.detail-similar-list > li', {
+              reveal('.detail-similar', 'top 76%').from('.detail-similar-list > li', {
                 y: 54,
                 autoAlpha: 0,
                 stagger: 0.1,
                 duration: 0.7,
-                ease: 'power3.out',
-                scrollTrigger: {
-                  trigger: '.detail-similar',
-                  start: 'top 76%',
-                  once: true,
-                },
               });
             }
 
-            gsap.from('.detail-confidence > div', {
+            reveal('.detail-confidence', 'top 76%').from('.detail-confidence > div', {
               y: 54,
               autoAlpha: 0,
               stagger: 0.13,
               duration: 0.75,
-              ease: 'power3.out',
-              scrollTrigger: {
-                trigger: '.detail-confidence',
-                start: 'top 76%',
-                once: true,
-              },
             });
 
-            gsap
-              .timeline({
-                scrollTrigger: {
-                  trigger: '.detail-contact',
-                  start: 'top 78%',
-                  once: true,
-                },
-              })
+            reveal('.detail-contact', 'top 78%')
               .from('.detail-contact .contact-copy > *', {
                 y: 34,
                 autoAlpha: 0,
@@ -171,7 +151,10 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
           }
 
           if (variant === 'valuation') {
-            const intro = gsap.timeline({ defaults: { ease: 'power3.out' } });
+            const intro = introReveal(gsap.timeline({ defaults: { ease: 'power3.out' } }), {
+              stacked: !desktop,
+              contextSafe,
+            });
 
             intro
               .from('.site-header', { y: -30, autoAlpha: 0, duration: 0.75 })
