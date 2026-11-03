@@ -15,8 +15,8 @@ type AnalyticsEventProperties = {
   };
   vehicle_contact_clicked: {
     channel: 'whatsapp';
-    /** The purchase card's main button, the contact section at the end of the page, or the floating dock. */
-    placement: 'hero' | 'callout' | 'dock';
+    /** The purchase card's main button, or the contact section at the end of the page. */
+    placement: 'hero' | 'callout';
     vehicle_slug: string;
     vehicle_status: 'available' | 'reserved' | 'sold';
   };
@@ -59,8 +59,7 @@ type AnalyticsEventProperties = {
     year: number;
   };
   vehicle_shared: { method: 'clipboard' | 'email' | 'native' | 'whatsapp'; vehicle_slug: string };
-  /** The purchase card's button or the contact dock's bell. */
-  price_alert_opened: { placement: 'card' | 'dock'; vehicle_slug: string };
+  price_alert_opened: { vehicle_slug: string };
   price_alert_created: { vehicle_slug: string };
   price_alert_failed: { vehicle_slug: string };
   valuation_started: Record<string, never>;
