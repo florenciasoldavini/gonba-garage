@@ -1,16 +1,6 @@
 'use client';
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from 'react';
+import { FormEvent, useEffect, useId, useRef, useState } from 'react';
 import { ArrowRight, ArrowUpRight, BellRing, CircleAlert, RotateCw, TrendingDown, WifiOff, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -22,10 +12,7 @@ import { getEmailError } from '@/lib/email-address';
 import { postJson, type RequestFailure } from '@/lib/json-request';
 import '../../_components/alert-dialog.css';
 
-type PriceAlertProviderProps = {
-  children: ReactNode;
-  /** Alerts are offered only on available cars, where their emails can be sent (production, not previews). */
-  enabled: boolean;
+type PriceAlertProps = {
   vehicleName: string;
   vehicleSlug: string;
   formattedPrice: string;
@@ -33,27 +20,7 @@ type PriceAlertProviderProps = {
 
 type SubmissionState = 'idle' | 'submitting' | 'success' | 'error';
 
-/** The purchase card's button, or the bell in the contact dock. */
-type PriceAlertPlacement = 'card' | 'dock';
-
-// The purchase card and the contact dock open the same dialog. Without a provider (alerts are not
-// offered on this deployment) there is nothing to open.
-const OpenPriceAlertContext = createContext<((placement: PriceAlertPlacement) => void) | null>(null);
-
-export function usePriceAlert() {
-  return useContext(OpenPriceAlertContext);
-}
-
-export function PriceAlertProvider({ enabled, ...props }: PriceAlertProviderProps) {
-  return enabled ? <PriceAlertDialog {...props} /> : props.children;
-}
-
-function PriceAlertDialog({
-  children,
-  vehicleName,
-  vehicleSlug,
-  formattedPrice,
-}: Omit<PriceAlertProviderProps, 'enabled'>) {
+export function PriceAlert({ vehicleName, vehicleSlug, formattedPrice }: PriceAlertProps) {
   const [email, setEmail] = useState('');
   const [state, setState] = useState<SubmissionState>('idle');
   const [failure, setFailure] = useState<RequestFailure | null>(null);
@@ -74,16 +41,13 @@ function PriceAlertDialog({
     panelSelector: '.price-alert-panel',
   });
 
-  const openDialog = useCallback(
-    (placement: PriceAlertPlacement) => {
-      setState('idle');
-      setFailure(null);
-      setEmailError(null);
-      captureAnalyticsEvent('price_alert_opened', { placement, vehicle_slug: vehicleSlug });
-      requestAnimationFrame(animateDialogOpen);
-    },
-    [animateDialogOpen, vehicleSlug],
-  );
+  const openDialog = () => {
+    setState('idle');
+    setFailure(null);
+    setEmailError(null);
+    captureAnalyticsEvent('price_alert_opened', { vehicle_slug: vehicleSlug });
+    requestAnimationFrame(animateDialogOpen);
+  };
 
   // The submit button is disabled while sending, which drops focus to <body>. Put it back somewhere useful.
   useEffect(() => {
@@ -126,8 +90,19 @@ function PriceAlertDialog({
   const retry = shownFailure?.retryable === true;
 
   return (
-    <OpenPriceAlertContext value={openDialog}>
-      {children}
+    <>
+      <button className="detail-alert-card" type="button" onClick={openDialog}>
+        <span className="detail-alert-symbol" aria-hidden="true">
+          <BellRing size={20} strokeWidth={2} />
+        </span>
+        <span className="detail-alert-copy">
+          <strong>Avisame si baja</strong>
+          <small>Recibí una alerta por email</small>
+        </span>
+        <span className="detail-alert-arrow" aria-hidden="true">
+          <TrendingDown size={18} strokeWidth={1.8} />
+        </span>
+      </button>
 
       <dialog
         className="price-alert-dialog"
@@ -240,27 +215,6 @@ function PriceAlertDialog({
           )}
         </div>
       </dialog>
-    </OpenPriceAlertContext>
-  );
-}
-
-/** The purchase card's "Avisame si baja". */
-export function PriceAlert() {
-  const openPriceAlert = usePriceAlert();
-  if (!openPriceAlert) return null;
-
-  return (
-    <button className="detail-alert-card" type="button" onClick={() => openPriceAlert('card')}>
-      <span className="detail-alert-symbol" aria-hidden="true">
-        <BellRing size={20} strokeWidth={2} />
-      </span>
-      <span className="detail-alert-copy">
-        <strong>Avisame si baja</strong>
-        <small>Recibí una alerta por email</small>
-      </span>
-      <span className="detail-alert-arrow" aria-hidden="true">
-        <TrendingDown size={18} strokeWidth={1.8} />
-      </span>
-    </button>
+    </>
   );
 }
