@@ -7,6 +7,7 @@ import { AlertCircle, ArrowUpRight, Check, Copy, Mail, MessageCircle, Share2, X 
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import './share-button.css';
 
 type ShareButtonProps = {
   fallbackUrl: string;

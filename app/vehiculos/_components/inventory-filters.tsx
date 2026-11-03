@@ -7,6 +7,7 @@ import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/pr
 import { DualRangeFilter } from './dual-range-filter';
 import { MepQuoteInfo } from './mep-quote-info';
 import type { CatalogMepQuote } from '@/features/vehicles/domain/catalog-pricing';
+import './inventory-filters.css';
 
 export type InventoryFiltersProps = {
   activeFilterCount: number;

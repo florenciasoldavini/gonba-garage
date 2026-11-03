@@ -9,6 +9,7 @@ import { ChevronUp, Scale, X } from 'lucide-react';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { Button } from '@/components/ui/button';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
+import './vehicle-compare-dock.css';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP);
@@ -139,7 +140,7 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
         inert={!isVisible}
         ref={root}
       >
-        {/* The full dock wherever it fits; the compact one below 741px (see globals.css). */}
+        {/* The full dock wherever it fits; the compact one below 741px (see vehicle-compare-dock.css). */}
         <div className="compare-dock compare-dock-wide glass-panel">
           <div className="compare-dock-heading">
             <span><Scale aria-hidden="true" size={17} strokeWidth={1.8} /></span>

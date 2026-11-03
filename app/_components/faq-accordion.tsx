@@ -4,6 +4,7 @@ import { useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { Plus } from 'lucide-react';
+import './faq-accordion.css';
 
 const faqs = [
   {

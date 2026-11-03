@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import './wordmark.css';
 
 const LOGO_MARK_SRC = '/brand/gonba-garage-logo-mark.svg';
 const LOGO_MARK_WIDTH = 234;

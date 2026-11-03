@@ -12,6 +12,7 @@ import { getMepQuote } from '@/lib/integrations/mep-quote';
 import { CatalogHeroCount, CatalogResultCountProvider } from './_components/catalog-result-count';
 import { InventoryCatalog } from './_components/inventory-catalog';
 import { InventoryCatalogFromSearchParams } from './_components/inventory-catalog-from-search-params';
+import './page.css';
 
 // The catalog stays out of search results until the final version of the site, whatever
 // SITE_INDEXING_ENABLED says (docs/seo-and-social-metadata.md).

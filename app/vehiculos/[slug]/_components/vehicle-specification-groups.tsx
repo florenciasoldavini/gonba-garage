@@ -2,6 +2,7 @@ import { ChevronDown } from 'lucide-react';
 import type { MercadoLibreAttribute } from '@/lib/integrations/mercado-libre/types';
 import { formatVehicleAttributeValue, groupPublicVehicleAttributes, vehicleAttributeLabel } from '@/features/vehicles/presentation/public-attributes';
 import { SpecificationAccordionMotion } from './specification-accordion-motion';
+import './vehicle-specification-groups.css';
 
 function AttributeList({ attributes }: { attributes: MercadoLibreAttribute[] }) {
   return <dl>{attributes.map(attribute => {

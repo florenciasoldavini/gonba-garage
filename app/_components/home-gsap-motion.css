@@ -1,0 +1,8 @@
+.home-gsap .hero-media,
+.home-gsap .hero-content,
+.home-gsap .hero-facts,
+.home-gsap .vehicle-card-link,
+.home-gsap .service-card { will-change: transform; }
+
+.home-gsap .hero { isolation: isolate; }
+.home-gsap .hero:hover .cover-image { transform: none; }

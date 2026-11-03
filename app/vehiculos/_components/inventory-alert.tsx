@@ -10,6 +10,8 @@ import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { postJson, type RequestFailure } from '@/lib/json-request';
+import './alert-dialog.css';
+import './inventory-alert.css';
 
 export type InventoryAlertCriteria = {
   query: string;

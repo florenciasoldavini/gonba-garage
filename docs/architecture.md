@@ -8,8 +8,8 @@ price, description, and contact action must remain usable without WebGL or clien
 ## Stack
 
 - Next.js 16 App Router, React 19 Server Components, and TypeScript.
-- Authored CSS with semantic design tokens (`styles/tokens.css`, `app/globals.css`); no CSS
-  framework. GSAP is the only animation dependency (see "Motion and 3D strategy").
+- Authored CSS with semantic design tokens (`styles/tokens.css`) and co-located stylesheets (see
+  "Styles"); no CSS framework. GSAP is the only animation dependency (see "Motion and 3D strategy").
 - Hosted on Vercel (Hobby plan): Node.js route handlers, the cron jobs in `vercel.json`, and a
   private Blob store for the encrypted Mercado Libre credentials.
 - Neon PostgreSQL is the only database: the synced catalog, alert subscriptions and their queues
@@ -198,6 +198,23 @@ keep their stricter `default-src 'none'` CSP and `no-referrer` (`lib/alerts/page
 `privateHeaders`). The site-wide CSP has no `script-src`: Next's inline bootstrap, the JSON-LD blocks
 and PostHog would need per-request nonces. Framing the site, including in PostHog's in-app heatmap
 view, is blocked.
+
+## Styles
+
+`app/globals.css` holds only what every route shares: the tokens import, resets and base elements,
+type, and the primitives used across routes (`.section-shell`, `.eyebrow`, `.button`, `.glass-panel`,
+`.text-link`, `.cover-image`, `.sr-only`, `.search-clear-button` and the status panels). Every other
+rule lives in a plain CSS file next to the component or page that renders its markup (`x.css` beside
+`x.tsx`, `page.css` beside `page.tsx`), imported as that module's last import. The alert dialogs
+shared by the catalog and the vehicle page use `app/vehiculos/_components/alert-dialog.css`.
+
+These are global stylesheets, not CSS Modules: the GSAP code and `querySelector` calls select by
+class name, and several classes are styled or animated from more than one component. Production
+loads `globals.css` first, then each component's stylesheet before the module that renders it, but
+client navigation keeps stylesheets from earlier routes in the order they arrived. Never rely on
+source order between two files: when rules in different files can match the same element with the
+same specificity and set the same property, keep them in one file or give the intended winner a
+more specific selector.
 
 ## Motion and 3D strategy
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import './catalog-result-count.css';
 
 // The hero is rendered by the server page, outside InventoryCatalog, so the filtered count reaches it
 // through context. null means no filter is active. The setter has its own context so the catalog does

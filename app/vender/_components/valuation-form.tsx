@@ -12,6 +12,7 @@ import { ValuationContactFields } from './valuation-contact-fields';
 import { ValuationStepper } from './valuation-stepper';
 import { VehicleCatalogFields } from './vehicle-catalog-fields';
 import { VehicleConditionFields } from './vehicle-condition-fields';
+import './valuation-form.css';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP);

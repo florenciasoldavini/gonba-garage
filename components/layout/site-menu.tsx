@@ -11,6 +11,7 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { INSTAGRAM_URL } from '@/constants/contact';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { siteNavigation, type NavigationKey } from './navigation';
+import './site-menu.css';
 
 type SiteMenuProps = {
   active?: NavigationKey;

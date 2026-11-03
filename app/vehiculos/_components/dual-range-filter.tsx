@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import './dual-range-filter.css';
 
 type DualRangeFilterProps = {
   formatValue: (value: number) => string;

@@ -5,6 +5,7 @@ import { CarFront } from 'lucide-react';
 
 import { CustomSelect } from '@/components/ui/custom-select';
 import { ValuationStepHeading } from './valuation-step-heading';
+import './vehicle-catalog-fields.css';
 
 type CatalogOption = {
   id: string;

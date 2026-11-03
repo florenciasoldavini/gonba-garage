@@ -1,0 +1,12 @@
+.wordmark {
+  width: max-content;
+  display: block;
+}
+
+.wordmark img { display: block; width: auto; height: 30px; }
+/* The footer size lives here, before the phone size, so phones keep the 26px logo in the footer too. */
+.footer-wordmark img { height: 44px; }
+
+@media (max-width: 700px) {
+  .wordmark img { height: 26px; }
+}

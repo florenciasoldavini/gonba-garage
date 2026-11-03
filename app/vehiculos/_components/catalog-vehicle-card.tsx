@@ -12,6 +12,7 @@ import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { formatVehicleImageAlt, formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 import { ApproximateUsdPrice } from './approximate-usd-price';
+import './catalog-vehicle-card.css';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP);

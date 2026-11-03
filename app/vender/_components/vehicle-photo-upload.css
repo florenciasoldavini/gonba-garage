@@ -1,0 +1,19 @@
+.valuation-photo-field { display: grid; gap: 12px; }
+.valuation-file-field { position: relative; width: 100%; min-height: 88px; padding: 16px 18px; display: flex; align-items: center; gap: 14px; color: var(--muted); border: 1px dashed rgba(220, 255, 0, .28); border-radius: 12px; background: rgba(220, 255, 0, .025); cursor: pointer; transition: color 180ms ease, border-color 180ms ease, background 180ms ease; }
+.valuation-file-field:hover { color: var(--text); border-color: rgba(220, 255, 0, .52); background: rgba(220, 255, 0, .07); }
+.valuation-file-field.is-dragging { color: var(--text); border-color: var(--accent); background: rgba(220, 255, 0, .1); }
+.valuation-file-field > svg { color: var(--accent); }
+.valuation-file-field > span { display: grid; gap: 4px; letter-spacing: 0; text-transform: none; }
+.valuation-file-field strong { color: var(--text); font-size: var(--text-caption); }
+.valuation-file-field small { color: var(--muted); font-size: var(--text-caption); }
+.valuation-file-field input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.valuation-file-field:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+.valuation-photo-previews { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+.valuation-photo-preview { position: relative; min-width: 0; padding: 7px; display: grid; grid-template-columns: 46px minmax(0, 1fr); align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, .04); }
+.valuation-photo-image { position: relative; width: 46px; aspect-ratio: 1; overflow: hidden; border-radius: 7px; background: var(--surface-strong); }
+.valuation-photo-image img { object-fit: cover; }
+.valuation-photo-meta { min-width: 0; display: grid; gap: 3px; }
+.valuation-photo-meta strong { overflow: hidden; color: var(--text); font-size: var(--text-caption); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.valuation-photo-meta small { color: var(--muted); font-size: var(--text-caption); }
+.valuation-photo-preview > button { position: absolute; top: 4px; right: 4px; width: 23px; height: 23px; display: grid; place-items: center; color: #aeb3aa; border: 1px solid var(--line); border-radius: 50%; background: rgba(8, 10, 9, .82); cursor: pointer; transition: color 180ms ease, border-color 180ms ease, background 180ms ease; }
+.valuation-photo-preview > button:hover { color: var(--text); border-color: rgba(220, 255, 0, .42); background: rgba(20, 22, 20, .96); }

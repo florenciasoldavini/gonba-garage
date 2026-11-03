@@ -18,6 +18,7 @@ import { listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { formatVehicleImageAlt, formatVehicleMileage } from '@/features/vehicles/presentation/formatters';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
+import './page.css';
 
 export const metadata: Metadata = createPageMetadata({
   title: "Gonba's Garage | Autos usados seleccionados",

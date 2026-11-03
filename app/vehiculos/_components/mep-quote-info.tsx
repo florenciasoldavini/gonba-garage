@@ -4,6 +4,7 @@ import { useId, useRef, useState, type KeyboardEvent } from 'react';
 import { Info } from 'lucide-react';
 
 import type { CatalogMepQuote } from '@/features/vehicles/domain/catalog-pricing';
+import './mep-quote-info.css';
 
 const arsPerUsdFormatter = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 2 });
 

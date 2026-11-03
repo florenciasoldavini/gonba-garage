@@ -9,6 +9,7 @@ import { PrivacyPolicyLink } from '@/components/ui/privacy-policy-link';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import { postJson, type RequestFailure } from '@/lib/json-request';
+import '../../_components/alert-dialog.css';
 
 type PriceAlertProps = {
   vehicleName: string;

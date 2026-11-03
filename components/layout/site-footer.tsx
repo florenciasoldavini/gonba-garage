@@ -16,6 +16,7 @@ import {
 import { LEGAL_PAGES } from '@/constants/legal';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { siteNavigation } from './navigation';
+import './site-footer.css';
 
 type SiteFooterProps = {
   topHref: string;
