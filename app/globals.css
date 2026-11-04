@@ -899,20 +899,21 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 .catalog-unavailable-door { position: relative; flex: none; height: clamp(72px, 24svh, 300px); border-bottom: 2px solid var(--accent); background: repeating-linear-gradient(180deg, transparent 0 15px, rgba(255, 255, 255, 0.07) 15px 16px), linear-gradient(180deg, #121513, #0e100f); box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6); animation: catalog-door-stuck 1.6s cubic-bezier(0.3, 0.7, 0.4, 1) 0.5s both; }
 .catalog-unavailable-door p { position: absolute; right: 24px; bottom: 18px; margin: 0; color: #73786f; font: 500 0.66rem var(--font-mono); letter-spacing: 0.1em; text-transform: uppercase; }
 .catalog-unavailable-door b { color: var(--accent); font-weight: 600; }
-.catalog-unavailable-body { flex: 1 0 auto; padding: clamp(24px, 5svh, 76px) clamp(24px, 4.5vw, 64px) clamp(24px, 5svh, 64px); display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 24px clamp(40px, 6vw, 96px); align-items: end; align-content: start; background: radial-gradient(ellipse 50% 80% at 50% 0%, rgba(220, 255, 0, 0.1), transparent 70%); }
+.catalog-unavailable-body { flex: 1 0 auto; padding: clamp(24px, 5svh, 76px) var(--status-inset) clamp(24px, 5svh, 64px); display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: 24px clamp(40px, 6vw, 96px); align-items: end; align-content: start; background: radial-gradient(ellipse 50% 80% at 50% 0%, rgba(220, 255, 0, 0.1), transparent 70%); }
 /* Capped by the viewport height so the whole card fits on short laptop screens */
-.catalog-unavailable h1 { margin: 0; font-size: min(var(--text-display-lg), 12svh); line-height: var(--leading-tight); letter-spacing: var(--tracking-display); }
+.catalog-unavailable h1 { margin: 0; font-size: var(--text-status-title); line-height: var(--leading-tight); letter-spacing: var(--tracking-display); }
 .catalog-unavailable-body p:not(.eyebrow) { max-width: 520px; margin: 0; color: var(--muted); font-size: clamp(0.95rem, 1.2vw, 1.08rem); line-height: 1.65; }
-.catalog-unavailable .status-actions { margin-top: var(--space-6); }
+.catalog-unavailable .status-actions { margin-top: var(--status-actions-gap); }
 
 /* Missing vehicle: copy on the left, the empty bay numbered 404 on the right, filling the first screen */
-/* Missing vehicle: the empty bay at night in a card; the scene gets its own column beside the copy */
-.missing-vehicle { position: relative; height: max(460px, calc(100svh - 150px)); margin-bottom: clamp(48px, 6vw, 96px); display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: center; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-feature); background: #090b0a; }
-.missing-vehicle-copy { position: relative; z-index: 1; padding: 0 24px 0 clamp(28px, 4.5vw, 72px); }
-.missing-vehicle-copy h1 { margin: 0 0 22px; font-size: min(var(--text-display-lg), 8.4svh, 5.2vw); line-height: var(--leading-tight); letter-spacing: var(--tracking-display); }
-.missing-vehicle-copy p:not(.eyebrow) { max-width: 440px; margin: 0 0 30px; color: var(--muted); font-size: clamp(0.95rem, 1.2vw, 1.08rem); line-height: 1.65; }
-.missing-vehicle-copy .status-actions { margin-top: 0; }
-.missing-vehicle-scene { position: relative; align-self: stretch; }
+/* Missing vehicle: the empty bay at night, seen from above; the scene covers the card behind the copy */
+.missing-vehicle-screen { min-height: 100svh; margin-bottom: clamp(48px, 6vw, 96px); padding-bottom: 16px; display: flex; flex-direction: column; }
+.missing-vehicle { position: relative; flex: 1; min-height: 480px; margin-top: 16px; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); align-items: center; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-feature); background: #090b0a; }
+.missing-vehicle-copy { position: relative; z-index: 1; padding: 0 24px 0 var(--status-inset); }
+.missing-vehicle-copy h1 { margin: 0 0 22px; font-size: var(--text-status-title); line-height: var(--leading-tight); letter-spacing: var(--tracking-display); }
+.missing-vehicle-copy p:not(.eyebrow) { max-width: 440px; margin: 0; color: var(--muted); font-size: clamp(0.95rem, 1.2vw, 1.08rem); line-height: 1.65; }
+.missing-vehicle-copy .status-actions { margin-top: var(--status-actions-gap); }
+.missing-vehicle-scene { position: absolute; inset: 0; }
 .missing-vehicle-scene-desktop { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
 .missing-vehicle-scene-mobile { display: none; }
 /* The lamp is mostly steady, then struggles for a moment */
@@ -923,11 +924,11 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 .route-missing { position: relative; flex: 1; min-height: 480px; margin-top: 16px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-feature); background: #090b0a; }
 .route-missing > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .route-missing-map-mobile { display: none; }
-.route-missing-copy { position: relative; z-index: 1; max-width: 700px; padding: 48px 44px; display: flex; flex-direction: column; align-items: center; text-align: center; background: radial-gradient(closest-side, #090b0a 62%, rgba(9, 11, 10, 0)); }
+.route-missing-copy { position: relative; z-index: 1; max-width: 700px; padding: 48px var(--status-inset); display: flex; flex-direction: column; align-items: center; text-align: center; background: radial-gradient(closest-side, #090b0a 62%, rgba(9, 11, 10, 0)); }
 .route-missing-copy .eyebrow, .route-missing-copy .status-actions { justify-content: center; }
-.route-missing-copy h1 { margin: 0 0 20px; font-size: min(var(--text-display-lg), 13svh); line-height: var(--leading-tight); letter-spacing: var(--tracking-display); }
-.route-missing-copy p:not(.eyebrow) { max-width: 470px; margin: 0; color: var(--muted); font-size: clamp(0.95rem, 1.2vw, 1.08rem); line-height: 1.6; }
-.route-missing-copy .status-actions { margin-top: 28px; }
+.route-missing-copy h1 { margin: 0 0 22px; font-size: var(--text-status-title); line-height: var(--leading-tight); letter-spacing: var(--tracking-display); }
+.route-missing-copy p:not(.eyebrow) { max-width: 470px; margin: 0; color: var(--muted); font-size: clamp(0.95rem, 1.2vw, 1.08rem); line-height: 1.65; }
+.route-missing-copy .status-actions { margin-top: var(--status-actions-gap); }
 .route-missing-street, .route-missing-avenue, .route-missing-avenue-edge { fill: none; stroke-linecap: round; }
 .route-missing-street { stroke: #141816; stroke-width: 9; }
 .route-missing-avenue-edge { stroke: #232825; stroke-width: 20; }
@@ -1356,25 +1357,24 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
   .status-panel { padding: 34px 22px; }
   .catalog-unavailable { margin-top: 12px; }
   /* The scene sits at the top of the card and the copy follows it */
-  .missing-vehicle { height: auto; min-height: calc(100svh - 150px); display: block; padding-top: 70%; }
+  /* The copy sits in the middle of the space under the scene, as on the catalog page */
+  .missing-vehicle { min-height: 0; margin-top: 12px; display: flex; flex-direction: column; justify-content: center; padding-top: 70%; }
   .missing-vehicle-scene { display: none; }
   .missing-vehicle-scene-mobile { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-  .missing-vehicle-copy { padding: 14px 22px 34px; }
-  .missing-vehicle-copy h1 { font-size: clamp(2.4rem, 10.6vw, 3.4rem); }
-  .missing-vehicle-copy .eyebrow { font-size: 0.66rem; letter-spacing: 0.1em; }
-  .catalog-unavailable-door { height: clamp(56px, 12svh, 170px); }
+  .missing-vehicle-copy { padding: 24px var(--status-inset); }
+  .catalog-unavailable-door { height: clamp(96px, 22svh, 240px); }
   /* The plan fills the card behind the copy; the route runs up behind the headline as on desktop */
   .route-missing { min-height: calc(100svh - 100px); margin-top: 12px; }
   .route-missing-map-desktop { display: none; }
   .route-missing-map-mobile { display: block; }
-  .route-missing-copy { padding: clamp(36px, 6svh, 52px) 26px; }
-  .route-missing-copy .eyebrow { letter-spacing: 0.1em; }
-  .route-missing-copy .eyebrow > span { display: none; }
-  .route-missing-copy h1 { font-size: clamp(2.6rem, 12vw, 3.6rem); }
+  .route-missing-copy { padding: 24px var(--status-inset); }
+  /* Same eyebrow on all three: no bar and tighter tracking, so the longest one fits on one line */
+  .route-missing-copy .eyebrow, .missing-vehicle-copy .eyebrow, .catalog-unavailable .eyebrow { letter-spacing: 0.1em; }
+  .route-missing-copy .eyebrow > span, .missing-vehicle-copy .eyebrow > span, .catalog-unavailable .eyebrow > span { display: none; }
   /* Solid, so the route behind it doesn't show through the glass */
   .route-missing-copy .button-glass { background: #151816; -webkit-backdrop-filter: none; backdrop-filter: none; }
-  .catalog-unavailable-body { padding: 24px 20px; }
-  .catalog-unavailable h1 { font-size: min(clamp(2.8rem, 13vw, 3.8rem), 7svh); }
+  /* The copy sits in the middle of the space under the door instead of leaving it all at the bottom */
+  .catalog-unavailable-body { padding: 24px var(--status-inset); align-content: center; }
   .status-actions { width: 100%; flex-direction: column; }
   .status-actions .button { width: 100%; }
   .compare-dock-shell { bottom: 10px; padding-inline: 10px; }

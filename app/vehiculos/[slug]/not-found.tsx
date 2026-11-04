@@ -28,32 +28,27 @@ export default async function MissingVehicle() {
 
   return (
     <main className="missing-vehicle-page" id="missing-vehicle-top">
-      <SiteHeader active="vehicles" />
-
-      <div className="section-shell detail-breadcrumbs" aria-label="Ruta de navegación">
-        <Link href="/">Inicio</Link><span>/</span>
-        <Link href="/vehiculos">Vehículos</Link><span>/</span>
-        <span>No encontrado</span>
-      </div>
-
-      <section className="section-shell missing-vehicle" aria-labelledby="missing-vehicle-title">
-        <EmptyBayMobile />
-        <div className="missing-vehicle-copy">
-          <Eyebrow>Error 404 · Vehículo no encontrado</Eyebrow>
-          <h1 id="missing-vehicle-title">No encontramos este auto.</h1>
-          <p>
-            El enlace puede estar incompleto o la publicación ya no existe.
-            {vehicles.length > 0 && ' Más abajo tenés los autos disponibles ahora.'}
-          </p>
-          <div className="status-actions">
-            <ButtonLink href="/vehiculos">Ver vehículos disponibles <Arrow /></ButtonLink>
-            <ButtonAnchor href={getWhatsAppUrl(WHATSAPP_GENERAL_MESSAGE)} target="_blank" rel="noopener noreferrer" variant="glass">
-              Escribinos por WhatsApp <Arrow />
-            </ButtonAnchor>
+      <div className="missing-vehicle-screen">
+        <SiteHeader active="vehicles" />
+        <section className="section-shell missing-vehicle" aria-labelledby="missing-vehicle-title">
+          <EmptyBayMobile />
+          <div className="missing-vehicle-copy">
+            <Eyebrow>Error 404 · Vehículo no encontrado</Eyebrow>
+            <h1 id="missing-vehicle-title">No encontramos este auto.</h1>
+            <p>
+              El enlace puede estar incompleto o la publicación ya no existe.
+              {vehicles.length > 0 && ' Más abajo tenés los autos disponibles ahora.'}
+            </p>
+            <div className="status-actions">
+              <ButtonLink href="/vehiculos">Ver vehículos disponibles <Arrow /></ButtonLink>
+              <ButtonAnchor href={getWhatsAppUrl(WHATSAPP_GENERAL_MESSAGE)} target="_blank" rel="noopener noreferrer" variant="glass">
+                Escribinos por WhatsApp <Arrow />
+              </ButtonAnchor>
+            </div>
           </div>
-        </div>
-        <div className="missing-vehicle-scene"><EmptyBayDesktop /></div>
-      </section>
+          <div className="missing-vehicle-scene"><EmptyBayDesktop /></div>
+        </section>
+      </div>
 
       {vehicles.length > 0 && (
         <section className="section-shell inventory-section" aria-labelledby="missing-vehicle-available">
