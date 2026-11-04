@@ -18,6 +18,14 @@ Analytics remains disabled when `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` is empty. Ke
 local development unless intentionally testing analytics, and avoid configuring it on disposable
 preview deployments so they do not pollute production data.
 
+`instrumentation-client.ts` loads `posthog-js` only after the page's `load` event, once the browser
+is idle, so the SDK never competes with hydration. The first `$pageview` is sent then. Send events
+through `captureAnalyticsEvent` (`lib/analytics/client.ts`), never by importing `posthog-js` directly:
+events fired before the SDK is ready (such as `vehicle_viewed`) wait for it and are sent in order
+right after the first `$pageview`, timestamped when sent. An event fired by a visitor who leaves
+before the SDK has loaded is lost, as is that page's `$pageview`. Surveys are disabled (`disable_surveys`), so PostHog doesn't fetch
+its survey script.
+
 Session replay is disabled independently by default. Before enabling it, verify the project-level
 privacy settings and inspect test recordings. Inputs are masked by the SDK, and the valuation and
 price-alert forms are explicitly excluded from autocapture.
@@ -25,41 +33,55 @@ price-alert forms are explicitly excluded from autocapture.
 No analytics event may include a name, email address, phone number, free-text notes, uploaded photo,
 or full search query. Vehicle slugs and catalog attributes are permitted.
 
+The privacy policy at `/privacidad` describes this collection, including the anonymous cookie and
+optional session replay. Update it whenever events, replay settings or the analytics provider change.
+
 ## Event taxonomy
 
-| Event | Meaning |
-| --- | --- |
-| `vehicle_viewed` | A vehicle detail page was rendered in the browser. |
-| `vehicle_shared` | A vehicle was shared or its link was copied successfully. |
-| `inventory_filtered` | An inventory filter or search changed after a short debounce. |
-| `inventory_zero_results` | The selected inventory criteria returned no vehicles. |
-| `inventory_alert_opened` | The saved-search alert dialog opened. |
-| `inventory_alert_created` | The inventory-alert API confirmed a successful database write. |
-| `inventory_alert_failed` | The inventory-alert request failed. |
-| `comparison_vehicle_added` | A vehicle was added to the comparison selection. |
-| `comparison_vehicle_removed` | A vehicle was removed from the comparison selection. |
-| `comparison_opened` | The comparison dialog opened with two or more vehicles. |
-| `contact_intent_clicked` | A visitor clicked an email, WhatsApp, or internal contact action. This is intent, not a confirmed lead. |
-| `price_alert_opened` | The price-alert dialog opened. |
-| `price_alert_created` | The price-alert API confirmed a successful database write. |
-| `price_alert_failed` | The price-alert request failed. |
-| `valuation_started` | A visitor first interacted with the valuation form. |
-| `valuation_step_completed` | A valid valuation step advanced. |
-| `valuation_demo_completed` | The current demonstration form reached its success screen; this is not a submitted lead. |
+| Event                        | Meaning                                                                                                                                                                                                                                                                                     |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `vehicle_viewed`             | A vehicle detail page was rendered in the browser.                                                                                                                                                                                                                                          |
+| `vehicle_shared`             | A vehicle was shared or its link was copied successfully.                                                                                                                                                                                                                                   |
+| `inventory_filtered`         | An inventory filter or search changed after a short debounce.                                                                                                                                                                                                                               |
+| `inventory_zero_results`     | The selected inventory criteria returned no vehicles.                                                                                                                                                                                                                                       |
+| `inventory_alert_opened`     | The saved-search alert dialog opened.                                                                                                                                                                                                                                                       |
+| `inventory_alert_created`    | The inventory-alert API confirmed a successful database write.                                                                                                                                                                                                                              |
+| `inventory_alert_failed`     | The inventory-alert request failed.                                                                                                                                                                                                                                                         |
+| `comparison_vehicle_added`   | A vehicle was added to the comparison selection.                                                                                                                                                                                                                                            |
+| `comparison_vehicle_removed` | A vehicle was removed from the comparison selection.                                                                                                                                                                                                                                        |
+| `comparison_opened`          | The comparison dialog opened with two or more vehicles.                                                                                                                                                                                                                                     |
+| `vehicle_contact_clicked`    | A visitor clicked a WhatsApp button on a vehicle page: `placement` is `hero` (the purchase card) or `callout` (the contact section), and `vehicle_status` is `available`, `reserved`, or `sold`. This is intent, not a confirmed lead.                                                      |
+| `contact_intent_clicked`     | A visitor clicked a general contact action; `placement` is `header`, `menu`, `footer`, `home_contact`, `home_faq`, or `catalog_contact`. This is intent, not a confirmed lead.                                                                                                              |
+| `price_alert_opened`         | The price-alert dialog opened.                                                                                                                                                                                                                                                              |
+| `price_alert_created`        | The price-alert API confirmed a successful database write.                                                                                                                                                                                                                                  |
+| `price_alert_failed`         | The price-alert request failed.                                                                                                                                                                                                                                                             |
+| `valuation_started`          | A visitor first interacted with the valuation form.                                                                                                                                                                                                                                         |
+| `valuation_step_completed`   | A valid valuation step advanced.                                                                                                                                                                                                                                                            |
+| `valuation_sent_to_whatsapp` | The completed sell-your-car form opened WhatsApp with the prefilled message. Properties are `total_steps`, `year`, and `make` and `model` (empty when typed by hand instead of picked from the catalog). The visitor still has to send the message, so this is intent, not a received lead. |
 
-Only introduce `valuation_submitted` after a production endpoint has accepted and persisted the
-lead. Record downstream outcomes such as qualified lead, scheduled visit, and vehicle sold from the
-system that owns those facts rather than from browser clicks.
+All WhatsApp contact clicks are `vehicle_contact_clicked` plus `contact_intent_clicked` with
+`channel` `whatsapp`; vehicle pages report only the first. Earlier data recorded the vehicle page's
+contact section as `contact_intent_clicked` with placement `vehicle_detail`, and did not record its
+main button at all.
+
+The sell-your-car form is sent from the visitor's own WhatsApp, so the site never receives the lead.
+Only introduce `valuation_submitted` if a server endpoint ever accepts and persists it. Record
+downstream outcomes such as qualified lead, scheduled visit, and vehicle sold from the system that
+owns those facts rather than from browser clicks.
 
 ## Google Search Console setup
 
-The application exposes `/sitemap.xml` and `/robots.txt`. Both use `NEXT_PUBLIC_SITE_URL`, so replace
-the local value with the canonical production origin before launch. While the site is a demo,
+The application exposes `/sitemap.xml` and `/robots.txt`. `robots.txt` (and the sitemap, once it is
+filled at the indexing launch) uses `NEXT_PUBLIC_SITE_URL`, so replace the local value with the
+canonical production origin before launch. Until then,
 `SITE_INDEXING_ENABLED=false` keeps every page out of search results and serves an empty sitemap.
+The catalog, car pages and sitemap also stay out of search results until the final version of the
+site, even with indexing enabled.
 
 After the final domain is connected:
 
-1. Replace demonstrative inventory and connect all production forms.
+1. Lift the catalog indexing hold ([SEO guidelines](seo-and-social-metadata.md#indexing-gates-and-permanent-domain-policy))
+   and connect all production forms.
 2. Set `SITE_INDEXING_ENABLED=true` and redeploy.
 3. Add a Domain property in Google Search Console and verify it with the DNS record supplied by Google.
 4. Submit `https://<production-domain>/sitemap.xml`.

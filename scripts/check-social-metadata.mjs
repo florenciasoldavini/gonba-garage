@@ -2,6 +2,24 @@ import assert from 'node:assert/strict';
 
 const targetOrigin = new URL(process.argv[2] || 'http://localhost:3100');
 const indexingEnabled = process.env.SITE_INDEXING_ENABLED === 'true';
+// Run with the same environment as the server. Alerts are offered only where alert emails can be
+// sent: the same check as alertEmailsConfigured() in lib/alerts/config.ts.
+const alertsEnabled = (() => {
+  try {
+    const origin = new URL(process.env.ALERTS_PUBLIC_URL || '');
+    return (
+      origin.protocol === 'https:' &&
+      origin.pathname === '/' &&
+      !origin.search &&
+      !origin.hash &&
+      !origin.username &&
+      Boolean(process.env.DATABASE_URL && process.env.RESEND_API_KEY && process.env.ALERTS_EMAIL_FROM) &&
+      (process.env.ALERTS_SIGNING_SECRET?.length ?? 0) >= 32
+    );
+  } catch {
+    return false;
+  }
+})();
 for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect', '/api/mercado-libre/diagnostics']) {
   const response = await fetch(new URL(path, targetOrigin));
   assert.equal(response.status, 401, `${path} must reject unauthenticated requests`);
@@ -9,7 +27,13 @@ for (const path of ['/api/mercado-libre/catalog', '/api/mercado-libre/connect', 
   assert.match(response.headers.get('x-robots-tag') ?? '', /noindex/);
 }
 // Alert management and catalog sync are never indexable, even when production indexing is enabled.
-for (const [path, status] of [['/api/alerts/daily', 401], ['/api/mercado-libre/sync', 401], ['/api/price-alerts/cancel', 400], ['/api/alerts/confirm', 303]]) {
+for (const [path, status] of [
+  ['/api/alerts/daily', 401],
+  ['/api/mercado-libre/sync', 401],
+  ['/api/price-alerts/cancel', 400],
+  ['/api/inventory-alerts/cancel', 400],
+  ['/api/alerts/confirm', 303],
+]) {
   const response = await fetch(new URL(path, targetOrigin), { redirect: 'manual' });
   assert.equal(response.status, status, path);
   assert.match(response.headers.get('cache-control') ?? '', /no-store/);
@@ -24,28 +48,39 @@ assert.equal(confirmLink.headers.get('location'), '/alertas/confirmacion?estado=
 const sitePage = await fetch(new URL('/', targetOrigin));
 assert.equal(sitePage.headers.get('x-frame-options'), 'DENY');
 assert.match(sitePage.headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/);
-const alertLinkPage = await fetch(new URL('/api/price-alerts/cancel?token=invalid', targetOrigin));
-assert.match(alertLinkPage.headers.get('content-security-policy') ?? '', /^default-src 'none';/);
-assert.equal(alertLinkPage.headers.get('referrer-policy'), 'no-referrer');
-assert.notEqual(process.env.VEHICLE_DATA_SOURCE, 'mercado-libre',
-  'Run the permanent/demo metadata contract without the temporary local session. Live preview must remain noindex with an empty sitemap.');
+for (const path of ['/api/price-alerts/cancel', '/api/inventory-alerts/cancel']) {
+  const alertLinkPage = await fetch(new URL(`${path}?token=invalid`, targetOrigin));
+  assert.match(alertLinkPage.headers.get('content-security-policy') ?? '', /^default-src 'none';/, path);
+  assert.equal(alertLinkPage.headers.get('referrer-policy'), 'no-referrer', path);
+}
 
+// The site ships no demo cars: the car pages under test are the real ones the server lists.
+const catalogHtml = await (await fetch(new URL('/vehiculos', targetOrigin))).text();
+const listedVehiclePaths = [
+  ...new Set([...catalogHtml.matchAll(/href="(\/vehiculos\/[^"/?#]+)"/g)].map(([, path]) => path)),
+];
+assert.ok(
+  listedVehiclePaths.length > 0,
+  'The catalog lists no cars. Run this check against a server that reads the real catalog (docs/mercado-libre-local.md).',
+);
+const [listedVehiclePath] = listedVehiclePaths;
+const listedVehicleSlug = listedVehiclePath.slice('/vehiculos/'.length);
+// Reserved and sold cars are listed nowhere, so their slugs can only be passed in (comma-separated).
+const unlistedVehiclePaths = (process.env.METADATA_UNLISTED_VEHICLES ?? '')
+  .split(',')
+  .map(slug => slug.trim())
+  .filter(Boolean)
+  .map(slug => `/vehiculos/${slug}`);
+
+// The catalog and car pages stay noindex until the final version of the site, even with
+// SITE_INDEXING_ENABLED=true. Car titles are checked against the page's own structured data.
 const routes = [
-  { path: '/', title: "Gonba's Garage | Autos usados seleccionados" },
-  { path: '/vehiculos', title: "Vehículos disponibles | Gonba's Garage" },
-  { path: '/vender', title: "Vendé tu auto | Gonba's Garage" },
-  {
-    path: '/vehiculos/bmw-330i-m-sport-2021',
-    title: "BMW 330i 2021 | Gonba's Garage",
-  },
-  {
-    path: '/vehiculos/mercedes-benz-190sl-1962',
-    title: "Mercedes-Benz 190 SL 1962 | Gonba's Garage",
-  },
-  {
-    path: '/vehiculos/porsche-356-b-1961',
-    title: "Porsche 356 B 1961 | Gonba's Garage",
-  },
+  { path: '/', title: "Gonba's Garage | Autos usados seleccionados", indexable: true },
+  { path: '/vehiculos', title: "Vehículos disponibles | Gonba's Garage", indexable: false },
+  { path: '/vender', title: "Vendé tu auto | Gonba's Garage", indexable: true },
+  { path: '/privacidad', title: "Política de privacidad | Gonba's Garage", indexable: true },
+  { path: '/terminos', title: "Términos y condiciones | Gonba's Garage", indexable: true },
+  ...listedVehiclePaths.slice(0, 3).map(path => ({ path, title: null, indexable: false })),
 ];
 
 function decodeHtml(value) {
@@ -59,16 +94,13 @@ function decodeHtml(value) {
 
 function getAttributes(tag) {
   return Object.fromEntries(
-    [...tag.matchAll(/([\w:-]+)="([^"]*)"/g)].map(([, name, value]) => [
-      name,
-      decodeHtml(value),
-    ]),
+    [...tag.matchAll(/([\w:-]+)="([^"]*)"/g)].map(([, name, value]) => [name, decodeHtml(value)]),
   );
 }
 
 function getMetadata(html) {
   const tags = [...html.matchAll(/<(?:meta|link)\b[^>]*>/g)].map(([tag]) => getAttributes(tag));
-  const find = (attribute, value) => tags.find((tag) => tag[attribute] === value);
+  const find = (attribute, value) => tags.find(tag => tag[attribute] === value);
   const title = decodeHtml(html.match(/<title>(.*?)<\/title>/)?.[1] || '');
 
   return {
@@ -101,8 +133,8 @@ function getMetadata(html) {
 }
 
 function getJsonLd(html) {
-  return [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map(
-    ([, json]) => JSON.parse(json),
+  return [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].map(([, json]) =>
+    JSON.parse(json),
   );
 }
 
@@ -127,51 +159,129 @@ for (const route of routes) {
     assert.ok(metadata.canonical, 'Home should define a canonical URL');
     canonicalOrigin = new URL(metadata.canonical).origin;
 
-    const siteGraph = jsonLd.flatMap((entry) => entry['@graph'] || []);
-    assert.ok(siteGraph.some((entry) => entry['@type'] === 'WebSite'), 'Home should describe the website');
-    assert.ok(siteGraph.some((entry) => entry['@type'] === 'AutoDealer'), 'Home should describe the business');
+    const siteGraph = jsonLd.flatMap(entry => entry['@graph'] || []);
+    assert.ok(
+      siteGraph.some(entry => entry['@type'] === 'WebSite'),
+      'Home should describe the website',
+    );
+    const dealer = siteGraph.find(entry => entry['@type'] === 'AutoDealer');
+    assert.ok(dealer, 'Home should describe the business');
+    // The dealer is located by locality only and receives visits by appointment, so the graph must
+    // never publish a street address or opening hours that would read as walk-in hours.
+    assert.deepEqual(dealer.address, {
+      '@type': 'PostalAddress',
+      addressLocality: 'Villa Pueyrredón',
+      addressRegion: 'CABA',
+      addressCountry: 'AR',
+    });
+    for (const property of ['openingHours', 'openingHoursSpecification']) {
+      assert.ok(!(property in dealer), `AutoDealer must not publish ${property}`);
+    }
+    // Google shows the dealer logo only from a square bitmap of at least 112px.
+    const dealerLogo = await fetch(new URL(new URL(dealer.logo).pathname, targetOrigin));
+    assert.equal(dealerLogo.status, 200, 'The AutoDealer logo should return 200');
+    assert.equal(dealerLogo.headers.get('content-type'), 'image/png', 'The AutoDealer logo should be PNG');
+    const dealerLogoBytes = Buffer.from(await dealerLogo.arrayBuffer());
+    assert.equal(
+      dealerLogoBytes.readUInt32BE(16),
+      dealerLogoBytes.readUInt32BE(20),
+      'The AutoDealer logo should be square',
+    );
+    assert.ok(dealerLogoBytes.readUInt32BE(16) >= 112, 'The AutoDealer logo should be at least 112px');
+    // The address and the telephone are visible facts: the footer shows the same area beside the
+    // appointment-only hours, and the WhatsApp number behind the dealer telephone.
+    const footerText = decodeHtml(
+      html
+        .match(/<footer\b.*?<\/footer>/s)?.[0]
+        .replace(/<!--.*?-->/g, '')
+        .replace(/<[^>]+>/g, ' ') ?? '',
+    ).replace(/\s+/g, ' ');
+    for (const fact of [
+      'Villa Pueyrredón, CABA',
+      'Lunes a viernes de 10 a 18 h',
+      'Sábados de 10 a 13 h',
+      'Siempre con cita previa',
+      'Pedí tu cita',
+      '+54 9 11 4414-8316',
+    ]) {
+      assert.ok(footerText.includes(fact), `Footer must show "${fact}"`);
+    }
     assert.ok(metadata.icon, 'Home should link the branded favicon');
     assert.ok(metadata.appleIcon, 'Home should link the Apple touch icon');
     assert.ok(metadata.manifest, 'Home should link the web manifest');
-    assert.ok(!html.includes('Demo visual · Contenido e información comercial a confirmar'), 'Home footer must omit the obsolete demo note');
+    assert.ok(
+      !html.includes('Demo visual · Contenido e información comercial a confirmar'),
+      'Home footer must omit the obsolete demo note',
+    );
 
-    const featuredLinks = [...html.matchAll(/<a\b[^>]*class="[^"]*vehicle-card-link[^"]*"[^>]*>/g)]
-      .map(([tag]) => getAttributes(tag).href);
-    assert.ok(featuredLinks.length > 0 && featuredLinks.length <= 3, 'Home must show up to three available catalog vehicles');
+    const featuredLinks = [...html.matchAll(/<a\b[^>]*class="[^"]*vehicle-card-link[^"]*"[^>]*>/g)].map(
+      ([tag]) => getAttributes(tag).href,
+    );
+    assert.ok(
+      featuredLinks.length > 0 && featuredLinks.length <= 3,
+      'Home must show up to three available catalog vehicles',
+    );
     assert.equal(new Set(featuredLinks).size, featuredLinks.length, 'Home vehicle links must be unique');
-    for (const href of featuredLinks) {
+    const featuredBadges = [...html.matchAll(/<span class="vehicle-status">([^<]*)<\/span>/g)].map(([, label]) =>
+      decodeHtml(label),
+    );
+    assert.equal(featuredBadges.length, featuredLinks.length, 'Every home vehicle card must show a status badge');
+    for (const [index, href] of featuredLinks.entries()) {
       assert.match(href, /^\/vehiculos\/[^/?#]+$/);
       const detail = await fetch(new URL(href, targetOrigin));
       assert.equal(detail.status, 200, `Home vehicle link ${href} must resolve`);
+      // The badge comes from the vehicle's status, the same one behind the detail label and Offer.
+      const detailHtml = await detail.text();
+      const detailLabel = decodeHtml(
+        detailHtml.match(/class="detail-availability"[^>]*><span><\/span> ?(?:<!-- -->)?([^<]*)</)?.[1] ?? '',
+      );
+      const offer = getJsonLd(detailHtml)
+        .flatMap(entry => entry['@graph'] || [])
+        .find(entry => Array.isArray(entry['@type']) && entry['@type'].includes('Product'))?.offers;
+      assert.equal(featuredBadges[index], detailLabel, `Home badge for ${href} must match its detail page status`);
+      assert.equal(featuredBadges[index], 'Disponible', `Home must only feature available vehicles (${href})`);
+      assert.equal(offer?.availability, 'https://schema.org/InStock', `Featured ${href} must be InStock`);
     }
   }
 
   if (route.path === '/vehiculos') {
-    assert.doesNotMatch(
+    assert.match(
       response.headers.get('cache-control') || '',
-      /no-store|private/,
-      'Inventory should remain statically cacheable',
+      /no-store/,
+      'The catalog must render at request time from the synced copy',
     );
   }
 
   if (route.path.startsWith('/vehiculos/')) {
-    assert.match(response.headers.get('cache-control') || '', /no-store/,
-      'Vehicle details must render at request time, including live slugs absent during build');
-    const vehicleGraph = jsonLd.flatMap((entry) => entry['@graph'] || []);
-    const product = vehicleGraph.find((entry) => Array.isArray(entry['@type']) && entry['@type'].includes('Product'));
-    const breadcrumb = vehicleGraph.find((entry) => entry['@type'] === 'BreadcrumbList');
+    assert.match(
+      response.headers.get('cache-control') || '',
+      /no-store/,
+      'Vehicle details must render at request time, including live slugs absent during build',
+    );
+    const vehicleGraph = jsonLd.flatMap(entry => entry['@graph'] || []);
+    const product = vehicleGraph.find(entry => Array.isArray(entry['@type']) && entry['@type'].includes('Product'));
+    const breadcrumb = vehicleGraph.find(entry => entry['@type'] === 'BreadcrumbList');
 
     assert.ok(product, `${route.path} should describe a Product and Vehicle`);
-    assert.equal(product.offers?.itemCondition, 'https://schema.org/UsedCondition', `${route.path} should identify a used vehicle`);
+    assert.equal(
+      product.offers?.itemCondition,
+      'https://schema.org/UsedCondition',
+      `${route.path} should identify a used vehicle`,
+    );
     assert.ok(product.offers?.availability, `${route.path} should expose lifecycle availability`);
     assert.equal(breadcrumb?.itemListElement?.length, 3, `${route.path} should expose three breadcrumb levels`);
+    route.title = `${breadcrumb.itemListElement[2].name} ${product.vehicleModelDate} | Gonba's Garage`;
   }
 
   const expectedCanonical = normalizeUrl(new URL(route.path, canonicalOrigin));
   assert.equal(metadata.title, route.title, `${route.path} should have its page title`);
   assert.ok(metadata.description, `${route.path} should have a description`);
   assert.equal(normalizeUrl(metadata.canonical), expectedCanonical, `${route.path} canonical should match its route`);
-  assert.equal(normalizeUrl(metadata.openGraph.url), expectedCanonical, `${route.path} og:url should match its canonical`);
+  assert.equal(
+    normalizeUrl(metadata.openGraph.url),
+    expectedCanonical,
+    `${route.path} og:url should match its canonical`,
+  );
   assert.equal(metadata.openGraph.title, metadata.title, `${route.path} OG title should match its title`);
   assert.equal(metadata.openGraph.description, metadata.description, `${route.path} OG description should match`);
   assert.equal(metadata.openGraph.siteName, "Gonba's Garage", `${route.path} should identify the site`);
@@ -182,15 +292,23 @@ for (const route of routes) {
   assert.equal(metadata.twitter.title, metadata.title, `${route.path} Twitter title should match`);
   assert.equal(metadata.twitter.description, metadata.description, `${route.path} Twitter description should match`);
   assert.equal(metadata.twitter.image, metadata.openGraph.image, `${route.path} should use the same social image`);
-  assert.equal(metadata.twitter.imageAlt, metadata.openGraph.imageAlt, `${route.path} social image alt text should match`);
+  assert.equal(
+    metadata.twitter.imageAlt,
+    metadata.openGraph.imageAlt,
+    `${route.path} social image alt text should match`,
+  );
 
-  if (indexingEnabled) {
+  if (indexingEnabled && route.indexable) {
     assert.match(metadata.robots || '', /index/, `${route.path} should be indexable`);
     assert.doesNotMatch(metadata.robots || '', /noindex/, `${route.path} should not emit noindex`);
   } else {
-    assert.match(metadata.robots || '', /noindex/, `${route.path} should emit noindex in demo mode`);
-    assert.match(metadata.robots || '', /nofollow/, `${route.path} should emit nofollow in demo mode`);
-    assert.match(metadata.googleBot || '', /noindex/, `${route.path} should give Googlebot noindex`);
+    const reason = indexingEnabled ? 'until the final version of the site' : 'while indexing is disabled';
+    assert.match(metadata.robots || '', /noindex/, `${route.path} should emit noindex ${reason}`);
+    assert.match(metadata.robots || '', /nofollow/, `${route.path} should emit nofollow ${reason}`);
+    // The catalog and car pages replace the site robots, so they carry no googlebot tag of their own.
+    if (route.indexable || metadata.googleBot) {
+      assert.match(metadata.googleBot || '', /noindex/, `${route.path} should give Googlebot noindex`);
+    }
   }
 
   const imagePath = new URL(metadata.openGraph.image).pathname;
@@ -209,7 +327,11 @@ for (const route of routes) {
   }
 
   {
-    assert.equal(imageResponse.headers.get('content-type'), 'image/png', `${route.path} generated social card should be PNG`);
+    assert.equal(
+      imageResponse.headers.get('content-type'),
+      'image/png',
+      `${route.path} generated social card should be PNG`,
+    );
     assert.equal(imageBytes.readUInt32BE(16), 1200, `${route.path} social card should be 1200px wide`);
     assert.equal(imageBytes.readUInt32BE(20), 630, `${route.path} social card should be 630px tall`);
   }
@@ -222,9 +344,10 @@ for (const route of routes) {
 }
 
 assert.equal(new Set(results.map(({ canonical }) => canonical)).size, routes.length, 'Canonicals should be unique');
+const vehicleResults = results.filter(({ route }) => route.startsWith('/vehiculos/'));
 assert.equal(
-  new Set(results.slice(3).map(({ image }) => image)).size,
-  routes.length - 3,
+  new Set(vehicleResults.map(({ image }) => image)).size,
+  vehicleResults.length,
   'Each vehicle should have a distinct social image',
 );
 
@@ -240,10 +363,35 @@ const sitemapText = await sitemapResponse.text();
 
 const manifestResponse = await fetch(new URL('/manifest.webmanifest', targetOrigin));
 assert.equal(manifestResponse.status, 200, 'Web manifest should return 200');
-assert.match(manifestResponse.headers.get('content-type') || '', /application\/manifest\+json/, 'Manifest should have its expected content type');
+assert.match(
+  manifestResponse.headers.get('content-type') || '',
+  /application\/manifest\+json/,
+  'Manifest should have its expected content type',
+);
 const manifest = await manifestResponse.json();
 assert.equal(manifest.name, "Gonba's Garage", 'Manifest should use the brand name');
-assert.ok(manifest.icons?.some((icon) => icon.src === '/favicon.svg'), 'Manifest should include the branded icon');
+assert.ok(
+  manifest.icons?.some(icon => icon.src === '/favicon.svg'),
+  'Manifest should include the branded icon',
+);
+// Android Chrome only offers installation with 192 and 512 PNG icons; the maskable one survives its circular crop.
+for (const [sizes, purpose] of [
+  ['192x192', 'any'],
+  ['512x512', 'any'],
+  ['512x512', 'maskable'],
+]) {
+  const icon = manifest.icons.find(
+    entry => entry.sizes === sizes && entry.type === 'image/png' && (entry.purpose ?? 'any') === purpose,
+  );
+  assert.ok(icon, `Manifest should list a ${sizes} ${purpose} PNG icon`);
+  const response = await fetch(new URL(icon.src, targetOrigin));
+  assert.equal(response.status, 200, `${icon.src} should return 200`);
+  assert.equal(response.headers.get('content-type'), 'image/png', `${icon.src} should be PNG`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const [width, height] = sizes.split('x').map(Number);
+  assert.equal(bytes.readUInt32BE(16), width, `${icon.src} should be ${width}px wide`);
+  assert.equal(bytes.readUInt32BE(20), height, `${icon.src} should be ${height}px tall`);
+}
 
 const faviconResponse = await fetch(new URL('/favicon.svg', targetOrigin));
 assert.equal(faviconResponse.status, 200, 'Branded favicon should return 200');
@@ -255,17 +403,20 @@ const localAppleIcon = new URL(`${linkedAppleIcon.pathname}${linkedAppleIcon.sea
 const appleIconResponse = await fetch(localAppleIcon);
 assert.equal(appleIconResponse.status, 200, 'Apple touch icon should return 200');
 assert.equal(appleIconResponse.headers.get('content-type'), 'image/png', 'Apple touch icon should be PNG');
+const appleIconBytes = Buffer.from(await appleIconResponse.arrayBuffer());
+assert.equal(appleIconBytes.readUInt32BE(16), 180, 'Apple touch icon should be 180px wide');
+assert.equal(appleIconBytes.readUInt32BE(20), 180, 'Apple touch icon should be 180px tall');
 
+// The sitemap stays empty until the final version of the site, even with indexing enabled.
+assert.doesNotMatch(sitemapText, /<url>/, 'The sitemap should stay empty');
 if (indexingEnabled) {
   assert.match(robotsText, /Sitemap:/, 'Indexable mode should advertise the sitemap');
-  assert.match(sitemapText, /<url>/, 'Indexable mode should publish sitemap URLs');
 } else {
-  assert.doesNotMatch(robotsText, /Sitemap:/, 'Demo mode should not advertise the sitemap');
-  assert.doesNotMatch(sitemapText, /<url>/, 'Demo mode should serve an empty sitemap');
+  assert.doesNotMatch(robotsText, /Sitemap:/, 'Disabled indexing should not advertise the sitemap');
 }
 
 // The alert confirmation result page is a normal site page, but never indexable or in the sitemap.
-for (const query of ['?estado=confirmada&tipo=precio&vehiculo=bmw-330i-m-sport-2021', '?estado=vencido', '']) {
+for (const query of [`?estado=confirmada&tipo=precio&vehiculo=${listedVehicleSlug}`, '?estado=vencido', '']) {
   const response = await fetch(new URL(`/alertas/confirmacion${query}`, targetOrigin));
   assert.equal(response.status, 200);
   const metadata = getMetadata(await response.text());
@@ -275,6 +426,17 @@ for (const query of ['?estado=confirmada&tipo=precio&vehiculo=bmw-330i-m-sport-2
   assert.equal(new URL(metadata.canonical).pathname, '/alertas/confirmacion', 'The canonical excludes the query');
   assert.equal(new URL(metadata.canonical).search, '');
 }
+// Catalog filters, sort and comparison live in the query string; they never create a canonical.
+const filteredCatalog = await fetch(
+  new URL(`/vehiculos?marca=BMW&orden=anio&comparar=${listedVehicleSlug}`, targetOrigin),
+);
+assert.equal(filteredCatalog.status, 200);
+assert.equal(
+  normalizeUrl(getMetadata(await filteredCatalog.text()).canonical),
+  normalizeUrl(new URL('/vehiculos', canonicalOrigin)),
+  'A filtered catalog URL must keep the /vehiculos canonical',
+);
+
 const alertSitemap = await (await fetch(new URL('/sitemap.xml', targetOrigin))).text();
 assert.doesNotMatch(alertSitemap, /alertas/, 'Alert pages are excluded from the sitemap');
 
@@ -288,15 +450,185 @@ for (const [, name, content] of missingHtml.matchAll(/<meta name="(robots|google
   assert.match(content, /noindex/, `The 404 page ${name} tag should be noindex, got "${content}"`);
 }
 
-// The catalog-unavailable fallback must never hide a genuinely missing vehicle.
-const missingVehicle = await fetch(new URL('/vehiculos/vehiculo-inexistente-2000', targetOrigin));
-assert.equal(missingVehicle.status, 404, 'A missing vehicle should return 404');
-const missingVehicleHtml = await missingVehicle.text();
-assert.equal(getMetadata(missingVehicleHtml).canonical, undefined, 'A missing vehicle should not claim a canonical URL');
-// A nested not-found can't set metadata, so the layout's robots tag stays; the noindex Next.js injects wins.
-assert.match(missingVehicleHtml, /<meta name="robots" content="noindex"\/>/, 'A missing vehicle should carry noindex');
+// The catalog-unavailable fallback must never hide a genuinely missing vehicle, with or without a
+// publication ID in the slug.
+for (const path of ['/vehiculos/vehiculo-inexistente-2000', '/vehiculos/vehiculo-inexistente-mla1']) {
+  const missingVehicle = await fetch(new URL(path, targetOrigin));
+  assert.equal(missingVehicle.status, 404, `A missing vehicle should return 404 (${path})`);
+  const missingVehicleHtml = await missingVehicle.text();
+  assert.equal(
+    getMetadata(missingVehicleHtml).canonical,
+    undefined,
+    'A missing vehicle should not claim a canonical URL',
+  );
+  // A nested not-found can't set metadata, so the layout's robots tag stays; the noindex Next.js injects wins.
+  assert.match(
+    missingVehicleHtml,
+    /<meta name="robots" content="noindex"\/>/,
+    'A missing vehicle should carry noindex',
+  );
+}
+// The slug is fixed at the first sync: another slug for the same publication redirects to it.
+const publicationId = listedVehicleSlug.match(/-(mla\d+)$/i)?.[1];
+assert.ok(publicationId, `${listedVehiclePath} should end in its Mercado Libre publication ID`);
+const legacySlug = await fetch(new URL(`/vehiculos/otro-titulo-${publicationId}`, targetOrigin), {
+  redirect: 'manual',
+});
+assert.equal(legacySlug.status, 308, 'A non-canonical slug should redirect permanently');
+assert.equal(new URL(legacySlug.headers.get('location'), targetOrigin).pathname, listedVehiclePath);
+
+const homeHtml = await (await fetch(targetOrigin)).text();
+const lifecycleSitemap = await (await fetch(new URL('/sitemap.xml', targetOrigin))).text();
+const activeDetail = await (await fetch(new URL(listedVehiclePath, targetOrigin))).text();
+// Every car page links up to three other available cars, never itself, when there are any.
+const assertSimilarRail = (html, path) => {
+  assert.match(html, /id="similares"/, `${path} shows other available cars`);
+  const start = html.indexOf('id="similares"');
+  const rail = html.slice(start, html.indexOf('</section>', start));
+  const railLinks = [...rail.matchAll(/<a\b[^>]*class="detail-similar-link"[^>]*>/g)].map(
+    ([tag]) => getAttributes(tag).href,
+  );
+  assert.ok(railLinks.length > 0 && railLinks.length <= 3, `${path} rail shows up to three cars`);
+  assert.ok(!railLinks.includes(path), `${path} rail never suggests the car itself`);
+  assert.ok(!rail.match(/data-status="(?!active)/), `${path} rail only suggests available cars`);
+};
+if (listedVehiclePaths.length > 1) {
+  assertSimilarRail(activeDetail, listedVehiclePath);
+  assert.ok(
+    activeDetail.indexOf('id="similares"') > activeDetail.indexOf('id="ficha"'),
+    'An available car shows the rail after its own details',
+  );
+  assert.ok(
+    activeDetail.indexOf('id="similares"') < activeDetail.indexOf('id="consulta"'),
+    'An available car keeps the contact callout as the closing section',
+  );
+  assert.match(activeDetail, /Seguí mirando/, 'An available car frames the rail as other cars to keep browsing');
+} else {
+  assert.doesNotMatch(activeDetail, /id="similares"/, 'The only available car has no rail');
+}
+assert.match(activeDetail, /Consultar por este auto/, 'An available car keeps its contact action');
+
+// Cars that are no longer for sale keep their page, out of search results and listings. Mercado Libre
+// paused reads as reserved for a while, then as sold; closed reads as sold (status.ts).
+const lifecycleStates = {
+  Reservado: { availability: 'https://schema.org/Reserved', reason: 'Está reservado' },
+  Vendido: { availability: 'https://schema.org/SoldOut', reason: 'Ya se vendió' },
+};
+for (const path of unlistedVehiclePaths) {
+  const response = await fetch(new URL(path, targetOrigin));
+  assert.equal(response.status, 200, `${path} keeps its page`);
+  assert.match(response.headers.get('cache-control') || '', /no-store/);
+  const html = await response.text();
+  const metadata = getMetadata(html);
+  const label = decodeHtml(
+    html.match(/class="detail-availability"[^>]*><span><\/span> ?(?:<!-- -->)?([^<]*)</)?.[1] ?? '',
+  );
+  const offer = getJsonLd(html)
+    .flatMap(entry => entry['@graph'] || [])
+    .find(entry => Array.isArray(entry['@type']) && entry['@type'].includes('Product'))?.offers;
+  const state = lifecycleStates[label];
+  assert.ok(state, `${path} should be a reserved or sold car, not "${label}"`);
+  const fixture = { path, ...state };
+  assert.equal(offer?.availability, fixture.availability, `${fixture.path} Offer availability`);
+  assert.ok(offer?.price > 0, `${fixture.path} Offer keeps the price shown on the page`);
+  assert.ok(metadata.description.includes(fixture.reason), `${fixture.path} description states the status`);
+  assert.doesNotMatch(metadata.description, /Consultá disponibilidad/, `${fixture.path} must not imply availability`);
+  assert.equal(metadata.openGraph.description, metadata.description);
+  assert.equal(metadata.twitter.description, metadata.description);
+  assert.equal(new URL(metadata.canonical).pathname, fixture.path, `${fixture.path} keeps its canonical`);
+  assert.match(metadata.robots || '', /noindex/, `${fixture.path} stays out of search results`);
+  assert.match(metadata.robots || '', /nofollow/, `${fixture.path} stays nofollow until the final version of the site`);
+  assert.doesNotMatch(
+    html,
+    /Consultar por este auto|comparar=|Ver publicación en Mercado Libre/,
+    `${fixture.path} must not offer the car`,
+  );
+  // The email alert is offered only where alert emails can be sent; otherwise WhatsApp is.
+  const statusCard = decodeHtml(
+    html.slice(html.indexOf('detail-status-title'), html.indexOf('detail-disclaimer')).replace(/<[^>]+>/g, ''),
+  );
+  if (alertsEnabled) {
+    assert.match(statusCard, /dejanos tu email/, `${fixture.path} offers the email alert`);
+    assert.match(html, /class="detail-alert-card"/, `${fixture.path} shows the alert card`);
+  } else {
+    assert.doesNotMatch(statusCard, /email/i, `${fixture.path} promises no email`);
+    assert.doesNotMatch(html, /class="detail-alert-card"|inventory-alert-dialog/, `${fixture.path} offers no alert`);
+    assert.match(statusCard, /escribinos por WhatsApp/, `${fixture.path} points to WhatsApp instead`);
+    assert.match(
+      html,
+      /href="https:\/\/wa\.me\/[^"]*"[^>]*>(?:Avisame por WhatsApp|Contanos qué buscás)/,
+      `${fixture.path} links WhatsApp`,
+    );
+  }
+  assertSimilarRail(html, fixture.path);
+  assert.match(html, /Parecidos, todavía en el garage/, `${fixture.path} frames the rail as alternatives`);
+  for (const listing of [catalogHtml, homeHtml, lifecycleSitemap]) {
+    assert.ok(!listing.includes(fixture.path), `${fixture.path} is not listed`);
+  }
+  const image = await fetch(new URL(new URL(metadata.openGraph.image).pathname, targetOrigin));
+  assert.equal(image.status, 200, `${fixture.path} social card`);
+  const imageBytes = Buffer.from(await image.arrayBuffer());
+  assert.equal(imageBytes.readUInt32BE(16), 1200);
+  assert.equal(imageBytes.readUInt32BE(20), 630);
+}
+
+// The legal pages are public and indexable once indexing is enabled, linked from every footer and
+// from both alert forms.
+const legalPaths = ['/privacidad', '/terminos'];
+const visibleText = html => decodeHtml((html.match(/<main\b[\s\S]*<\/main>/)?.[0] ?? '').replace(/<[^>]+>/g, ''));
+for (const path of legalPaths) {
+  const html = await (await fetch(new URL(path, targetOrigin))).text();
+  const text = visibleText(html);
+  // The owner's identity is published, never a placeholder.
+  assert.match(text, /CUIT \d{2}-\d{8}-\d/, `${path} identifies the owner`);
+  assert.doesNotMatch(text, /\b(?:TODO|TBD|placeholder)\b|\[[^\]]*\]/i, `${path} has no placeholders`);
+  assert.match(html, /<time dateTime="\d{4}-\d{2}-\d{2}">/i, `${path} shows its last update`);
+}
+const privacyHtml = await (await fetch(new URL('/privacidad', targetOrigin))).text();
+for (const required of [
+  'Ley 25.326',
+  'Agencia de Acceso a la Información Pública',
+  'PostHog',
+  'Resend',
+  'Neon',
+  'Vercel',
+  'Cancelar alerta',
+]) {
+  assert.ok(visibleText(privacyHtml).includes(required), `/privacidad mentions ${required}`);
+}
+for (const [label, html] of [
+  ['Home', homeHtml],
+  ['Catalog', catalogHtml],
+  ['Vehicle', activeDetail],
+  ['/privacidad', privacyHtml],
+]) {
+  const footer = html.match(/<footer\b[\s\S]*<\/footer>/)?.[0] ?? '';
+  for (const path of legalPaths) assert.ok(footer.includes(`href="${path}"`), `${label} footer links ${path}`);
+}
+// Each alert form is offered only where alert emails can be sent, and then states that subscribing
+// accepts the privacy policy (price on detail, search on catalog).
+for (const [label, html, enabled] of [
+  ['Price alert', activeDetail, alertsEnabled],
+  ['Inventory alert', catalogHtml, alertsEnabled],
+]) {
+  if (enabled) {
+    assert.match(
+      html,
+      /class="price-alert-privacy">[^<]*Al suscribirte aceptás la (?:<!-- -->)?<a [^>]*href="\/privacidad"/,
+      `${label} links the privacy policy`,
+    );
+  } else {
+    assert.doesNotMatch(
+      html,
+      /price-alert-dialog|price-alert-privacy|detail-alert-card|inventory-alert-trigger/,
+      `${label} is not offered without the email configuration`,
+    );
+  }
+}
 
 console.table(results);
 console.log(
-  `\nSocial metadata and ${indexingEnabled ? 'production' : 'demo'} indexing verification passed for ${routes.length} public routes.`,
+  `\nSocial metadata and ${indexingEnabled ? 'enabled' : 'disabled'} indexing verification passed for ${routes.length} public routes` +
+    ` and ${unlistedVehiclePaths.length} reserved or sold car pages (alert emails ${alertsEnabled ? 'configured' : 'not configured'}).` +
+    (unlistedVehiclePaths.length ? '' : ' Reserved and sold pages not covered: set METADATA_UNLISTED_VEHICLES.'),
 );

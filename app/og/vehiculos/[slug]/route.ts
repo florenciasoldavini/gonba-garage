@@ -3,6 +3,7 @@ import { extname, join, sep } from 'node:path';
 import { createElement } from 'react';
 import { ImageResponse } from 'next/og';
 
+import { BUSINESS_AREA_LABEL } from '@/constants/contact';
 import { findCatalogVehicle } from '@/lib/integrations/mercado-libre/catalog';
 import { formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
@@ -12,6 +13,7 @@ type VehicleSocialImageRouteProps = {
 };
 
 const publicDirectory = join(process.cwd(), 'public');
+const logoMarkPath = join(publicDirectory, 'brand', 'gonba-garage-logo-mark.png');
 const localImageContentTypes: Record<string, string> = {
   '.jpeg': 'image/jpeg',
   '.jpg': 'image/jpeg',
@@ -37,8 +39,11 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
 
   if (!vehicle) return new Response('Vehicle not found', { status: 404 });
 
-  const status = getVehicleStatusPresentation(vehicle.status);
+  const status = getVehicleStatusPresentation(vehicle);
+  // A sold car's last price is not current, so the card leaves it out.
+  const isSold = status.status === 'sold';
   const imageUrl = await resolveVehicleImageSource(vehicle.image, request.url);
+  const logoSource = `data:image/png;base64,${(await readFile(logoMarkPath)).toString('base64')}`;
 
   const image = createElement(
     'div',
@@ -67,7 +72,8 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
     }),
     createElement('div', {
       style: {
-        background: 'linear-gradient(90deg, rgba(8,10,9,0.98) 0%, rgba(8,10,9,0.88) 44%, rgba(8,10,9,0.12) 78%, rgba(8,10,9,0.28) 100%)',
+        background:
+          'linear-gradient(90deg, rgba(8,10,9,0.98) 0%, rgba(8,10,9,0.88) 44%, rgba(8,10,9,0.12) 78%, rgba(8,10,9,0.28) 100%)',
         display: 'flex',
         height: '100%',
         left: 0,
@@ -92,20 +98,22 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
       createElement(
         'div',
         { style: { alignItems: 'center', display: 'flex', justifyContent: 'space-between' } },
-        createElement(
-          'div',
-          { style: { display: 'flex', fontSize: 30, fontWeight: 900, letterSpacing: '-1.5px' } },
-          "GONBA'S ",
-          createElement('span', { style: { color: '#dcff00', marginLeft: 8 } }, 'GARAGE'),
-        ),
+        createElement('img', {
+          alt: "Gonba's Garage",
+          src: logoSource,
+          height: 52,
+          width: 71,
+          style: { height: 52, width: 71 },
+        }),
         createElement(
           'div',
           {
             style: {
               alignItems: 'center',
-              background: 'rgba(8,10,9,0.72)',
-              border: '1px solid rgba(220,255,0,0.55)',
+              background: isSold ? '#f5f6f2' : 'rgba(8,10,9,0.72)',
+              border: isSold ? '1px solid #f5f6f2' : '1px solid rgba(220,255,0,0.55)',
               borderRadius: 999,
+              color: isSold ? '#080a09' : '#f5f6f2',
               display: 'flex',
               fontSize: 18,
               letterSpacing: '1px',
@@ -121,7 +129,16 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
         { style: { display: 'flex', flexDirection: 'column', maxWidth: 720 } },
         createElement(
           'div',
-          { style: { color: '#dcff00', display: 'flex', fontSize: 22, letterSpacing: '2px', marginBottom: 14, textTransform: 'uppercase' } },
+          {
+            style: {
+              color: '#dcff00',
+              display: 'flex',
+              fontSize: 22,
+              letterSpacing: '2px',
+              marginBottom: 14,
+              textTransform: 'uppercase',
+            },
+          },
           `${vehicle.year} · ${vehicle.version}`,
         ),
         createElement(
@@ -132,15 +149,26 @@ export async function GET(request: Request, { params }: VehicleSocialImageRouteP
         createElement(
           'div',
           { style: { alignItems: 'center', display: 'flex', marginTop: 30 } },
+          isSold
+            ? null
+            : createElement(
+                'div',
+                {
+                  style: {
+                    borderTop: '5px solid #dcff00',
+                    display: 'flex',
+                    fontSize: 30,
+                    fontWeight: 700,
+                    marginRight: 28,
+                    paddingTop: 16,
+                  },
+                },
+                formatVehiclePrice(vehicle.price, vehicle.currency),
+              ),
           createElement(
             'div',
-            { style: { borderTop: '5px solid #dcff00', display: 'flex', fontSize: 30, fontWeight: 700, paddingTop: 16 } },
-            formatVehiclePrice(vehicle.price, vehicle.currency),
-          ),
-          createElement(
-            'div',
-            { style: { color: 'rgba(245,246,242,0.76)', display: 'flex', fontSize: 18, marginLeft: 28, paddingTop: 16 } },
-            vehicle.location,
+            { style: { color: 'rgba(245,246,242,0.76)', display: 'flex', fontSize: 18, paddingTop: 16 } },
+            BUSINESS_AREA_LABEL,
           ),
         ),
       ),

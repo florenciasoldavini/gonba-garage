@@ -4,18 +4,29 @@ Use this checklist when Gonba's Garage receives its final production domain. Rep
 `https://<custom-domain>` below with the chosen canonical origin, including `www` if that is the
 preferred public hostname.
 
-> **Indexing release gate:** the demo intentionally defaults to `SITE_INDEXING_ENABLED=false`.
-> Connecting the permanent URL is not enough by itself. Set the final `NEXT_PUBLIC_SITE_URL`, change
-> `SITE_INDEXING_ENABLED=true` in Production, then redeploy and verify both values before submitting
-> the sitemap.
+> **Indexing release gate:** the site intentionally defaults to `SITE_INDEXING_ENABLED=false`, and
+> the catalog, car pages and sitemap stay out of search results until the final version of the site
+> even when it is `true`. Connecting the permanent URL is not enough by itself. Lift the catalog
+> indexing hold in code ([SEO guidelines](seo-and-social-metadata.md#indexing-gates-and-permanent-domain-policy)),
+> set the final `NEXT_PUBLIC_SITE_URL`, change `SITE_INDEXING_ENABLED=true` in Production, then
+> redeploy and verify both values before submitting the sitemap.
 
-## Current temporary setup
+## Current setup
 
-- Public URL: `https://gonba-garage.vercel.app`
+- Public URL: `https://gonbagarage.com.ar`, connected on Vercel. `www.gonbagarage.com.ar`
+  redirects permanently to it, and production pages already use it as their canonical URL.
 - Hosting: Vercel
 - Canonical URL source: `NEXT_PUBLIC_SITE_URL`
-- Search Console: temporary URL-prefix property for the Vercel URL
+- Temporary hostname: `https://gonba-garage.vercel.app` still serves the site without a redirect
+  and is still the fallback in `lib/site-url.ts`.
+- Indexing: still off (`robots.txt` advertises no sitemap), as intended until the final launch.
+- Search Console: temporary URL-prefix property for the Vercel URL; not yet reviewed for the new
+  domain.
 - Analytics: the existing PostHog project named **Gonba's Garage**
+
+The domain is connected, but the unticked items below have not been confirmed since. Review each
+one at the final launch, in particular the Mercado Libre callback and webhook URLs and
+`ALERTS_PUBLIC_URL`.
 
 Before making changes, record the exact final domain, who controls its DNS, and which hostname is
 canonical. Vercel recommends using `www` as the primary hostname and redirecting the apex domain to
@@ -25,16 +36,16 @@ it, but either direction is supported. Use one convention consistently.
 
 - [ ] Add both `<custom-domain>` and `www.<custom-domain>` to the Gonba's Garage Vercel project.
 - [ ] Choose the canonical hostname: `https://<custom-domain>` or
-  `https://www.<custom-domain>`.
+      `https://www.<custom-domain>`.
 - [ ] Configure the non-canonical hostname as a permanent redirect to the canonical hostname.
 - [ ] Add the exact DNS records shown by Vercel to the domain's DNS provider. Do not copy generic A
-  or CNAME values from documentation when the Vercel project shows project-specific records.
+      or CNAME values from documentation when the Vercel project shows project-specific records.
 - [ ] If nameservers are moved to Vercel, copy every existing email and verification record first,
-  including MX, SPF, DKIM, DMARC, and third-party TXT records.
+      including MX, SPF, DKIM, DMARC, and third-party TXT records.
 - [ ] Wait for Vercel to report a valid configuration and provision the TLS certificate.
 - [ ] Decide how the temporary `gonba-garage.vercel.app` hostname should behave. Prefer a permanent
-  redirect to the matching path on the custom domain. If Vercel cannot redirect that generated
-  hostname, keep it out of public links and rely on the custom-domain canonicals.
+      redirect to the matching path on the custom domain. If Vercel cannot redirect that generated
+      hostname, keep it out of public links and rely on the custom-domain canonicals.
 
 Reference: [Vercel custom-domain setup](https://vercel.com/docs/domains/set-up-custom-domain) and
 [Vercel domain redirects](https://vercel.com/docs/domains/working-with-domains/deploying-and-redirecting).
@@ -42,18 +53,20 @@ Reference: [Vercel custom-domain setup](https://vercel.com/docs/domains/set-up-c
 ## 2. Update the repository and Vercel environment
 
 - [ ] Set `NEXT_PUBLIC_SITE_URL=https://<custom-domain>` in the Vercel **Production** environment.
-- [ ] Set `SITE_INDEXING_ENABLED=true` in **Production** only after the real inventory, forms, domain,
-  and business details are ready to be indexed. Keep it `false` for demos and previews.
+- [ ] Lift the catalog indexing hold in code so `/vehiculos`, active car pages and the sitemap can be
+      indexed ([SEO guidelines](seo-and-social-metadata.md#indexing-gates-and-permanent-domain-policy)).
+- [ ] Set `SITE_INDEXING_ENABLED=true` in **Production** only after the final site, forms, domain,
+      and business details are ready to be indexed. Keep it `false` locally and on previews.
 - [ ] Set the same value for **Preview** only if previews should deliberately publish canonical and
-  share URLs pointing to production. Otherwise, keep previews protected from indexing.
+      share URLs pointing to production. Otherwise, keep previews protected from indexing.
 - [ ] Redeploy after changing the variable; existing deployments do not receive a new value
-  retroactively.
+      retroactively.
 - [ ] Replace the fallback `https://gonba-garage.vercel.app` in `lib/site-url.ts` with the final
-  canonical origin.
+      canonical origin.
 - [ ] Keep `.env.example` generic. For local development, use
-  `NEXT_PUBLIC_SITE_URL=http://localhost:3000` unless testing production URLs intentionally.
+      `NEXT_PUBLIC_SITE_URL=http://localhost:3000` unless testing production URLs intentionally.
 - [ ] Update the ignored local `.env.local` only if local builds need to emit production-domain
-  metadata.
+      metadata.
 - [ ] Search for any remaining temporary host references:
 
   ```bash
@@ -79,43 +92,51 @@ licenses. Only replace the temporary public hostname.
 
 ### Mercado Libre
 
-The OAuth callback and webhook are planned in `docs/architecture.md`; complete these items when that
-integration is enabled.
+The OAuth callback and webhook are live (see `docs/architecture.md`, "Mercado Libre sync"). Until
+these items are done, the integration keeps using the temporary hostname.
 
 - [ ] Change `MERCADO_LIBRE_REDIRECT_URI` in Vercel to
-  `https://<custom-domain>/api/mercado-libre/callback`.
+      `https://<custom-domain>/api/mercado-libre/callback`.
 - [ ] Add that exact redirect URI to the Mercado Libre developer application. Scheme, hostname,
-  path, and trailing slash must match the deployed callback exactly.
+      path, and trailing slash must match the deployed callback exactly.
 - [ ] Change the Mercado Libre notification/webhook URL to
-  `https://<custom-domain>/api/mercado-libre/webhook`.
+      `https://<custom-domain>/api/mercado-libre/webhook`.
 - [ ] Redeploy, then run a fresh OAuth authorization and a test webhook delivery.
 - [ ] Keep the client secret unchanged unless there is a separate reason to rotate it.
+
+### Alert emails
+
+- [ ] Change `ALERTS_PUBLIC_URL` to `https://<custom-domain>` and redeploy. It is the fixed origin of
+      every vehicle, confirmation and cancellation link in alert emails (`lib/alerts/config.ts`). Links
+      in emails that were already sent keep the old hostname, so keep the old hostname redirecting.
+- [ ] If `ALERTS_EMAIL_FROM` moves to an address on the new domain, verify that domain in Resend and
+      configure its SPF, DKIM and DMARC records before switching.
 
 ### Other services
 
 - [ ] Update the authentication provider's site URL and redirect allow list if customer or admin
-  login is added. The current site does not require this for its public pages.
+      login is added. The current site does not require this for its public pages.
 - [ ] Update webhook endpoints, CORS allow lists, CAPTCHA allowed domains, maps APIs, storage/CDN
-  origins, or form providers if any are added before launch.
+      origins, or form providers if any are added before launch.
 - [ ] Update uptime checks and Vercel monitors to request the custom hostname.
 
 ## 4. Move Google Search Console to the custom domain
 
 - [ ] Add a Search Console **Domain property** using only `<custom-domain>`—no protocol, path, or
-  `www`—so it covers HTTPS, HTTP, apex, and subdomains.
+      `www`—so it covers HTTPS, HTTP, apex, and subdomains.
 - [ ] Add the Google-provided TXT verification record to DNS and verify ownership.
 - [ ] Keep `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION` during the migration if it is still needed for the
-  temporary URL-prefix property. A DNS-verified Domain property does not depend on the HTML meta
-  token.
+      temporary URL-prefix property. A DNS-verified Domain property does not depend on the HTML meta
+      token.
 - [ ] Submit `https://<custom-domain>/sitemap.xml` in the new property.
 - [ ] Inspect the homepage, `/vehiculos`, `/vender`, and several vehicle detail URLs.
 - [ ] Confirm every indexed page reports the custom-domain URL as its canonical.
 - [ ] If the temporary Vercel Search Console property becomes verified and has meaningful history,
-  keep it available during migration. Use Search Console's Change of Address only if the old
-  property is eligible; the permanent redirects and new sitemap remain required either way.
+      keep it available during migration. Use Search Console's Change of Address only if the old
+      property is eligible; the permanent redirects and new sitemap remain required either way.
 - [ ] Monitor indexing, crawl errors, and search traffic in both properties during the transition.
 - [ ] Keep redirects for at least one year; keeping them indefinitely is better for visitors using
-  old links.
+      old links.
 
 References: [Search Console property types](https://support.google.com/webmasters/answer/34592?hl=en)
 and [Google's site-move guidance](https://developers.google.com/search/docs/crawling-indexing/site-move-with-url-changes).
@@ -126,12 +147,12 @@ The existing PostHog project and `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` can stay un
 domain does not require new analytics credentials.
 
 - [ ] Open the custom-domain site and confirm `$pageview` and Gonba's Garage custom events arrive in
-  the same PostHog project.
+      the same PostHog project.
 - [ ] Update any PostHog dashboard filters, saved insights, toolbar URLs, allowed origins, or internal
-  traffic rules that explicitly mention `gonba-garage.vercel.app`.
+      traffic rules that explicitly mention `gonba-garage.vercel.app`.
 - [ ] Add a migration annotation with the launch date so traffic changes are easy to interpret.
 - [ ] Filter out preview and Vercel-host traffic from production reporting if those hosts remain
-  reachable.
+      reachable.
 - [ ] Confirm consent/privacy copy still accurately describes analytics collection.
 
 ## 6. Replace public-facing links
@@ -139,13 +160,10 @@ domain does not require new analytics credentials.
 - [ ] Update the website link in Google Business Profile and all social profiles.
 - [ ] Update Mercado Libre seller details and any other marketplace profile that links to the site.
 - [ ] Update email signatures, QR codes, WhatsApp templates, proposals, invoices, printed material,
-  and saved response templates.
+      and saved response templates.
 - [ ] Ask owners of important external links to replace the Vercel URL with the custom domain.
-- [ ] Confirm whether `ventas@gonbagarage.com.ar` matches the final domain and is active. If the
-  final domain differs, update the email link in `app/vehiculos/[slug]/page.tsx` and configure the
-  new mailbox before deployment.
-- [ ] If the application starts sending email, configure and validate SPF, DKIM, and DMARC before
-  using an address on the new domain.
+- [ ] The site currently publishes no email address (contact is through WhatsApp,
+      `constants/contact.ts`). If one is added, configure the mailbox on the final domain first.
 
 There are no paid-ad destination URLs to update at present. Add that step later only if campaigns
 are created.
@@ -170,23 +188,23 @@ are created.
 - [ ] Confirm PostHog receives the expected events without personal data.
 - [ ] Check mobile and desktop layouts, social link previews, 404s, and Vercel runtime logs.
 - [ ] Monitor Search Console and PostHog daily for the first week, then weekly until indexing and
-  traffic have stabilized.
+      traffic have stabilized.
 
 ## Completion record
 
 Fill this in during launch:
 
-| Item | Value |
-| --- | --- |
-| Final domain | |
-| Canonical origin | |
-| DNS provider | |
-| Domain owner/contact | |
-| Launch date | |
-| Vercel domain verified | |
-| `NEXT_PUBLIC_SITE_URL` verified | |
-| `SITE_INDEXING_ENABLED=true` verified | |
-| Search Console property verified | |
-| Sitemap submitted | |
-| Old hostname redirects verified | |
-| PostHog events verified | |
+| Item                                  | Value |
+| ------------------------------------- | ----- |
+| Final domain                          |       |
+| Canonical origin                      |       |
+| DNS provider                          |       |
+| Domain owner/contact                  |       |
+| Launch date                           |       |
+| Vercel domain verified                |       |
+| `NEXT_PUBLIC_SITE_URL` verified       |       |
+| `SITE_INDEXING_ENABLED=true` verified |       |
+| Search Console property verified      |       |
+| Sitemap submitted                     |       |
+| Old hostname redirects verified       |       |
+| PostHog events verified               |       |

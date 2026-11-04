@@ -7,6 +7,7 @@ import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { WHATSAPP_GENERAL_MESSAGE } from '@/constants/contact';
 import { getWhatsAppUrl } from '@/lib/contact';
+import './stuck-door.css';
 
 export const GENERIC_ERROR_COPY = {
   eyebrow: 'Error · Algo falló',
@@ -27,7 +28,9 @@ export function StuckDoorCard({ eyebrow, title, text, action }: StuckDoorCardPro
   return (
     <section className="section-shell stuck-door" aria-labelledby="stuck-door-title">
       <div className="stuck-door-panel" aria-hidden="true">
-        <p>Portón 1 · <b>Trabado</b></p>
+        <p>
+          Portón 1 · <b>Trabado</b>
+        </p>
       </div>
       <div className="stuck-door-body">
         <div>
@@ -38,7 +41,12 @@ export function StuckDoorCard({ eyebrow, title, text, action }: StuckDoorCardPro
           <p>{text}</p>
           <div className="status-actions">
             {action}
-            <ButtonAnchor href={getWhatsAppUrl(WHATSAPP_GENERAL_MESSAGE)} target="_blank" rel="noopener noreferrer" variant="glass">
+            <ButtonAnchor
+              href={getWhatsAppUrl(WHATSAPP_GENERAL_MESSAGE)}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="glass"
+            >
               Escribinos por WhatsApp <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
             </ButtonAnchor>
           </div>

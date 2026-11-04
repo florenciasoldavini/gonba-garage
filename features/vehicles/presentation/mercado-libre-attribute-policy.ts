@@ -1,3 +1,5 @@
+import { vehicleSpecificationLabels } from './specifications';
+
 /** Explicit display policy for MLA1744 (Autos y Camionetas), reviewed 2026-10-28.
  * Source: https://api.mercadolibre.com/categories/MLA1744/attributes
  * Includes separately identified legacy IDs observed in Gonba publications.
@@ -5,8 +7,14 @@
  */
 export type VehicleAttributeSection = 'general' | 'mechanics' | 'safety' | 'comfort' | 'dimensions';
 
-export type AttributeExclusionReason = 'internal_metadata' | 'identifiers' | 'unconfirmed_warranty'
-  | 'regional_metadata' | 'history_disabled' | 'commercial_terms' | 'not_vehicle_specification';
+export type AttributeExclusionReason =
+  | 'internal_metadata'
+  | 'identifiers'
+  | 'unconfirmed_warranty'
+  | 'regional_metadata'
+  | 'history_disabled'
+  | 'commercial_terms'
+  | 'not_vehicle_specification';
 
 export type VehicleAttributeRule =
   | { readonly action: 'show'; readonly section: VehicleAttributeSection }
@@ -34,7 +42,7 @@ export const VEHICLE_ATTRIBUTE_POLICY_GROUPS = [
       'ENGINE', // Motor
       'FUEL_TYPE', // Tipo de combustible
       'TRANSMISSION', // Transmisión
-      'TRACTION_CONTROL', // Control de tracción
+      'TRACTION_CONTROL', // Control de tracción, shown as "Tracción" (see VEHICLE_ATTRIBUTE_LABELS)
       'COLOR', // Color
       'TRIM', // Versión
       'SHORT_VERSION', // Versiones
@@ -426,6 +434,14 @@ export const VEHICLE_ATTRIBUTE_POLICY_GROUPS = [
     ],
   },
 ] as const;
+
+/**
+ * Labels that replace Mercado Libre's attribute name where the name misdescribes the value.
+ * TRACTION_CONTROL holds the drivetrain ("Delantera", "4x4"), not the traction control system.
+ */
+export const VEHICLE_ATTRIBUTE_LABELS: Partial<Record<string, string>> = {
+  TRACTION_CONTROL: vehicleSpecificationLabels.traction,
+};
 
 const rules = new Map<string, VehicleAttributeRule>(
   VEHICLE_ATTRIBUTE_POLICY_GROUPS.flatMap(group => group.ids.map(id => [id, group.rule] as const)),

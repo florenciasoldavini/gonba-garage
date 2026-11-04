@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ComponentProps } from 'react';
+import type { AnchorHTMLAttributes, ComponentProps } from 'react';
 
 export type ButtonVariant = 'accent' | 'glass' | 'dark' | 'ghost';
 
@@ -14,7 +14,7 @@ function getButtonClassName(variant: ButtonVariant, className?: string) {
   return ['button', variantClassNames[variant], className].filter(Boolean).join(' ');
 }
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+type ButtonProps = ComponentProps<'button'> & {
   variant?: ButtonVariant;
 };
 

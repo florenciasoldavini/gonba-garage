@@ -1,0 +1,349 @@
+.vehicle-compare-modal {
+  will-change: transform, opacity;
+}
+
+.vehicle-compare-dialog {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  padding: clamp(10px, 2vw, 28px);
+  color: var(--text);
+  border: 0;
+  background: transparent;
+}
+.vehicle-compare-dialog::backdrop {
+  background: rgba(2, 4, 3, 0.82);
+  backdrop-filter: blur(12px);
+}
+.vehicle-compare-modal {
+  width: min(1180px, 100%);
+  height: 100%;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: #0d100e;
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.58);
+}
+.vehicle-compare-modal-header {
+  min-height: 84px;
+  padding: 16px clamp(18px, 3vw, 36px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  border-bottom: 1px solid var(--line);
+}
+.vehicle-compare-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+.vehicle-compare-modal-title > span {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: var(--accent-dark);
+  border-radius: 10px;
+  background: var(--accent);
+}
+.vehicle-compare-modal-header h2 {
+  margin: 0 0 4px;
+  font-size: clamp(1.25rem, 2vw, 1.7rem);
+  letter-spacing: -0.035em;
+}
+.vehicle-compare-modal-title p {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.vehicle-compare-close {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.035);
+  cursor: pointer;
+  transition:
+    color var(--duration-default) ease,
+    border-color var(--duration-default) ease,
+    background var(--duration-default) ease;
+}
+.vehicle-compare-close:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.09);
+}
+.vehicle-compare-controls {
+  min-height: 62px;
+  padding: 11px clamp(18px, 3vw, 36px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.vehicle-compare-controls label {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #bec3ba;
+  cursor: pointer;
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+.vehicle-compare-controls label input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.vehicle-compare-controls label span {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  color: transparent;
+  border: 1px solid var(--color-border-control);
+  border-radius: 5px;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms var(--ease-standard);
+}
+.vehicle-compare-controls label input:checked + span {
+  color: var(--accent-dark);
+  border-color: var(--accent);
+  background: var(--accent);
+  transform: scale(1.05);
+}
+.vehicle-compare-controls label input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.vehicle-compare-controls > button {
+  padding: 8px 10px;
+  color: #9ca198;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  font: 700 var(--text-caption) var(--font-sans);
+  transition:
+    color var(--duration-default) ease,
+    background var(--duration-default) ease;
+}
+.vehicle-compare-controls > button:hover {
+  color: var(--accent);
+  background: rgba(220, 255, 0, 0.07);
+}
+.vehicle-compare-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  scrollbar-color: #4b514b rgba(255, 255, 255, 0.05);
+}
+.vehicle-compare-content {
+  min-width: calc(190px + (var(--compare-count) * 270px));
+  padding: 20px clamp(18px, 3vw, 36px) 38px;
+}
+.vehicle-compare-cards,
+.vehicle-compare-row {
+  display: grid;
+  grid-template-columns: 190px repeat(var(--compare-count), minmax(240px, 1fr));
+}
+.vehicle-compare-cards {
+  align-items: stretch;
+}
+.vehicle-compare-corner {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+.vehicle-compare-card {
+  min-width: 0;
+  padding: 10px 18px 24px;
+  border-left: 1px solid var(--line);
+}
+.vehicle-compare-card-image {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 11px;
+  background: #151815;
+}
+.vehicle-compare-card-image button {
+  position: absolute;
+  z-index: 2;
+  top: 8px;
+  right: 8px;
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: white;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: rgba(5, 7, 5, 0.8);
+  cursor: pointer;
+  line-height: 0;
+  transition:
+    color var(--duration-default) ease,
+    border-color var(--duration-default) ease,
+    background var(--duration-default) ease,
+    transform var(--duration-default) var(--ease-standard);
+}
+.vehicle-compare-card-image button:hover {
+  color: var(--accent-dark);
+  border-color: var(--accent);
+  background: var(--accent);
+  transform: scale(1.08);
+}
+.vehicle-compare-card > p {
+  margin: 14px 0 5px;
+  color: var(--accent);
+  font: 600 var(--text-label) var(--font-mono);
+  text-transform: uppercase;
+}
+.vehicle-compare-card h3 {
+  margin: 0 0 13px;
+  font-size: clamp(1rem, 2vw, 1.45rem);
+}
+.vehicle-compare-card > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #c8ccc4;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  transition: color var(--duration-default) ease;
+}
+.vehicle-compare-card > a svg {
+  transition: transform var(--duration-default) var(--ease-standard);
+}
+.vehicle-compare-card > a:hover {
+  color: var(--accent);
+}
+.vehicle-compare-card > a:hover svg {
+  transform: translate(3px, -2px);
+}
+.vehicle-compare-row {
+  min-height: 70px;
+  border-top: 1px solid var(--line);
+}
+.vehicle-compare-row > div {
+  min-width: 0;
+  padding: 17px 18px;
+  display: flex;
+  align-items: center;
+  border-left: 1px solid var(--line);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+.vehicle-compare-price {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.vehicle-compare-row > div:first-child {
+  padding-left: 0;
+  color: #858a82;
+  border-left: 0;
+  font: 500 var(--text-label) var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.vehicle-compare-content:has(+ .vehicle-compare-empty > div) {
+  padding-bottom: 0;
+}
+.vehicle-compare-empty {
+  position: sticky;
+  left: 0;
+  padding-inline: clamp(18px, 3vw, 36px);
+}
+.vehicle-compare-empty > div {
+  padding: 44px 0 48px;
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  border-top: 1px solid var(--line);
+}
+.vehicle-compare-empty > div > span {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 16px;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.035);
+}
+.vehicle-compare-empty h3 {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+.vehicle-compare-empty p {
+  max-width: 36ch;
+  margin: 0 0 22px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.vehicle-compare-empty .button {
+  justify-content: center;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .vehicle-compare-dialog {
+    padding: 8px;
+  }
+  .vehicle-compare-modal {
+    border-radius: 18px;
+  }
+  .vehicle-compare-modal-header {
+    min-height: 76px;
+    padding: 12px 14px;
+  }
+  .vehicle-compare-modal-title > span {
+    width: 36px;
+    height: 36px;
+  }
+  .vehicle-compare-modal-header h2 {
+    font-size: 1.15rem;
+  }
+  .vehicle-compare-controls {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .vehicle-compare-content {
+    min-width: calc(140px + (var(--compare-count) * 230px));
+    padding-inline: 16px;
+  }
+  .vehicle-compare-cards,
+  .vehicle-compare-row {
+    grid-template-columns: 140px repeat(var(--compare-count), minmax(210px, 1fr));
+  }
+  .vehicle-compare-card {
+    padding-inline: 12px;
+  }
+  .vehicle-compare-row > div {
+    padding-inline: 12px;
+  }
+  .vehicle-compare-empty {
+    padding-inline: 16px;
+  }
+}

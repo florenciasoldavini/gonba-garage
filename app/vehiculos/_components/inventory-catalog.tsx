@@ -1,107 +1,185 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ArrowUpRight } from 'lucide-react';
 
-import { ButtonLink } from '@/components/ui/button';
+import { IN_VIEW_START, scrollReveal } from '@/components/motion/scroll-reveal';
+import { ButtonAnchor } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { WHATSAPP_CATALOG_MESSAGE } from '@/constants/contact';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
-import { comparableUsdPrice, type MepQuote } from '@/features/vehicles/domain/catalog-pricing';
+import { comparableUsdPrice, type CatalogMepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
+import { getWhatsAppUrl } from '@/lib/contact';
 import { CatalogEmptyState } from './catalog-empty-state';
+import {
+  catalogAlertCriteria,
+  catalogFilterReducer,
+  catalogFilterStateFromUrl,
+  countActiveCatalogFilters,
+  filterCatalogVehicles,
+  type CatalogFilterState,
+} from './catalog-filter-state';
+import { usePublishCatalogResultCount } from './catalog-result-count';
 import { CatalogVehicleCard } from './catalog-vehicle-card';
-import { InventoryAlert, type InventoryAlertCriteria } from './inventory-alert';
+import { parseCatalogUrlState, serializeCatalogUrlState, type CatalogUrlBounds } from './catalog-url-state';
+import { InventoryAlert } from './inventory-alert';
 import { InventoryFilters, type InventoryFiltersProps } from './inventory-filters';
-import { InventoryToolbar, type InventorySort } from './inventory-toolbar';
+import { InventoryToolbar } from './inventory-toolbar';
 import { MobileInventoryFilters } from './mobile-inventory-filters';
 import { VehicleCompareDialog } from './vehicle-compare-dialog';
 import { VehicleCompareDock } from './vehicle-compare-dock';
+import './inventory-catalog.css';
 
 if (typeof window !== 'undefined') {
-  gsap.registerPlugin(useGSAP);
+  gsap.registerPlugin(useGSAP, ScrollTrigger);
 }
 
 type InventoryCatalogProps = {
   vehicles: Vehicle[];
-  quote: MepQuote | null;
-  initialCompareSlug?: string;
+  quote: CatalogMepQuote | null;
+  // Alert emails can be sent here. Without them (an unconfigured preview) the catalog offers no alert.
+  alertsEnabled: boolean;
+  // The request query string. When present, the catalog starts from it and keeps it in sync.
+  searchParams?: string;
 };
 
 const MAX_COMPARE_VEHICLES = 3;
-const MIN_PRICE = 0;
 const PRICE_STEP = 5000;
-const MIN_MILEAGE = 0;
 const MILEAGE_STEP = 5000;
+const URL_SYNC_DELAY_MS = 300;
 
-export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: InventoryCatalogProps) {
+export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams }: InventoryCatalogProps) {
+  const layoutRef = useRef<HTMLElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const contactRef = useRef<HTMLElement>(null);
   const priceEnabled = quote !== null || vehicles.every(v => v.currency === 'USD');
-  const comparisonPrices = useMemo(() => new Map(vehicles.map(v => [v.slug, comparableUsdPrice(v, quote)])), [vehicles, quote]);
+  const comparisonPrices = useMemo(
+    () => new Map(vehicles.map(v => [v.slug, comparableUsdPrice(v, quote)])),
+    [vehicles, quote],
+  );
   const priceCeiling = useMemo(
-    () => Math.ceil(Math.max(...Array.from(comparisonPrices.values()).map(v => v ?? 0), PRICE_STEP) / PRICE_STEP) * PRICE_STEP,
+    () =>
+      Math.ceil(Math.max(...Array.from(comparisonPrices.values()).map(v => v ?? 0), PRICE_STEP) / PRICE_STEP) *
+      PRICE_STEP,
     [comparisonPrices],
   );
   const mileageCeiling = useMemo(
-    () => Math.ceil(Math.max(...vehicles.map(({ mileageKm }) => mileageKm), MILEAGE_STEP) / MILEAGE_STEP) * MILEAGE_STEP,
+    () =>
+      Math.ceil(Math.max(...vehicles.map(({ mileageKm }) => mileageKm), MILEAGE_STEP) / MILEAGE_STEP) * MILEAGE_STEP,
     [vehicles],
   );
-  const [query, setQuery] = useState('');
-  const [make, setMake] = useState('all');
-  const [transmission, setTransmission] = useState('all');
-  const [bodyType, setBodyType] = useState('all');
-  const [fuel, setFuel] = useState('all');
-  const [minPrice, setMinPrice] = useState(MIN_PRICE);
-  const [maxPrice, setMaxPrice] = useState(priceCeiling);
-  const [minMileage, setMinMileage] = useState(MIN_MILEAGE);
-  const [maxMileage, setMaxMileage] = useState(mileageCeiling);
-  const [sort, setSort] = useState<InventorySort>('featured');
-  const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>(() => {
-    const initialVehicle = vehicles.find(({ slug }) => slug === initialCompareSlug);
-    return initialVehicle ? [initialVehicle] : [];
-  });
+  const makes = useMemo(() => [...new Set(vehicles.map(({ make: value }) => value))].sort(), [vehicles]);
+  const bodyTypes = useMemo(() => [...new Set(vehicles.map(({ body }) => body.split(' · ')[0]))].sort(), [vehicles]);
+  const fuelTypes = useMemo(() => [...new Set(vehicles.map(({ fuel: value }) => value))].sort(), [vehicles]);
+  const urlBounds: CatalogUrlBounds = {
+    bodyTypes,
+    fuelTypes,
+    makes,
+    maxCompare: MAX_COMPARE_VEHICLES,
+    mileageCeiling,
+    mileageStep: MILEAGE_STEP,
+    priceCeiling,
+    priceEnabled,
+    priceStep: PRICE_STEP,
+    vehicleSlugs: vehicles.map(({ slug }) => slug),
+  };
+  const [initialState] = useState(() => parseCatalogUrlState(new URLSearchParams(searchParams), urlBounds));
+  const [filters, dispatchFilters] = useReducer(catalogFilterReducer, initialState, catalogFilterStateFromUrl);
+  const [selectedVehicles, setSelectedVehicles] = useState<Vehicle[]>(() =>
+    initialState.compare.flatMap(slug => vehicles.filter(vehicle => vehicle.slug === slug)),
+  );
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const lastAnalyticsPayloadRef = useRef('');
 
-  const makes = useMemo(() => [...new Set(vehicles.map(({ make: value }) => value))].sort(), [vehicles]);
-  const bodyTypes = useMemo(() => [...new Set(vehicles.map(({ body }) => body.split(' · ')[0]))].sort(), [vehicles]);
-  const fuelTypes = useMemo(() => [...new Set(vehicles.map(({ fuel: value }) => value))].sort(), [vehicles]);
-
-  const filteredVehicles = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase('es');
-    const result = vehicles.filter((vehicle) => {
-      const searchable = `${vehicle.make} ${vehicle.model} ${vehicle.version} ${vehicle.year}`.toLocaleLowerCase('es');
-      const transmissionType = vehicle.transmission.toLocaleLowerCase('es').startsWith('autom') ? 'automatic' : 'manual';
-
-      return (
-        (!normalizedQuery || searchable.includes(normalizedQuery)) &&
-        (make === 'all' || vehicle.make === make) &&
-        (transmission === 'all' || transmissionType === transmission) &&
-        (bodyType === 'all' || vehicle.body.split(' · ')[0] === bodyType) &&
-        (fuel === 'all' || vehicle.fuel === fuel) &&
-        (!priceEnabled || ((comparisonPrices.get(vehicle.slug) ?? 0) >= minPrice && (comparisonPrices.get(vehicle.slug) ?? 0) <= maxPrice)) &&
-        vehicle.mileageKm >= minMileage && vehicle.mileageKm <= maxMileage
-      );
-    });
-
-    return result.toSorted((a, b) => {
-      if (sort === 'newest') return b.year - a.year;
-      if (priceEnabled && sort === 'price-asc') return (comparisonPrices.get(a.slug) ?? 0) - (comparisonPrices.get(b.slug) ?? 0);
-      if (priceEnabled && sort === 'price-desc') return (comparisonPrices.get(b.slug) ?? 0) - (comparisonPrices.get(a.slug) ?? 0);
-      if (sort === 'mileage') return a.mileageKm - b.mileageKm;
-      return vehicles.indexOf(a) - vehicles.indexOf(b);
-    });
-  }, [bodyType, fuel, make, maxMileage, maxPrice, minMileage, minPrice, query, sort, transmission, vehicles, priceEnabled, comparisonPrices]);
+  const filteredVehicles = useMemo(
+    () => filterCatalogVehicles(vehicles, filters, { comparisonPrices, priceEnabled }),
+    [vehicles, filters, comparisonPrices, priceEnabled],
+  );
   const filteredVehicleKey = filteredVehicles.map(({ slug }) => slug).join('|');
+
+  // The catalog's part of the page intro (InnerPageMotion), with the same timings. It runs here, once
+  // this component has hydrated inside its Suspense boundary: styles written before then would not
+  // match the server HTML. The page intro keeps these elements hidden until this takes over.
+  useGSAP(() => {
+    const media = gsap.matchMedia();
+
+    media.add(
+      {
+        desktop: '(min-width: 901px)',
+        mobile: '(max-width: 900px)',
+        reduceMotion: '(prefers-reduced-motion: reduce)',
+      },
+      (context, contextSafe) => {
+        const { desktop, reduceMotion } = context.conditions as {
+          desktop: boolean;
+          reduceMotion: boolean;
+        };
+        const layout = layoutRef.current;
+        const contact = contactRef.current;
+
+        if (reduceMotion || !layout || !contact) return;
+
+        gsap
+          .timeline({ defaults: { ease: 'power3.out' } })
+          .from(
+            layout.querySelector('.catalog-filters-desktop'),
+            { x: desktop ? -38 : 0, autoAlpha: 0, duration: 0.72 },
+            0.7,
+          )
+          .from(layout.querySelector('.catalog-toolbar'), { y: 22, autoAlpha: 0, duration: 0.58 }, 0.78);
+
+        scrollReveal(contact, { start: 'top 78%', stacked: !desktop, contextSafe })
+          .from(contact.querySelectorAll(':scope > div > *'), {
+            x: -38,
+            autoAlpha: 0,
+            stagger: 0.1,
+            duration: 0.68,
+            ease: 'power3.out',
+          })
+          .from(contact.querySelector(':scope > .button'), { autoAlpha: 0, duration: 0.52 }, '<0.16');
+      },
+    );
+
+    return () => media.revert();
+  });
+
+  // ScrollTrigger measures where its reveals start only on load and on window resize. Filtering changes
+  // the page height without either, so the contact block's and footer's reveals keep positions from the
+  // old layout: on a shorter page (no results) they sit past the last scroll position and those elements
+  // never appear; on a taller one they play before the elements are in view. Measure again whenever the
+  // page height changes. During a scroll, ScrollTrigger waits for it to end.
+  useEffect(() => {
+    let height = document.body.offsetHeight;
+    const observer = new ResizeObserver(() => {
+      if (document.body.offsetHeight === height) return;
+      height = document.body.offsetHeight;
+      ScrollTrigger.refresh();
+    });
+
+    observer.observe(document.body);
+    return () => observer.disconnect();
+  }, []);
 
   useGSAP(
     () => {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
       const cards = gsap.utils.toArray<HTMLElement>('.catalog-card');
+      const stacked = !window.matchMedia('(min-width: 901px)').matches;
+      // Stacked, the cards run past the fold, and the ones down there would finish before anyone scrolls to
+      // them: an element below the fold plays as it comes into view instead of after `delay`.
+      const timing = (element: Element, delay: number) =>
+        stacked && element.getBoundingClientRect().top >= window.innerHeight
+          ? { scrollTrigger: { trigger: element, start: IN_VIEW_START, once: true } }
+          : { delay };
 
+      // Each tween clears what it animated once it lands. A leftover transform or clip-path would trap the
+      // card's stretched link inside that element, or lift the photo (and its Comparar button) under the link.
       cards.forEach((card, index) => {
         const image = card.querySelector('.catalog-card-image');
         const copy = card.querySelector('.catalog-card-copy');
@@ -114,48 +192,46 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
             {
               clipPath: 'inset(0 0% 0 0)',
               autoAlpha: 1,
-              delay: index * 0.07,
               duration: 0.72,
               ease: 'power3.inOut',
+              clearProps: 'clipPath',
+              ...timing(image, index * 0.07),
             },
           );
         }
 
-        const content = [copy, facts].filter((element): element is Element => element !== null);
-        if (content.length > 0) {
+        [copy, facts].forEach((element, contentIndex) => {
+          if (!element) return;
           gsap.fromTo(
-            content,
+            element,
             { x: 24, autoAlpha: 0 },
-            { x: 0, autoAlpha: 1, delay: 0.18 + index * 0.07, stagger: 0.07, duration: 0.48, ease: 'power3.out' },
+            {
+              x: 0,
+              autoAlpha: 1,
+              duration: 0.48,
+              ease: 'power3.out',
+              clearProps: 'transform',
+              ...timing(element, 0.18 + index * 0.07 + contentIndex * 0.07),
+            },
           );
-        }
+        });
       });
 
       const emptyState = resultsRef.current?.querySelector('.catalog-empty');
       if (emptyState) {
-        gsap.fromTo(
-          emptyState,
-          { y: 24, autoAlpha: 0 },
-          { y: 0, autoAlpha: 1, duration: 0.55, ease: 'power3.out' },
-        );
+        gsap.fromTo(emptyState, { y: 24, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.55, ease: 'power3.out' });
       }
     },
     { scope: resultsRef, dependencies: [filteredVehicleKey], revertOnUpdate: true },
   );
 
-  const activeFilterCount = [
-    query,
-    make !== 'all',
-    transmission !== 'all',
-    bodyType !== 'all',
-    fuel !== 'all',
-    minPrice !== MIN_PRICE || maxPrice !== priceCeiling,
-    minMileage !== MIN_MILEAGE || maxMileage !== mileageCeiling,
-  ].filter(Boolean).length;
+  const activeFilterCount = countActiveCatalogFilters(filters, urlBounds);
+  usePublishCatalogResultCount(activeFilterCount > 0 ? filteredVehicles.length : null);
 
   useEffect(() => {
     if (activeFilterCount === 0) return;
 
+    const { bodyType, fuel, make, maxMileage, maxPrice, minMileage, minPrice, query, sort, transmission } = filters;
     const properties = {
       active_filter_count: activeFilterCount,
       body_type: bodyType,
@@ -191,19 +267,32 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
     }, 500);
 
     return () => window.clearTimeout(timeout);
-  }, [activeFilterCount, bodyType, filteredVehicles.length, fuel, make, maxMileage, maxPrice, minMileage, minPrice, query, sort, transmission]);
+  }, [activeFilterCount, filteredVehicles.length, filters]);
 
-  const resetFilters = () => {
-    setQuery('');
-    setMake('all');
-    setTransmission('all');
-    setBodyType('all');
-    setFuel('all');
-    setMinPrice(MIN_PRICE);
-    setMaxPrice(priceCeiling);
-    setMinMileage(MIN_MILEAGE);
-    setMaxMileage(mileageCeiling);
-  };
+  const nextSearchParams = serializeCatalogUrlState(
+    { ...filters, compare: selectedVehicles.map(({ slug }) => slug) },
+    urlBounds,
+  );
+
+  const syncsUrl = searchParams !== undefined;
+
+  useEffect(() => {
+    // The Suspense fallback renders without the request query and must not overwrite it.
+    if (!syncsUrl) return;
+
+    // Replace, not push: Back from the catalog leaves the catalog instead of stepping through
+    // every filter change. The delay also stays clear of Safari's history.replaceState limit.
+    const timeout = window.setTimeout(() => {
+      const { hash, pathname, search } = window.location;
+      if (search.replace(/^\?/, '') === nextSearchParams) return;
+      window.history.replaceState(null, '', `${pathname}${nextSearchParams ? `?${nextSearchParams}` : ''}${hash}`);
+    }, URL_SYNC_DELAY_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [nextSearchParams, syncsUrl]);
+
+  const updateFilters = (changes: Partial<CatalogFilterState>) => dispatchFilters({ type: 'update', changes });
+  const resetFilters = () => dispatchFilters({ type: 'reset', bounds: urlBounds });
 
   const selectedVehicleSlugs = useMemo(() => new Set(selectedVehicles.map(({ slug }) => slug)), [selectedVehicles]);
 
@@ -214,7 +303,7 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
         vehicle_slug: vehicle.slug,
         selection_count: selectedVehicles.length - 1,
       });
-      setSelectedVehicles((current) => current.filter(({ slug }) => slug !== vehicle.slug));
+      setSelectedVehicles(current => current.filter(({ slug }) => slug !== vehicle.slug));
       return;
     }
 
@@ -224,7 +313,7 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
       vehicle_slug: vehicle.slug,
       selection_count: selectedVehicles.length + 1,
     });
-    setSelectedVehicles((current) => [...current, vehicle]);
+    setSelectedVehicles(current => [...current, vehicle]);
   };
 
   const removeVehicleComparison = (slug: string) => {
@@ -233,7 +322,7 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
       vehicle_slug: slug,
       selection_count: Math.max(0, selectedVehicles.length - 1),
     });
-    setSelectedVehicles((current) => current.filter((vehicle) => vehicle.slug !== slug));
+    setSelectedVehicles(current => current.filter(vehicle => vehicle.slug !== slug));
   };
 
   const openVehicleComparison = () => {
@@ -251,58 +340,53 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
 
   const filterProps: InventoryFiltersProps = {
     activeFilterCount,
-    bodyType,
+    bodyType: filters.bodyType,
     bodyTypes,
-    fuel,
+    fuel: filters.fuel,
     fuelTypes,
-    make,
+    make: filters.make,
     makes,
-    maxMileage,
-    maxPrice,
+    maxMileage: filters.maxMileage,
+    maxPrice: filters.maxPrice,
     mileageCeiling,
     mileageStep: MILEAGE_STEP,
-    minMileage,
-    minPrice,
-    onBodyTypeChange: setBodyType,
-    onFuelChange: setFuel,
-    onMakeChange: setMake,
-    onMaxMileageChange: setMaxMileage,
-    onMaxPriceChange: setMaxPrice,
-    onMinMileageChange: setMinMileage,
-    onMinPriceChange: setMinPrice,
+    minMileage: filters.minMileage,
+    minPrice: filters.minPrice,
+    onBodyTypeChange: bodyType => updateFilters({ bodyType }),
+    onFuelChange: fuel => updateFilters({ fuel }),
+    onMakeChange: make => updateFilters({ make }),
+    onMaxMileageChange: maxMileage => updateFilters({ maxMileage }),
+    onMaxPriceChange: maxPrice => updateFilters({ maxPrice }),
+    onMinMileageChange: minMileage => updateFilters({ minMileage }),
+    onMinPriceChange: minPrice => updateFilters({ minPrice }),
     onReset: resetFilters,
-    onTransmissionChange: setTransmission,
+    onTransmissionChange: transmission => updateFilters({ transmission }),
     priceCeiling,
     priceStep: PRICE_STEP,
     priceEnabled,
     quote,
-    transmission,
+    transmission: filters.transmission,
   };
 
-  const alertCriteria: InventoryAlertCriteria = {
-    query: query.trim(),
-    make: make === 'all' ? '' : make,
-    transmission: transmission === 'all' ? '' : transmission,
-    bodyType: bodyType === 'all' ? '' : bodyType,
-    fuel: fuel === 'all' ? '' : fuel,
-    minPrice: minPrice === MIN_PRICE ? null : minPrice,
-    maxPrice: maxPrice === priceCeiling ? null : maxPrice,
-    minMileage: minMileage === MIN_MILEAGE ? null : minMileage,
-    maxMileage: maxMileage === mileageCeiling ? null : maxMileage,
-  };
+  const alertCriteria = catalogAlertCriteria(filters, urlBounds);
 
-  const toolbarAlert = (
+  const toolbarAlert = alertsEnabled ? (
     <InventoryAlert
       activeFilterCount={activeFilterCount}
       criteria={alertCriteria}
       placement="toolbar"
       resultCount={filteredVehicles.length}
     />
-  );
+  ) : null;
 
   return (
     <>
-      <section className="section-shell catalog-layout" id="inventario" aria-label="Catálogo de vehículos">
+      <section
+        className="section-shell catalog-layout"
+        id="inventario"
+        aria-label="Catálogo de vehículos"
+        ref={layoutRef}
+      >
         <InventoryFilters {...filterProps} className="catalog-filters-desktop" />
 
         <div className="catalog-results" ref={resultsRef}>
@@ -311,10 +395,10 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
             alertAction={toolbarAlert}
             count={filteredVehicles.length}
             onOpenFilters={() => setIsMobileFiltersOpen(true)}
-            onQueryChange={setQuery}
-            onSortChange={setSort}
-            query={query}
-            sort={sort}
+            onQueryChange={query => updateFilters({ query })}
+            onSortChange={sort => updateFilters({ sort })}
+            query={filters.query}
+            sort={filters.sort}
             priceEnabled={priceEnabled}
           />
           {filteredVehicles.length > 0 ? (
@@ -324,10 +408,11 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
                 return (
                   <CatalogVehicleCard
                     compareDisabled={selectedVehicles.length >= MAX_COMPARE_VEHICLES && !isSelected}
-                    index={index}
+                    imagePriority={index === 0 ? 'high' : index === 1 ? 'eager' : undefined}
                     isSelected={isSelected}
                     key={vehicle.slug}
                     onToggleComparison={toggleVehicleComparison}
+                    quote={quote}
                     vehicle={vehicle}
                   />
                 );
@@ -335,14 +420,16 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
             </div>
           ) : (
             <CatalogEmptyState
-              alertAction={(
-                <InventoryAlert
-                  activeFilterCount={activeFilterCount}
-                  criteria={alertCriteria}
-                  placement="empty"
-                  resultCount={0}
-                />
-              )}
+              alertAction={
+                alertsEnabled ? (
+                  <InventoryAlert
+                    activeFilterCount={activeFilterCount}
+                    criteria={alertCriteria}
+                    placement="empty"
+                    resultCount={0}
+                  />
+                ) : null
+              }
               onReset={resetFilters}
             />
           )}
@@ -363,6 +450,7 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
           vehicles={selectedVehicles}
         />
         <VehicleCompareDialog
+          quote={quote}
           vehicles={selectedVehicles}
           isOpen={isCompareOpen}
           onClose={() => setIsCompareOpen(false)}
@@ -371,14 +459,26 @@ export function InventoryCatalog({ vehicles, quote, initialCompareSlug }: Invent
         />
       </section>
 
-      <section className="section-shell catalog-contact glass-panel" aria-labelledby="catalog-contact-title">
+      <section
+        className="section-shell catalog-contact glass-panel"
+        aria-labelledby="catalog-contact-title"
+        ref={contactRef}
+      >
         <div>
           <Eyebrow>¿No encontraste lo que buscabas?</Eyebrow>
           <h2 id="catalog-contact-title">Contanos qué auto tenés en mente.</h2>
         </div>
-        <ButtonLink href="/#contacto" variant="accent">
+        <ButtonAnchor
+          href={getWhatsAppUrl(WHATSAPP_CATALOG_MESSAGE)}
+          onClick={() =>
+            captureAnalyticsEvent('contact_intent_clicked', { channel: 'whatsapp', placement: 'catalog_contact' })
+          }
+          rel="noreferrer"
+          target="_blank"
+          variant="accent"
+        >
           Hablar con Gonba&apos;s Garage <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />
-        </ButtonLink>
+        </ButtonAnchor>
       </section>
     </>
   );

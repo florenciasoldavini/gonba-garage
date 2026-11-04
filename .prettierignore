@@ -1,0 +1,14 @@
+# Prettier also skips everything in .gitignore (node_modules, .next, next-env.d.ts, ...).
+
+# Generated or rewritten by tools
+package-lock.json
+skills-lock.json
+tsconfig.json
+
+# Vendored agent skills
+.agents/
+
+# Static assets, fonts and binary documents
+public/
+app/fonts/
+docs/*.docx

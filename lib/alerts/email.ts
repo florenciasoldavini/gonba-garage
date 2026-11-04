@@ -1,15 +1,45 @@
 import 'server-only';
+import { alertEmailEnv } from '@/lib/env';
 import { alertOrigin, confirmationLifetimeHours } from './config';
-import { cancellationUrl } from './cancellation';
+import { cancellationUrl, searchCancellationUrl } from './cancellation';
+import { EMAIL_LOGO_CONTENT_ID, EMAIL_LOGO_PNG_BASE64 } from './email-logo';
 
 export type AlertEmail = {
-  id: string; generation: string; email: string; kind: 'welcome' | 'drop';
-  title: string; vehicle_slug: string; price: number; previous_price: number; currency: string;
+  id: string;
+  generation: string;
+  email: string;
+  kind: 'welcome' | 'drop';
+  title: string;
+  vehicle_slug: string;
+  price: number;
+  previous_price: number;
+  currency: string;
 };
-const escape = (value: string) => value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-const shell = (subject: string, content: string) => `<!doctype html><html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(subject)}</title></head><body style="margin:0;background:#f4f5f0;color:#171a16;font-family:Arial,sans-serif"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:32px 16px"><table role="presentation" width="560" style="width:100%;max-width:560px" cellspacing="0" cellpadding="0"><tr><td style="padding:28px;background:#11150f;color:#ffffff;font-size:20px;font-weight:bold">GONBA'S <span style="color:#dcff00">GARAGE</span></td></tr><tr><td style="padding:32px;background:#ffffff">${content}</td></tr></table></td></tr></table></body></html>`;
-const button = (url: string, label: string) => `<p style="margin:28px 0"><a href="${escape(url)}" style="display:inline-block;padding:15px 22px;background:#dcff00;color:#171a16;font-weight:bold;text-decoration:none;border-radius:8px">${label}</a></p>`;
-const money = (price: number, currency: string) => `${currency === 'USD' ? 'USD' : 'ARS'} ${Number(price).toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
+const escape = (value: string) =>
+  value.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+const shell = (subject: string, content: string) =>
+  '<!doctype html><html lang="es-AR"><head><meta charset="utf-8">' +
+  `<meta name="viewport" content="width=device-width,initial-scale=1"><title>${escape(subject)}</title></head>` +
+  '<body style="margin:0;background:#f4f5f0;color:#171a16;font-family:Arial,sans-serif">' +
+  '<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:32px 16px">' +
+  '<table role="presentation" width="560" style="width:100%;max-width:560px" cellspacing="0" cellpadding="0">' +
+  '<tr><td style="padding:24px 28px;background:#11150f;color:#ffffff;font-size:20px;font-weight:bold">' +
+  `<img src="cid:${EMAIL_LOGO_CONTENT_ID}" width="49" height="36" alt="Gonba's Garage"` +
+  ' style="display:block;border:0;outline:none;color:#ffffff"></td></tr>' +
+  `<tr><td style="padding:32px;background:#ffffff">${content}</td></tr></table></td></tr></table></body></html>`;
+const button = (url: string, label: string) =>
+  `<p style="margin:28px 0"><a href="${escape(url)}"` +
+  ' style="display:inline-block;padding:15px 22px;background:#dcff00;color:#171a16;font-weight:bold;text-decoration:none;border-radius:8px">' +
+  `${label}</a></p>`;
+// Sent inline with each email (cid:), so the logo shows without loading anything from the site.
+const logoAttachment = {
+  filename: 'gonba-garage.png',
+  content: EMAIL_LOGO_PNG_BASE64,
+  content_type: 'image/png',
+  content_id: EMAIL_LOGO_CONTENT_ID,
+};
+const money = (price: number, currency: string) =>
+  `${currency === 'USD' ? 'USD' : 'ARS'} ${Number(price).toLocaleString('es-AR', { maximumFractionDigits: 2 })}`;
 
 /** Shared by the worker and the sample sender. No tracking pixels or external assets. */
 export function buildAlertEmail(input: AlertEmail) {
@@ -22,11 +52,26 @@ export function buildAlertEmail(input: AlertEmail) {
     : `${title} bajó de ${money(input.previous_price, input.currency)} a ${price}. Tu alerta sigue activa para futuras bajas.`;
   const url = `${alertOrigin()}/vehiculos/${encodeURIComponent(input.vehicle_slug)}`;
   const cancel = cancellationUrl(input.id, input.generation);
-  const footer = welcome ? '¿No solicitaste esta alerta? Podés cancelarla acá.' : 'Podés dejar de recibir esta alerta cuando quieras.';
+  const footer = welcome
+    ? '¿No solicitaste esta alerta? Podés cancelarla acá.'
+    : 'Podés dejar de recibir esta alerta cuando quieras.';
   const text = `GONBA'S GARAGE\n\n${subject}\n\n${detail}\n\nVer vehículo: ${url}\n\n${footer}\nCancelar alerta: ${cancel}`;
-  const html = shell(subject, `<h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">${escape(subject)}</h1><p style="font-size:16px;line-height:1.7">${escape(detail)}</p>${button(url, 'Ver vehículo')}<p style="font-size:14px;line-height:1.6;color:#4a5145">${escape(footer)} <a href="${escape(cancel)}" style="color:#171a16">Cancelar alerta</a></p>`);
-  return { from: process.env.ALERTS_EMAIL_FROM || '', to: [input.email], subject, html, text,
-    headers: { 'List-Unsubscribe': `<${cancel}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' } };
+  const html = shell(
+    subject,
+    `<h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">${escape(subject)}</h1>` +
+      `<p style="font-size:16px;line-height:1.7">${escape(detail)}</p>${button(url, 'Ver vehículo')}` +
+      `<p style="font-size:14px;line-height:1.6;color:#4a5145">${escape(footer)} ` +
+      `<a href="${escape(cancel)}" style="color:#171a16">Cancelar alerta</a></p>`,
+  );
+  return {
+    from: alertEmailEnv.from() ?? '',
+    to: [input.email],
+    subject,
+    html,
+    text,
+    attachments: [logoAttachment],
+    headers: { 'List-Unsubscribe': `<${cancel}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+  };
 }
 
 export type ConfirmationEmail = { scope: 'price' | 'inventory'; email: string; title?: string; url: string };
@@ -44,25 +89,145 @@ export function buildConfirmationEmail(input: ConfirmationEmail) {
     : 'Recibimos un pedido para avisarte cuando ingresen vehículos que coincidan con una búsqueda. Confirmá tu email para activar la alerta.';
   const footer = `El enlace vence en ${confirmationLifetimeHours} horas. Si no lo pediste, ignorá este correo: no te enviaremos alertas.`;
   const text = `GONBA'S GARAGE\n\n${subject}\n\n${detail}\n\nConfirmar alerta: ${input.url}\n\n${footer}`;
-  const html = shell(subject, `<h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">${escape(subject)}</h1><p style="font-size:16px;line-height:1.7">${escape(detail)}</p>${button(input.url, 'Confirmar alerta')}<p style="font-size:14px;line-height:1.6;color:#4a5145">${escape(footer)}</p>`);
-  return { from: process.env.ALERTS_EMAIL_FROM || '', to: [input.email], subject, html, text };
+  const html = shell(
+    subject,
+    `<h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">${escape(subject)}</h1>` +
+      `<p style="font-size:16px;line-height:1.7">${escape(detail)}</p>${button(input.url, 'Confirmar alerta')}` +
+      `<p style="font-size:14px;line-height:1.6;color:#4a5145">${escape(footer)}</p>`,
+  );
+  return { from: alertEmailEnv.from() ?? '', to: [input.email], subject, html, text, attachments: [logoAttachment] };
 }
 
-export class EmailFailure extends Error {
-  constructor(public code: string, public retryable: boolean) { super(code); }
+export type SearchMatchVehicle = {
+  slug: string;
+  title: string;
+  mileageKm: number;
+  transmission: string;
+  fuel: string;
+  price: number;
+  currency: string;
+  released: boolean;
+};
+export type SearchMatchEmail = {
+  id: string;
+  generation: string;
+  email: string;
+  vehicles: SearchMatchVehicle[];
+  more: number;
+};
+
+const vehicleFacts = (vehicle: SearchMatchVehicle) =>
+  [`${Number(vehicle.mileageKm).toLocaleString('es-AR')} km`, vehicle.transmission.split(',')[0], vehicle.fuel]
+    .filter(fact => fact && fact !== 'Sin especificar')
+    .join(' · ');
+
+/**
+ * A batch of cars that matched one search alert. Only seller-verified listing data is shown: the
+ * saved criteria are free text typed by whoever submitted the form, so they are never echoed.
+ */
+export function buildSearchMatchEmail(input: SearchMatchEmail) {
+  const origin = alertOrigin();
+  const vehicleUrl = (slug: string) => `${origin}/vehiculos/${encodeURIComponent(slug)}`;
+  const total = input.vehicles.length + input.more;
+  const [first] = input.vehicles;
+  const single = total === 1;
+  const subject = single
+    ? `${first.released ? 'Volvió a estar disponible' : 'Nuevo ingreso'}: ${first.title}`
+    : `${total} autos para tu búsqueda`;
+  const detail = single
+    ? first.released
+      ? 'Un auto que coincide con tu alerta de búsqueda volvió a estar disponible.'
+      : 'Entró un auto que coincide con tu alerta de búsqueda.'
+    : `Hay ${total} autos nuevos o que volvieron a estar disponibles y coinciden con tu alerta de búsqueda.`;
+  const label = (vehicle: SearchMatchVehicle) => (vehicle.released ? 'Volvió a estar disponible' : 'Nuevo ingreso');
+  const catalog = `${origin}/vehiculos`;
+  const moreText = input.more > 0 ? `Y ${input.more === 1 ? 'uno más' : `${input.more} más`} en el inventario.` : '';
+  const cancel = searchCancellationUrl(input.id, input.generation);
+  const footer =
+    'Recibís este email porque confirmaste una alerta de búsqueda. Te avisamos de cada auto una sola vez. Precio y disponibilidad sujetos a confirmación.';
+
+  const text = [
+    "GONBA'S GARAGE",
+    subject,
+    detail,
+    ...input.vehicles.map(
+      vehicle =>
+        `${label(vehicle)}: ${vehicle.title}\n${vehicleFacts(vehicle)}\n${money(vehicle.price, vehicle.currency)}\nVer vehículo: ${vehicleUrl(vehicle.slug)}`,
+    ),
+    ...(moreText ? [`${moreText} Ver inventario: ${catalog}`] : []),
+    `${footer}\nCancelar alerta: ${cancel}`,
+  ].join('\n\n');
+  const card = (vehicle: SearchMatchVehicle) =>
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 16px;border:1px solid #dfe3d6;border-radius:8px"><tr><td style="padding:20px">` +
+    `<p style="margin:0 0 8px;font-size:12px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#4a5145">${label(vehicle)}</p>` +
+    `<p style="margin:0 0 6px;font-size:19px;font-weight:bold;line-height:1.3">${escape(vehicle.title)}</p>` +
+    `<p style="margin:0 0 12px;font-size:14px;line-height:1.5;color:#4a5145">${escape(vehicleFacts(vehicle))}</p>` +
+    `<p style="margin:0 0 14px;font-size:18px;font-weight:bold">${escape(money(vehicle.price, vehicle.currency))}</p>` +
+    `<a href="${escape(vehicleUrl(vehicle.slug))}" style="color:#171a16;font-weight:bold">Ver vehículo</a></td></tr></table>`;
+  const html = shell(
+    subject,
+    `<h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">${escape(subject)}</h1>` +
+      `<p style="font-size:16px;line-height:1.7;margin:0 0 24px">${escape(detail)}</p>${input.vehicles.map(card).join('')}` +
+      (moreText ? `<p style="font-size:16px;line-height:1.7">${escape(moreText)}</p>` : '') +
+      button(single ? vehicleUrl(first.slug) : catalog, single ? 'Ver vehículo' : 'Ver inventario') +
+      `<p style="font-size:14px;line-height:1.6;color:#4a5145">${escape(footer)} <a href="${escape(cancel)}" style="color:#171a16">Cancelar alerta</a></p>`,
+  );
+  return {
+    from: alertEmailEnv.from() ?? '',
+    to: [input.email],
+    subject,
+    html,
+    text,
+    attachments: [logoAttachment],
+    headers: { 'List-Unsubscribe': `<${cancel}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' },
+  };
 }
+
+/**
+ * `ambiguous`: the provider may have accepted the email even though the call failed (a timeout, a
+ * dropped connection, a 5xx or a request with the same key still in flight), so a retry is safe only
+ * with the same idempotency key. Other failures are definite: nothing was sent.
+ */
+export class EmailFailure extends Error {
+  constructor(
+    public code: string,
+    public retryable: boolean,
+    public ambiguous = false,
+  ) {
+    super(code);
+  }
+}
+/** Connection errors raised before the request reached the provider. */
+const unreachedCodes = new Set(['ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'UND_ERR_CONNECT_TIMEOUT']);
 export async function sendAlertEmail(payload: { to: string[] }, key: string) {
-  const allowlist = process.env.ALERTS_TEST_RECIPIENT;
-  if (allowlist && payload.to.some(email => email !== allowlist)) throw new EmailFailure('test_recipient_blocked', false);
+  const allowlist = alertEmailEnv.testRecipient();
+  if (allowlist && payload.to.some(email => email !== allowlist))
+    throw new EmailFailure('test_recipient_blocked', false);
   let response: Response;
   try {
     response = await fetch('https://api.resend.com/emails', {
-      method: 'POST', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': key },
-      body: JSON.stringify(payload), signal: AbortSignal.timeout(15_000),
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${alertEmailEnv.resendApiKey()}`,
+        'Content-Type': 'application/json',
+        'Idempotency-Key': key,
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(15_000),
     });
-  } catch { throw new EmailFailure('provider_network', true); }
-  if (!response.ok) throw new EmailFailure(`provider_http_${response.status}`, response.status === 429 || response.status >= 500 || response.status === 409);
-  const result = await response.json() as { id?: unknown };
-  if (typeof result.id !== 'string') throw new EmailFailure('provider_invalid_response', true);
+  } catch (error) {
+    const code = (error as { cause?: { code?: unknown } } | null)?.cause?.code;
+    throw new EmailFailure('provider_network', true, !(typeof code === 'string' && unreachedCodes.has(code)));
+  }
+  if (!response.ok) {
+    const { status } = response;
+    throw new EmailFailure(
+      `provider_http_${status}`,
+      status === 429 || status >= 500 || status === 409,
+      status === 409 || status >= 500,
+    );
+  }
+  const result = (await response.json().catch(() => ({}))) as { id?: unknown };
+  if (typeof result.id !== 'string') throw new EmailFailure('provider_invalid_response', true, true);
   return result.id;
 }

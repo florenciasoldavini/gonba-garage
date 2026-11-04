@@ -1,0 +1,86 @@
+/* The trigger sits beside the label and the panel wraps to its own row below it. */
+.mep-quote-info {
+  display: contents;
+}
+.mep-quote-info-trigger {
+  width: 24px;
+  height: 24px;
+  margin: -6px 0;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
+  color: #8e938a;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  transition:
+    color var(--duration-default) ease,
+    background var(--duration-default) ease;
+}
+.mep-quote-info-trigger:hover,
+.mep-quote-info-trigger[aria-expanded='true'] {
+  color: var(--accent);
+  background: rgba(220, 255, 0, 0.07);
+}
+.mep-quote-info-trigger:focus-visible {
+  outline-offset: 0;
+}
+.mep-quote-info-panel {
+  flex: 1 0 100%;
+  margin: 8px 0 4px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  animation: mep-quote-info-reveal var(--duration-default) var(--ease-standard);
+}
+.mep-quote-info-panel[hidden] {
+  display: none;
+}
+@keyframes mep-quote-info-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.mep-quote-info-panel dl {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+.mep-quote-info-panel dl > div {
+  display: grid;
+  gap: 3px;
+}
+.mep-quote-info-panel dt {
+  color: var(--color-text-tertiary);
+  font: 500 var(--text-label) var(--font-mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.mep-quote-info-panel dd {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--text-caption);
+  line-height: 1.45;
+}
+.mep-quote-info-panel a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--color-border-strong);
+  transition: text-decoration-color var(--duration-default) ease;
+}
+.mep-quote-info-panel a:hover {
+  text-decoration-color: var(--accent);
+}
+.mep-quote-info-panel p {
+  margin: 0;
+  padding-top: 10px;
+  color: var(--color-text-tertiary);
+  border-top: 1px solid var(--line);
+  font-size: var(--text-fine);
+  line-height: 1.55;
+}

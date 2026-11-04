@@ -1,11 +1,12 @@
 import { after, NextResponse } from 'next/server';
 
-import { isAlertsDatabaseConfigured } from '@/lib/alerts/database';
+import { isDatabaseConfigured } from '@/lib/database';
 import { saveInventorySubscription } from '@/lib/alerts/subscriptions';
-import { alertDeliveryEnabled } from '@/lib/alerts/config';
+import { alertEmailsConfigured } from '@/lib/alerts/config';
 import { reserveAlertSignup } from '@/lib/alerts/signup-limit';
 import { sendSignupConfirmationSafely } from '@/lib/alerts/confirmation';
 import { rejectCrossSiteJson } from '@/lib/alerts/request-guard';
+import { emailPattern } from '@/lib/email-address';
 
 type InventoryAlertRequest = {
   email?: unknown;
@@ -21,7 +22,6 @@ type InventoryAlertRequest = {
   maxMileage?: unknown;
 };
 
-const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const allowedTransmissions = new Set(['', 'automatic', 'manual']);
 
 function normalizeText(value: unknown, maximumLength: number) {
@@ -32,12 +32,7 @@ function normalizeText(value: unknown, maximumLength: number) {
 
 function normalizeBound(value: unknown, maximum: number) {
   if (value === null || value === undefined || value === '') return 0;
-  if (
-    typeof value !== 'number' ||
-    !Number.isSafeInteger(value) ||
-    value < 0 ||
-    value > maximum
-  ) return null;
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0 || value > maximum) return null;
   return value;
 }
 
@@ -48,7 +43,7 @@ export async function POST(request: Request) {
   let body: InventoryAlertRequest;
 
   try {
-    body = await request.json() as InventoryAlertRequest;
+    body = (await request.json()) as InventoryAlertRequest;
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Invalid body');
   } catch {
     return NextResponse.json({ message: 'La solicitud no es válida.' }, { status: 400 });
@@ -86,30 +81,43 @@ export async function POST(request: Request) {
     (maxPrice > 0 && maxPrice < minPrice) ||
     (maxMileage > 0 && maxMileage < minMileage)
   ) {
+    // `field` lets the form point at the input. Invalid criteria come from the filters, not the dialog.
+    const emailInvalid = email === null || !emailPattern.test(email);
     return NextResponse.json(
-      { message: 'Revisá el email y los criterios de búsqueda.' },
+      { message: 'Revisá el email y los criterios de búsqueda.', ...(emailInvalid ? { field: 'email' } : {}) },
       { status: 400 },
     );
   }
 
-  if (!isAlertsDatabaseConfigured()) {
+  if (!isDatabaseConfigured()) {
     return NextResponse.json({ message: 'Las alertas no están disponibles por el momento.' }, { status: 503 });
   }
 
   try {
-    if (!await reserveAlertSignup('inventory', email, request)) {
+    if (!(await reserveAlertSignup('inventory', email, request))) {
       return NextResponse.json({ message: 'Recibimos demasiadas solicitudes. Probá más tarde.' }, { status: 429 });
     }
-    const alert = await saveInventorySubscription({ email, query, make, transmission, bodyType, fuel,
-      minPrice, maxPrice, minMileage, maxMileage });
-    // Pending until confirmed. Without email delivery (demo mode) it is stored and nothing is sent.
-    if (alert.status === 'pending' && alertDeliveryEnabled()) after(() => sendSignupConfirmationSafely({ scope: 'inventory', id: alert.id, generation: alert.generation, email }));
+    const alert = await saveInventorySubscription({
+      email,
+      query,
+      make,
+      transmission,
+      bodyType,
+      fuel,
+      minPrice,
+      maxPrice,
+      minMileage,
+      maxMileage,
+    });
+    // Pending until confirmed. Without the alert email configuration it is stored and nothing is
+    // sent: the site hides the signup then, and could not deliver alerts anyway.
+    if (alert.status === 'pending' && alertEmailsConfigured())
+      after(() =>
+        sendSignupConfirmationSafely({ scope: 'inventory', id: alert.id, generation: alert.generation, email }),
+      );
   } catch {
     console.error('Unable to create inventory alert');
-    return NextResponse.json(
-      { message: 'No pudimos guardar la alerta. Probá otra vez.' },
-      { status: 500 },
-    );
+    return NextResponse.json({ message: 'No pudimos guardar la alerta. Probá otra vez.' }, { status: 500 });
   }
 
   return NextResponse.json({ ok: true }, { status: 201 });

@@ -32,9 +32,19 @@ Meaning must never depend on color alone. Pair status colors with text or an ico
 
 - Geist Sans is the primary interface and editorial family, with Arial and Helvetica as fallbacks.
 - Geist Mono is reserved for metadata and technical values.
-- Both families are self-hosted as variable fonts with normal and italic styles.
+- Both families are self-hosted from `app/fonts/` as variable WOFF2 files (weights 100–900, upright only; the
+  OFL licences sit next to them). No interface text is italic, so the italic files are not shipped; `<em>` is
+  styled `font-style: normal`. Adding italic text needs the Geist italic files again, or the browser synthesizes
+  a slanted face.
+- The WOFF2 files are subsets of Geist 1.800 and Geist Mono 1.701 (variable TTF releases). They keep Basic Latin,
+  Latin-1, Latin Extended A/B and Additional, IPA and combining marks, punctuation, currency, arrows, math and
+  technical symbols; Cyrillic, Greek and box-drawing glyphs were dropped. To regenerate from the TTFs with
+  fontTools (`pip install fonttools brotli`):
+  `pyftsubset <font>.ttf --unicodes="U+0000-036F,U+0E3F,U+1E00-1EFF,U+2000-23FF,U+25A0-27BF,U+FB00-FB06,U+FEFF,U+FFFD" --layout-features='*' --glyph-names --notdef-outline --name-IDs='*' --name-languages='*' --flavor=woff2 --output-file=<font>.woff2`
 - Display tokens are fluid; body and control text remain stable and readable.
-- Avoid meaningful text below `--text-micro`.
+- Avoid meaningful text below `--text-micro`. The label, micro, fine and eyebrow tokens are all 12px (0.75rem) and
+  caption is 13px (0.8125rem); nothing on the site reads below 12px.
+- Buttons, navigation links, select triggers and text inputs use at least 14px (0.875rem).
 - Sentence case is the default. Uppercase is limited to short metadata labels.
 
 ### Spacing and shape
@@ -109,8 +119,25 @@ Deliberate differences:
   destination.
 - Specifications use consistent label/value rows and mono labels.
 - Availability, reserved, and sold states must have distinct text in addition to color.
+- Greyscale photos mean a car is not available (reserved or sold). Photos of available cars are always in color,
+  including the car page's "Seguí mirando" rail.
+- Mono numbers (`01`, `02`…) mark real sequences only: the sell steps, the `/vender` stepper and
+  the car page's Selección / Revisión / Acompañamiento process. Unordered items don't get numbers:
+  the hero qualities use the eyebrow's lime bar, the home services a lucide icon tile, and Mercado
+  Libre equipment highlights a lime check.
 - Photography uses `4:3` for catalog cards and `16:9` for editorial or detail views unless the
   composition requires an intentional exception.
+- A publication without photos shows `public/vehicle-photo-placeholder.jpg` (the GG mark at 12 %
+  on the canvas, 1600×1200) instead of a photo, never another car. Its alt text says "foto no
+  disponible", and the car page offers nothing to enlarge or count. It stays a JPG because the
+  share-image route only embeds local JPGs.
+- Images go through Next's optimizer as AVIF (WebP for browsers without it), except the car
+  page's main and expanded photo: that one is Mercado Libre's own full-size file (its WebP, or the
+  original when there is none), never re-encoded, so the buyer sees the photo at full quality.
+- The expanded photo is full screen with no bar: the make and model float top-left over a soft
+  gradient, close top-right, and one glass pill at the bottom holds previous / count / next, the
+  all-photos grid and zoom. Thumbnails only appear when asked for (the grid), never alongside the
+  photo, since the page itself already shows a thumbnail strip.
 
 ## Motion
 

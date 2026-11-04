@@ -1,4 +1,4 @@
-import type { Vehicle, VehicleStatus } from '@/features/vehicles/domain/vehicle';
+import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle, type VehicleStatus } from '@/features/vehicles/domain/vehicle';
 import { fullSizeMercadoLibreImageUrl } from '@/lib/integrations/mercado-libre/pictures';
 import type {
   MercadoLibreAttribute,
@@ -23,7 +23,7 @@ const HIGHLIGHT_ATTRIBUTE_IDS = [
 ] as const;
 
 function attribute(item: MercadoLibreItem, id: string) {
-  return item.attributes?.find((candidate) => candidate.id === id);
+  return item.attributes?.find(candidate => candidate.id === id);
 }
 
 function attributeText(item: MercadoLibreItem, id: string) {
@@ -36,15 +36,16 @@ function attributeText(item: MercadoLibreItem, id: string) {
   return `${candidate.value_struct.number}${candidate.value_struct.unit ? ` ${candidate.value_struct.unit}` : ''}`;
 }
 
-function attributeNumber(item: MercadoLibreItem, id: string) {
+// Year, kilometers, doors and gears are whole numbers, so text values keep digits only: in
+// "120.000 km" the dot is the Argentine thousands separator, not a decimal point.
+function attributeInteger(item: MercadoLibreItem, id: string) {
   const candidate = attribute(item, id);
   const structuredNumber = candidate?.value_struct?.number;
 
   if (typeof structuredNumber === 'number') return structuredNumber;
 
   const value = structuredNumber ?? candidate?.value_name;
-  const normalized = String(value ?? '').replace(/[^\d,.-]/g, '').replace(',', '.');
-  const parsed = Number.parseFloat(normalized);
+  const parsed = Number.parseInt(String(value ?? '').replace(/\D/g, ''), 10);
 
   return Number.isFinite(parsed) ? parsed : 0;
 }
@@ -79,30 +80,28 @@ function formatLocation(item: MercadoLibreItem) {
 
 function formatTransmission(item: MercadoLibreItem) {
   const transmission = attributeText(item, 'TRANSMISSION') ?? 'Sin especificar';
-  const gears = attributeNumber(item, 'GEAR_NUMBER');
+  const gears = attributeInteger(item, 'GEAR_NUMBER');
 
   return gears > 0 ? `${transmission}, ${gears} marchas` : transmission;
 }
 
 function formatEngine(item: MercadoLibreItem) {
-  return [
-    attributeText(item, 'ENGINE'),
-    attributeText(item, 'ENGINE_DISPLACEMENT'),
-    attributeText(item, 'POWER'),
-  ].filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index).join(' · ') || 'Sin especificar';
+  return (
+    [attributeText(item, 'ENGINE'), attributeText(item, 'ENGINE_DISPLACEMENT'), attributeText(item, 'POWER')]
+      .filter((value, index, values): value is string => Boolean(value) && values.indexOf(value) === index)
+      .join(' · ') || 'Sin especificar'
+  );
 }
 
 function formatBody(item: MercadoLibreItem) {
   const body = attributeText(item, 'VEHICLE_BODY_TYPE') ?? 'Sin especificar';
-  const doors = attributeNumber(item, 'DOORS');
+  const doors = attributeInteger(item, 'DOORS');
 
   return doors > 0 ? `${body} · ${doors} puertas` : body;
 }
 
 function highlights(attributes: MercadoLibreAttribute[] = []) {
-  const priority = new Map<string, number>(
-    HIGHLIGHT_ATTRIBUTE_IDS.map((id, index) => [id, index]),
-  );
+  const priority = new Map<string, number>(HIGHLIGHT_ATTRIBUTE_IDS.map((id, index) => [id, index]));
 
   return attributes
     .filter(({ id, value_name }) => priority.has(id) && value_name?.toLocaleLowerCase('es') === 'sí')
@@ -118,11 +117,12 @@ export function mapMercadoLibreItemToVehicle(
   const make = attributeText(item, 'BRAND') ?? 'Sin marca';
   const model = attributeText(item, 'MODEL') ?? item.title;
   const version = attributeText(item, 'TRIM') ?? attributeText(item, 'SHORT_VERSION') ?? '';
-  const primaryImage = fullSizeMercadoLibreImageUrl(item.pictures?.[0]?.secure_url)
-    ?? fullSizeMercadoLibreImageUrl(item.pictures?.[0]?.url)
-    ?? fullSizeMercadoLibreImageUrl(item.secure_thumbnail)
-    ?? fullSizeMercadoLibreImageUrl(item.thumbnail)
-    ?? '/showroom-car.jpg';
+  const primaryImage =
+    fullSizeMercadoLibreImageUrl(item.pictures?.[0]?.secure_url) ??
+    fullSizeMercadoLibreImageUrl(item.pictures?.[0]?.url) ??
+    fullSizeMercadoLibreImageUrl(item.secure_thumbnail) ??
+    fullSizeMercadoLibreImageUrl(item.thumbnail) ??
+    VEHICLE_PHOTO_PLACEHOLDER;
   const descriptionText = description?.plain_text?.trim() || description?.text?.trim() || '';
 
   return {
@@ -133,10 +133,10 @@ export function mapMercadoLibreItemToVehicle(
       make,
       model,
       version,
-      year: attributeNumber(item, 'VEHICLE_YEAR'),
+      year: attributeInteger(item, 'VEHICLE_YEAR'),
       price: item.price ?? 0,
       currency: mapCurrency(item.currency_id),
-      mileageKm: attributeNumber(item, 'KILOMETERS'),
+      mileageKm: attributeInteger(item, 'KILOMETERS'),
       transmission: formatTransmission(item),
       fuel: attributeText(item, 'FUEL_TYPE') ?? 'Sin especificar',
       engine: formatEngine(item),

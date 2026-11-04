@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import { CarFront } from 'lucide-react';
 
 import { CustomSelect } from '@/components/ui/custom-select';
+import { ValuationFieldError } from './valuation-field-error';
 import { ValuationStepHeading } from './valuation-step-heading';
+import { fieldErrorProps, type ValuationErrors } from './valuation-validation';
+import './vehicle-catalog-fields.css';
 
 type CatalogOption = {
   id: string;
@@ -19,6 +22,8 @@ const manualMakeOption = { value: MANUAL_OPTION, label: 'Otra / No la encuentro'
 const manualModelOption = { value: MANUAL_OPTION, label: 'Otro / No lo encuentro' };
 const manualVersionOption = { value: MANUAL_OPTION, label: 'Otra / No la encuentro' };
 const manualYearOption = { value: MANUAL_OPTION, label: 'Otro / No aparece' };
+// Module-level so every render agrees; manual year fields only render after user input, never in server HTML.
+const MAX_VEHICLE_YEAR = new Date().getFullYear() + 1;
 
 type ManualCatalogFieldProps = {
   label: string;
@@ -30,9 +35,11 @@ type ManualCatalogFieldProps = {
   min?: number;
   max?: number;
   onReturn?: () => void;
+  error?: string;
 };
 
 function ManualCatalogField({
+  error,
   inputMode,
   label,
   max,
@@ -62,7 +69,9 @@ function ManualCatalogField({
         placeholder={placeholder}
         required={required}
         type={type}
+        {...fieldErrorProps(name, error)}
       />
+      <ValuationFieldError field={name} message={error} />
     </label>
   );
 }
@@ -71,12 +80,12 @@ async function getCatalogOptions(url: string, signal: AbortSignal): Promise<Cata
   const response = await fetch(url, { signal });
   if (!response.ok) throw new Error('Catalog request failed');
 
-  const payload = await response.json() as { options?: CatalogOption[] };
+  const payload = (await response.json()) as { options?: CatalogOption[] };
   if (!Array.isArray(payload.options)) throw new Error('Invalid catalog response');
   return payload.options;
 }
 
-export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
+export function VehicleCatalogFields({ hidden, errors }: { hidden: boolean; errors: ValuationErrors }) {
   const [makeId, setMakeId] = useState('');
   const [modelId, setModelId] = useState('');
   const [year, setYear] = useState('');
@@ -94,7 +103,10 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
   useEffect(() => {
     const controller = new AbortController();
     getCatalogOptions('/api/vehicle-catalog?resource=brands', controller.signal)
-      .then((options) => { setMakes(options); setMakeStatus('ready'); })
+      .then(options => {
+        setMakes(options);
+        setMakeStatus('ready');
+      })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
         setMakeStatus('error');
@@ -106,7 +118,10 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
     if (!makeId || makeId === MANUAL_OPTION) return;
     const controller = new AbortController();
     getCatalogOptions(`/api/vehicle-catalog?resource=models&brandId=${encodeURIComponent(makeId)}`, controller.signal)
-      .then((options) => { setModels(options); setModelStatus('ready'); })
+      .then(options => {
+        setModels(options);
+        setModelStatus('ready');
+      })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
         setModelStatus('error');
@@ -117,8 +132,14 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
   useEffect(() => {
     if (!modelId || modelId === MANUAL_OPTION || makeId === MANUAL_OPTION) return;
     const controller = new AbortController();
-    getCatalogOptions(`/api/vehicle-catalog?resource=versions&modelId=${encodeURIComponent(modelId)}`, controller.signal)
-      .then((options) => { setVersions(options); setVersionStatus('ready'); })
+    getCatalogOptions(
+      `/api/vehicle-catalog?resource=versions&modelId=${encodeURIComponent(modelId)}`,
+      controller.signal,
+    )
+      .then(options => {
+        setVersions(options);
+        setVersionStatus('ready');
+      })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return;
         setVersionStatus('error');
@@ -153,15 +174,19 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
   const makeName = makes.find(({ id }) => id === makeId)?.name ?? '';
   const modelName = models.find(({ id }) => id === modelId)?.name ?? '';
   const availableYears = [...new Set(versions.flatMap(({ availableYears: years = [] }) => years))]
-    .filter((optionYear) => optionYear > 0)
+    .filter(optionYear => optionYear > 0)
     .sort((a, b) => b - a);
-  const filteredVersions = year && year !== MANUAL_OPTION
-    ? versions.filter(({ availableYears: years = [] }) => years.includes(Number(year)))
-    : [];
+  const filteredVersions =
+    year && year !== MANUAL_OPTION
+      ? versions.filter(({ availableYears: years = [] }) => years.includes(Number(year)))
+      : [];
   const versionName = filteredVersions.find(({ id }) => id === versionId)?.name ?? '';
   const makeOptions = [...makes.map(({ id, name }) => ({ value: id, label: name })), manualMakeOption];
   const modelOptions = [...models.map(({ id, name }) => ({ value: id, label: name })), manualModelOption];
-  const yearOptions = [...availableYears.map((value) => ({ value: String(value), label: String(value) })), manualYearOption];
+  const yearOptions = [
+    ...availableYears.map(value => ({ value: String(value), label: String(value) })),
+    manualYearOption,
+  ];
   const versionOptions = [...filteredVersions.map(({ id, name }) => ({ value: id, label: name })), manualVersionOption];
 
   return (
@@ -177,6 +202,7 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
           <ManualCatalogField
             label="Marca *"
             name="make"
+            error={errors.make}
             onReturn={() => handleMakeChange('')}
             placeholder="Escribí la marca"
             required
@@ -184,18 +210,45 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
         ) : (
           <div className="valuation-select-field">
             <span>Marca *</span>
-            <CustomSelect ariaLabel="Marca" required searchable value={makeId} onChange={handleMakeChange} options={makeOptions} disabled={makeStatus === 'loading'} placeholder={makeStatus === 'loading' ? 'Cargando marcas…' : 'Seleccionar marca'} searchPlaceholder="Buscar marca…" />
+            <CustomSelect
+              ariaLabel="Marca"
+              searchable
+              value={makeId}
+              onChange={handleMakeChange}
+              options={makeOptions}
+              disabled={makeStatus === 'loading'}
+              loading={makeStatus === 'loading'}
+              placeholder={makeStatus === 'loading' ? 'Cargando marcas…' : 'Seleccionar marca'}
+              searchPlaceholder="Buscar marca…"
+              {...fieldErrorProps('make', errors.make)}
+            />
+            <ValuationFieldError field="make" message={errors.make} />
             <input name="make" type="hidden" value={makeName} />
-            {makeStatus === 'error' ? <small className="valuation-catalog-status">No pudimos cargar las marcas. <button type="button" onClick={() => { setMakeStatus('loading'); setMakeRetry((value) => value + 1); }}>Reintentar</button> o elegí “Otra”.</small> : null}
+            {makeStatus === 'error' ? (
+              <small className="valuation-catalog-status">
+                No pudimos cargar las marcas.{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMakeStatus('loading');
+                    setMakeRetry(value => value + 1);
+                  }}
+                >
+                  Reintentar
+                </button>{' '}
+                o elegí “Otra”.
+              </small>
+            ) : null}
           </div>
         )}
 
         {makeId === MANUAL_OPTION ? (
-          <ManualCatalogField label="Modelo *" name="model" placeholder="Ej. 330i" required />
+          <ManualCatalogField label="Modelo *" name="model" placeholder="Ej. 330i" required error={errors.model} />
         ) : modelId === MANUAL_OPTION ? (
           <ManualCatalogField
             label="Modelo *"
             name="model"
+            error={errors.model}
             onReturn={() => handleModelChange('')}
             placeholder="Escribí el modelo"
             required
@@ -203,22 +256,66 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
         ) : (
           <div className="valuation-select-field">
             <span>Modelo *</span>
-            <CustomSelect ariaLabel="Modelo" required searchable key={makeId} value={modelId} onChange={handleModelChange} options={modelOptions} disabled={!makeId || modelStatus === 'loading'} placeholder={modelStatus === 'loading' ? 'Cargando modelos…' : !makeId ? 'Primero elegí una marca' : 'Seleccionar modelo'} searchPlaceholder="Buscar modelo…" />
+            <CustomSelect
+              ariaLabel="Modelo"
+              searchable
+              key={makeId}
+              value={modelId}
+              onChange={handleModelChange}
+              options={modelOptions}
+              disabled={!makeId || modelStatus === 'loading'}
+              loading={modelStatus === 'loading'}
+              placeholder={
+                modelStatus === 'loading'
+                  ? 'Cargando modelos…'
+                  : !makeId
+                    ? 'Primero elegí una marca'
+                    : 'Seleccionar modelo'
+              }
+              searchPlaceholder="Buscar modelo…"
+              {...fieldErrorProps('model', errors.model)}
+            />
+            <ValuationFieldError field="model" message={errors.model} />
             <input name="model" type="hidden" value={modelName} />
-            {modelStatus === 'error' ? <small className="valuation-catalog-status">No pudimos cargar los modelos. <button type="button" onClick={() => { setModelStatus('loading'); setModelRetry((value) => value + 1); }}>Reintentar</button> o elegí “Otro”.</small> : null}
+            {modelStatus === 'error' ? (
+              <small className="valuation-catalog-status">
+                No pudimos cargar los modelos.{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModelStatus('loading');
+                    setModelRetry(value => value + 1);
+                  }}
+                >
+                  Reintentar
+                </button>{' '}
+                o elegí “Otro”.
+              </small>
+            ) : null}
           </div>
         )}
 
         {makeId === MANUAL_OPTION || modelId === MANUAL_OPTION ? (
-          <ManualCatalogField label="Año *" name="year" inputMode="numeric" type="number" min={1950} max={2027} placeholder="2021" required />
+          <ManualCatalogField
+            label="Año *"
+            name="year"
+            error={errors.year}
+            inputMode="numeric"
+            type="number"
+            min={1950}
+            max={MAX_VEHICLE_YEAR}
+            placeholder="2021"
+            required
+          />
         ) : year === MANUAL_OPTION ? (
           <ManualCatalogField
             label="Año *"
             name="year"
+            error={errors.year}
             inputMode="numeric"
             type="number"
             min={1950}
-            max={2027}
+            max={MAX_VEHICLE_YEAR}
             onReturn={() => handleYearChange('')}
             placeholder="Escribí el año"
             required
@@ -226,30 +323,104 @@ export function VehicleCatalogFields({ hidden }: { hidden: boolean }) {
         ) : (
           <div className="valuation-select-field">
             <span>Año *</span>
-            <CustomSelect ariaLabel="Año" required key={modelId} value={year} onChange={handleYearChange} options={yearOptions} disabled={!modelId || versionStatus === 'loading'} placeholder={versionStatus === 'loading' ? 'Cargando años…' : !modelId ? 'Primero elegí un modelo' : 'Seleccionar año'} />
+            <CustomSelect
+              ariaLabel="Año"
+              key={modelId}
+              value={year}
+              onChange={handleYearChange}
+              options={yearOptions}
+              disabled={!modelId || versionStatus === 'loading'}
+              loading={versionStatus === 'loading'}
+              placeholder={
+                versionStatus === 'loading'
+                  ? 'Cargando años…'
+                  : !modelId
+                    ? 'Primero elegí un modelo'
+                    : 'Seleccionar año'
+              }
+              {...fieldErrorProps('year', errors.year)}
+            />
+            <ValuationFieldError field="year" message={errors.year} />
             <input name="year" type="hidden" value={year} />
-            {versionStatus === 'error' ? <small className="valuation-catalog-status">No pudimos cargar los años. <button type="button" onClick={() => { setVersionStatus('loading'); setVersionRetry((value) => value + 1); }}>Reintentar</button> o elegí “Otro”.</small> : null}
+            {versionStatus === 'error' ? (
+              <small className="valuation-catalog-status">
+                No pudimos cargar los años.{' '}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVersionStatus('loading');
+                    setVersionRetry(value => value + 1);
+                  }}
+                >
+                  Reintentar
+                </button>{' '}
+                o elegí “Otro”.
+              </small>
+            ) : null}
           </div>
         )}
 
         {makeId === MANUAL_OPTION || modelId === MANUAL_OPTION || year === MANUAL_OPTION ? (
-          <ManualCatalogField label="Versión" name="version" placeholder="Ej. M Sport" />
+          <ManualCatalogField
+            label="Versión *"
+            name="version"
+            placeholder="Ej. M Sport"
+            required
+            error={errors.version}
+          />
         ) : versionId === MANUAL_OPTION ? (
           <ManualCatalogField
-            label="Versión"
+            label="Versión *"
             name="version"
+            error={errors.version}
             onReturn={() => setVersionId('')}
             placeholder="Escribí la versión"
+            required
           />
         ) : (
           <div className="valuation-select-field">
-            <span>Versión</span>
-            <CustomSelect ariaLabel="Versión" searchable key={`${modelId}-${year}`} value={versionId} onChange={setVersionId} options={versionOptions} disabled={!year || versionStatus === 'loading'} placeholder={versionStatus === 'loading' ? 'Cargando versiones…' : !year ? 'Primero elegí un año' : 'Seleccionar versión'} searchPlaceholder="Buscar versión…" />
+            <span>Versión *</span>
+            <CustomSelect
+              ariaLabel="Versión"
+              searchable
+              key={`${modelId}-${year}`}
+              value={versionId}
+              onChange={setVersionId}
+              options={versionOptions}
+              disabled={!year || versionStatus === 'loading'}
+              loading={versionStatus === 'loading'}
+              placeholder={
+                versionStatus === 'loading'
+                  ? 'Cargando versiones…'
+                  : !year
+                    ? 'Primero elegí un año'
+                    : 'Seleccionar versión'
+              }
+              searchPlaceholder="Buscar versión…"
+              {...fieldErrorProps('version', errors.version)}
+            />
+            <ValuationFieldError field="version" message={errors.version} />
             <input name="version" type="hidden" value={versionName} />
           </div>
         )}
-        <label><span>Color</span><input name="color" autoComplete="off" placeholder="Ej. Negro" /></label>
-        <small className="valuation-catalog-credit valuation-field-wide">Catálogo vehicular provisto por <a href="https://argautos.com" target="_blank" rel="noreferrer">Arg Autos</a>.</small>
+        <label>
+          <span>Color *</span>
+          <input
+            name="color"
+            required
+            autoComplete="off"
+            placeholder="Ej. Negro"
+            {...fieldErrorProps('color', errors.color)}
+          />
+          <ValuationFieldError field="color" message={errors.color} />
+        </label>
+        <small className="valuation-catalog-credit valuation-field-wide">
+          Catálogo vehicular provisto por{' '}
+          <a href="https://argautos.com" target="_blank" rel="noreferrer">
+            Arg Autos
+          </a>
+          .
+        </small>
       </div>
     </section>
   );

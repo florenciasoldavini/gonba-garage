@@ -1,12 +1,24 @@
 'use client';
 
-import posthog from 'posthog-js';
+import type { PostHog } from 'posthog-js';
+
+/** Catalog toolbar, catalog empty state, or the page of a car that is no longer for sale. */
+type InventoryAlertPlacement = 'toolbar' | 'empty' | 'vehicle';
+
+/** General contact actions. Vehicle pages report `vehicle_contact_clicked` instead. */
+type ContactPlacement = 'header' | 'menu' | 'footer' | 'home_contact' | 'home_faq' | 'catalog_contact';
 
 type AnalyticsEventProperties = {
   contact_intent_clicked: {
     channel: 'email' | 'whatsapp' | 'internal';
-    placement: string;
-    vehicle_slug?: string;
+    placement: ContactPlacement;
+  };
+  vehicle_contact_clicked: {
+    channel: 'whatsapp';
+    /** The purchase card's main button, or the contact section at the end of the page. */
+    placement: 'hero' | 'callout';
+    vehicle_slug: string;
+    vehicle_status: 'available' | 'reserved' | 'sold';
   };
   inventory_filtered: {
     active_filter_count: number;
@@ -31,9 +43,9 @@ type AnalyticsEventProperties = {
     search_used: boolean;
     transmission: string;
   };
-  inventory_alert_opened: { active_filter_count: number; result_count: number };
-  inventory_alert_created: { active_filter_count: number; result_count: number };
-  inventory_alert_failed: { active_filter_count: number };
+  inventory_alert_opened: { active_filter_count: number; placement: InventoryAlertPlacement; result_count: number };
+  inventory_alert_created: { active_filter_count: number; placement: InventoryAlertPlacement; result_count: number };
+  inventory_alert_failed: { active_filter_count: number; placement: InventoryAlertPlacement };
   comparison_vehicle_added: { vehicle_slug: string; selection_count: number };
   comparison_vehicle_removed: { vehicle_slug: string; selection_count: number };
   comparison_opened: { vehicle_slugs: string[]; vehicle_count: number };
@@ -46,20 +58,51 @@ type AnalyticsEventProperties = {
     vehicle_slug: string;
     year: number;
   };
-  vehicle_shared: { method: 'clipboard' | 'email' | 'whatsapp'; vehicle_slug: string };
+  vehicle_shared: { method: 'clipboard' | 'email' | 'native' | 'whatsapp'; vehicle_slug: string };
   price_alert_opened: { vehicle_slug: string };
   price_alert_created: { vehicle_slug: string };
   price_alert_failed: { vehicle_slug: string };
   valuation_started: Record<string, never>;
   valuation_step_completed: { step: number };
-  valuation_demo_completed: { total_steps: number };
+  /** Make and model are empty when typed by hand rather than picked from the catalog: free text stays out. */
+  valuation_sent_to_whatsapp: { make: string; model: string; total_steps: number; year: number };
 };
+
+/** An event as plain data, so a server component can hand it to a client link. */
+export type AnalyticsEvent = {
+  [EventName in keyof AnalyticsEventProperties]: { name: EventName; properties: AnalyticsEventProperties[EventName] };
+}[keyof AnalyticsEventProperties];
+
+/** Resolves to the initialized client, or to nothing if it failed to load. Unset while analytics is off. */
+let analytics: Promise<PostHog | undefined> | undefined;
+
+function afterLoadAndIdle() {
+  return new Promise<void>(resolve => {
+    const whenIdle = () =>
+      'requestIdleCallback' in window
+        ? requestIdleCallback(() => resolve(), { timeout: 2000 })
+        : setTimeout(resolve, 1);
+    if (document.readyState === 'complete') whenIdle();
+    else window.addEventListener('load', whenIdle, { once: true });
+  });
+}
+
+/** Called once by instrumentation-client.ts. `init` runs after the page has loaded and the browser is idle. */
+export function startAnalytics(init: () => Promise<PostHog>) {
+  analytics = afterLoadAndIdle()
+    .then(init)
+    // posthog-js sends the first $pageview on a 1ms timer after init. Waiting for the same timer keeps
+    // events that fired while it loaded after their page's view, as they were before the deferral.
+    .then(posthog => new Promise<PostHog>(resolve => setTimeout(() => resolve(posthog), 1)))
+    .catch(() => undefined);
+}
 
 export function captureAnalyticsEvent<EventName extends keyof AnalyticsEventProperties>(
   eventName: EventName,
   properties: AnalyticsEventProperties[EventName],
 ) {
-  if (!process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN) return;
+  if (!analytics) return;
 
-  posthog.capture(eventName, properties);
+  // Events from before the client is ready wait for it and are sent in the order they happened.
+  void analytics.then(posthog => posthog?.capture(eventName, properties));
 }

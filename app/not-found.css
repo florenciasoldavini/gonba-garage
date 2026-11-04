@@ -1,0 +1,177 @@
+/* Generic 404: a navigation map in a card; the route bends around the copy and ends in a dead end */
+.route-missing-screen {
+  min-height: 100svh;
+  margin-bottom: clamp(48px, 6vw, 96px);
+  padding-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+.route-missing {
+  position: relative;
+  flex: 1;
+  min-height: 480px;
+  margin-top: 16px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-feature);
+  background: #090b0a;
+}
+.route-missing > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.route-missing-map-mobile {
+  display: none;
+}
+.route-missing-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 700px;
+  padding: 48px var(--status-inset);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: radial-gradient(closest-side, #090b0a 62%, rgba(9, 11, 10, 0));
+}
+.route-missing-copy .eyebrow,
+.route-missing-copy .status-actions {
+  justify-content: center;
+}
+.route-missing-copy h1 {
+  margin: 0 0 22px;
+  font-size: var(--text-status-title);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+}
+.route-missing-copy p:not(.eyebrow) {
+  max-width: 470px;
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(0.95rem, 1.2vw, 1.08rem);
+  line-height: 1.65;
+}
+.route-missing-copy .status-actions {
+  margin-top: var(--status-actions-gap);
+}
+.route-missing-street,
+.route-missing-avenue,
+.route-missing-avenue-edge {
+  fill: none;
+  stroke-linecap: round;
+}
+.route-missing-street {
+  stroke: #141816;
+  stroke-width: 9;
+}
+.route-missing-avenue-edge {
+  stroke: #232825;
+  stroke-width: 20;
+}
+.route-missing-avenue {
+  stroke: #1c201d;
+  stroke-width: 18;
+}
+.route-missing-cul-de-sac {
+  fill: #141816;
+}
+.route-missing-road-name {
+  fill: #858a81;
+  fill-opacity: 0.8;
+  font: 500 12px var(--font-sans);
+  letter-spacing: 0.01em;
+}
+.route-missing-map-mobile .route-missing-road-name {
+  font-size: 11px;
+}
+.route-missing-route {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  animation: route-missing-draw 2s cubic-bezier(0.45, 0, 0.25, 1) 0.4s both;
+}
+.route-missing-route-glow {
+  stroke: var(--accent);
+  stroke-opacity: 0.08;
+  stroke-width: 14;
+}
+.route-missing-route-casing {
+  stroke: #090b0a;
+  stroke-width: 8;
+}
+.route-missing-route-line {
+  stroke: var(--accent);
+  stroke-width: 4;
+}
+.route-missing-tag {
+  font: 600 11px var(--font-sans);
+}
+.route-missing-pulse {
+  fill: var(--accent);
+  fill-opacity: 0.18;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: route-missing-pulse 2.4s ease-out 2.4s infinite;
+}
+.route-missing-late {
+  animation: route-missing-appear 0.5s ease-out 2.3s both;
+}
+
+@keyframes route-missing-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes route-missing-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes route-missing-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .route-missing {
+    min-height: calc(100svh - 100px);
+    margin-top: 12px;
+  }
+  .route-missing-map-desktop {
+    display: none;
+  }
+  .route-missing-map-mobile {
+    display: block;
+  }
+  .route-missing-copy {
+    padding: 24px var(--status-inset);
+  }
+  .route-missing-copy .button-glass {
+    background: #151816;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .route-missing-copy .eyebrow {
+    letter-spacing: 0.1em;
+  }
+  .route-missing-copy .eyebrow > span {
+    display: none;
+  }
+}

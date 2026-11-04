@@ -1,0 +1,9 @@
+.catalog-empty {
+  min-height: 510px;
+  justify-content: center;
+}
+/* The alert dialog opened from here renders inside .status-actions, so its submit button has always
+   taken that button rule's zero top margin. */
+.catalog-empty .status-actions .price-alert-form .button {
+  margin-top: 0;
+}

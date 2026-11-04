@@ -15,6 +15,62 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm test
       - run: npm run build
+
+  # The metadata contract (docs/seo-and-social-metadata.md, «Verification») runs against a production
+  # build that reads the real catalog: the site ships no demo vehicles, so without a catalog there is
+  # nothing to check. The build reads it through the deployed backend, which needs the private
+  # MERCADO_LIBRE_CATALOG_API_KEY repository secret. Without it (forks, or before it is configured)
+  # the job reports a notice and skips the check. Alert emails stay unconfigured, so the check covers
+  # the pages as they render without them.
+  metadata:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        indexing: ['false', 'true']
+    name: metadata (SITE_INDEXING_ENABLED=${{ matrix.indexing }})
+    env:
+      SITE_INDEXING_ENABLED: ${{ matrix.indexing }}
+      MERCADO_LIBRE_BACKEND_URL: ${{ vars.MERCADO_LIBRE_BACKEND_URL || 'https://gonba-garage.vercel.app' }}
+      MERCADO_LIBRE_CATALOG_API_KEY: ${{ secrets.MERCADO_LIBRE_CATALOG_API_KEY }}
+      METADATA_UNLISTED_VEHICLES: ${{ vars.METADATA_UNLISTED_VEHICLES }}
+    steps:
+      - id: catalog
+        name: Check catalog access
+        run: |
+          if [ -n "$MERCADO_LIBRE_CATALOG_API_KEY" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=Metadata check skipped::Set the MERCADO_LIBRE_CATALOG_API_KEY repository secret to run the metadata contract against the real catalog."
+          fi
+      - if: steps.catalog.outputs.available == 'true'
+        uses: actions/checkout@v4
+      - if: steps.catalog.outputs.available == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - if: steps.catalog.outputs.available == 'true'
+        run: npm ci
+      - if: steps.catalog.outputs.available == 'true'
+        run: npm run build
+      - if: steps.catalog.outputs.available == 'true'
+        name: Start the production server
+        run: |
+          nohup npm run start -- --port 3100 > "$RUNNER_TEMP/server.log" 2>&1 &
+          for attempt in $(seq 60); do
+            curl --silent --output /dev/null http://localhost:3100/ && exit 0
+            sleep 1
+          done
+          echo "The server did not start within 60 seconds."
+          exit 1
+      - if: steps.catalog.outputs.available == 'true'
+        run: npm run test:metadata -- http://localhost:3100
+      - if: failure() && steps.catalog.outputs.available == 'true'
+        name: Server log
+        run: cat "$RUNNER_TEMP/server.log"

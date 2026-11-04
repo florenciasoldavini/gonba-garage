@@ -1,8 +1,9 @@
 import 'server-only';
 import { createHmac } from 'node:crypto';
 import { isIP } from 'node:net';
-import { getAlertsSql } from './database';
-import { alertDeliveryEnabled, requireAlertConfig } from './config';
+import { getSql } from '@/lib/database';
+import { alertEmailEnv } from '@/lib/env';
+import { requireAlertConfig } from './config';
 
 export type AlertScope = 'price' | 'inventory';
 type Bucket = { key: string; limit: number; windowSeconds: number };
@@ -22,12 +23,10 @@ const signupLimits = { ip: 20, email: 5, global: 100 } as const;
  * cannot loop sends, and 5 per recipient per day across both endpoints, so the confirmation email
  * itself cannot be used to flood an inbox.
  */
-const confirmationLimits = { subscription: { limit: 1, windowSeconds: 600 }, recipient: { limit: 5, windowSeconds: 24 * hour } } as const;
-
-function signingSecret() {
-  const secret = process.env.ALERTS_SIGNING_SECRET;
-  return secret && secret.length >= 32 ? secret : null;
-}
+const confirmationLimits = {
+  subscription: { limit: 1, windowSeconds: 600 },
+  recipient: { limit: 5, windowSeconds: 24 * hour },
+} as const;
 
 /** Keyed hashes only: raw addresses and IPs are never stored. */
 function hashed(secret: string, kind: string, value: string) {
@@ -46,14 +45,26 @@ export function clientIp(request: Request) {
   const [head, tail] = ip.split('::');
   const left = head ? head.split(':') : [];
   const right = tail ? tail.split(':') : [];
-  const groups = tail === undefined ? left : [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right];
-  return `${groups.slice(0, 4).map(group => parseInt(group, 16).toString(16)).join(':')}::/64`;
+  const groups =
+    tail === undefined ? left : [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right];
+  return `${groups
+    .slice(0, 4)
+    .map(group => parseInt(group, 16).toString(16))
+    .join(':')}::/64`;
 }
 
+/**
+ * Every bucket lives in price_alert_signup_windows: both signup endpoints and the confirmation
+ * emails. The table keeps its first name on purpose. Migrations and deploys are not atomic on
+ * Vercel, so a rename would leave either the running or the new code querying a missing table
+ * unless a compatibility view bridged two releases, and the frozen BASELINE in
+ * scripts/migration-runner.mjs checks for this name. Not worth it for a name.
+ */
 async function reserve(buckets: Bucket[]) {
-  const sql = getAlertsSql();
+  const sql = getSql();
   // Opportunistic pruning: no window is longer than a day, so older rows are already expired.
-  if (Math.random() < 0.02) await sql`DELETE FROM public.price_alert_signup_windows WHERE started_at < now() - interval '2 days'`;
+  if (Math.random() < 0.02)
+    await sql`DELETE FROM public.price_alert_signup_windows WHERE started_at < now() - interval '2 days'`;
   for (const { key, limit, windowSeconds } of buckets) {
     const result = await sql`INSERT INTO public.price_alert_signup_windows (key) VALUES (${key})
       ON CONFLICT (key) DO UPDATE SET
@@ -68,16 +79,17 @@ async function reserve(buckets: Bucket[]) {
 
 /**
  * Applies whenever the alerts database is configured, including demo mode, because demo signups
- * still write rows. Without a signing secret (possible only while delivery is disabled) the
+ * still write rows. Without a signing secret (possible only where alert emails are not configured) the
  * per-IP and per-address buckets cannot be keyed safely, so only the global bucket applies.
  */
 export async function reserveAlertSignup(scope: AlertScope, email: string, request: Request) {
-  if (alertDeliveryEnabled()) requireAlertConfig();
-  const secret = signingSecret();
-  const buckets: Bucket[] = secret ? [
-    { key: `${scope}:ip:${hashed(secret, 'ip', clientIp(request))}`, limit: signupLimits.ip, windowSeconds: hour },
-    { key: `${scope}:email:${hashed(secret, 'email', email)}`, limit: signupLimits.email, windowSeconds: hour },
-  ] : [];
+  const secret = alertEmailEnv.signingSecret();
+  const buckets: Bucket[] = secret
+    ? [
+        { key: `${scope}:ip:${hashed(secret, 'ip', clientIp(request))}`, limit: signupLimits.ip, windowSeconds: hour },
+        { key: `${scope}:email:${hashed(secret, 'email', email)}`, limit: signupLimits.email, windowSeconds: hour },
+      ]
+    : [];
   buckets.push({ key: `${scope}:global`, limit: signupLimits.global, windowSeconds: hour });
   return reserve(buckets);
 }
@@ -86,6 +98,6 @@ export async function reserveConfirmationEmail(scope: AlertScope, subscriptionId
   requireAlertConfig();
   return reserve([
     { key: `confirm:${scope}:${subscriptionId}`, ...confirmationLimits.subscription },
-    { key: `confirm:email:${hashed(process.env.ALERTS_SIGNING_SECRET!, 'email', email)}`, ...confirmationLimits.recipient },
+    { key: `confirm:email:${hashed(alertEmailEnv.signingSecret()!, 'email', email)}`, ...confirmationLimits.recipient },
   ]);
 }

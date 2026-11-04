@@ -18,9 +18,18 @@ const permissionsPolicy = [
 const contentSecurityPolicy = "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'";
 
 const nextConfig: NextConfig = {
-  images: { remotePatterns: [{ protocol: 'https', hostname: 'http2.mlstatic.com' }] },
-  // The vehicle social card reads local catalog photos from disk; ship them with the function.
-  outputFileTracingIncludes: { '/og/vehiculos/*': ['./public/*.{jpg,jpeg}'] },
+  images: {
+    // AVIF first for browsers that accept it; the rest keep WebP.
+    formats: ['image/avif', 'image/webp'],
+    // Next's defaults plus 512: desktop catalog photos render at 460–500px, between 384 and 640.
+    imageSizes: [32, 48, 64, 96, 128, 256, 384, 512],
+    remotePatterns: [{ protocol: 'https', hostname: 'http2.mlstatic.com' }],
+  },
+  // The vehicle social card and Apple icon read local images from disk; ship them with the function.
+  outputFileTracingIncludes: {
+    '/og/vehiculos/*': ['./public/*.{jpg,jpeg}', './public/brand/gonba-garage-logo-mark.png'],
+    '/apple-icon': ['./public/brand/gonba-garage-apple-icon.png'],
+  },
   async headers() {
     return [
       {

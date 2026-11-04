@@ -1,5 +1,6 @@
 import 'server-only';
+import { siteEnv } from '@/lib/env';
 
 export function isSiteIndexingEnabled() {
-  return process.env.SITE_INDEXING_ENABLED === 'true';
+  return siteEnv.indexingEnabled();
 }

@@ -7,26 +7,66 @@ price, description, and contact action must remain usable without WebGL or clien
 
 ## Stack
 
-- Next.js App Router, React Server Components, and TypeScript.
-- Tailwind is available for utilities; project-specific art direction can live in authored CSS.
-- Cloudflare-compatible Vinext runtime for the current local and hosting foundation.
+- Next.js 16 App Router, React 19 Server Components, and TypeScript.
+- Authored CSS with semantic design tokens (`styles/tokens.css`) and co-located stylesheets (see
+  "Styles"); no CSS framework. GSAP is the only animation dependency (see "Motion and 3D strategy").
+- Hosted on Vercel (Hobby plan): Node.js route handlers, the cron jobs in `vercel.json`, and a
+  private Blob store for the encrypted Mercado Libre credentials.
+- Functions run in São Paulo (`gru1`, `regions` in `vercel.json`; Hobby allows one region), near
+  the Argentine audience, while Neon stays in `us-east-1`. Every page is rendered per request but
+  reads the catalog from the Runtime Cache (`lib/catalog/cache.ts`), so most renders never reach the
+  database and save a São Paulo ↔ US East round trip (~120 ms). The cost falls on code that queries
+  Neon: about 120 ms per sequential query on cache misses, alert sign-ups, the webhook and the crons.
+  Keep queries before a response in parallel or in one statement. Moving Neon to `aws-sa-east-1`
+  would remove the tradeoff.
+- Neon PostgreSQL is the only database: the synced catalog, alert subscriptions and their queues
+  (`database/migrations/`, applied with `npm run db:migrate`).
 - Mercado Libre is the source of truth for inventory. The site reads a synced copy in Neon.
-- Server-rendered vehicle detail routes will own metadata, canonical URLs, and structured data.
-- A repository boundary in `features/vehicles/domain` keeps Mercado Libre transport details out of pages.
+- Server-rendered vehicle detail routes own metadata, canonical URLs, and structured data.
+- `lib/integrations/mercado-libre/catalog.ts` is the catalog read boundary. `listCatalogVehicles`,
+  `findCatalogPublication` and `findCatalogVehicle` read the synced copy through
+  `lib/catalog/store.ts`, or the deployed backend's copy when `MERCADO_LIBRE_BACKEND_URL` is set
+  (local development). There is no demo catalog: every environment shows the real Mercado Libre
+  inventory, and the codebase ships no placeholder vehicles. Pages and the share-image route read
+  inventory only through this module. The sitemap is deliberately empty until the indexing launch
+  (`docs/seo-and-social-metadata.md`). The price alert signup is described under the sync section.
 
 The experimental work should happen at the edge of the interface, not in the data or routing
-foundation. Do not introduce a motion or 3D dependency until a specific interaction justifies it.
+foundation. Do not introduce another motion or 3D dependency until a specific interaction justifies
+it.
 
-## Planned routes
+## Routes
 
-| Route | Purpose | Rendering |
-| --- | --- | --- |
-| `/` | Brand story, featured stock, trust, primary conversion | Server-rendered |
-| `/vehiculos` | Filterable inventory | Server-rendered shell and URL-based filters |
-| `/vehiculos/[slug]` | Vehicle detail and conversion | Server-rendered with dynamic metadata |
-| `/vender` | Vehicle acquisition lead form | Server-rendered with progressive enhancement |
-| `/api/mercado-libre/webhook` | Listing-change notifications | Server route handler |
-| `/api/mercado-libre/callback` | OAuth callback | Server route handler |
+Pages (all server-rendered; client components only add interaction):
+
+| Route                      | Purpose                                                                   | Rendering                                                                                            |
+| -------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `/`                        | Brand story, up to three available cars, FAQ, contact                     | Request time (`connection()`)                                                                        |
+| `/vehiculos`               | Catalog with URL-based filters, comparison and search alerts              | Request time (`connection()`)                                                                        |
+| `/vehiculos/[slug]`        | Vehicle detail in any status, price alert, contact                        | Request time (`force-dynamic`), `generateMetadata`; other slugs for the same ID redirect permanently |
+| `/vender`                  | Sell-your-car valuation form that opens WhatsApp with a prefilled message | Server page, client form                                                                             |
+| `/privacidad`, `/terminos` | Privacy policy and terms of use                                           | Static                                                                                               |
+| `/alertas/confirmacion`    | Result page after an emailed confirmation link                            | Request time, always `noindex`                                                                       |
+
+Metadata and asset routes: `/og/vehiculos/[slug]` (1200×630 share card), `/sitemap.xml`,
+`/robots.txt`, `/manifest.webmanifest` and `/apple-icon`.
+
+Route handlers (`robots.txt` disallows `/api/`; the private ones send `no-store` and `noindex`):
+
+| Route                                                      | Method    | Access                            | Purpose                                                                          |
+| ---------------------------------------------------------- | --------- | --------------------------------- | -------------------------------------------------------------------------------- |
+| `/api/mercado-libre/connect`                               | GET       | Catalog API key (Basic or Bearer) | Starts OAuth with PKCE                                                           |
+| `/api/mercado-libre/callback`                              | GET       | OAuth state and PKCE cookies      | Exchanges the code, checks the seller, stores the encrypted token                |
+| `/api/mercado-libre/webhook`                               | POST      | Seller and application ID check   | Queues the item for sync and price alerts                                        |
+| `/api/mercado-libre/sync`                                  | GET       | `CRON_SECRET`                     | Daily reconciliation, then drains the queue                                      |
+| `/api/mercado-libre/catalog`                               | GET       | Catalog API key                   | Synced copy for local development servers                                        |
+| `/api/mercado-libre/diagnostics`                           | GET       | Catalog API key                   | Publication diagnostics; `?connection=1` credential state; `?sync=1` sync health |
+| `/api/price-alerts`                                        | POST      | Same-site JSON, rate limits       | Price alert signup                                                               |
+| `/api/inventory-alerts`                                    | POST      | Same-site JSON, rate limits       | Search alert signup                                                              |
+| `/api/alerts/confirm`                                      | GET, POST | Signed, expiring token            | GET shows a page that posts itself; POST confirms                                |
+| `/api/price-alerts/cancel`, `/api/inventory-alerts/cancel` | GET, POST | Signed token                      | GET shows a form; POST cancels (RFC 8058 one-click)                              |
+| `/api/alerts/daily`                                        | GET       | `CRON_SECRET`                     | Daily price review and pending alert email                                       |
+| `/api/vehicle-catalog`                                     | GET       | Public, CDN-cached                | Arg Autos makes, models and versions for `/vender`                               |
 
 ## Mercado Libre sync
 
@@ -39,15 +79,40 @@ that a sync worker keeps current. Sync is one-way; nothing is edited on the site
    and only then answers 200. If the job cannot be stored it answers 503 so Mercado Libre retries.
 3. After the response, the worker leases the job and reads the item and description again with the
    seller token. The notification payload is never trusted, so duplicate, forged or out-of-order
-   notifications cannot write wrong data.
-4. Items of the configured seller are saved in `catalog_publications` (public presentation fields
-   only). Items that no longer exist are marked `closed`. Other sellers' items are ignored.
-5. Pages, the share-image route and the alert signup read the copy at request time, so a change is
-   visible on the next request. There is no page cache to invalidate.
-6. `/api/mercado-libre/sync` (Vercel cron, `CRON_SECRET`) reconciles: it lists the seller's active
-   items and queues every item that is new, changed, no longer active or not refreshed for a day,
-   then drains the queue. It never closes or edits a vehicle from the listing alone, so a partial or
-   empty provider response cannot remove vehicles from the site.
+   notifications cannot write wrong data. The safeguards below keep them cheap as well.
+4. Cars, pickups and motorcycles of the configured seller are saved in `catalog_publications`
+   (public presentation fields only) in any status: active, paused or closed. Items that no longer
+   exist are marked `closed`. Other sellers' items and anything else (trucks, boats, savings plans,
+   the seller's scale models and accessories) are never stored. The Mercado Libre category decides:
+   it must be, or sit below, one of the categories in
+   `lib/integrations/mercado-libre/vehicle-categories.ts` (Autos y Camionetas, new, classic and
+   damaged cars, and Motos). Categories are looked up once each; an item without a readable category
+   is retried, never guessed. Each row records its qualifying category in `vehicle_category`, and
+   the database rejects any insert or update without one of those categories
+   (`catalog_publications_vehicle_category_check`), so no other code path can store anything else.
+5. Pages and the share-image route render at request time but read the copy through a data cache
+   shared across requests and instances (`lib/catalog/cache.ts`, `unstable_cache`; on Vercel, the
+   Runtime Cache), so page views do not query the database. The list of available cars is tagged
+   `catalog:active` and each publication `catalog:publication:<ID>` (both also `catalog`). The
+   worker expires a publication's tag and the list tag right after a write that changed what pages
+   show (`savePublication` and `markPublicationRemoved` report it), with `{ expire: 0 }`, so the
+   next view reads the database. An identical re-read or the daily refresh of an unchanged row
+   expires nothing. Next.js applies the expiry when the cron request or the webhook's `after()`
+   work finishes, so a change shows a few seconds after its sync, at worst at the end of that
+   invocation (`maxDuration`, 300 s). A failed read throws and is never cached. Each deploy starts its
+   own entries, and a one-day backstop bounds an expiry that never went through. A row edited by
+   hand in the database is not expired: purge it with `vercel cache invalidate --tag catalog`. Local
+   development reads the deployed backend uncached. The price alert signup reads the copy only
+   while alert delivery is disabled (see below).
+6. `/api/mercado-libre/sync` (Vercel cron, `CRON_SECRET`) reconciles: it scans every publication of
+   the seller in any status, keeps the vehicles, and queues each one that is missing from the copy,
+   changed (status or last update), no longer listed or not refreshed for a day, then drains the
+   queue. Items are read in `/items/bulk` batches of 20, at most four requests at a time. An item a
+   batch does not return (deleted since the scan, or a per-item error) is queued and logged
+   (`catalog_reconciliation_unread`) instead of failing the run; a failed batch request still fails
+   it. This also backfills vehicles that were paused or closed before the copy existed, so every
+   car the seller ever listed keeps its page. It never closes or edits a vehicle from the listing
+   alone, so a partial or empty provider response cannot remove vehicles from the site.
 
 Ownership of fields: Mercado Libre owns price, currency, status, title, attributes, pictures and
 description. The copy owns the slug (fixed at the first sync, so URLs survive title edits; other slugs
@@ -59,14 +124,80 @@ read makes the item due again; writes require the item's current job lease, so a
 expired cannot overwrite a newer read; failed reads back off exponentially up to an hour and are given
 up after eight attempts with the error kept for diagnostics; a single-row lease allows one
 reconciliation at a time. `GET /api/mercado-libre/diagnostics?sync=1` reports the last reconciliation,
-queue backlog and row counts.
+queue backlog (`jobs.deferred` counts jobs from unlisted addresses) and row counts.
+
+Row validation: every query result is checked by a row parser (`lib/database-rows.ts`, with the
+table parsers in `lib/catalog/rows.ts` and `lib/alerts/rows.ts`) before it becomes a domain type.
+List reads (the catalog listing, the reconciliation's view of the copy, alert matching and the cars of
+a search-alert email) leave an invalid row out; single-item reads and job, lease or outbox bookkeeping
+fail. Both log `invalid_database_row` with the table, the field and only the row's ID. Rows are
+rewritten only when their item is read again, and closed publications never are, so the parsers keep
+every shape ever saved readable: a field added to `Vehicle` must be read there with a default.
+
+### Forged and repeated notifications
+
+Mercado Libre does not sign notifications, and the seller ID is public, so anyone can post a
+plausible one. It can never write data (step 3), but each one used to cost a queue row, a drain in a
+300-second function and two or three Mercado Libre calls on the seller token. Mercado Libre also
+sends many copies of one change. No safeguard rejects a notification: every one that passes the ID
+checks is either queued durably or already covered by queued work, so a genuine notification can
+be delayed but never lost.
+
+- **Copies of queued work** (`enqueueCatalogNotification` in `lib/catalog/store.ts`). A notification
+  for a job that is already due changes nothing and starts no drain: the drain already on its way
+  reads the current item. It keeps any backoff. A notification for a job being read adds a revision,
+  as before. A finished job is made due again. A due job that no worker has picked up for two
+  minutes (an interrupted drain) does get a new drain. The price-alert queue works the same way
+  (`enqueuePriceItem`).
+- **One webhook drain at a time.** The drain holds a single-row lease (`notification_drain` in
+  `catalog_sync_runs`), renewed per item and expiring after 90 seconds if the function dies. A
+  notification that finds it taken starts nothing, so a drain checks once more for due work after
+  releasing it. The cron drains on its own, alongside it; job leases keep the two apart.
+- **Items that are not ours.** When a read finds that an item never stored belongs to another seller,
+  notifications for it are ignored for a day; when it does not exist, for an hour, in case a brand
+  new listing was read too early (`skip_until`). A stored vehicle is never skipped, and the
+  reconciliation clears the skip, since the seller's own listing vouches for the item.
+- **Unlisted source addresses** (optional). Mercado Libre publishes the addresses it sends
+  notifications from, in [Recibe notificaciones](https://developers.mercadolibre.com.ar/es_ar/productos-recibe-notificaciones),
+  but its pages disagree (the Spanish page lists far more than the English one and the
+  [security guide](https://developers.mercadolibre.com.ar/es_ar/seguridad-apps)) and say the list can
+  change. Set `MERCADO_LIBRE_WEBHOOK_IPS` to the comma-separated list from the Spanish page to use it.
+  The webhook compares `x-vercel-forwarded-for`, which Vercel sets itself, never the first
+  `x-forwarded-for` entry. A notification from any other address is still queued and answered 200,
+  but as `deferred`: the webhook never drains it, and the daily cron reads it after every other job.
+  So an outdated list only delays notifications to the daily sync, and each one is logged
+  (`mercado_libre_webhook_unlisted_address`, with the address) so the list can be updated. Unset, as
+  locally and in tests, every address is accepted. A proxy in front of Vercel would make every
+  address look unlisted.
+- **Bounded queue** (`pruneCatalogJobs`). Each successful reconciliation deletes jobs of items never
+  stored that are not leased and were last touched before it started: finished jobs once any skip has
+  expired, given-up jobs after 14 days, and deferred jobs when the listing was complete, meaning the
+  scan reached its total and the bulk read returned every item (a genuine
+  one is a seller vehicle missing from the copy, which the same reconciliation queued again). Jobs of
+  stored vehicles are never deleted, since their lease and revision guard every write, and nothing
+  touches `catalog_publications`.
+
+There is no cap on notification volume per time window. A cap that rejected notifications could
+drop genuine ones, and one that only skipped drains would add little: the drain lease already
+allows a single drain at a time. Configuring the addresses is the strongest lever. Forged
+notifications then cost one statement each, start nothing, and are read at most within the cron's
+200-item budget per day.
 
 The cron runs daily so it also works on the Vercel Hobby plan, which rejects more frequent crons.
 Webhooks carry real-time changes; on a Pro plan, change the schedule in `vercel.json` to
 `*/15 * * * *` to repair missed notifications within 15 minutes.
 
 Price alerts keep their own queue and read Mercado Libre directly before sending, for an
-authoritative price. See [the Mercado Libre setup notes](mercado-libre-local.md).
+authoritative price. Where alert emails are configured, the signup route
+(`app/api/price-alerts/route.ts`) does not use the copy either: it reads the item from Mercado Libre
+with the seller token, rejects items of other sellers and takes the starting price from that read.
+Without that configuration the signup resolves the vehicle from the synced copy with
+`findCatalogVehicle` and only stores the subscription. See [the Mercado Libre setup notes](mercado-libre-local.md).
+
+Search alerts work from the copy instead. When a save turns an item active (a new listing, or a
+reserved one released), the same statement records an `inventory_alert_events` row; the alert worker
+then matches it against active search alerts with the catalog's own filter predicate and emails the
+matches through an outbox. See "Search alerts" in [price-alert-delivery.md](price-alert-delivery.md).
 
 OAuth tokens and client secrets are server-only. The current access token is stored encrypted next to
 the refresh token and shared by every server instance until it expires, so the one-use refresh
@@ -86,13 +217,32 @@ keep their stricter `default-src 'none'` CSP and `no-referrer` (`lib/alerts/page
 and PostHog would need per-request nonces. Framing the site, including in PostHog's in-app heatmap
 view, is blocked.
 
+## Styles
+
+`app/globals.css` holds only what every route shares: the tokens import, resets and base elements,
+type, and the primitives used across routes (`.section-shell`, `.eyebrow`, `.button`, `.glass-panel`,
+`.text-link`, `.cover-image`, `.sr-only`, `.search-clear-button` and the status panels). Every other
+rule lives in a plain CSS file next to the component or page that renders its markup (`x.css` beside
+`x.tsx`, `page.css` beside `page.tsx`), imported as that module's last import. The alert dialogs
+shared by the catalog and the vehicle page use `app/vehiculos/_components/alert-dialog.css`.
+
+These are global stylesheets, not CSS Modules: the GSAP code and `querySelector` calls select by
+class name, and several classes are styled or animated from more than one component. Production
+loads `globals.css` first, then each component's stylesheet before the module that renders it, but
+client navigation keeps stylesheets from earlier routes in the order they arrived. Never rely on
+source order between two files: when rules in different files can match the same element with the
+same specificity and set the same property, keep them in one file or give the intended winner a
+more specific selector.
+
 ## Motion and 3D strategy
 
-Start with CSS transforms, opacity, and native browser capabilities. Add `motion` only when a
-component needs coordinated state transitions. Reserve React Three Fiber/Three.js for one
-high-impact, isolated scene after real assets and a measurable user benefit exist.
+Motion is progressive enhancement. CSS handles control and hover transitions. GSAP (`gsap` and
+`@gsap/react`) runs the coordinated entrance, accordion, dialog and comparison-dock animations from
+client components (`components/motion/` and route `_components/`). Animations honor
+`prefers-reduced-motion`, and no content, price or contact action depends on them.
 
-The 3D scene must:
+There is no 3D scene. Reserve React Three Fiber/Three.js for one high-impact, isolated scene after
+real assets and a measurable user benefit exist. Such a scene must:
 
 - load dynamically after primary content;
 - have a designed static image fallback;
@@ -106,7 +256,8 @@ The 3D scene must:
 - One stable URL per active or sold vehicle.
 - Unique title, description, canonical URL, and social metadata per vehicle.
 - `Vehicle`/`Product`, `LocalBusiness`, and breadcrumb structured data where valid.
-- Sitemap generated from current inventory.
+- Sitemap deliberately empty until the indexing launch; from then on, generated from the public
+  pages and active inventory.
 - Sold vehicles remain useful when possible; removed URLs return an intentional status.
 - Spanish semantic HTML is rendered on the server before enhancement.
 

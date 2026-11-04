@@ -8,7 +8,7 @@ if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP);
 }
 
-type DialogMotionVariant = 'center' | 'compare' | 'sheet';
+type DialogMotionVariant = 'center' | 'compare' | 'overlay' | 'sheet';
 
 type UseDialogMotionOptions = {
   contentKey?: string;
@@ -21,6 +21,7 @@ type UseDialogMotionOptions = {
 const getPanelStart = (variant: DialogMotionVariant) => {
   if (variant === 'sheet') return { xPercent: 12, y: 0, scale: 1 };
   if (variant === 'compare') return { xPercent: 0, y: 42, scale: 0.985 };
+  if (variant === 'overlay') return { xPercent: 0, y: -16, scale: 1 };
   return { xPercent: 0, y: 28, scale: 0.97 };
 };
 
@@ -41,11 +42,25 @@ export function useDialogMotion({
       openAnimationRef.current = contextSafe!(() => {
         const dialog = dialogRef.current;
         if (!dialog) return;
-        if (!dialog.open) dialog.showModal();
 
         timelineRef.current?.kill();
 
         const panel = dialog.querySelector<HTMLElement>(panelSelector);
+        // The close animation leaves the dialog hidden. Clear that first, or showModal() finds
+        // nothing focusable and focus stays on the page behind it.
+        gsap.set(panel ? [dialog, panel] : dialog, { clearProps: 'opacity,visibility' });
+        if (!dialog.open) {
+          const openedByKeyboard = document.activeElement?.matches(':focus-visible') ?? false;
+          dialog.showModal();
+          // A tap gives the browser no focus to go on, so it rings whatever showModal() focused.
+          // Tap and click opens start on the dialog itself; keyboard opens keep the [autofocus] control.
+          if (!openedByKeyboard) {
+            dialog.tabIndex = -1;
+            dialog.focus({ preventScroll: true });
+          }
+        }
+        const initialFocus = document.activeElement;
+
         if (!panel) return;
 
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -53,11 +68,15 @@ export function useDialogMotion({
           return;
         }
 
-        const items = itemSelector
-          ? Array.from(dialog.querySelectorAll<HTMLElement>(itemSelector))
-          : [];
+        const items = itemSelector ? Array.from(dialog.querySelectorAll<HTMLElement>(itemSelector)) : [];
         const start = getPanelStart(variant);
-        const timeline = gsap.timeline({ defaults: { ease: 'power3.out' } });
+        // The opening frame hides the dialog again, and the browser can drop the focus showModal()
+        // just placed. Put it back once the dialog (and, at the end, every item) is visible.
+        const restoreFocus = () => {
+          if (dialog.contains(document.activeElement)) return;
+          if (initialFocus instanceof HTMLElement && dialog.contains(initialFocus)) initialFocus.focus();
+        };
+        const timeline = gsap.timeline({ defaults: { ease: 'power3.out' }, onComplete: restoreFocus });
 
         timeline
           .fromTo(dialog, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.24 })
@@ -66,13 +85,16 @@ export function useDialogMotion({
             { ...start, autoAlpha: 0 },
             { xPercent: 0, y: 0, scale: 1, autoAlpha: 1, duration: variant === 'compare' ? 0.62 : 0.52 },
             0,
-          );
+          )
+          .call(restoreFocus, undefined, 0.02);
 
         if (items.length > 0) {
+          // A leftover transform makes each item a stacking context, so a later item would paint over
+          // an earlier one's popup (a select's option list). Clear it once the item has landed.
           timeline.fromTo(
             items,
             { y: 17, autoAlpha: 0 },
-            { y: 0, autoAlpha: 1, stagger: 0.045, duration: 0.38 },
+            { y: 0, autoAlpha: 1, stagger: 0.045, duration: 0.38, clearProps: 'transform' },
             0.13,
           );
         }
@@ -100,13 +122,14 @@ export function useDialogMotion({
         }
 
         const start = getPanelStart(variant);
-        timelineRef.current = gsap.timeline({
-          defaults: { ease: 'power2.inOut' },
-          onComplete: () => {
-            dialog.close();
-            afterClose?.();
-          },
-        })
+        timelineRef.current = gsap
+          .timeline({
+            defaults: { ease: 'power2.inOut' },
+            onComplete: () => {
+              dialog.close();
+              afterClose?.();
+            },
+          })
           .to(panel, {
             xPercent: start.xPercent * 0.55,
             y: start.y * 0.65,
@@ -144,7 +167,7 @@ export function useDialogMotion({
       gsap.fromTo(
         Array.from(view.children),
         { y: 18, autoAlpha: 0 },
-        { y: 0, autoAlpha: 1, stagger: 0.055, duration: 0.42, ease: 'power3.out' },
+        { y: 0, autoAlpha: 1, stagger: 0.055, duration: 0.42, ease: 'power3.out', clearProps: 'transform' },
       );
     },
     { scope: dialogRef, dependencies: [contentKey], revertOnUpdate: true },

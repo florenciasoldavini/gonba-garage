@@ -11,6 +11,9 @@ import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { EmptyBayDesktop, EmptyBayMobile } from '../_components/empty-bay';
+// The inventory section reuses the home's heading and car grid styles.
+import '../../page.css';
+import './not-found.css';
 
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
 
@@ -40,13 +43,22 @@ export default async function MissingVehicle() {
               {vehicles.length > 0 && ' Más abajo tenés los autos disponibles ahora.'}
             </p>
             <div className="status-actions">
-              <ButtonLink href="/vehiculos">Ver vehículos disponibles <Arrow /></ButtonLink>
-              <ButtonAnchor href={getWhatsAppUrl(WHATSAPP_GENERAL_MESSAGE)} target="_blank" rel="noopener noreferrer" variant="glass">
+              <ButtonLink href="/vehiculos">
+                Ver vehículos disponibles <Arrow />
+              </ButtonLink>
+              <ButtonAnchor
+                href={getWhatsAppUrl(WHATSAPP_GENERAL_MESSAGE)}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="glass"
+              >
                 Escribinos por WhatsApp <Arrow />
               </ButtonAnchor>
             </div>
           </div>
-          <div className="missing-vehicle-scene"><EmptyBayDesktop /></div>
+          <div className="missing-vehicle-scene">
+            <EmptyBayDesktop />
+          </div>
         </section>
       </div>
 
@@ -58,7 +70,9 @@ export default async function MissingVehicle() {
               <h2 id="missing-vehicle-available">Otras razones para estar acá.</h2>
             </div>
             <div className="section-heading-copy">
-              <Link className="text-link" href="/vehiculos">Ver inventario completo <Arrow /></Link>
+              <Link className="text-link" href="/vehiculos">
+                Ver inventario completo <Arrow />
+              </Link>
             </div>
           </div>
           <VehicleGrid vehicles={vehicles} />

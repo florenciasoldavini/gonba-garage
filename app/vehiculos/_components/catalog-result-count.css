@@ -1,0 +1,16 @@
+/* Same box in both states, so applying a filter never changes the hero height or shifts the catalog. */
+.catalog-hero-count {
+  display: inline-block;
+  padding: 7px 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  transition:
+    padding var(--duration-default) var(--ease-standard),
+    border-color var(--duration-default) ease,
+    background var(--duration-default) ease;
+}
+.catalog-hero-count-filtered {
+  padding-inline: 10px;
+  border-color: rgba(220, 255, 0, 0.32);
+  background: rgba(220, 255, 0, 0.06);
+}

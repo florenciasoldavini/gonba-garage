@@ -1,0 +1,28 @@
+.home-gsap .hero-media,
+.home-gsap .hero-content,
+.home-gsap .hero-facts,
+.home-gsap .vehicle-card-link,
+.home-gsap .service-card {
+  will-change: transform;
+}
+
+.home-gsap .hero {
+  isolation: isolate;
+}
+.home-gsap .hero:hover .cover-image {
+  transform: none;
+}
+
+/* The page's largest text rises into place in CSS rather than GSAP: GSAP starts only after hydration and
+   would first hide text the server already sent, which delays the largest paint and, when it beats the
+   first frame, shows an empty hero. These run from the first frame and stay fully opaque. */
+@media (prefers-reduced-motion: no-preference) {
+  .home-gsap #hero-title {
+    --intro-y: 30px;
+    animation: intro-rise 1s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+  }
+  .home-gsap .hero-intro {
+    --intro-y: 18px;
+    animation: intro-rise 0.8s cubic-bezier(0.215, 0.61, 0.355, 1) 0.12s both;
+  }
+}

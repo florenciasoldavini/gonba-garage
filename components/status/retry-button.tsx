@@ -15,7 +15,11 @@ export function RetryButton({ onRetry }: { onRetry?: () => void }) {
   const [pending, startTransition] = useTransition();
 
   return (
-    <Button type="button" disabled={pending} onClick={() => startTransition(() => (onRetry ? onRetry() : router.refresh()))}>
+    <Button
+      type="button"
+      disabled={pending}
+      onClick={() => startTransition(() => (onRetry ? onRetry() : router.refresh()))}
+    >
       {pending ? 'Reintentando…' : 'Reintentar'} <RotateCw aria-hidden="true" size={16} strokeWidth={1.8} />
     </Button>
   );

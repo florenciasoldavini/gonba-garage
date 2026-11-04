@@ -4,12 +4,13 @@ import { useRef, type ReactNode } from 'react';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 
 import { CustomSelect } from '@/components/ui/custom-select';
+import './inventory-toolbar.css';
 
-export type InventorySort = 'featured' | 'newest' | 'price-asc' | 'price-desc' | 'mileage';
+export type InventorySort = 'featured' | 'year' | 'price-asc' | 'price-desc' | 'mileage';
 
 const sortOptions: Array<{ value: InventorySort; label: string }> = [
   { value: 'featured', label: 'Destacados' },
-  { value: 'newest', label: 'Más recientes' },
+  { value: 'year', label: 'Año más nuevo' },
   { value: 'price-asc', label: 'Menor precio' },
   { value: 'price-desc', label: 'Mayor precio' },
   { value: 'mileage', label: 'Menor kilometraje' },
@@ -27,20 +28,32 @@ type InventoryToolbarProps = {
   priceEnabled: boolean;
 };
 
-export function InventoryToolbar({ activeFilterCount, alertAction, count, onOpenFilters, onQueryChange, onSortChange, query, sort, priceEnabled }: InventoryToolbarProps) {
+export function InventoryToolbar({
+  activeFilterCount,
+  alertAction,
+  count,
+  onOpenFilters,
+  onQueryChange,
+  onSortChange,
+  query,
+  sort,
+  priceEnabled,
+}: InventoryToolbarProps) {
   const searchRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="catalog-toolbar">
       <div className="catalog-toolbar-search">
-        <label className="sr-only" htmlFor="inventory-search">Buscar vehículos</label>
+        <label className="sr-only" htmlFor="inventory-search">
+          Buscar vehículos
+        </label>
         <Search aria-hidden="true" size={16} />
         <input
           id="inventory-search"
           ref={searchRef}
           type="search"
           value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
+          onChange={event => onQueryChange(event.target.value)}
           placeholder="Marca, modelo o año"
         />
         {query ? (
@@ -68,7 +81,7 @@ export function InventoryToolbar({ activeFilterCount, alertAction, count, onOpen
           <CustomSelect
             ariaLabel="Ordenar vehículos"
             value={sort}
-            onChange={(value) => onSortChange(value as InventorySort)}
+            onChange={value => onSortChange(value as InventorySort)}
             options={sortOptions.filter(option => priceEnabled || !option.value.startsWith('price-'))}
           />
         </div>

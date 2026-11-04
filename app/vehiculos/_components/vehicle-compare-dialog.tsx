@@ -1,25 +1,32 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useId, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ArrowUpRight, Check, Scale, X } from 'lucide-react';
 
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
+import { Button } from '@/components/ui/button';
+import { LinkPendingIcon } from '@/components/ui/link-pending';
+import { SkeletonImage } from '@/components/ui/skeleton-image';
+import type { MepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
+import { formatVehicleImageAlt } from '@/features/vehicles/presentation/formatters';
 import {
   getVehicleSpecification,
   vehicleSpecificationLabels,
   type VehicleSpecificationKey,
 } from '@/features/vehicles/presentation/specifications';
+import { ApproximateUsdPrice } from './approximate-usd-price';
+import './vehicle-compare-dialog.css';
 
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(useGSAP);
 }
 
 type VehicleCompareDialogProps = {
+  quote: MepQuote | null;
   vehicles: Vehicle[];
   isOpen: boolean;
   onClose: () => void;
@@ -28,29 +35,52 @@ type VehicleCompareDialogProps = {
 };
 
 const comparisonKeys: VehicleSpecificationKey[] = [
-  'price', 'year', 'mileage', 'transmission', 'engine', 'fuel', 'traction', 'body', 'color', 'location',
+  'price',
+  'year',
+  'mileage',
+  'transmission',
+  'engine',
+  'fuel',
+  'traction',
+  'body',
+  'color',
 ];
 
-export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onClear }: VehicleCompareDialogProps) {
+export function VehicleCompareDialog({
+  quote,
+  vehicles,
+  isOpen,
+  onClose,
+  onRemove,
+  onClear,
+}: VehicleCompareDialogProps) {
   const [differencesOnly, setDifferencesOnly] = useState(true);
+  const differencesToggleRef = useRef<HTMLInputElement>(null);
+  const titleId = useId();
   const vehicleKey = vehicles.map(({ slug }) => slug).join('|');
   const { closeDialog, closeDialogAfter, dialogRef } = useDialogMotion({
     isOpen,
-    itemSelector: '.vehicle-compare-modal-header, .vehicle-compare-controls, .vehicle-compare-card, .vehicle-compare-row',
+    itemSelector:
+      '.vehicle-compare-modal-header, .vehicle-compare-controls, .vehicle-compare-card, .vehicle-compare-row, .vehicle-compare-empty > div',
     panelSelector: '.vehicle-compare-modal',
     variant: 'compare',
   });
 
   const rows = useMemo(() => {
-    const allRows = comparisonKeys.map((key) => [
+    const allRows = comparisonKeys.map(key => [
       vehicleSpecificationLabels[key],
-      ...vehicles.map((vehicle) => getVehicleSpecification(vehicle, key)),
+      ...vehicles.map(vehicle => getVehicleSpecification(vehicle, key)),
     ]);
 
-    return differencesOnly
-      ? allRows.filter(([, ...values]) => new Set(values).size > 1)
-      : allRows;
+    return differencesOnly ? allRows.filter(([, ...values]) => new Set(values).size > 1) : allRows;
   }, [differencesOnly, vehicles]);
+  const hidesEveryRow = differencesOnly && rows.length === 0 && vehicles.length >= 2;
+
+  const showAllSpecifications = () => {
+    setDifferencesOnly(false);
+    // The button unmounts with the message, so hand focus to the toggle it just switched off.
+    differencesToggleRef.current?.focus();
+  };
 
   const removeVehicle = (slug: string) => {
     if (vehicles.length <= 2) {
@@ -90,56 +120,124 @@ export function VehicleCompareDialog({ vehicles, isOpen, onClose, onRemove, onCl
     <dialog
       className="vehicle-compare-dialog"
       ref={dialogRef}
-      onCancel={(event) => { event.preventDefault(); closeDialog(); }}
-      onClick={(event) => { if (event.target === event.currentTarget) closeDialog(); }}
+      aria-labelledby={titleId}
+      onCancel={event => {
+        event.preventDefault();
+        closeDialog();
+      }}
+      onClick={event => {
+        if (event.target === event.currentTarget) closeDialog();
+      }}
       onClose={onClose}
     >
       <div className="vehicle-compare-modal">
         <header className="vehicle-compare-modal-header">
           <div className="vehicle-compare-modal-title">
-            <span><Scale aria-hidden="true" size={17} strokeWidth={1.8} /></span>
+            <span>
+              <Scale aria-hidden="true" size={17} strokeWidth={1.8} />
+            </span>
             <div>
-              <h2>Comparar vehículos</h2>
+              <h2 id={titleId}>Comparar vehículos</h2>
               <p>{vehicles.length} unidades seleccionadas · Inventario actual</p>
             </div>
           </div>
-          <button className="vehicle-compare-close" type="button" aria-label="Cerrar comparación" onClick={closeDialog}><X aria-hidden="true" size={18} /></button>
+          <button className="vehicle-compare-close" type="button" aria-label="Cerrar comparación" onClick={closeDialog}>
+            <X aria-hidden="true" size={18} />
+          </button>
         </header>
 
         <div className="vehicle-compare-controls">
           <label>
-            <input type="checkbox" checked={differencesOnly} onChange={(event) => setDifferencesOnly(event.target.checked)} />
-            <span><Check aria-hidden="true" size={12} /></span>
+            <input
+              ref={differencesToggleRef}
+              type="checkbox"
+              checked={differencesOnly}
+              onChange={event => setDifferencesOnly(event.target.checked)}
+            />
+            <span>
+              <Check aria-hidden="true" size={12} />
+            </span>
             Mostrar solo diferencias
           </label>
-          <button type="button" onClick={() => closeDialogAfter(onClear)}>Limpiar selección</button>
+          <button type="button" onClick={() => closeDialogAfter(onClear)}>
+            Limpiar selección
+          </button>
         </div>
 
         <div className="vehicle-compare-scroll">
           <div className="vehicle-compare-content" style={{ '--compare-count': vehicles.length } as CSSProperties}>
             <div className="vehicle-compare-cards">
               <div className="vehicle-compare-corner" aria-hidden="true" />
-              {vehicles.map((vehicle) => (
+              {vehicles.map(vehicle => (
                 <article className="vehicle-compare-card" key={vehicle.slug}>
                   <div className="vehicle-compare-card-image">
-                    <Image src={vehicle.image} alt={vehicle.imageAlt} fill sizes="260px" className="cover-image" />
-                    <button type="button" aria-label={`Quitar ${vehicle.make} ${vehicle.model}`} onClick={() => removeVehicle(vehicle.slug)}><X aria-hidden="true" size={12} /></button>
+                    <SkeletonImage
+                      src={vehicle.image}
+                      alt={formatVehicleImageAlt(vehicle)}
+                      fill
+                      sizes="260px"
+                      className="cover-image"
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Quitar ${vehicle.make} ${vehicle.model}`}
+                      onClick={() => removeVehicle(vehicle.slug)}
+                    >
+                      <X aria-hidden="true" size={12} />
+                    </button>
                   </div>
-                  <p>{vehicle.year} · {vehicle.version}</p>
-                  <h3>{vehicle.make} {vehicle.model}</h3>
-                  <Link href={`/vehiculos/${vehicle.slug}`}>Ver vehículo <ArrowUpRight aria-hidden="true" size={14} /></Link>
+                  <p>
+                    {vehicle.year} · {vehicle.version}
+                  </p>
+                  <h3>
+                    {vehicle.make} {vehicle.model}
+                  </h3>
+                  <Link href={`/vehiculos/${vehicle.slug}`}>
+                    Ver vehículo{' '}
+                    <LinkPendingIcon size={14}>
+                      <ArrowUpRight aria-hidden="true" size={14} />
+                    </LinkPendingIcon>
+                  </Link>
                 </article>
               ))}
             </div>
 
-            <div className="vehicle-compare-table" role="table" aria-label="Especificaciones comparadas">
-              {rows.map(([label, ...values]) => (
-                <div className="vehicle-compare-row" role="row" key={label}>
-                  <div role="rowheader">{label}</div>
-                  {values.map((value, index) => <div role="cell" key={`${label}-${vehicles[index]?.slug}`}>{value}</div>)}
-                </div>
-              ))}
-            </div>
+            {rows.length > 0 ? (
+              <div className="vehicle-compare-table" role="table" aria-label="Especificaciones comparadas">
+                {rows.map(([label, ...values]) => (
+                  <div className="vehicle-compare-row" role="row" key={label}>
+                    <div role="rowheader">{label}</div>
+                    {values.map((value, index) => (
+                      <div role="cell" key={`${label}-${vehicles[index]?.slug}`}>
+                        {label === vehicleSpecificationLabels.price ? (
+                          <span className="vehicle-compare-price">
+                            {value}
+                            <ApproximateUsdPrice quote={quote} vehicle={vehicles[index]} />
+                          </span>
+                        ) : (
+                          value
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          {/* Outside the content so it spans the visible width and stays put while the cards scroll sideways. */}
+          <div className="vehicle-compare-empty" role="status">
+            {hidesEveryRow ? (
+              <div>
+                <span aria-hidden="true">
+                  <Scale size={18} strokeWidth={1.8} />
+                </span>
+                <h3>Sin diferencias</h3>
+                <p>Estos autos coinciden en las {comparisonKeys.length} especificaciones que comparamos.</p>
+                <Button type="button" variant="ghost" onClick={showAllSpecifications}>
+                  Ver todas las especificaciones
+                </Button>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

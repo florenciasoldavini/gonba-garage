@@ -1,0 +1,248 @@
+.valuation-form {
+  border-radius: var(--radius-feature);
+  background: rgba(14, 17, 15, 0.88);
+}
+.valuation-form {
+  overflow: hidden;
+  scroll-margin-top: 110px;
+}
+.valuation-form-heading {
+  min-height: 80px;
+  padding: 18px clamp(20px, 3vw, 32px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+}
+.valuation-form-heading > div {
+  display: grid;
+  gap: 5px;
+}
+.valuation-form-heading > div > span {
+  color: var(--accent);
+  font: 600 var(--text-label) var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.valuation-form-heading strong {
+  font-size: 0.78rem;
+}
+.valuation-form-section {
+  margin: 0;
+  padding: clamp(26px, 4vw, 42px) clamp(20px, 3vw, 32px);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+}
+.valuation-form-step {
+  min-height: 390px;
+}
+.valuation-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 14px;
+}
+.valuation-fields > label,
+.valuation-select-field {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.valuation-fields > label > span,
+.valuation-select-field > span,
+.valuation-summary > span {
+  color: #9ca198;
+  font: 600 var(--text-label) var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.valuation-fields > label > input,
+.valuation-fields > label > textarea {
+  width: 100%;
+  min-height: 49px;
+  padding: 0 14px;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  outline: 0;
+  background: rgba(255, 255, 255, 0.04);
+  font: 500 0.875rem var(--font-sans);
+  transition:
+    border-color 180ms ease,
+    background 180ms ease;
+}
+.valuation-fields > label > textarea {
+  min-height: 110px;
+  padding-block: 13px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.valuation-fields > label > input::placeholder,
+.valuation-fields > label > textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+.valuation-fields > label > input:hover,
+.valuation-fields > label > textarea:hover {
+  border-color: rgba(220, 255, 0, 0.42);
+  background: rgba(255, 255, 255, 0.07);
+}
+.valuation-fields > label > input:focus,
+.valuation-fields > label > textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(220, 255, 0, 0.11);
+}
+.valuation-fields > label > input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+.valuation-fields > label > input[aria-invalid='true']:focus {
+  box-shadow: 0 0 0 2px var(--color-danger-soft);
+}
+.valuation-field-error {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  color: var(--color-danger);
+  font-size: var(--text-caption);
+  line-height: 1.45;
+}
+.valuation-field-error svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+.valuation-select-field .custom-select-trigger {
+  min-height: 49px;
+}
+.valuation-form-step {
+  position: relative;
+}
+.valuation-form-step:has(.custom-select-trigger[aria-expanded='true']) {
+  z-index: 2;
+}
+.valuation-select-field .custom-select-menu {
+  background: #0d100e;
+}
+.valuation-field-wide {
+  grid-column: 1 / -1;
+}
+.valuation-summary {
+  padding-top: 14px;
+  display: grid;
+  gap: 6px;
+  border-top: 1px solid var(--line);
+}
+.valuation-summary dl {
+  margin: 0;
+}
+.valuation-summary dl > div {
+  padding: 11px 0;
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 0.8125rem;
+}
+.valuation-summary dt {
+  align-self: center;
+  color: #8d9289;
+  font: 600 var(--text-label) var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.valuation-summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+.valuation-photo-note {
+  margin: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+.valuation-photo-note > svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--accent);
+}
+.valuation-photo-note strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.valuation-form-submit {
+  position: relative;
+  z-index: 1;
+  padding: clamp(25px, 4vw, 38px) clamp(20px, 3vw, 32px);
+  display: grid;
+  gap: 17px;
+}
+.valuation-step-actions {
+  display: flex;
+  gap: 10px;
+}
+.valuation-step-actions .button {
+  width: 100%;
+  flex: 1;
+  /* Beside "Volver" on a phone the shared 30px gap would wrap "Enviar por WhatsApp"; space-between still
+     pushes the arrow to the edge whenever there is room. */
+  gap: 12px;
+  cursor: pointer;
+}
+.valuation-step-actions .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+.valuation-back-button {
+  min-height: 48px;
+  padding: 0 18px 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  color: var(--muted);
+  border: 0;
+  background: transparent;
+  font: 650 var(--text-caption) var(--font-sans);
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+.valuation-back-button:hover {
+  color: var(--text);
+}
+.valuation-back-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+/* Replaces the form in place, so it keeps the form's radius and background (docs/design-system.md). */
+.valuation-success {
+  border-radius: var(--radius-feature);
+  background: rgba(14, 17, 15, 0.88);
+}
+
+@media (max-width: 700px) {
+  .valuation-form-heading strong {
+    text-wrap: pretty;
+  }
+  .valuation-fields {
+    grid-template-columns: 1fr;
+  }
+  .valuation-field-wide {
+    grid-column: auto;
+  }
+  .valuation-summary dl > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+  .valuation-form-step {
+    min-height: 0;
+  }
+  .valuation-form,
+  .valuation-success {
+    border-radius: var(--radius-card);
+  }
+}

@@ -1,0 +1,106 @@
+.catalog-range-heading {
+  display: grid;
+  gap: 7px;
+}
+.catalog-range-heading > span {
+  color: #8e938a;
+  font: 500 var(--text-label) var(--font-mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.catalog-range-heading output {
+  color: var(--text);
+  font: 600 var(--text-label) var(--font-mono);
+  white-space: nowrap;
+}
+.catalog-range-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.catalog-range-label > span {
+  color: #8e938a;
+  font: 500 var(--text-label) var(--font-mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.catalog-range-control {
+  position: relative;
+  height: 30px;
+  margin-top: 4px;
+}
+.catalog-range-track {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-50%);
+}
+.catalog-range-track span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: var(--accent);
+}
+.catalog-range-control input[type='range'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 30px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  pointer-events: none;
+  appearance: none;
+}
+.catalog-range-control input[type='range']::-webkit-slider-runnable-track {
+  height: 3px;
+  background: transparent;
+}
+.catalog-range-control input[type='range']::-webkit-slider-thumb {
+  width: 17px;
+  height: 17px;
+  margin-top: -7px;
+  border: 3px solid #111411;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(220, 255, 0, 0.4);
+  cursor: grab;
+  pointer-events: auto;
+  appearance: none;
+}
+.catalog-range-control input[type='range']::-moz-range-track {
+  height: 3px;
+  background: transparent;
+}
+.catalog-range-control input[type='range']::-moz-range-thumb {
+  width: 11px;
+  height: 11px;
+  border: 3px solid #111411;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(220, 255, 0, 0.4);
+  cursor: grab;
+  pointer-events: auto;
+}
+.catalog-range-control input[type='range']:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.catalog-range-control input[type='range']:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.catalog-range-limits {
+  display: flex;
+  justify-content: space-between;
+  color: var(--color-text-tertiary);
+  font: 500 var(--text-label) var(--font-mono);
+}

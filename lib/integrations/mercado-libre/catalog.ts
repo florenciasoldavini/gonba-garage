@@ -1,53 +1,63 @@
 import 'server-only';
 import { cache } from 'react';
-import { activeMockVehicles, findMockVehicle } from '@/features/vehicles/data/mock-vehicles';
-import type { Vehicle } from '@/features/vehicles/domain/vehicle';
-import {
-  findCatalogPublication as findStoredPublication,
-  listActiveCatalogVehicles,
-  type CatalogPublication,
-} from '@/lib/catalog/store';
+import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle } from '@/features/vehicles/domain/vehicle';
+import { orderFeaturedVehicles } from '@/features/vehicles/domain/featured-order';
+import { cleanCatalogVehicle } from '@/features/vehicles/presentation/listing-cleanup';
+import { readActiveCatalogVehicles, readCatalogPublication } from '@/lib/catalog/cache';
+import type { CatalogPublication } from '@/lib/catalog/store';
+import { mercadoLibreEnv } from '@/lib/env';
 import { fullSizeMercadoLibreImageUrl } from './pictures';
-
-export function isLiveCatalog() {
-  return process.env.VEHICLE_DATA_SOURCE === 'mercado-libre';
-}
 
 /**
  * A server with MERCADO_LIBRE_BACKEND_URL (local development) reads the synced catalog through
- * the deployed backend. Otherwise the server reads its own synced copy from the database.
- * Neither path calls Mercado Libre during a page request.
+ * the deployed backend. Otherwise the server reads its own synced copy from the database, through
+ * the cross-request cache that the sync worker expires (lib/catalog/cache.ts). The backend path is
+ * not cached: the deployed worker cannot expire a local cache, so local pages always show the copy
+ * as it is. Neither path calls Mercado Libre during a page request.
  */
 function readsRemoteBackend() {
-  return Boolean(process.env.MERCADO_LIBRE_BACKEND_URL?.trim());
+  return Boolean(mercadoLibreEnv.backendUrl());
 }
 
 async function remoteCatalog<T>(item?: string): Promise<T | null> {
-  const base = process.env.MERCADO_LIBRE_BACKEND_URL;
-  const key = process.env.MERCADO_LIBRE_CATALOG_API_KEY;
+  const base = mercadoLibreEnv.backendUrl();
+  const key = mercadoLibreEnv.catalogApiKey();
   if (!base || !key) throw new Error('Missing remote catalog configuration');
   const url = new URL('/api/mercado-libre/catalog', base);
   if (url.protocol !== 'https:') throw new Error('Catalog backend requires HTTPS');
   if (item) url.searchParams.set('item', item);
   const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${key}` }, cache: 'no-store',
-    redirect: 'error', signal: AbortSignal.timeout(30_000),
+    headers: { Authorization: `Bearer ${key}` },
+    cache: 'no-store',
+    redirect: 'error',
+    signal: AbortSignal.timeout(30_000),
   });
   if (response.status === 404) return null;
   if (!response.ok) throw new Error('Remote catalog unavailable');
   return response.json() as Promise<T>;
 }
 
+// Publications saved before the placeholder existed store the home-page showroom photo as their
+// image. A re-read replaces it, but closed publications are never read again, so reads swap it.
+const PREVIOUS_PHOTO_FALLBACK = '/showroom-car.jpg';
+
 function withFullSizeImage(vehicle: Vehicle): Vehicle {
+  if (vehicle.image === PREVIOUS_PHOTO_FALLBACK) return { ...vehicle, image: VEHICLE_PHOTO_PLACEHOLDER };
   return { ...vehicle, image: fullSizeMercadoLibreImageUrl(vehicle.image) ?? vehicle.image };
 }
 
+/** The vehicle as every page shows it: full-size image and the automatic cleanup of the listing text. */
+function presentVehicle(vehicle: Vehicle, attributes?: CatalogPublication['source']['attributes']): Vehicle {
+  return cleanCatalogVehicle(withFullSizeImage(vehicle), attributes);
+}
+
+/** Available vehicles in the default ("Destacados") order, which the home page also uses. */
 export const listCatalogVehicles = cache(async () => {
-  if (!isLiveCatalog()) return activeMockVehicles;
-  if (!readsRemoteBackend()) return (await listActiveCatalogVehicles()).map(withFullSizeImage);
+  if (!readsRemoteBackend())
+    return orderFeaturedVehicles((await readActiveCatalogVehicles()).map(vehicle => presentVehicle(vehicle)));
   const result = await remoteCatalog<{ vehicles: Vehicle[] }>();
   if (!result) throw new Error('Missing catalog');
-  return result.vehicles.map(withFullSizeImage);
+  return orderFeaturedVehicles(result.vehicles.map(vehicle => presentVehicle(vehicle)));
 });
 
 /**
@@ -55,16 +65,14 @@ export const listCatalogVehicles = cache(async () => {
  * returned vehicle carries the canonical slug, which can differ from the requested one.
  */
 export const findCatalogPublication = cache(async (slug: string): Promise<CatalogPublication | null> => {
-  if (!isLiveCatalog()) return null;
   const id = slug.match(/-(mla\d+)$/i)?.[1]?.toUpperCase();
   if (!id) return null;
-  const result = readsRemoteBackend() ? await remoteCatalog<CatalogPublication>(id) : await findStoredPublication(id);
-  return result ? { ...result, vehicle: withFullSizeImage(result.vehicle) } : null;
+  const result = readsRemoteBackend() ? await remoteCatalog<CatalogPublication>(id) : await readCatalogPublication(id);
+  return result ? { ...result, vehicle: presentVehicle(result.vehicle, result.source.attributes) } : null;
 });
 
 /** Only an exact canonical slug resolves to a vehicle. */
 export const findCatalogVehicle = cache(async (slug: string) => {
-  if (!isLiveCatalog()) return findMockVehicle(slug);
   const vehicle = (await findCatalogPublication(slug))?.vehicle;
   return vehicle?.slug === slug ? vehicle : undefined;
 });

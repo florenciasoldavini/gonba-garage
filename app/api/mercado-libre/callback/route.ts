@@ -3,10 +3,7 @@ import { NextResponse } from 'next/server';
 import { saveAuthorization } from '@/lib/integrations/mercado-libre/credentials';
 import { reportIntegrationFailure } from '@/lib/integrations/mercado-libre/failures';
 
-import {
-  exchangeMercadoLibreAuthorizationCode,
-  securelyMatches,
-} from '@/lib/integrations/mercado-libre/oauth';
+import { exchangeMercadoLibreAuthorizationCode, securelyMatches } from '@/lib/integrations/mercado-libre/oauth';
 
 const responseHeaders = {
   'Cache-Control': 'no-store',
@@ -41,13 +38,7 @@ export async function GET(request: Request) {
   const expectedState = cookieStore.get('meli_oauth_state')?.value;
   const verifier = cookieStore.get('meli_pkce_verifier')?.value;
 
-  if (
-    !code ||
-    !returnedState ||
-    !expectedState ||
-    !verifier ||
-    !securelyMatches(returnedState, expectedState)
-  ) {
+  if (!code || !returnedState || !expectedState || !verifier || !securelyMatches(returnedState, expectedState)) {
     return diagnosticResponse(
       {
         ok: false,

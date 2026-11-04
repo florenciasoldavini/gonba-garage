@@ -1,0 +1,716 @@
+/* Vehicle detail */
+.vehicle-detail-page {
+  overflow: clip;
+}
+.detail-breadcrumbs {
+  padding-top: 30px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--color-text-tertiary);
+  font: 500 var(--text-micro) var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.detail-breadcrumbs ol {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  list-style: none;
+}
+.detail-breadcrumbs li {
+  display: flex;
+  gap: 10px;
+}
+.detail-breadcrumbs a {
+  color: #b8bcb4;
+}
+.detail-breadcrumbs a:hover {
+  color: var(--accent);
+}
+
+.detail-title {
+  padding-block: clamp(42px, 5vw, 68px) clamp(30px, 3.5vw, 46px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 26px;
+}
+.detail-title h1 {
+  max-width: 1050px;
+  margin: 0;
+  font-size: clamp(4rem, 7.2vw, 7.8rem);
+}
+.detail-title h1 em {
+  display: block;
+  color: var(--accent);
+  font-style: normal;
+}
+.detail-title-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+}
+.detail-title-meta span {
+  margin-right: 18px;
+  padding-right: 18px;
+  color: #c2c6be;
+  border-right: 1px solid var(--line);
+  font: 500 var(--text-caption) var(--font-mono);
+}
+.detail-title-meta span:last-child {
+  margin-right: 0;
+  padding-right: 0;
+  border-right: 0;
+}
+
+.detail-showcase {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) clamp(340px, 29vw, 400px);
+  gap: 14px;
+  align-items: stretch;
+}
+.detail-purchase-card {
+  min-height: 0;
+  padding: clamp(26px, 3vw, 42px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 24px;
+  background: rgba(16, 19, 17, 0.9);
+}
+.detail-purchase-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.detail-utility-actions {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 7px;
+}
+.detail-availability {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #dfe2dc;
+  font-size: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.detail-availability span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow:
+    0 0 0 0 rgba(220, 255, 0, 0.5),
+    0 0 18px rgba(220, 255, 0, 0.65);
+  animation: availability-pulse 1.8s var(--ease-standard) infinite;
+}
+.detail-availability:not([data-status='active']) span {
+  animation: none;
+  box-shadow: none;
+}
+.detail-availability[data-status='paused'] span {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+.detail-availability[data-status='sold'] span {
+  background: var(--text);
+}
+
+@keyframes availability-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 0 rgba(220, 255, 0, 0.5),
+      0 0 18px rgba(220, 255, 0, 0.65);
+  }
+  50% {
+    transform: scale(1.18);
+    box-shadow:
+      0 0 0 6px rgba(220, 255, 0, 0),
+      0 0 24px rgba(220, 255, 0, 0.85);
+  }
+}
+.detail-price-label {
+  margin: clamp(48px, 5vw, 76px) 0 8px;
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.detail-price {
+  margin-bottom: 7px;
+  font-size: clamp(2.35rem, 3.3vw, 3.5rem);
+  font-weight: 800;
+  letter-spacing: -0.07em;
+  white-space: nowrap;
+}
+.detail-location {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+.detail-price-usd {
+  margin: -2px 0 9px;
+  font-size: var(--text-caption);
+}
+.detail-last-price dd .price-usd-approx {
+  margin-top: 4px;
+  text-align: right;
+}
+.detail-actions {
+  margin-top: 12px;
+  display: grid;
+  gap: 9px;
+}
+.detail-actions .button {
+  width: 100%;
+  gap: 18px;
+}
+.detail-share-button,
+.detail-compare-button {
+  min-height: 44px;
+  padding: 8px 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #aeb2aa;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+.detail-share-button:hover,
+.detail-compare-button:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.07);
+}
+.detail-compare-button {
+  text-decoration: none;
+}
+.detail-alert-card {
+  width: 100%;
+  min-height: 72px;
+  margin-top: 28px;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  color: var(--text);
+  border: 1px solid rgba(220, 255, 0, 0.28);
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(220, 255, 0, 0.09), rgba(220, 255, 0, 0.025));
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease;
+}
+.detail-alert-card:hover {
+  border-color: rgba(220, 255, 0, 0.56);
+  background: linear-gradient(90deg, rgba(220, 255, 0, 0.14), rgba(220, 255, 0, 0.04));
+}
+.detail-alert-symbol {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--accent-dark);
+  border-radius: 9px;
+  background: var(--accent);
+  font: 800 0.75rem var(--font-mono);
+}
+.detail-alert-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+.detail-alert-copy strong {
+  font-size: 0.875rem;
+}
+.detail-alert-copy small {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.detail-alert-arrow {
+  color: var(--accent);
+  font-size: 0.85rem;
+}
+.detail-alert-card:focus-visible,
+.detail-share-button:focus-visible,
+.detail-compare-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.detail-disclaimer {
+  margin: auto 0 0;
+  padding-top: 24px;
+  color: var(--color-text-tertiary);
+  font-size: var(--text-fine);
+  line-height: 1.5;
+}
+
+/* Reserved or sold: the photo goes grey under a one-line reason and the card leads with the status,
+   the only place it is named above the fold. */
+.detail-showcase > .detail-primary-image,
+.detail-status-banner {
+  grid-area: 1 / 1;
+}
+.detail-showcase:not([data-status='active']) .detail-primary-image .cover-image {
+  filter: grayscale(1) brightness(0.72);
+}
+.detail-status-banner {
+  position: relative;
+  z-index: 1;
+  max-width: calc(100% - 36px);
+  margin: 18px;
+  padding: 11px 14px;
+  align-self: start;
+  justify-self: start;
+  color: #dfe2dc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(5, 7, 5, 0.84);
+  backdrop-filter: blur(15px);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+.detail-status-title {
+  margin: clamp(40px, 4.4vw, 64px) 0 14px;
+  font-size: clamp(2rem, 2.7vw, 2.6rem);
+  line-height: 0.98;
+  letter-spacing: -0.06em;
+}
+.detail-status-copy {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+.detail-last-price {
+  margin: 24px 0 0;
+  padding: 14px 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  border-block: 1px solid var(--line);
+}
+.detail-last-price dt {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.detail-last-price dd {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+/* Other available cars on every car's page: alternatives under a reserved or sold car. */
+.detail-similar {
+  padding-top: clamp(72px, 8vw, 120px);
+}
+/* Under an available car the rail follows the process strip, which already leaves the air above it,
+   and keeps the same air before the contact callout. */
+.detail-confidence + .detail-similar {
+  padding-top: 0;
+  padding-bottom: clamp(90px, 11vw, 150px);
+}
+/* Eyebrow and inventory link share the first row; on phones the link moves under the list. */
+.detail-similar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px 24px;
+}
+.detail-similar > h2.eyebrow {
+  margin: 0;
+}
+.detail-similar > .text-link {
+  min-height: 44px;
+}
+.detail-similar-list {
+  grid-column: 1 / -1;
+}
+/* An editorial index rather than catalog cards: the names carry the rows, the photo stays small. */
+.detail-similar-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-bottom: 1px solid var(--line);
+}
+.detail-similar-link {
+  position: relative;
+  min-height: 118px;
+  padding-block: 18px;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr) 190px 170px 132px 28px;
+  grid-template-areas: 'number name meta price photo arrow';
+  align-items: center;
+  gap: 22px;
+  border-top: 1px solid var(--line);
+}
+.detail-similar-number {
+  grid-area: number;
+  color: var(--accent);
+  font: 600 var(--text-label) var(--font-mono);
+}
+.detail-similar-name {
+  grid-area: name;
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  transition: transform var(--duration-default) var(--ease-standard);
+}
+.detail-similar-name h3,
+.detail-similar-name strong {
+  margin: 0;
+  font-size: clamp(1.7rem, 3vw, 2.7rem);
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+.detail-similar-name > span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.detail-similar-meta {
+  grid-area: meta;
+  color: var(--muted);
+  font: 500 var(--text-caption) var(--font-mono);
+}
+.detail-similar-price {
+  grid-area: price;
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  font-weight: 800;
+}
+/* Set width for the same reason as .detail-primary-image: an aspect ratio stops the stretch. */
+.detail-similar-photo {
+  grid-area: photo;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #111411;
+  transition: box-shadow var(--duration-default) ease;
+}
+.detail-similar-arrow {
+  grid-area: arrow;
+  justify-self: end;
+  color: var(--muted);
+  transition:
+    color var(--duration-default) ease,
+    transform var(--duration-default) var(--ease-standard);
+}
+/* The rail only lists available cars, so their photos stay in color: grey means unavailable everywhere else. */
+@media (hover: hover) {
+  /* The same zoom and lime edge as a catalog card's photo. */
+  .detail-similar-link:hover .detail-similar-photo {
+    box-shadow: 0 0 0 1px rgba(220, 255, 0, 0.36);
+  }
+  .detail-similar-link:hover .detail-similar-photo .cover-image {
+    transform: scale(1.035);
+  }
+  .detail-similar-link:hover .detail-similar-name {
+    transform: translateX(8px);
+  }
+  .detail-similar-link:hover .detail-similar-arrow {
+    color: var(--accent);
+    transform: translate(3px, -3px);
+  }
+}
+
+.detail-overview {
+  padding-block: clamp(100px, 13vw, 190px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(340px, 0.8fr);
+  gap: clamp(55px, 10vw, 150px);
+  align-items: start;
+}
+.detail-story h2 {
+  max-width: 820px;
+}
+.detail-story > p:not(.eyebrow) {
+  max-width: 680px;
+  color: var(--muted);
+  font-size: 1.02rem;
+  line-height: 1.75;
+}
+.detail-highlights {
+  max-width: 680px;
+  margin: 42px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.detail-highlights li {
+  padding: 19px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  color: #d9dcd6;
+  font-size: 0.8rem;
+}
+.detail-highlights li:nth-child(odd) {
+  padding-right: 24px;
+}
+/* Mercado Libre equipment has no order, so each item gets a check instead of a number. */
+.detail-highlights svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+.detail-specs {
+  position: sticky;
+  top: var(--header-clearance);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.detail-specs-heading {
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.detail-specs-heading p {
+  margin: 0;
+  font-weight: 800;
+}
+.detail-specs dl {
+  margin: 0;
+}
+.detail-specs dl div {
+  padding: 17px 24px;
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.detail-specs dl div:last-child {
+  border-bottom: 0;
+}
+.detail-specs dt {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.detail-specs dd {
+  margin: 0;
+  color: #e0e3dd;
+  font-size: 0.76rem;
+  text-align: right;
+}
+.detail-showcase:has(.detail-photo-thumbs) > .detail-purchase-card {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+.detail-showcase:not([data-status='active']) .detail-photo-thumb img {
+  filter: grayscale(1) brightness(0.72);
+}
+@media (min-width: 1001px) {
+  /* The strip (78px thumbnails plus the 14px gap) comes out of the photo, so photo and strip together
+     stay as tall as a lone 4:3 photo and the purchase card beside them keeps its height. */
+  .detail-showcase:has(.detail-photo-thumbs) {
+    container-type: inline-size;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+  .detail-showcase:has(.detail-photo-thumbs) > .detail-primary-image {
+    aspect-ratio: auto;
+    min-height: calc((100cqw - clamp(340px, 29vw, 400px) - 14px) * 3 / 4 - 92px);
+  }
+}
+
+.detail-confidence {
+  padding-block: 0 clamp(90px, 11vw, 150px);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.detail-confidence > div {
+  min-height: 240px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+}
+.detail-confidence > div:first-child {
+  border-left: 1px solid var(--line);
+}
+.detail-confidence strong {
+  margin-top: auto;
+  font-size: 1.3rem;
+}
+.detail-confidence span {
+  color: var(--accent);
+  font: 500 var(--text-micro) var(--font-mono);
+}
+.detail-confidence p {
+  max-width: 290px;
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+.detail-contact {
+  margin-top: 0;
+}
+
+@media (max-width: 1000px) {
+  .detail-showcase {
+    grid-template-columns: 1fr;
+  }
+  .detail-purchase-card {
+    min-height: 0;
+  }
+  .detail-price-label {
+    margin-top: 56px;
+  }
+  .detail-disclaimer {
+    margin-top: 24px;
+  }
+  .detail-overview {
+    grid-template-columns: 1fr;
+  }
+  .detail-specs {
+    position: static;
+  }
+  .detail-showcase:has(.detail-photo-thumbs) > .detail-purchase-card {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .detail-confidence {
+    grid-template-columns: 1fr;
+  }
+  .detail-confidence > div {
+    min-height: 190px;
+    border-left: 1px solid var(--line);
+    border-bottom: 0;
+  }
+  .detail-confidence > div:last-child {
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+@media (max-width: 700px) {
+  .detail-breadcrumbs {
+    padding-top: 22px;
+  }
+  .detail-title {
+    padding-top: 46px;
+    gap: 24px;
+  }
+  .detail-title h1 {
+    font-size: clamp(3.5rem, 17vw, 5.8rem);
+  }
+  .detail-title-meta span {
+    margin-right: 12px;
+    padding-right: 12px;
+  }
+  .detail-purchase-card {
+    min-height: 0;
+    padding: 26px 22px;
+  }
+  .detail-status-banner {
+    max-width: calc(100% - 24px);
+    margin: 12px;
+    font-size: var(--text-caption);
+  }
+  .detail-similar {
+    padding-top: 72px;
+  }
+  .detail-similar > .text-link {
+    grid-row: 3;
+    justify-self: start;
+    margin-top: 6px;
+  }
+  /* Name, year and price stack beside a small photo; the arrow sits on the photo's corner instead of
+     taking a column. */
+  .detail-similar-link {
+    min-height: 0;
+    grid-template-columns: 28px minmax(0, 1fr) 112px;
+    grid-template-rows: auto 1fr auto;
+    grid-template-areas: 'number name photo' 'number meta photo' 'number price photo';
+    align-items: start;
+    gap: 8px 14px;
+  }
+  .detail-similar-arrow {
+    position: absolute;
+    top: 24px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    padding: 5px;
+    border-radius: 50%;
+    background: rgba(5, 7, 5, 0.72);
+    backdrop-filter: blur(10px);
+    color: #dfe1dc;
+  }
+  .detail-similar-number {
+    padding-top: 5px;
+  }
+  .detail-similar-name h3,
+  .detail-similar-name strong {
+    font-size: 1.375rem;
+  }
+  .detail-similar-meta {
+    align-self: end;
+  }
+  .detail-similar-price {
+    justify-items: start;
+  }
+  /* The closing "Todo el inventario" row has no photo: the name takes the width, the arrow its corner. */
+  .detail-similar-more {
+    grid-template-columns: 28px minmax(0, 1fr);
+    grid-template-rows: auto;
+    grid-template-areas: 'number name';
+  }
+  .detail-similar-more .detail-similar-name {
+    padding-right: 30px;
+  }
+  .detail-similar-more .detail-similar-arrow {
+    top: 20px;
+    right: 0;
+    width: auto;
+    height: auto;
+    padding: 0;
+    background: none;
+    backdrop-filter: none;
+    color: var(--muted);
+  }
+  .detail-overview {
+    padding-block: 100px;
+    gap: 58px;
+  }
+  .detail-highlights {
+    grid-template-columns: 1fr;
+  }
+  .detail-highlights li:nth-child(odd) {
+    padding-right: 0;
+  }
+  .detail-confidence {
+    padding-block: 0 90px;
+  }
+}
