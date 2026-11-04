@@ -1,11 +1,11 @@
 'use client';
 
-import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { AlertCircle, ArrowUpRight, Check, Copy, Mail, MessageCircle, Share2, X } from 'lucide-react';
 
 import { Eyebrow } from '@/components/ui/eyebrow';
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
+import { SkeletonImage } from '@/components/ui/skeleton-image';
 import { captureAnalyticsEvent } from '@/lib/analytics/client';
 import './share-button.css';
 
@@ -162,7 +162,7 @@ export function ShareButton({
       >
         <div className="share-dialog-panel glass-panel">
           <div className="share-dialog-preview">
-            <Image src={imageSrc} alt="" fill sizes="(max-width: 700px) 100vw, 360px" className="cover-image" />
+            <SkeletonImage src={imageSrc} alt="" fill sizes="(max-width: 700px) 100vw, 360px" className="cover-image" />
             <div className="share-dialog-preview-overlay" />
             <span className="share-dialog-status">
               <i /> {statusLabel}

@@ -210,13 +210,31 @@
   background: var(--background);
   font-size: 0.875rem;
 }
+/* Fades in after a beat, so a photo that loads at once never flashes it. */
 .vehicle-photo-loading {
   position: absolute;
   inset: 0;
   display: grid;
   place-content: center;
-  color: var(--text);
-  font-size: 0.875rem;
+  animation: vehicle-photo-loading-in 200ms ease 250ms both;
+}
+.vehicle-photo-spinner {
+  width: 36px;
+  height: 36px;
+  border: 2px solid rgb(255 255 255 / 0.16);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: vehicle-photo-spin 800ms linear infinite;
+}
+@keyframes vehicle-photo-loading-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes vehicle-photo-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 /* Full screen: the photo gets the whole window, on the site's darkest black. The car's name and the
    close button float over a soft top gradient, and one glass pill at the bottom holds the rest. */

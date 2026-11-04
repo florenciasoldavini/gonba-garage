@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { connection } from 'next/server';
 import { ArrowDown, ArrowLeftRight, ArrowUpRight, FileCheck, HandCoins } from 'lucide-react';
@@ -13,6 +12,8 @@ import { getWhatsAppUrl } from '@/lib/contact';
 import { createPageMetadata } from '@/lib/metadata';
 import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { LinkPendingIcon, LinkPendingMarker } from '@/components/ui/link-pending';
+import { SkeletonImage } from '@/components/ui/skeleton-image';
 import { HomeGsapMotion } from '@/app/_components/home-gsap-motion';
 import { FaqAccordion } from '@/app/_components/faq-accordion';
 import { listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
@@ -56,7 +57,7 @@ export default async function Home() {
       <main>
         <section className="hero section-shell" aria-labelledby="hero-title">
           <div className="hero-media" aria-hidden="true">
-            <Image src="/showroom-car.jpg" alt="" fill loading="eager" sizes="100vw" className="cover-image" />
+            <SkeletonImage src="/showroom-car.jpg" alt="" fill loading="eager" sizes="100vw" className="cover-image" />
           </div>
           <div className="hero-overlay" />
           <div className="hero-ignition-light" aria-hidden="true" />
@@ -112,12 +113,13 @@ export default async function Home() {
             <div className="vehicle-grid">
               {vehicles.map(vehicle => (
                 <Link className="vehicle-card-link" href={`/vehiculos/${vehicle.slug}`} key={vehicle.slug}>
+                  <LinkPendingMarker />
                   <article
                     className="vehicle-card glass-panel"
                     data-status={getVehicleStatusPresentation(vehicle).status}
                   >
                     <div className="vehicle-image">
-                      <Image
+                      <SkeletonImage
                         src={vehicle.image}
                         alt={formatVehicleImageAlt(vehicle)}
                         fill
@@ -134,7 +136,9 @@ export default async function Home() {
                         </h3>
                       </div>
                       <span className="vehicle-arrow">
-                        <Arrow />
+                        <LinkPendingIcon size={16}>
+                          <Arrow />
+                        </LinkPendingIcon>
                       </span>
                     </div>
                     <p className="vehicle-detail">
@@ -157,7 +161,7 @@ export default async function Home() {
 
         <section className="section-shell sell-section" id="vender" aria-labelledby="sell-title">
           <div className="sell-media">
-            <Image
+            <SkeletonImage
               src="/garage-classic.jpg"
               alt="Auto estacionado frente a un garage"
               fill

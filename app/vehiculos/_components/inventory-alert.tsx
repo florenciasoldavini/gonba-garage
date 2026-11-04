@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useId, useRef, useState } from 'react';
-import { ArrowRight, ArrowUpRight, BellRing, CircleAlert, RotateCw, WifiOff, X } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BellRing, CircleAlert, LoaderCircle, RotateCw, WifiOff, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
@@ -257,7 +257,9 @@ export function InventoryAlert({
 
               <Button ref={submitRef} type="submit" disabled={state === 'submitting'}>
                 <span>{state === 'submitting' ? 'Enviando…' : retry ? 'Reintentar' : 'Crear alerta'}</span>
-                {retry ? (
+                {state === 'submitting' ? (
+                  <LoaderCircle className="icon-spinner" aria-hidden="true" size={16} strokeWidth={1.8} />
+                ) : retry ? (
                   <RotateCw aria-hidden="true" size={16} strokeWidth={1.8} />
                 ) : (
                   <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />

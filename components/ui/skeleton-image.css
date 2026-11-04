@@ -1,0 +1,21 @@
+/* Sits under the image, which paints over it as it decodes, and leaves once the image settles. */
+.image-skeleton {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  background: #111411;
+}
+.image-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 25%, rgba(255, 255, 255, 0.06) 50%, transparent 75%);
+  transform: translateX(-100%);
+  animation: image-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes image-skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}

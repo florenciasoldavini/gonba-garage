@@ -1,7 +1,8 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowUpRight } from 'lucide-react';
 
+import { LinkPendingIcon } from '@/components/ui/link-pending';
+import { SkeletonImage } from '@/components/ui/skeleton-image';
 import type { MepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/presentation/formatters';
@@ -37,9 +38,11 @@ export function SimilarVehicleLink({ index, quote, vehicle }: SimilarVehicleLink
           <ApproximateUsdPrice quote={quote} vehicle={vehicle} />
         </span>
         <span className="detail-similar-photo">
-          <Image src={vehicle.image} alt="" fill sizes="132px" className="cover-image" />
+          <SkeletonImage src={vehicle.image} alt="" fill sizes="132px" className="cover-image" />
         </span>
-        <ArrowUpRight className="detail-similar-arrow" aria-hidden="true" size={20} strokeWidth={1.8} />
+        <LinkPendingIcon size={20} className="detail-similar-arrow">
+          <ArrowUpRight className="detail-similar-arrow" aria-hidden="true" size={20} strokeWidth={1.8} />
+        </LinkPendingIcon>
       </Link>
     </li>
   );
