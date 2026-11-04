@@ -9,3 +9,24 @@
   :is(.catalog-filters-desktop, .catalog-toolbar, .catalog-contact > div > *, .catalog-contact > .button) {
   visibility: hidden;
 }
+
+/* The page's largest text rises into place in CSS rather than GSAP: GSAP starts only after hydration and
+   would first hide text the server already sent, which delays the largest paint and, when it beats the
+   first frame, shows an empty hero. These run from the first frame and stay fully opaque. */
+@media (prefers-reduced-motion: no-preference) {
+  .inner-page-motion :is(#catalog-title, #vehicle-title, #valuation-title) {
+    --intro-y: 26px;
+    animation: intro-rise 0.95s cubic-bezier(0.215, 0.61, 0.355, 1) both;
+  }
+  .inner-page-motion-catalog .catalog-hero-copy > * {
+    --intro-x: 24px;
+    animation: intro-rise 0.75s cubic-bezier(0.215, 0.61, 0.355, 1) 0.12s both;
+  }
+  .inner-page-motion-catalog .catalog-hero-copy > * + * {
+    animation-delay: 0.22s;
+  }
+  .inner-page-motion-valuation .valuation-lead {
+    --intro-x: -20px;
+    animation: intro-rise 0.75s cubic-bezier(0.215, 0.61, 0.355, 1) 0.12s both;
+  }
+}

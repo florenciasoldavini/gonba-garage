@@ -333,3 +333,10 @@ h3 {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* Intro motion that must run from the first frame (see home-gsap-motion.css). */
+@keyframes intro-rise {
+  from {
+    transform: translate3d(var(--intro-x, 0), var(--intro-y, 0), 0);
+  }
+}
