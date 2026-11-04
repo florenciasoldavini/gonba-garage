@@ -12,6 +12,7 @@ import { getWhatsAppUrl } from '@/lib/contact';
 import { createPageMetadata } from '@/lib/metadata';
 import { ButtonLink } from '@/components/ui/button';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { LinkPendingIcon, LinkPendingMarker } from '@/components/ui/link-pending';
 import { SkeletonImage } from '@/components/ui/skeleton-image';
 import { HomeGsapMotion } from '@/app/_components/home-gsap-motion';
 import { FaqAccordion } from '@/app/_components/faq-accordion';
@@ -112,6 +113,7 @@ export default async function Home() {
             <div className="vehicle-grid">
               {vehicles.map(vehicle => (
                 <Link className="vehicle-card-link" href={`/vehiculos/${vehicle.slug}`} key={vehicle.slug}>
+                  <LinkPendingMarker />
                   <article
                     className="vehicle-card glass-panel"
                     data-status={getVehicleStatusPresentation(vehicle).status}
@@ -134,7 +136,9 @@ export default async function Home() {
                         </h3>
                       </div>
                       <span className="vehicle-arrow">
-                        <Arrow />
+                        <LinkPendingIcon size={16}>
+                          <Arrow />
+                        </LinkPendingIcon>
                       </span>
                     </div>
                     <p className="vehicle-detail">

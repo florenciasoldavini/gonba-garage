@@ -4,7 +4,7 @@ import Link, { useLinkStatus } from 'next/link';
 import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
-import { ArrowUpRight, Check, Scale } from 'lucide-react';
+import { ArrowUpRight, Check, LoaderCircle, Scale } from 'lucide-react';
 
 import { SkeletonImage } from '@/components/ui/skeleton-image';
 import type { MepQuote } from '@/features/vehicles/domain/catalog-pricing';
@@ -121,7 +121,8 @@ export function CatalogVehicleCard({
           <span>{vehicle.version}</span>
         </div>
         <span className="catalog-card-arrow" aria-hidden="true">
-          <ArrowUpRight size={17} strokeWidth={1.8} />
+          <ArrowUpRight className="catalog-card-arrow-idle" size={17} strokeWidth={1.8} />
+          <LoaderCircle className="catalog-card-arrow-pending icon-spinner" size={17} strokeWidth={1.8} />
         </span>
       </div>
       <div className="catalog-card-facts">
