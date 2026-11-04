@@ -31,10 +31,27 @@ privacy settings and inspect test recordings. Inputs are masked by the SDK, and 
 price-alert forms are explicitly excluded from autocapture.
 
 No analytics event may include a name, email address, phone number, free-text notes, uploaded photo,
-or full search query. Vehicle slugs and catalog attributes are permitted.
+or full search query. Vehicle slugs and catalog attributes are permitted. The catalog keeps its search
+text in the URL (`?q=`), so `instrumentation-client.ts` masks that parameter in every URL PostHog sends,
+along with ad click IDs such as `gclid`. `utm_*` parameters are kept.
 
 The privacy policy at `/privacidad` describes this collection, including the anonymous cookie and
 optional session replay. Update it whenever events, replay settings or the analytics provider change.
+
+## Web Vitals
+
+`capture_performance.web_vitals` sends real visitors' LCP, CLS, FCP and INP as `$web_vitals`, shown
+under Web analytics in PostHog. The lab numbers from Lighthouse swing between runs, so use these to
+judge how the site performs. The browser buffers these entries, so the SDK's late start doesn't lose
+them. LCP also names the element that was measured.
+
+When reading the data:
+
+- Only full page loads are measured, so the numbers describe the page a visitor landed on, not the
+  pages they reached by following links inside the site.
+- A visitor who leaves before the SDK has loaded sends nothing, so the slowest visits are undercounted.
+- LCP and CLS are final only after the visitor interacts or hides the page. They are sent then, in a
+  later `$web_vitals` event than FCP. A full-page navigation away can lose them.
 
 ## Event taxonomy
 

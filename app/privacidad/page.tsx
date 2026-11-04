@@ -81,10 +81,10 @@ export default function PrivacyPage() {
         <h3>Estadísticas de uso</h3>
         <p>
           Usamos PostHog para entender cómo se usa el sitio: páginas visitadas, clics, filtros del catálogo (sin el
-          texto que escribís en la búsqueda), vehículos vistos, dispositivo y navegador, sitio de procedencia y la
-          ubicación aproximada que se deduce de tu IP. Para reconocer visitas repetidas, PostHog guarda un identificador
-          anónimo en una cookie y en el almacenamiento local de tu navegador. No vinculamos estas estadísticas con tu
-          nombre, tu email ni tu teléfono.
+          texto que escribís en la búsqueda), vehículos vistos, tiempos de carga, dispositivo y navegador, sitio de
+          procedencia y la ubicación aproximada que se deduce de tu IP. Para reconocer visitas repetidas, PostHog guarda
+          un identificador anónimo en una cookie y en el almacenamiento local de tu navegador. No vinculamos estas
+          estadísticas con tu nombre, tu email ni tu teléfono.
         </p>
         <p>
           Podemos activar grabaciones de sesión para detectar problemas de uso. En ese caso, lo que escribís en los
