@@ -23,6 +23,7 @@ import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/pr
 import { unbreakableVersionSegments } from '@/features/vehicles/presentation/listing-cleanup';
 import { publicVehicleAttributes } from '@/features/vehicles/presentation/public-attributes';
 import { VehicleSpecificationGroups } from './_components/vehicle-specification-groups';
+import { CatalogUnavailable } from '../_components/catalog-unavailable';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 import { pickSimilarVehicles } from '@/features/vehicles/domain/similar-vehicles';
 import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle } from '@/features/vehicles/domain/vehicle';
@@ -92,15 +93,7 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
     publication = await findCatalogPublication(slug);
   } catch {
     // A backend failure is not a missing vehicle: keep notFound() for real 404s only.
-    return (
-      <div className="section-shell">
-        <SiteHeader active="vehicles" />
-        <main>
-          <h1>Catálogo no disponible</h1>
-          <p>No pudimos consultar esta publicación. Volvé a intentar en unos minutos.</p>
-        </main>
-      </div>
-    );
+    return <CatalogUnavailable title="No pudimos cargar esta publicación." />;
   }
 
   // The slug is fixed at the first sync. Older or edited slugs for the same publication redirect.

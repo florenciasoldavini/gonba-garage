@@ -1,0 +1,120 @@
+/* Missing vehicle: the empty bay at night, seen from above; the scene covers the card behind the copy */
+.missing-vehicle-screen {
+  min-height: 100svh;
+  margin-bottom: clamp(48px, 6vw, 96px);
+  padding-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+.missing-vehicle {
+  position: relative;
+  flex: 1;
+  min-height: 480px;
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-feature);
+  background: #090b0a;
+}
+.missing-vehicle-copy {
+  position: relative;
+  z-index: 1;
+  padding: 0 24px 0 var(--status-inset);
+}
+.missing-vehicle-copy h1 {
+  margin: 0 0 22px;
+  font-size: var(--text-status-title);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+}
+.missing-vehicle-copy p:not(.eyebrow) {
+  max-width: 440px;
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(0.95rem, 1.2vw, 1.08rem);
+  line-height: 1.65;
+}
+.missing-vehicle-copy .status-actions {
+  margin-top: var(--status-actions-gap);
+}
+.missing-vehicle-scene {
+  position: absolute;
+  inset: 0;
+}
+.missing-vehicle-scene-desktop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.missing-vehicle-scene-mobile {
+  display: none;
+}
+.missing-vehicle-flicker {
+  animation: missing-vehicle-flicker 5.5s linear 1s infinite;
+}
+
+@keyframes missing-vehicle-flicker {
+  0%,
+  50%,
+  64%,
+  82%,
+  100% {
+    opacity: 1;
+  }
+  52% {
+    opacity: 0.35;
+  }
+  54% {
+    opacity: 0.9;
+  }
+  56% {
+    opacity: 0.15;
+  }
+  59% {
+    opacity: 0.85;
+  }
+  61% {
+    opacity: 0.4;
+  }
+  84% {
+    opacity: 0.55;
+  }
+  86% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 700px) {
+  .missing-vehicle {
+    min-height: 0;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: 70%;
+  }
+  .missing-vehicle-scene {
+    display: none;
+  }
+  .missing-vehicle-scene-mobile {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+  .missing-vehicle-copy {
+    padding: 24px var(--status-inset);
+  }
+  .missing-vehicle-copy .eyebrow {
+    letter-spacing: 0.1em;
+  }
+  .missing-vehicle-copy .eyebrow > span {
+    display: none;
+  }
+}

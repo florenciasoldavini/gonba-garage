@@ -10,6 +10,7 @@ import { listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { createPageMetadata } from '@/lib/metadata';
 import { getMepQuote } from '@/lib/integrations/mep-quote';
 import { CatalogHeroCount, CatalogResultCountProvider } from './_components/catalog-result-count';
+import { CatalogUnavailable } from './_components/catalog-unavailable';
 import { InventoryCatalog } from './_components/inventory-catalog';
 import { InventoryCatalogFromSearchParams } from './_components/inventory-catalog-from-search-params';
 import './page.css';
@@ -35,15 +36,7 @@ export default async function VehiclesPage() {
   try {
     vehicles = await listCatalogVehicles();
   } catch {
-    return (
-      <div className="section-shell">
-        <SiteHeader active="vehicles" />
-        <main>
-          <h1>Catálogo no disponible</h1>
-          <p>No pudimos consultar las publicaciones. Revisá la conexión del backend y volvé a intentar.</p>
-        </main>
-      </div>
-    );
+    return <CatalogUnavailable title="No pudimos cargar el catálogo." />;
   }
   const quote = await quotePromise;
   const alertsEnabled = alertEmailsConfigured();

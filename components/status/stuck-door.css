@@ -1,0 +1,113 @@
+/* The stuck garage door: catalog failures and unexpected errors */
+.stuck-door-screen {
+  min-height: 100svh;
+  margin-bottom: clamp(48px, 6vw, 96px);
+  padding-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+.stuck-door {
+  flex: 1;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-feature);
+  background: #090b0a;
+}
+.stuck-door-panel {
+  position: relative;
+  flex: none;
+  height: clamp(72px, 24svh, 300px);
+  border-bottom: 2px solid var(--accent);
+  background:
+    repeating-linear-gradient(180deg, transparent 0 15px, rgba(255, 255, 255, 0.07) 15px 16px),
+    linear-gradient(180deg, #121513, #0e100f);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+  animation: stuck-door-jam 1.6s cubic-bezier(0.3, 0.7, 0.4, 1) 0.5s both;
+}
+.stuck-door-panel p {
+  position: absolute;
+  right: 24px;
+  bottom: 18px;
+  margin: 0;
+  color: #73786f;
+  font: 500 0.66rem var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.stuck-door-panel b {
+  color: var(--accent);
+  font-weight: 600;
+}
+.stuck-door-body {
+  flex: 1 0 auto;
+  padding: clamp(24px, 5svh, 76px) var(--status-inset) clamp(24px, 5svh, 64px);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 24px clamp(40px, 6vw, 96px);
+  align-items: end;
+  align-content: start;
+  background: radial-gradient(ellipse 50% 80% at 50% 0%, rgba(220, 255, 0, 0.1), transparent 70%);
+}
+.stuck-door h1 {
+  margin: 0;
+  font-size: var(--text-status-title);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+}
+.stuck-door-body p:not(.eyebrow) {
+  max-width: 520px;
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(0.95rem, 1.2vw, 1.08rem);
+  line-height: 1.65;
+}
+.stuck-door .status-actions {
+  margin-top: var(--status-actions-gap);
+}
+
+@keyframes stuck-door-jam {
+  0% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-34px);
+  }
+  48% {
+    transform: translateY(0);
+  }
+  64% {
+    transform: translateY(-10px);
+  }
+  78%,
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1000px) {
+  .stuck-door-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .stuck-door {
+    margin-top: 12px;
+  }
+  .stuck-door-panel {
+    height: clamp(96px, 22svh, 240px);
+  }
+  .stuck-door-body {
+    padding: 24px var(--status-inset);
+    align-content: center;
+  }
+  .stuck-door .eyebrow {
+    letter-spacing: 0.1em;
+  }
+  .stuck-door .eyebrow > span {
+    display: none;
+  }
+}

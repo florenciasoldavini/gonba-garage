@@ -26,6 +26,10 @@
   --text-display-xl: clamp(3.4rem, 7.4vw, 7.6rem);
   --text-display-lg: clamp(3.7rem, 6.2vw, 6.4rem);
   --text-display-md: clamp(2.4rem, 5vw, 5.3rem);
+  /* Error screens (404, missing vehicle, catalog unavailable): headline, copy inset and gap above the buttons */
+  --text-status-title: min(var(--text-display-lg), 12svh, 5.6rem);
+  --status-inset: clamp(24px, 4.5vw, 64px);
+  --status-actions-gap: var(--space-6);
   --text-heading-lg: 2rem;
   --text-heading-md: 1.5rem;
   --text-body-lg: 1.125rem;
@@ -109,5 +113,7 @@
     --text-micro: var(--text-caption);
     --text-label: var(--text-caption);
     --text-eyebrow: var(--text-caption);
+    --text-status-title: clamp(2.4rem, 11vw, 3.4rem);
+    --status-inset: 20px;
   }
 }

@@ -255,6 +255,9 @@ When the catalog backend fails, a vehicle detail page shows a "Catálogo no disp
 `notFound()` and a real 404; the metadata check asserts that missing slugs, with and without a
 publication ID, still return 404, and that a non-canonical slug redirects.
 
+Unexpected failures render `app/error.tsx`, or `app/global-error.tsx` when the root layout fails.
+Both emit `noindex, nofollow` themselves, because error boundaries cannot export metadata.
+
 ## Private alert management
 
 `/api/alerts/daily` and `/api/mercado-libre/sync` require the cron secret. `/api/price-alerts/cancel`
