@@ -340,7 +340,12 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
           data-status={status.status}
           aria-label="Presentación del vehículo"
         >
-          <VehiclePhotoViewer photos={photos} title={vehicle.imageAlt} />
+          <VehiclePhotoViewer
+            photos={photos}
+            title={vehicle.imageAlt}
+            name={`${vehicle.make} ${vehicle.model}`}
+            version={vehicle.version}
+          />
           {!status.isAvailable && (
             <p className="detail-status-banner">
               {isReserved ? 'Ya tiene una reserva.' : 'Esta unidad ya tiene dueño.'}

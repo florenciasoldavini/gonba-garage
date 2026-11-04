@@ -19,6 +19,8 @@ const contentSecurityPolicy = "frame-ancestors 'none'; base-uri 'self'; object-s
 
 const nextConfig: NextConfig = {
   images: {
+    // AVIF first for browsers that accept it; the rest keep WebP.
+    formats: ['image/avif', 'image/webp'],
     // Next's defaults plus 512: desktop catalog photos render at 460–500px, between 384 and 640.
     imageSizes: [32, 48, 64, 96, 128, 256, 384, 512],
     remotePatterns: [{ protocol: 'https', hostname: 'http2.mlstatic.com' }],
