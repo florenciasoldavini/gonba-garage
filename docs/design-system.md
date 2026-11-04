@@ -131,6 +131,9 @@ Deliberate differences:
   on the canvas, 1600×1200) instead of a photo, never another car. Its alt text says "foto no
   disponible", and the car page offers nothing to enlarge or count. It stays a JPG because the
   share-image route only embeds local JPGs.
+- Images go through Next's optimizer as AVIF (WebP for browsers without it), except the car
+  page's main and expanded photo: that one is Mercado Libre's own full-size file (its WebP, or the
+  original when there is none), never re-encoded, so the buyer sees the photo at full quality.
 
 ## Motion
 

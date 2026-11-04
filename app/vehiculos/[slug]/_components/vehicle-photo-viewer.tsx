@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 
 import { VEHICLE_PHOTO_PLACEHOLDER } from '@/features/vehicles/domain/vehicle';
+import { mercadoLibreWebpUrl } from '@/lib/integrations/mercado-libre/pictures';
 import './vehicle-photo-viewer.css';
 
 type Props = {
@@ -23,6 +24,8 @@ function Photo({
   expanded?: boolean;
   eager?: boolean;
 }) {
+  const webp = mercadoLibreWebpUrl(src);
+  const [useWebp, setUseWebp] = useState(Boolean(webp));
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   return failed ? (
@@ -36,15 +39,18 @@ function Photo({
           Cargando foto…
         </span>
       )}
+      {/* The main and expanded photos show Mercado Libre's full-size file as is, never re-encoded: its
+          WebP when it has one, else the original. One URL per photo, so opening it expanded reuses the
+          download. */}
       <Image
-        src={src}
+        src={useWebp && webp ? webp : src}
         alt={alt}
         fill
+        unoptimized
         loading={eager ? 'eager' : 'lazy'}
-        sizes={expanded ? '100vw' : '(max-width: 980px) 100vw, 72vw'}
         className={expanded ? 'vehicle-photo-contained' : 'cover-image'}
         onLoad={() => setLoaded(true)}
-        onError={() => setFailed(true)}
+        onError={() => (useWebp ? setUseWebp(false) : setFailed(true))}
         draggable={false}
       />
     </>
