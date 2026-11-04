@@ -1,16 +1,22 @@
 'use client';
 
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, LayoutGrid, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 
 import { VEHICLE_PHOTO_PLACEHOLDER } from '@/features/vehicles/domain/vehicle';
 import { mercadoLibreWebpUrl } from '@/lib/integrations/mercado-libre/pictures';
+import { VehiclePhotoZoom, type PhotoZoomHandle } from './vehicle-photo-zoom';
 import './vehicle-photo-viewer.css';
 
 type Props = {
   photos: string[];
+  /** The full name, for labels and alt text. */
   title: string;
+  /** Make and model, shown over the expanded photo. */
+  name: string;
+  /** The version, shown under the name. */
+  version?: string;
 };
 
 function Photo({
@@ -57,12 +63,18 @@ function Photo({
   );
 }
 
-export function VehiclePhotoViewer({ photos, title }: Props) {
+export function VehiclePhotoViewer({ photos, title, name, version }: Props) {
   const [index, setIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
   const [focusClose, setFocusClose] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
+  const [coarsePointer, setCoarsePointer] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const [thumbEdges, setThumbEdges] = useState({ start: false, end: false });
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const zoomRef = useRef<PhotoZoomHandle>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
   const thumbsRef = useRef<HTMLDivElement>(null);
   const gesture = useRef<{ x: number; y: number } | null>(null);
   const ignoreClickUntil = useRef(0);
@@ -76,6 +88,21 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
       document.body.style.overflow = previous;
     };
   }, [expanded]);
+
+  // The zoom hint shows for a few seconds after opening, then gets out of the photo's way.
+  useEffect(() => {
+    if (!showHint) return;
+    const timer = window.setTimeout(() => setShowHint(false), 3500);
+    return () => window.clearTimeout(timer);
+  }, [showHint]);
+
+  // Opening the grid puts focus on the photo being shown, so the keyboard starts from there.
+  useEffect(() => {
+    if (!showGrid) return;
+    const current = gridRef.current?.querySelector<HTMLElement>('[aria-current="true"]');
+    current?.focus({ preventScroll: true });
+    current?.scrollIntoView({ block: 'nearest' });
+  }, [showGrid]);
 
   // Keeps the current photo's thumbnail centred in the strip as the arrows or swipes move it, without
   // scrolling the page itself.
@@ -112,7 +139,10 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
         <Photo src={VEHICLE_PHOTO_PLACEHOLDER} alt={`${title}: foto no disponible`} eager />
       </div>
     );
-  const move = (direction: number) => setIndex(current => (current + direction + count) % count);
+  const move = (direction: number) => {
+    setZoomed(false);
+    setIndex(current => (current + direction + count) % count);
+  };
   const open = (photoIndex: number, timeStamp: number) => {
     if (timeStamp < ignoreClickUntil.current) return;
     // A tap gives the browser no focus to go on, so it would ring the close button. Tap and click opens
@@ -120,6 +150,9 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
     const openedByKeyboard = document.activeElement?.matches(':focus-visible') ?? false;
     setIndex(photoIndex);
     setFocusClose(openedByKeyboard);
+    setCoarsePointer(window.matchMedia('(pointer: coarse)').matches);
+    setShowGrid(false);
+    setShowHint(true);
     dialogRef.current?.showModal();
     if (!openedByKeyboard) dialogRef.current?.focus({ preventScroll: true });
     setExpanded(true);
@@ -135,6 +168,15 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
       event.preventDefault();
       move(event.key === 'ArrowLeft' ? -1 : 1);
     }
+  };
+  const onDialogKeyDown = (event: KeyboardEvent) => {
+    if (event.altKey || event.ctrlKey || event.metaKey || showGrid) return;
+    if (event.key === '+' || event.key === '=' || event.key === '-') {
+      event.preventDefault();
+      zoomRef.current?.zoomBy(event.key === '-' ? 1 / 1.5 : 1.5);
+      return;
+    }
+    onKeyDown(event);
   };
   const onPointerDown = (event: PointerEvent) => {
     if (event.pointerType === 'mouse' || !event.isPrimary) {
@@ -161,23 +203,8 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
       gesture.current = null;
     },
   };
-  const controls = (
-    <div className="vehicle-photo-controls">
-      {count > 1 && (
-        <button type="button" onClick={() => move(-1)} aria-label="Foto anterior">
-          <ChevronLeft aria-hidden="true" size={20} strokeWidth={1.8} />
-        </button>
-      )}
-      <span role="status" aria-live="polite" aria-atomic="true">
-        {String(index + 1).padStart(2, '0')} / {String(count).padStart(2, '0')}
-      </span>
-      {count > 1 && (
-        <button type="button" onClick={() => move(1)} aria-label="Foto siguiente">
-          <ChevronRight aria-hidden="true" size={20} strokeWidth={1.8} />
-        </button>
-      )}
-    </div>
-  );
+  const counter = `${String(index + 1).padStart(2, '0')} / ${String(count).padStart(2, '0')}`;
+  const hint = coarsePointer ? 'Pellizcá o tocá dos veces para acercar' : 'Hacé clic o usá la rueda para acercar';
 
   return (
     <>
@@ -272,19 +299,59 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
         className="vehicle-photo-dialog"
         tabIndex={-1}
         aria-label={`Fotos ampliadas de ${title}`}
-        onClose={() => setExpanded(false)}
-        onKeyDown={onKeyDown}
-        onClick={event => {
-          if (event.target === event.currentTarget) close();
+        onClose={() => {
+          setExpanded(false);
+          setZoomed(false);
+          setShowGrid(false);
         }}
+        onCancel={event => {
+          // Escape from the grid goes back to the photo; from the photo it closes.
+          if (!showGrid) return;
+          event.preventDefault();
+          setShowGrid(false);
+        }}
+        onKeyDown={onDialogKeyDown}
       >
         {expanded && (
           <div className="vehicle-photo-dialog-panel">
-            <div className="vehicle-photo-dialog-header">
-              <span>{title}</span>
+            {showGrid ? (
+              <div className="vehicle-photo-grid" ref={gridRef} role="group" aria-label={`Todas las fotos de ${title}`}>
+                {photos.map((src, photoIndex) => (
+                  <button
+                    type="button"
+                    className="vehicle-photo-grid-item"
+                    key={`${src}-${photoIndex}`}
+                    onClick={() => {
+                      setIndex(photoIndex);
+                      setShowGrid(false);
+                    }}
+                    aria-label={`Ver foto ${photoIndex + 1} de ${count}`}
+                    aria-current={photoIndex === index ? 'true' : undefined}
+                  >
+                    <Image
+                      src={src}
+                      alt=""
+                      fill
+                      sizes="(max-width: 760px) 33vw, (max-width: 1200px) 25vw, 17vw"
+                      className="cover-image"
+                      draggable={false}
+                    />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <VehiclePhotoZoom key={photos[index]} ref={zoomRef} onSwipe={move} onZoomChange={setZoomed}>
+                <Photo src={photos[index]} alt={`${title} · Foto ${index + 1} de ${count}`} expanded eager />
+              </VehiclePhotoZoom>
+            )}
+            <div className="vehicle-photo-dialog-top">
+              <p className="vehicle-photo-dialog-name">
+                <strong>{name}</strong>
+                {version && <span>{version}</span>}
+              </p>
               <button
                 type="button"
-                className="vehicle-photo-close"
+                className="vehicle-photo-round-button"
                 onClick={close}
                 aria-label="Cerrar fotos ampliadas"
                 autoFocus={focusClose}
@@ -292,16 +359,48 @@ export function VehiclePhotoViewer({ photos, title }: Props) {
                 <X size={18} strokeWidth={1.8} aria-hidden="true" />
               </button>
             </div>
-            <div className="vehicle-photo-dialog-image" {...swipeProps}>
-              <Photo
-                key={photos[index]}
-                src={photos[index]}
-                alt={`${title} · Foto ${index + 1} de ${count}`}
-                expanded
-                eager
-              />
+            <p className="vehicle-photo-hint" data-hidden={!showHint || zoomed || showGrid || undefined}>
+              {hint}
+            </p>
+            <div className="vehicle-photo-pill">
+              {count > 1 && (
+                <button type="button" onClick={() => move(-1)} aria-label="Foto anterior">
+                  <ChevronLeft aria-hidden="true" size={20} strokeWidth={1.8} />
+                </button>
+              )}
+              <span className="vehicle-photo-pill-count" role="status" aria-live="polite" aria-atomic="true">
+                {counter}
+              </span>
+              {count > 1 && (
+                <button type="button" onClick={() => move(1)} aria-label="Foto siguiente">
+                  <ChevronRight aria-hidden="true" size={20} strokeWidth={1.8} />
+                </button>
+              )}
+              <span className="vehicle-photo-pill-divider" aria-hidden="true" />
+              {count > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setShowGrid(current => !current)}
+                  aria-label={showGrid ? 'Volver a la foto' : 'Ver todas las fotos'}
+                  aria-pressed={showGrid}
+                >
+                  <LayoutGrid aria-hidden="true" size={18} strokeWidth={1.8} />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => zoomRef.current?.toggle()}
+                aria-label={zoomed ? 'Alejar foto' : 'Acercar foto'}
+                aria-pressed={zoomed}
+                disabled={showGrid}
+              >
+                {zoomed ? (
+                  <ZoomOut aria-hidden="true" size={18} strokeWidth={1.8} />
+                ) : (
+                  <ZoomIn aria-hidden="true" size={18} strokeWidth={1.8} />
+                )}
+              </button>
             </div>
-            {controls}
           </div>
         )}
       </dialog>

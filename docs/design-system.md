@@ -134,6 +134,10 @@ Deliberate differences:
 - Images go through Next's optimizer as AVIF (WebP for browsers without it), except the car
   page's main and expanded photo: that one is Mercado Libre's own full-size file (its WebP, or the
   original when there is none), never re-encoded, so the buyer sees the photo at full quality.
+- The expanded photo is full screen with no bar: the make and model float top-left over a soft
+  gradient, close top-right, and one glass pill at the bottom holds previous / count / next, the
+  all-photos grid and zoom. Thumbnails only appear when asked for (the grid), never alongside the
+  photo, since the page itself already shows a thumbnail strip.
 
 ## Motion
 
