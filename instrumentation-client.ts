@@ -12,6 +12,13 @@ if (projectToken) {
       person_profiles: 'identified_only',
       capture_pageview: true,
       capture_pageleave: true,
+      // Real visitors' LCP, CLS, FCP and INP as $web_vitals. Reads the browser's buffered entries, so
+      // loading late still sees the page's first paints.
+      capture_performance: { web_vitals: true },
+      // The catalog keeps its search text in the URL (?q=), which stays out of analytics. The first
+      // option is what turns the second on; it also masks ad click IDs such as gclid, never utm_*.
+      mask_personal_data_properties: true,
+      custom_personal_data_properties: ['q'],
       // The site runs no surveys; this skips the extra script PostHog would fetch for them.
       disable_surveys: true,
       disable_session_recording: process.env.NEXT_PUBLIC_POSTHOG_SESSION_REPLAY !== 'true',
