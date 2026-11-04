@@ -94,7 +94,11 @@ export function VehiclePhotoZoom({
   const zoomAround = (scale: number, point: { x: number; y: number }, from: View, animated: boolean) => {
     const ratio = Math.min(measure().max, Math.max(1, scale)) / from.scale;
     apply(
-      clamp({ scale: from.scale * ratio, x: point.x - (point.x - from.x) * ratio, y: point.y - (point.y - from.y) * ratio }),
+      clamp({
+        scale: from.scale * ratio,
+        x: point.x - (point.x - from.x) * ratio,
+        y: point.y - (point.y - from.y) * ratio,
+      }),
       animated,
     );
   };
