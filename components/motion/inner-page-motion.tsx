@@ -51,13 +51,13 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
             const releaseCatalog = () => page?.removeAttribute('data-catalog-intro');
             page?.setAttribute('data-catalog-intro', '');
 
+            // The title and its copy rise in CSS from the first frame (inner-page-motion.css), never
+            // hidden here.
             const intro = gsap.timeline({ defaults: { ease: 'power3.out' }, onComplete: releaseCatalog });
 
             intro
               .from('.site-header', { y: -30, autoAlpha: 0, duration: 0.75 })
               .from('.catalog-hero .eyebrow', { x: -32, autoAlpha: 0, duration: 0.55 }, 0.22)
-              .from('#catalog-title', { y: 62, autoAlpha: 0, clipPath: 'inset(0 0 100% 0)', duration: 0.95 }, 0.3)
-              .from('.catalog-hero-copy > *', { x: 42, autoAlpha: 0, stagger: 0.12, duration: 0.65 }, 0.58)
               .fromTo(
                 '.catalog-scan-line',
                 { xPercent: -120, autoAlpha: 0 },
@@ -70,6 +70,7 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
           }
 
           if (variant === 'detail') {
+            // The title rises in CSS from the first frame (inner-page-motion.css), never hidden here.
             const intro = introReveal(gsap.timeline({ defaults: { ease: 'power3.out' } }), {
               stacked: !desktop,
               contextSafe,
@@ -79,7 +80,6 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
               .from('.site-header', { y: -30, autoAlpha: 0, duration: 0.75 })
               .from('.detail-breadcrumbs li > *', { x: -14, autoAlpha: 0, stagger: 0.06, duration: 0.42 }, 0.18)
               .from('.detail-title .eyebrow', { x: -30, autoAlpha: 0, duration: 0.52 }, 0.28)
-              .from('#vehicle-title', { y: 62, autoAlpha: 0, clipPath: 'inset(0 0 100% 0)', duration: 0.95 }, 0.34)
               .from('.detail-title-meta span', { x: 22, autoAlpha: 0, stagger: 0.09, duration: 0.5 }, 0.67)
               .fromTo(
                 '.detail-primary-image',
@@ -151,6 +151,7 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
           }
 
           if (variant === 'valuation') {
+            // The title and lead rise in CSS from the first frame (inner-page-motion.css), never hidden here.
             const intro = introReveal(gsap.timeline({ defaults: { ease: 'power3.out' } }), {
               stacked: !desktop,
               contextSafe,
@@ -159,8 +160,6 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
             intro
               .from('.site-header', { y: -30, autoAlpha: 0, duration: 0.75 })
               .from('.valuation-intro .eyebrow', { x: -30, autoAlpha: 0, duration: 0.52 }, 0.24)
-              .from('#valuation-title', { y: 58, autoAlpha: 0, clipPath: 'inset(0 0 100% 0)', duration: 0.92 }, 0.3)
-              .from('.valuation-lead', { x: -34, autoAlpha: 0, duration: 0.64 }, 0.6)
               .fromTo(
                 '.valuation-image',
                 { clipPath: 'inset(50% 0 50% 0)' },

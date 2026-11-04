@@ -35,6 +35,7 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
           const reveal = (trigger: string, start: string) =>
             scrollReveal(trigger, { start, stacked: !desktop, contextSafe });
 
+          // The title and intro rise in CSS from the first frame (home-gsap-motion.css), never hidden here.
           const intro = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
           intro
@@ -42,17 +43,6 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
             .from('.hero-media', { scale: 1.12, autoAlpha: 0.45, duration: 1.8, ease: 'power2.out' }, 0)
             .from('.hero-overlay', { autoAlpha: 0, duration: 1.2 }, 0.08)
             .from('.hero .eyebrow', { x: -32, autoAlpha: 0, duration: 0.65 }, 0.28)
-            .from(
-              '#hero-title',
-              {
-                y: 76,
-                autoAlpha: 0,
-                clipPath: 'inset(0 0 100% 0)',
-                duration: 1.05,
-              },
-              0.36,
-            )
-            .from('.hero-intro', { y: 26, autoAlpha: 0, duration: 0.72 }, 0.72)
             .from('.hero-actions', { y: 20, autoAlpha: 0, duration: 0.68 }, 0.84)
             .from('.hero-facts > div', { x: 54, autoAlpha: 0, stagger: 0.09, duration: 0.66 }, 0.78)
             .from('.scroll-cue', { y: -16, autoAlpha: 0, duration: 0.58 }, 1.02)
