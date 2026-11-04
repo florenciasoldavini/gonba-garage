@@ -1,48 +1,12 @@
 import type { Metadata } from 'next';
-import localFont from 'next/font/local';
 
 import { JsonLd } from '@/components/seo/json-ld';
 import { SITE_NAME } from '@/lib/metadata';
 import { isSiteIndexingEnabled } from '@/lib/site-indexing';
 import { getSiteUrl } from '@/lib/site-url';
 import { getSiteStructuredData } from '@/lib/structured-data';
+import { geistMono, geistSans } from './fonts';
 import './globals.css';
-
-const geistSans = localFont({
-  src: [
-    {
-      path: './fonts/geist-sans-variable.ttf',
-      weight: '100 900',
-      style: 'normal',
-    },
-    {
-      path: './fonts/geist-sans-variable-italic.ttf',
-      weight: '100 900',
-      style: 'italic',
-    },
-  ],
-  variable: '--font-geist-sans',
-  display: 'swap',
-  fallback: ['Arial', 'Helvetica', 'sans-serif'],
-});
-
-const geistMono = localFont({
-  src: [
-    {
-      path: './fonts/geist-mono-variable.ttf',
-      weight: '100 900',
-      style: 'normal',
-    },
-    {
-      path: './fonts/geist-mono-variable-italic.ttf',
-      weight: '100 900',
-      style: 'italic',
-    },
-  ],
-  variable: '--font-geist-mono',
-  display: 'swap',
-  fallback: ['monospace'],
-});
 
 const homeTitle = "Gonba's Garage | Autos usados seleccionados";
 const homeDescription =

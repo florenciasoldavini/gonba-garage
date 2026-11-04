@@ -198,6 +198,9 @@ message with `noindex, nofollow` metadata instead of a server error. Only a genu
 vehicle returns `notFound()` and a real 404. The demo catalog never takes this path; the metadata
 check asserts that a missing vehicle still returns 404.
 
+Unexpected failures render `app/error.tsx`, or `app/global-error.tsx` when the root layout fails.
+Both emit `noindex, nofollow` themselves, because error boundaries cannot export metadata.
+
 ## Private alert management
 
 `/api/alerts/daily` and `/api/mercado-libre/sync` require the cron secret. `/api/price-alerts/cancel` validates a signed,
