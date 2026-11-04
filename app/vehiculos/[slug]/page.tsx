@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
+import { preconnect } from 'react-dom';
 import { ArrowDown, ArrowUpRight, Check, Scale } from 'lucide-react';
 
 import { TrackedButtonAnchor } from '@/components/analytics/tracked-anchor';
@@ -86,6 +87,8 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
 }
 
 export default async function VehicleDetailPage({ params }: VehicleDetailPageProps) {
+  // The main photo comes straight from Mercado Libre, a separate origin (vehicle-photo-viewer.tsx).
+  preconnect('https://http2.mlstatic.com');
   const { slug } = await params;
   let publication;
   try {

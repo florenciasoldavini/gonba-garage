@@ -146,6 +146,8 @@ Use the duration and easing tokens from `styles/tokens.css`.
 - Controls animate color, border, background, or a maximum 2px translation.
 - Cards may translate up to 4px.
 - Images may scale from `1` to no more than `1.035`.
+- Page titles and the car page's main photo move in CSS from the first frame and stay visible, never
+  hidden until the JavaScript runs: they are what the page's first paint is measured on.
 - Avoid looping decorative motion.
 - All interactions must remain understandable under `prefers-reduced-motion`.
 

@@ -59,6 +59,7 @@ function Photo({
         fill
         unoptimized
         loading={eager ? 'eager' : 'lazy'}
+        fetchPriority={eager ? 'high' : undefined}
         className={expanded ? 'vehicle-photo-contained' : 'cover-image'}
         onLoad={() => setLoaded(true)}
         onError={() => (useWebp ? setUseWebp(false) : setFailed(true))}

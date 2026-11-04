@@ -1,5 +1,4 @@
 /* Not the catalog card photo: will-change would keep it a layer above the card's stretched link. */
-.inner-page-motion .detail-primary-image,
 .inner-page-motion .valuation-image {
   will-change: clip-path;
 }
@@ -28,5 +27,16 @@
   .inner-page-motion-valuation .valuation-lead {
     --intro-x: -20px;
     animation: intro-rise 0.75s cubic-bezier(0.215, 0.61, 0.355, 1) 0.12s both;
+  }
+  /* The car's main photo is often the page's largest paint, so it settles the same way, visible throughout.
+     On the button, not the image: the image remounts with each photo and would replay this every time. */
+  .inner-page-motion-detail .vehicle-photo-open {
+    animation: intro-settle 1.2s cubic-bezier(0.215, 0.61, 0.355, 1);
+  }
+}
+
+@keyframes intro-settle {
+  from {
+    transform: scale(1.035);
   }
 }
