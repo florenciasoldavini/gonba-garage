@@ -906,17 +906,51 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
 .catalog-unavailable .status-actions { margin-top: var(--space-6); }
 
 /* Missing vehicle: copy on the left, the empty bay numbered 404 on the right, filling the first screen */
-.missing-vehicle { height: max(460px, calc(100svh - 150px)); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 clamp(40px, 6vw, 100px); }
-.missing-vehicle-copy { padding-block: clamp(24px, 5svh, 64px); display: flex; flex-direction: column; justify-content: center; align-items: flex-start; }
-.missing-vehicle-copy h1 { margin: 0 0 22px; font-size: min(var(--text-display-lg), 13svh); line-height: var(--leading-tight); letter-spacing: var(--tracking-display); }
-.missing-vehicle-copy p:not(.eyebrow) { max-width: 440px; margin: 0 0 30px; color: var(--muted); font-size: clamp(0.98rem, 1.2vw, 1.1rem); line-height: 1.65; }
+/* Missing vehicle: the empty bay at night in a card; the scene gets its own column beside the copy */
+.missing-vehicle { position: relative; height: max(460px, calc(100svh - 150px)); margin-bottom: clamp(48px, 6vw, 96px); display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); align-items: center; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-feature); background: #090b0a; }
+.missing-vehicle-copy { position: relative; z-index: 1; padding: 0 24px 0 clamp(28px, 4.5vw, 72px); }
+.missing-vehicle-copy h1 { margin: 0 0 22px; font-size: min(var(--text-display-lg), 8.4svh, 5.2vw); line-height: var(--leading-tight); letter-spacing: var(--tracking-display); }
+.missing-vehicle-copy p:not(.eyebrow) { max-width: 440px; margin: 0 0 30px; color: var(--muted); font-size: clamp(0.95rem, 1.2vw, 1.08rem); line-height: 1.65; }
 .missing-vehicle-copy .status-actions { margin-top: 0; }
-.missing-vehicle-bay { position: relative; min-height: 0; }
-.missing-vehicle-bay-mobile { display: none; }
-.missing-vehicle-bay-desktop { position: absolute; inset: 0; width: 100%; height: 100%; -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent); mask-image: linear-gradient(180deg, #000 70%, transparent); }
-.missing-vehicle-bay-label { fill: #73786f; font: 500 12px var(--font-mono); letter-spacing: 3px; text-transform: uppercase; }
-.missing-vehicle-bay-free { fill: var(--accent); }
-.missing-vehicle-bay-number { fill: none; stroke: var(--accent); stroke-opacity: 0.85; stroke-width: 1.3; font: 800 122px var(--font-sans); letter-spacing: -0.05em; }
+.missing-vehicle-scene { position: relative; align-self: stretch; }
+.missing-vehicle-scene-desktop { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.missing-vehicle-scene-mobile { display: none; }
+/* The lamp is mostly steady, then struggles for a moment */
+.missing-vehicle-flicker { animation: missing-vehicle-flicker 5.5s linear 1s infinite; }
+
+/* Generic 404: a navigation map in a card; the route bends around the copy and ends in a dead end */
+.route-missing-screen { min-height: 100svh; margin-bottom: clamp(48px, 6vw, 96px); padding-bottom: 16px; display: flex; flex-direction: column; }
+.route-missing { position: relative; flex: 1; min-height: 480px; margin-top: 16px; display: grid; place-items: center; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius-feature); background: #090b0a; }
+.route-missing > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.route-missing-map-mobile { display: none; }
+.route-missing-copy { position: relative; z-index: 1; max-width: 700px; padding: 48px 44px; display: flex; flex-direction: column; align-items: center; text-align: center; background: radial-gradient(closest-side, #090b0a 62%, rgba(9, 11, 10, 0)); }
+.route-missing-copy .eyebrow, .route-missing-copy .status-actions { justify-content: center; }
+.route-missing-copy h1 { margin: 0 0 20px; font-size: min(var(--text-display-lg), 13svh); line-height: var(--leading-tight); letter-spacing: var(--tracking-display); }
+.route-missing-copy p:not(.eyebrow) { max-width: 470px; margin: 0; color: var(--muted); font-size: clamp(0.95rem, 1.2vw, 1.08rem); line-height: 1.6; }
+.route-missing-copy .status-actions { margin-top: 28px; }
+.route-missing-street, .route-missing-avenue, .route-missing-avenue-edge { fill: none; stroke-linecap: round; }
+.route-missing-street { stroke: #141816; stroke-width: 9; }
+.route-missing-avenue-edge { stroke: #232825; stroke-width: 20; }
+.route-missing-avenue { stroke: #1c201d; stroke-width: 18; }
+.route-missing-cul-de-sac { fill: #141816; }
+.route-missing-road-name { fill: #858a81; fill-opacity: 0.8; font: 500 12px var(--font-sans); letter-spacing: 0.01em; }
+.route-missing-map-mobile .route-missing-road-name { font-size: 11px; }
+.route-missing-route { fill: none; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; animation: route-missing-draw 2s cubic-bezier(0.45, 0, 0.25, 1) 0.4s both; }
+.route-missing-route-glow { stroke: var(--accent); stroke-opacity: 0.08; stroke-width: 14; }
+.route-missing-route-casing { stroke: #090b0a; stroke-width: 8; }
+.route-missing-route-line { stroke: var(--accent); stroke-width: 4; }
+.route-missing-tag { font: 600 11px var(--font-sans); }
+.route-missing-pulse { fill: var(--accent); fill-opacity: 0.18; transform-box: fill-box; transform-origin: center; animation: route-missing-pulse 2.4s ease-out 2.4s infinite; }
+.route-missing-late { animation: route-missing-appear 0.5s ease-out 2.3s both; }
+
+@keyframes missing-vehicle-flicker {
+  0%, 50%, 64%, 82%, 100% { opacity: 1; }
+  52% { opacity: 0.35; } 54% { opacity: 0.9; } 56% { opacity: 0.15; } 59% { opacity: 0.85; } 61% { opacity: 0.4; }
+  84% { opacity: 0.55; } 86% { opacity: 1; }
+}
+@keyframes route-missing-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes route-missing-appear { from { opacity: 0; } to { opacity: 1; } }
+@keyframes route-missing-pulse { 0% { transform: scale(0.6); opacity: 0.5; } 100% { transform: scale(1.8); opacity: 0; } }
 
 @keyframes catalog-door-stuck {
   0% { transform: translateY(0); }
@@ -1321,16 +1355,24 @@ button.detail-gallery-image { display: block; width: 100%; padding: 0; color: va
   .catalog-contact .button { width: 100%; white-space: normal; }
   .status-panel { padding: 34px 22px; }
   .catalog-unavailable { margin-top: 12px; }
-  /* The whole first screen is the bay: hairline sides, the number on top, the copy parked inside */
-  .missing-vehicle { position: relative; height: auto; min-height: calc(100svh - 140px); margin-top: 28px; padding-inline: 18px; grid-template-columns: 1fr; align-content: start; border-top: 1.5px solid rgba(255, 255, 255, 0.22); }
-  .missing-vehicle::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)) left top / 1.2px 100% no-repeat, linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)) right top / 1.2px 100% no-repeat; -webkit-mask-image: linear-gradient(180deg, #000 75%, transparent); mask-image: linear-gradient(180deg, #000 75%, transparent); }
-  .missing-vehicle-bay { order: -1; }
-  .missing-vehicle-bay-desktop { display: none; }
-  .missing-vehicle-bay-mobile { display: block; width: 100%; height: auto; }
-  .missing-vehicle-copy { padding-block: 32px 48px; justify-content: flex-start; align-items: stretch; }
-  .missing-vehicle-bay-mobile .missing-vehicle-bay-number { font-size: 100px; }
+  /* The scene sits at the top of the card and the copy follows it */
+  .missing-vehicle { height: auto; min-height: calc(100svh - 150px); display: block; padding-top: 70%; }
+  .missing-vehicle-scene { display: none; }
+  .missing-vehicle-scene-mobile { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  .missing-vehicle-copy { padding: 14px 22px 34px; }
   .missing-vehicle-copy h1 { font-size: clamp(2.4rem, 10.6vw, 3.4rem); }
+  .missing-vehicle-copy .eyebrow { font-size: 0.66rem; letter-spacing: 0.1em; }
   .catalog-unavailable-door { height: clamp(56px, 12svh, 170px); }
+  /* The plan fills the card behind the copy; the route runs up behind the headline as on desktop */
+  .route-missing { min-height: calc(100svh - 100px); margin-top: 12px; }
+  .route-missing-map-desktop { display: none; }
+  .route-missing-map-mobile { display: block; }
+  .route-missing-copy { padding: clamp(36px, 6svh, 52px) 26px; }
+  .route-missing-copy .eyebrow { letter-spacing: 0.1em; }
+  .route-missing-copy .eyebrow > span { display: none; }
+  .route-missing-copy h1 { font-size: clamp(2.6rem, 12vw, 3.6rem); }
+  /* Solid, so the route behind it doesn't show through the glass */
+  .route-missing-copy .button-glass { background: #151816; -webkit-backdrop-filter: none; backdrop-filter: none; }
   .catalog-unavailable-body { padding: 24px 20px; }
   .catalog-unavailable h1 { font-size: min(clamp(2.8rem, 13vw, 3.8rem), 7svh); }
   .status-actions { width: 100%; flex-direction: column; }

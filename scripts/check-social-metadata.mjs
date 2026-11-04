@@ -280,16 +280,21 @@ assert.doesNotMatch(alertSitemap, /alertas/, 'Alert pages are excluded from the 
 
 const missingResponse = await fetch(new URL('/this-page-does-not-exist', targetOrigin));
 assert.equal(missingResponse.status, 404, 'Unknown pages should return 404');
-assert.equal(
-  getMetadata(await missingResponse.text()).canonical,
-  undefined,
-  'The 404 page should not claim the homepage canonical',
-);
+const missingHtml = await missingResponse.text();
+assert.equal(getMetadata(missingHtml).canonical, undefined, 'The 404 page should not claim the homepage canonical');
+assert.equal(getMetadata(missingHtml).title, "Página no encontrada | Gonba's Garage");
+// Every robots tag on the 404 page says noindex, in both indexing modes.
+for (const [, name, content] of missingHtml.matchAll(/<meta name="(robots|googlebot)" content="([^"]*)"/g)) {
+  assert.match(content, /noindex/, `The 404 page ${name} tag should be noindex, got "${content}"`);
+}
 
 // The catalog-unavailable fallback must never hide a genuinely missing vehicle.
 const missingVehicle = await fetch(new URL('/vehiculos/vehiculo-inexistente-2000', targetOrigin));
 assert.equal(missingVehicle.status, 404, 'A missing vehicle should return 404');
-assert.equal(getMetadata(await missingVehicle.text()).canonical, undefined, 'A missing vehicle should not claim a canonical URL');
+const missingVehicleHtml = await missingVehicle.text();
+assert.equal(getMetadata(missingVehicleHtml).canonical, undefined, 'A missing vehicle should not claim a canonical URL');
+// A nested not-found can't set metadata, so the layout's robots tag stays; the noindex Next.js injects wins.
+assert.match(missingVehicleHtml, /<meta name="robots" content="noindex"\/>/, 'A missing vehicle should carry noindex');
 
 console.table(results);
 console.log(

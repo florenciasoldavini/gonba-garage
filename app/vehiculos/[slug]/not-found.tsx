@@ -10,36 +10,9 @@ import { WHATSAPP_GENERAL_MESSAGE } from '@/constants/contact';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
+import { EmptyBayDesktop, EmptyBayMobile } from '../_components/empty-bay';
 
 const Arrow = () => <ArrowUpRight aria-hidden="true" size={16} strokeWidth={1.8} />;
-
-/** The empty bay, seen from above and numbered 404. On mobile the section itself draws the bay lines. */
-function EmptyBay() {
-  return (
-    <>
-      <svg className="missing-vehicle-bay-desktop" viewBox="0 0 600 700" preserveAspectRatio="xMidYMin slice" aria-hidden="true">
-        <path d="M-400 1H1000" stroke="rgba(255,255,255,.22)" strokeWidth="1.5" />
-        <path d="M160 0V700M440 0V700" stroke="rgba(255,255,255,.5)" strokeWidth="1.2" />
-        <rect x="245" y="30" width="110" height="13" rx="3" fill="none" stroke="rgba(255,255,255,.42)" strokeWidth="1.2" />
-        <BayLabel x={300} y={80} />
-        <text className="missing-vehicle-bay-number" x="300" y="330" textAnchor="middle">404</text>
-      </svg>
-      <svg className="missing-vehicle-bay-mobile" viewBox="0 0 320 170" aria-hidden="true">
-        <rect x="105" y="20" width="110" height="12" rx="3" fill="none" stroke="rgba(255,255,255,.42)" strokeWidth="1.2" />
-        <BayLabel x={160} y={64} />
-        <text className="missing-vehicle-bay-number" x="160" y="156" textAnchor="middle">404</text>
-      </svg>
-    </>
-  );
-}
-
-function BayLabel({ x, y }: { x: number; y: number }) {
-  return (
-    <text className="missing-vehicle-bay-label" x={x} y={y} textAnchor="middle">
-      <tspan>Puesto 404 · </tspan><tspan className="missing-vehicle-bay-free">Libre</tspan>
-    </text>
-  );
-}
 
 /**
  * Rendered by notFound() when no publication matches the slug. Next.js keeps the 404 status and
@@ -64,6 +37,7 @@ export default async function MissingVehicle() {
       </div>
 
       <section className="section-shell missing-vehicle" aria-labelledby="missing-vehicle-title">
+        <EmptyBayMobile />
         <div className="missing-vehicle-copy">
           <Eyebrow>Error 404 · Vehículo no encontrado</Eyebrow>
           <h1 id="missing-vehicle-title">No encontramos este auto.</h1>
@@ -78,7 +52,7 @@ export default async function MissingVehicle() {
             </ButtonAnchor>
           </div>
         </div>
-        <div className="missing-vehicle-bay"><EmptyBay /></div>
+        <div className="missing-vehicle-scene"><EmptyBayDesktop /></div>
       </section>
 
       {vehicles.length > 0 && (
