@@ -70,7 +70,8 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
           }
 
           if (variant === 'detail') {
-            // The title rises in CSS from the first frame (inner-page-motion.css), never hidden here.
+            // The title and main photo move in CSS from the first frame (inner-page-motion.css), never
+            // hidden here.
             const intro = introReveal(gsap.timeline({ defaults: { ease: 'power3.out' } }), {
               stacked: !desktop,
               contextSafe,
@@ -81,13 +82,6 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
               .from('.detail-breadcrumbs li > *', { x: -14, autoAlpha: 0, stagger: 0.06, duration: 0.42 }, 0.18)
               .from('.detail-title .eyebrow', { x: -30, autoAlpha: 0, duration: 0.52 }, 0.28)
               .from('.detail-title-meta span', { x: 22, autoAlpha: 0, stagger: 0.09, duration: 0.5 }, 0.67)
-              .fromTo(
-                '.detail-primary-image',
-                { clipPath: 'inset(0 100% 0 0)' },
-                { clipPath: 'inset(0 0% 0 0)', duration: 1.18, ease: 'power3.inOut' },
-                0.56,
-              )
-              .from('.detail-primary-image .cover-image', { scale: 1.1, duration: 1.45, ease: 'power2.out' }, 0.62)
               .from(
                 '.detail-purchase-card',
                 { x: desktop ? 64 : 0, y: desktop ? 0 : 28, autoAlpha: 0, duration: 0.86 },
