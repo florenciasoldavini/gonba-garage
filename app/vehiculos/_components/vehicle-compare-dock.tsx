@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
@@ -8,6 +7,7 @@ import { ChevronUp, Scale, X } from 'lucide-react';
 
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { Button } from '@/components/ui/button';
+import { SkeletonImage } from '@/components/ui/skeleton-image';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import './vehicle-compare-dock.css';
 
@@ -154,7 +154,7 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
           <div className="compare-dock-slots">
             {vehicles.map(vehicle => (
               <div className="compare-dock-thumb" key={vehicle.slug}>
-                <Image src={vehicle.image} alt="" fill sizes="76px" className="cover-image" />
+                <SkeletonImage src={vehicle.image} alt="" fill sizes="76px" className="cover-image" />
                 <button
                   type="button"
                   aria-label={`Quitar ${getVehicleName(vehicle)}`}
@@ -192,7 +192,7 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
             <span className="compare-dock-avatars" aria-hidden="true">
               {vehicles.map(vehicle => (
                 <span className="compare-dock-avatar" key={vehicle.slug}>
-                  <Image src={vehicle.image} alt="" fill sizes="40px" className="cover-image" />
+                  <SkeletonImage src={vehicle.image} alt="" fill sizes="40px" className="cover-image" />
                 </span>
               ))}
               {Array.from({ length: Math.max(0, maximum - count) }, (_, index) => (
@@ -263,7 +263,7 @@ export function VehicleCompareDock({ maximum, onClear, onCompare, onRemove, vehi
             {vehicles.map((vehicle, index) => (
               <li className="compare-selection-item" key={vehicle.slug}>
                 <span className="compare-selection-image">
-                  <Image src={vehicle.image} alt="" fill sizes="72px" className="cover-image" />
+                  <SkeletonImage src={vehicle.image} alt="" fill sizes="72px" className="cover-image" />
                 </span>
                 <div>
                   <p>{vehicle.year}</p>

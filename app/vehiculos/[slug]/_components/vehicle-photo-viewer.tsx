@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { ChevronLeft, ChevronRight, LayoutGrid, X, ZoomIn, ZoomOut } from 'lucide-react';
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
 
+import { SkeletonImage } from '@/components/ui/skeleton-image';
 import { VEHICLE_PHOTO_PLACEHOLDER } from '@/features/vehicles/domain/vehicle';
 import { mercadoLibreWebpUrl } from '@/lib/integrations/mercado-libre/pictures';
 import { VehiclePhotoZoom, type PhotoZoomHandle } from './vehicle-photo-zoom';
@@ -40,11 +41,15 @@ function Photo({
     </span>
   ) : (
     <>
-      {expanded && !loaded && (
-        <span className="vehicle-photo-loading" role="status">
-          Cargando foto…
-        </span>
-      )}
+      {!loaded &&
+        (expanded ? (
+          <span className="vehicle-photo-loading" role="status">
+            <span className="vehicle-photo-spinner" aria-hidden="true" />
+            <span className="sr-only">Cargando foto…</span>
+          </span>
+        ) : (
+          <span className="image-skeleton" aria-hidden="true" />
+        ))}
       {/* The main and expanded photos show Mercado Libre's full-size file as is, never re-encoded: its
           WebP when it has one, else the original. One URL per photo, so opening it expanded reuses the
           download. */}
@@ -264,7 +269,7 @@ export function VehiclePhotoViewer({ photos, title, name, version }: Props) {
                 aria-label={`Ver foto ${photoIndex + 1} de ${count}`}
                 aria-current={photoIndex === index ? 'true' : undefined}
               >
-                <Image src={src} alt="" fill sizes="104px" className="cover-image" draggable={false} />
+                <SkeletonImage src={src} alt="" fill sizes="104px" className="cover-image" draggable={false} />
               </button>
             ))}
           </div>
@@ -328,7 +333,7 @@ export function VehiclePhotoViewer({ photos, title, name, version }: Props) {
                     aria-label={`Ver foto ${photoIndex + 1} de ${count}`}
                     aria-current={photoIndex === index ? 'true' : undefined}
                   >
-                    <Image
+                    <SkeletonImage
                       src={src}
                       alt=""
                       fill

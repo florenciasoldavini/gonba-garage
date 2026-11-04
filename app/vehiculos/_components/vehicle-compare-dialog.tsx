@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { useId, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useGSAP } from '@gsap/react';
@@ -9,6 +8,7 @@ import { ArrowUpRight, Check, Scale, X } from 'lucide-react';
 
 import { useDialogMotion } from '@/components/motion/use-dialog-motion';
 import { Button } from '@/components/ui/button';
+import { SkeletonImage } from '@/components/ui/skeleton-image';
 import type { MepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { formatVehicleImageAlt } from '@/features/vehicles/presentation/formatters';
@@ -170,7 +170,7 @@ export function VehicleCompareDialog({
               {vehicles.map(vehicle => (
                 <article className="vehicle-compare-card" key={vehicle.slug}>
                   <div className="vehicle-compare-card-image">
-                    <Image
+                    <SkeletonImage
                       src={vehicle.image}
                       alt={formatVehicleImageAlt(vehicle)}
                       fill

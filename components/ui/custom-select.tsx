@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type FocusEvent, type KeyboardEvent } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
-import { Check, ChevronDown, Search, X } from 'lucide-react';
+import { Check, ChevronDown, LoaderCircle, Search, X } from 'lucide-react';
 import './custom-select.css';
 
 if (typeof window !== 'undefined') {
@@ -23,6 +23,8 @@ type CustomSelectProps = {
   name?: string;
   placeholder?: string;
   disabled?: boolean;
+  /** Swaps the chevron for a spinner while the options are on their way. */
+  loading?: boolean;
   searchable?: boolean;
   searchPlaceholder?: string;
   emptyMessage?: string;
@@ -38,6 +40,7 @@ export function CustomSelect({
   name,
   placeholder = 'Seleccionar',
   disabled = false,
+  loading = false,
   searchable = false,
   searchPlaceholder = 'Buscar…',
   emptyMessage = 'No hay resultados.',
@@ -172,6 +175,7 @@ export function CustomSelect({
         data-invalid={ariaInvalid || undefined}
         aria-describedby={ariaDescribedBy}
         disabled={disabled}
+        aria-busy={loading || undefined}
         data-value={value}
         onClick={() => setIsOpen(current => !current)}
         onKeyDown={handleTriggerKeyDown}
@@ -182,7 +186,11 @@ export function CustomSelect({
         <span className={selectedOption ? '' : 'is-placeholder'} id={valueId}>
           {selectedOption?.label ?? placeholder}
         </span>
-        <ChevronDown aria-hidden="true" size={15} className={menuIsOpen ? 'is-open' : ''} />
+        {loading ? (
+          <LoaderCircle aria-hidden="true" size={15} className="icon-spinner" />
+        ) : (
+          <ChevronDown aria-hidden="true" size={15} className={menuIsOpen ? 'is-open' : ''} />
+        )}
       </button>
 
       {menuIsOpen && (

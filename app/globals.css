@@ -140,6 +140,14 @@ h3 {
 .button svg {
   flex: 0 0 auto;
 }
+.icon-spinner {
+  animation: icon-spin 800ms linear infinite;
+}
+@keyframes icon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 .button-accent {
   color: var(--accent-dark);
   background: var(--accent);

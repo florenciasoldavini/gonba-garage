@@ -1,12 +1,12 @@
 'use client';
 
-import Image from 'next/image';
 import Link, { useLinkStatus } from 'next/link';
 import { useRef } from 'react';
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { ArrowUpRight, Check, Scale } from 'lucide-react';
 
+import { SkeletonImage } from '@/components/ui/skeleton-image';
 import type { MepQuote } from '@/features/vehicles/domain/catalog-pricing';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import {
@@ -83,7 +83,7 @@ export function CatalogVehicleCard({
       ref={cardRef}
     >
       <div className="catalog-card-image">
-        <Image
+        <SkeletonImage
           src={vehicle.image}
           alt={formatVehicleImageAlt(vehicle)}
           fill

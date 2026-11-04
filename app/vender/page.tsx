@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import { Check, Clock3, ShieldCheck } from 'lucide-react';
 
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { InnerPageMotion } from '@/components/motion/inner-page-motion';
 import { Eyebrow } from '@/components/ui/eyebrow';
+import { SkeletonImage } from '@/components/ui/skeleton-image';
 import { createPageMetadata } from '@/lib/metadata';
 import { ValuationForm } from './_components/valuation-form';
 import './page.css';
@@ -40,7 +40,7 @@ export default function SellVehiclePage() {
 
             <div className="valuation-intro-details">
               <div className="valuation-image glass-panel">
-                <Image
+                <SkeletonImage
                   src="/garage-classic.jpg"
                   alt="Auto clásico estacionado frente a un garage"
                   fill

@@ -217,6 +217,7 @@ export function VehicleCatalogFields({ hidden, errors }: { hidden: boolean; erro
               onChange={handleMakeChange}
               options={makeOptions}
               disabled={makeStatus === 'loading'}
+              loading={makeStatus === 'loading'}
               placeholder={makeStatus === 'loading' ? 'Cargando marcas…' : 'Seleccionar marca'}
               searchPlaceholder="Buscar marca…"
               {...fieldErrorProps('make', errors.make)}
@@ -263,6 +264,7 @@ export function VehicleCatalogFields({ hidden, errors }: { hidden: boolean; erro
               onChange={handleModelChange}
               options={modelOptions}
               disabled={!makeId || modelStatus === 'loading'}
+              loading={modelStatus === 'loading'}
               placeholder={
                 modelStatus === 'loading'
                   ? 'Cargando modelos…'
@@ -328,6 +330,7 @@ export function VehicleCatalogFields({ hidden, errors }: { hidden: boolean; erro
               onChange={handleYearChange}
               options={yearOptions}
               disabled={!modelId || versionStatus === 'loading'}
+              loading={versionStatus === 'loading'}
               placeholder={
                 versionStatus === 'loading'
                   ? 'Cargando años…'
@@ -385,6 +388,7 @@ export function VehicleCatalogFields({ hidden, errors }: { hidden: boolean; erro
               onChange={setVersionId}
               options={versionOptions}
               disabled={!year || versionStatus === 'loading'}
+              loading={versionStatus === 'loading'}
               placeholder={
                 versionStatus === 'loading'
                   ? 'Cargando versiones…'
