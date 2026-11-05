@@ -102,6 +102,12 @@ would let search results show the business as "open now" to walk-ins. The hours 
 footer next to "Siempre con cita previa" instead. `areaServed` stays at Buenos Aires because the
 dealer sells to buyers outside its own neighborhood. The metadata check asserts all of this.
 
+Customer reviews have no structured data, neither `Review` nor `AggregateRating`. Google's review
+snippet guidelines make the pages of a `LocalBusiness` or any other `Organization` ineligible for
+review stars when the business controls the reviews about itself, which is the case for reviews
+collected on this site. Stars in search results need a third-party source, such as a Google Business
+Profile.
+
 Use absolute URLs and stable `@id` values derived from the canonical origin. Reuse the organization
 ID from `lib/structured-data.ts` rather than defining another seller entity. Escape JSON-LD through
 the shared `JsonLd` component; do not interpolate unescaped JSON into a script element.
@@ -173,6 +179,10 @@ Lifting the hold is a code change that belongs to the indexing launch: drop the 
 `app/vehiculos/page.tsx` and `app/vehiculos/[slug]/page.tsx` (keeping `noindex, follow` for reserved
 and sold cars), list the public pages and active cars from `listCatalogVehicles()` in
 `app/sitemap.ts` with `updatedAt` as `lastModified`, and update `scripts/check-social-metadata.mjs`.
+
+**Review form.** `/opinar` is the link sent to customers after a sale or purchase. It is `noindex,
+nofollow` in every mode, stays out of the sitemap and is linked from nowhere on the site, but keeps
+full share metadata so the link previews in WhatsApp.
 
 The social image route reads the same vehicle source as the detail page. The protected Vercel API
 uses `no-store` and `noindex`, requires server-side credentials and is excluded from the sitemap.

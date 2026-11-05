@@ -1,0 +1,269 @@
+.review-form {
+  padding: clamp(26px, 4vw, 42px) clamp(20px, 3vw, 32px);
+  display: grid;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-feature);
+  background: rgba(14, 17, 15, 0.88);
+}
+.review-form fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-2);
+  border: 0;
+}
+.review-form legend,
+.review-field > span:first-child {
+  color: #9ca198;
+  font: 600 var(--text-label) var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.review-form legend {
+  margin-bottom: var(--space-2);
+  padding: 0;
+}
+
+.review-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.review-options span {
+  min-height: 49px;
+  padding: 0 var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-button);
+  background: rgba(255, 255, 255, 0.04);
+  font: 500 0.875rem var(--font-sans);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-default) ease,
+    background var(--duration-default) ease;
+}
+.review-options input:checked + span {
+  border-color: var(--accent);
+  background: var(--color-brand-soft);
+}
+.review-options input:focus-visible + span,
+.review-rating-stars input:focus-visible + svg {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+fieldset[aria-invalid='true'] .review-options span {
+  border-color: var(--color-danger);
+}
+
+.review-rating {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+}
+.review-rating > span {
+  color: var(--muted);
+  font-size: var(--text-caption);
+}
+.review-rating-stars {
+  margin-left: -9px;
+  display: flex;
+}
+.review-rating-stars label {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  color: var(--color-border-control);
+  cursor: pointer;
+}
+.review-rating-stars svg {
+  border-radius: var(--radius-control);
+  transition: color var(--duration-default) ease;
+}
+.review-rating-stars .review-star-filled {
+  color: var(--accent);
+  fill: currentColor;
+}
+fieldset[aria-invalid='true'] .review-rating-stars label {
+  color: var(--color-danger);
+}
+
+.review-field-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 14px;
+  align-items: start;
+}
+.review-field {
+  min-width: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.review-field input,
+.review-field textarea {
+  width: 100%;
+  min-height: 49px;
+  padding: 0 14px;
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-button);
+  outline: 0;
+  background: rgba(255, 255, 255, 0.04);
+  font: 500 0.875rem var(--font-sans);
+  transition:
+    border-color var(--duration-default) ease,
+    background var(--duration-default) ease;
+}
+.review-field textarea {
+  min-height: 110px;
+  padding-block: 13px;
+  resize: vertical;
+  line-height: 1.5;
+}
+.review-field input::placeholder,
+.review-field textarea::placeholder {
+  color: var(--color-text-tertiary);
+}
+.review-field input:hover,
+.review-field textarea:hover {
+  border-color: rgba(220, 255, 0, 0.42);
+  background: rgba(255, 255, 255, 0.07);
+}
+.review-field input:focus,
+.review-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(220, 255, 0, 0.11);
+}
+.review-field input[aria-invalid='true'],
+.review-field textarea[aria-invalid='true'] {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+.review-field > small:not(.review-field-error) {
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1.45;
+}
+.review-counter {
+  justify-self: end;
+  color: var(--color-text-tertiary);
+  font: 600 var(--text-label) var(--font-mono);
+}
+.review-field-error {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  color: var(--color-danger);
+  font-size: var(--text-caption);
+  line-height: 1.45;
+}
+.review-field-error svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.review-honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.review-consent {
+  margin-top: var(--space-3);
+  display: grid;
+  gap: var(--space-2);
+}
+.review-consent label {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 11px;
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  cursor: pointer;
+}
+.review-consent input {
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border-control);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.04);
+  appearance: none;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-default) ease,
+    background var(--duration-default) ease;
+}
+.review-consent input::before {
+  content: '';
+  width: 9px;
+  height: 5px;
+  margin-top: -2px;
+  border-bottom: 2px solid var(--accent-dark);
+  border-left: 2px solid var(--accent-dark);
+  opacity: 0;
+  transform: rotate(-45deg);
+}
+.review-consent input:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.review-consent input:checked::before {
+  opacity: 1;
+}
+.review-consent input[aria-invalid='true'] {
+  border-color: var(--color-danger);
+}
+.review-consent input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.review-consent a {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.review-failure {
+  margin: 0;
+  padding: var(--space-3) 14px;
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-button);
+  background: var(--color-danger-soft);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+
+.review-form .button {
+  width: 100%;
+  cursor: pointer;
+}
+.review-form .button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+/* Replaces the form in place, so it keeps the form's radius and background (docs/design-system.md). */
+.review-success {
+  border-radius: var(--radius-feature);
+  background: rgba(14, 17, 15, 0.88);
+}
+
+@media (max-width: 700px) {
+  .review-field-row {
+    grid-template-columns: 1fr;
+  }
+}

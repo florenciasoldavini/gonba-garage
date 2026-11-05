@@ -82,6 +82,11 @@ export const alertEmailEnv = {
   testRecipient: () => exact('ALERTS_TEST_RECIPIENT'),
 };
 
+/** The address told about each new review (lib/reviews/notification.ts). Sent with the alert email setup. */
+export const reviewEnv = {
+  notificationEmail: () => trimmed('REVIEWS_NOTIFICATION_EMAIL'),
+};
+
 /** The Vercel crons: daily alerts and the Mercado Libre catalog reconciliation. */
 export const cronEnv = {
   secret: () => longSecret(exact('CRON_SECRET')),
@@ -144,6 +149,16 @@ export function misconfiguredFeatures() {
       trigger: ['RESEND_API_KEY', 'ALERTS_EMAIL_FROM', 'ALERTS_PUBLIC_URL'],
       usable: {
         DATABASE_URL: !!databaseEnv.url(),
+        RESEND_API_KEY: !!alertEmailEnv.resendApiKey(),
+        ALERTS_EMAIL_FROM: !!alertEmailEnv.from(),
+        ALERTS_PUBLIC_URL: !!alertEmailEnv.publicOrigin(),
+        ALERTS_SIGNING_SECRET: !!alertEmailEnv.signingSecret(),
+      },
+    },
+    {
+      feature: 'review_email',
+      trigger: ['REVIEWS_NOTIFICATION_EMAIL'],
+      usable: {
         RESEND_API_KEY: !!alertEmailEnv.resendApiKey(),
         ALERTS_EMAIL_FROM: !!alertEmailEnv.from(),
         ALERTS_PUBLIC_URL: !!alertEmailEnv.publicOrigin(),

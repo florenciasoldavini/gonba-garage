@@ -32,6 +32,7 @@ for (const [path, status] of [
   ['/api/mercado-libre/sync', 401],
   ['/api/price-alerts/cancel', 400],
   ['/api/inventory-alerts/cancel', 400],
+  ['/api/reviews/remove', 400],
   ['/api/alerts/confirm', 303],
 ]) {
   const response = await fetch(new URL(path, targetOrigin), { redirect: 'manual' });
@@ -48,7 +49,7 @@ assert.equal(confirmLink.headers.get('location'), '/alertas/confirmacion?estado=
 const sitePage = await fetch(new URL('/', targetOrigin));
 assert.equal(sitePage.headers.get('x-frame-options'), 'DENY');
 assert.match(sitePage.headers.get('content-security-policy') ?? '', /frame-ancestors 'none'/);
-for (const path of ['/api/price-alerts/cancel', '/api/inventory-alerts/cancel']) {
+for (const path of ['/api/price-alerts/cancel', '/api/inventory-alerts/cancel', '/api/reviews/remove']) {
   const alertLinkPage = await fetch(new URL(`${path}?token=invalid`, targetOrigin));
   assert.match(alertLinkPage.headers.get('content-security-policy') ?? '', /^default-src 'none';/, path);
   assert.equal(alertLinkPage.headers.get('referrer-policy'), 'no-referrer', path);
@@ -78,6 +79,8 @@ const routes = [
   { path: '/', title: "Gonba's Garage | Autos usados seleccionados", indexable: true },
   { path: '/vehiculos', title: "Vehículos disponibles | Gonba's Garage", indexable: false },
   { path: '/vender', title: "Vendé tu auto | Gonba's Garage", indexable: true },
+  // Reached only through the link sent to customers, so it never becomes indexable.
+  { path: '/opinar', title: "Contanos tu experiencia | Gonba's Garage", indexable: false },
   { path: '/privacidad', title: "Política de privacidad | Gonba's Garage", indexable: true },
   { path: '/terminos', title: "Términos y condiciones | Gonba's Garage", indexable: true },
   ...listedVehiclePaths.slice(0, 3).map(path => ({ path, title: null, indexable: false })),
@@ -625,6 +628,18 @@ for (const [label, html, enabled] of [
     );
   }
 }
+
+// The review form links the privacy policy, and is linked from nowhere on the site.
+const reviewFormHtml = await (await fetch(new URL('/opinar', targetOrigin))).text();
+assert.match(reviewFormHtml, /class="review-consent"[\s\S]*href="\/privacidad"/, '/opinar links the privacy policy');
+for (const [label, html] of [
+  ['Home', homeHtml],
+  ['Catalog', catalogHtml],
+]) {
+  assert.doesNotMatch(html, /href="\/opinar"/, `${label} does not link the review form`);
+}
+// A business's own reviews are ineligible for Google's review stars (docs/seo-and-social-metadata.md).
+assert.doesNotMatch(homeHtml, /"@type":\s*"(?:Review|AggregateRating)"/, 'Home publishes no review structured data');
 
 console.table(results);
 console.log(

@@ -19,6 +19,11 @@ const hour = 3600;
  */
 const signupLimits = { ip: 20, email: 5, global: 100 } as const;
 /**
+ * Reviews publish without anyone reading them first, and a sale is a rare event, so these are much
+ * tighter: 5/hour per client IP and 30/hour in total. They ask for no email, so there is no per-address bucket.
+ */
+const reviewLimits = { ip: 5, global: 30 } as const;
+/**
  * Confirmation emails: one per subscription every 10 minutes, so resubmitting a pending signup
  * cannot loop sends, and 5 per recipient per day across both endpoints, so the confirmation email
  * itself cannot be used to flood an inbox.
@@ -54,8 +59,8 @@ export function clientIp(request: Request) {
 }
 
 /**
- * Every bucket lives in price_alert_signup_windows: both signup endpoints and the confirmation
- * emails. The table keeps its first name on purpose. Migrations and deploys are not atomic on
+ * Every bucket lives in price_alert_signup_windows: both signup endpoints, the confirmation emails
+ * and the review form. The table keeps its first name on purpose. Migrations and deploys are not atomic on
  * Vercel, so a rename would leave either the running or the new code querying a missing table
  * unless a compatibility view bridged two releases, and the frozen BASELINE in
  * scripts/migration-runner.mjs checks for this name. Not worth it for a name.
@@ -91,6 +96,16 @@ export async function reserveAlertSignup(scope: AlertScope, email: string, reque
       ]
     : [];
   buckets.push({ key: `${scope}:global`, limit: signupLimits.global, windowSeconds: hour });
+  return reserve(buckets);
+}
+
+/** Same rules as reserveAlertSignup for a missing signing secret. */
+export async function reserveReviewSubmission(request: Request) {
+  const secret = alertEmailEnv.signingSecret();
+  const buckets: Bucket[] = secret
+    ? [{ key: `review:ip:${hashed(secret, 'ip', clientIp(request))}`, limit: reviewLimits.ip, windowSeconds: hour }]
+    : [];
+  buckets.push({ key: 'review:global', limit: reviewLimits.global, windowSeconds: hour });
   return reserve(buckets);
 }
 

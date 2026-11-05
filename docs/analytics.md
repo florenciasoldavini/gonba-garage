@@ -27,8 +27,8 @@ before the SDK has loaded is lost, as is that page's `$pageview`. Surveys are di
 its survey script.
 
 Session replay is disabled independently by default. Before enabling it, verify the project-level
-privacy settings and inspect test recordings. Inputs are masked by the SDK, and the valuation and
-price-alert forms are explicitly excluded from autocapture.
+privacy settings and inspect test recordings. Inputs are masked by the SDK, and the valuation,
+price-alert and review forms are explicitly excluded from autocapture.
 
 No analytics event may include a name, email address, phone number, free-text notes, uploaded photo,
 or full search query. Vehicle slugs and catalog attributes are permitted. The catalog keeps its search

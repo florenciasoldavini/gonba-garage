@@ -104,6 +104,18 @@ export default function TermsPage() {
         </p>
       </section>
 
+      <section id="opiniones">
+        <h2>Opiniones</h2>
+        <p>
+          Si dejás una opinión, nos autorizás a mostrarla en el sitio con tu nombre, la inicial de tu apellido y el auto
+          que indiques. Escribí solo sobre tu experiencia real con nosotros y no incluyas datos de otras personas.
+        </p>
+        <p>
+          En el sitio mostramos una selección de las opiniones que recibimos, no todas, y podemos retirar cualquiera de
+          ellas. Si querés que retiremos la tuya, escribinos por {whatsapp}.
+        </p>
+      </section>
+
       <section id="uso">
         <h2>Uso del sitio</h2>
         <p>
