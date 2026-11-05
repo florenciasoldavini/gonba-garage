@@ -8,16 +8,29 @@ import './faq-accordion.css';
 
 const faqs = [
   {
-    question: '¿Los vehículos están revisados?',
-    answer: 'Cada unidad se presenta con la información disponible sobre su estado, historial y documentación.',
+    question: '¿Puedo entregar mi usado como parte de pago?',
+    answer:
+      'Sí, tomamos permutas de vehículos en excelente estado. Primero coordinamos una evaluación para determinar su estado y valor de mercado.',
   },
   {
-    question: '¿Puedo entregar mi auto como parte de pago?',
-    answer: 'Sí. Primero coordinamos una evaluación para determinar su estado y valor de mercado.',
+    question: '¿Qué requisitos tiene que cumplir mi usado?',
+    answer: 'Debe estar en excelente estado estético y mecánico, tener buen mantenimiento y no registrar deudas.',
   },
   {
-    question: '¿Trabajan con financiación?',
-    answer: 'Podemos analizar distintas alternativas según el vehículo y las condiciones de la operación.',
+    question: '¿Cuánto cobran de comisión por consignación?',
+    answer: 'Nuestra comisión por consignación es del 5%.',
+  },
+  {
+    question: '¿Ofrecen financiación?',
+    answer: 'No, no trabajamos con financiación.',
+  },
+  {
+    question: '¿Puedo comprar desde otra provincia?',
+    answer: 'Sí, vendemos autos a todo el país.',
+  },
+  {
+    question: '¿Venden 0 km?',
+    answer: 'Sí, vendemos 0 km de todas las marcas. Consultanos por WhatsApp por el modelo que buscás.',
   },
   {
     question: '¿Cómo coordino una visita?',

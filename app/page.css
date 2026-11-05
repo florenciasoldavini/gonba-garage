@@ -406,7 +406,6 @@
 .trust-metrics span {
   color: var(--muted);
   font-size: 0.8rem;
-  text-align: right;
 }
 
 .faq-section {
