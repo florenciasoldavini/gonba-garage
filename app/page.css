@@ -372,11 +372,18 @@
 }
 
 .trust-section {
+  position: relative;
   padding-block: clamp(80px, 10vw, 150px);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: clamp(50px, 8vw, 130px);
   align-items: center;
+}
+/* Shorter than the viewport, so the nav link lands on its middle to center it below the header. */
+.trust-anchor {
+  position: absolute;
+  top: 50%;
+  scroll-margin-top: calc((100vh + var(--header-offset) + var(--header-height)) / 2);
 }
 .trust-copy > p:last-child {
   max-width: 600px;
@@ -473,6 +480,10 @@
   .trust-section,
   .faq-section {
     grid-template-columns: 1fr;
+  }
+  .trust-anchor {
+    top: 0;
+    scroll-margin-top: 0;
   }
   .faq-intro {
     position: static;
