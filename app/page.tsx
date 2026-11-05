@@ -7,7 +7,7 @@ import { TrackedAnchor } from '@/components/analytics/tracked-anchor';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { SiteHeader } from '@/components/layout/site-header';
 import { ContactCallout } from '@/components/marketing/contact-callout';
-import { WHATSAPP_GENERAL_MESSAGE } from '@/constants/contact';
+import { BUSINESS_AREA_LABEL, WHATSAPP_GENERAL_MESSAGE } from '@/constants/contact';
 import { getWhatsAppUrl } from '@/lib/contact';
 import { createPageMetadata } from '@/lib/metadata';
 import { ButtonLink } from '@/components/ui/button';
@@ -160,8 +160,8 @@ export default async function Home() {
                 <HandCoins aria-hidden="true" size={18} strokeWidth={1.8} />
               </span>
               <div>
-                <h3>Financiación</h3>
-                <p>Alternativas para que la operación se adapte a tus posibilidades.</p>
+                <h3>Consignación</h3>
+                <p>Publicamos y vendemos tu auto por vos, con una comisión del 5%.</p>
               </div>
             </article>
             <article className="service-card glass-panel">
@@ -190,21 +190,22 @@ export default async function Home() {
             <Eyebrow>La diferencia Gonba&apos;s Garage</Eyebrow>
             <h2 id="trust-title">No se trata de vender cualquier auto.</h2>
             <p>
-              Se trata de conocerlo, presentarlo con honestidad y acompañarte hasta que estés seguro de tu decisión.
+              Soy Gonzalo Barreiro y los autos me apasionan desde chico. En 2020 empecé a venderlos y hoy somos un
+              equipo en {BUSINESS_AREA_LABEL}, con más de 300 autos vendidos.
             </p>
           </div>
           <div className="trust-metrics glass-panel">
             <div>
-              <strong>100%</strong>
-              <span>Atención personalizada</span>
+              <span>Vendiendo autos desde</span>
+              <strong>2020</strong>
             </div>
             <div>
-              <strong>01 a 01</strong>
-              <span>Trato directo</span>
+              <span>Autos vendidos</span>
+              <strong>+300</strong>
             </div>
             <div>
-              <strong>24 h</strong>
               <span>Respuesta estimada</span>
+              <strong>24 h</strong>
             </div>
           </div>
         </section>
