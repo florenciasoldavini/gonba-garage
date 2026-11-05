@@ -12,7 +12,9 @@ export function ReviewSuccess() {
   const root = useRef<HTMLElement>(null);
   useStatusMotion(root);
   // On a phone the form is several screens tall, and this panel replaces it where it was.
-  useEffect(() => root.current?.scrollIntoView({ block: 'center' }), []);
+  useEffect(() => {
+    root.current?.scrollIntoView({ block: 'center' });
+  }, []);
 
   return (
     <section className="review-success status-panel glass-panel" aria-live="polite" ref={root}>
