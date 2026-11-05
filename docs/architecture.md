@@ -63,6 +63,8 @@ Route handlers (`robots.txt` disallows `/api/`; the private ones send `no-store`
 | `/api/mercado-libre/diagnostics`                           | GET       | Catalog API key                   | Publication diagnostics; `?connection=1` credential state; `?sync=1` sync health |
 | `/api/price-alerts`                                        | POST      | Same-site JSON, rate limits       | Price alert signup                                                               |
 | `/api/inventory-alerts`                                    | POST      | Same-site JSON, rate limits       | Search alert signup                                                              |
+| `/api/reviews`                                             | POST      | Same-site JSON, rate limits       | Saves a customer review and publishes it                                         |
+| `/api/reviews/remove`                                      | GET, POST | Signed token                      | GET shows a form; POST deletes the review                                        |
 | `/api/alerts/confirm`                                      | GET, POST | Signed, expiring token            | GET shows a page that posts itself; POST confirms                                |
 | `/api/price-alerts/cancel`, `/api/inventory-alerts/cancel` | GET, POST | Signed token                      | GET shows a form; POST cancels (RFC 8058 one-click)                              |
 | `/api/alerts/daily`                                        | GET       | `CRON_SECRET`                     | Daily price review and pending alert email                                       |
@@ -203,6 +205,30 @@ OAuth tokens and client secrets are server-only. The current access token is sto
 the refresh token and shared by every server instance until it expires, so the one-use refresh
 token rotates about once per token lifetime rather than once per instance. The seller should own the Mercado Libre app and
 production credentials.
+
+## Customer reviews
+
+Gonzalo sends customers the fixed link `/opinar` after a sale or purchase. The site can't detect a
+finished deal: Mercado Libre has no sold status, and a car bought from a customer may never be
+listed. The link is the same for everyone, and nothing proves the person who opens it is a customer.
+
+Reviews publish without anyone reading them first, which is the client's choice. Three things stand
+in for that step:
+
+- `lib/reviews/submission.ts`, shared by the form and the API, rejects links, phone numbers and
+  email addresses. `lib/alerts/signup-limit.ts` limits submissions to 5 per hour per IP and 30 in total.
+- Only the six newest reviews with 4 stars or more appear, on the home page, and the section is
+  left out until there are three (`lib/reviews/store.ts`). Side by side they scroll sideways; stacked,
+  three show until "Ver más opiniones". Lower ratings are stored and shown nowhere, and the customer
+  gets the same thank-you either way.
+- Each new review emails `REVIEWS_NOTIFICATION_EMAIL`, whatever its rating, with a signed link that
+  never expires. Following it and confirming deletes the row. Unset, reviews are still saved and
+  shown, but nobody is told. The email needs the alert email settings as well.
+
+The home page reads reviews through `lib/reviews/cache.ts`, which each new or removed review expires,
+and leaves the section out if the read fails. The form stores only the short name ("Martín G."), never
+the full name typed. The site says it shows a selection of reviews (`/terminos`, `/privacidad`): don't
+add copy that implies it shows all of them, and an average, if ever added, must count the hidden ones.
 
 ## Response headers
 

@@ -1,0 +1,97 @@
+.review-page {
+  min-height: 100vh;
+  overflow: clip;
+}
+.review-layout {
+  padding-block: var(--page-content-top) clamp(110px, 13vw, 180px);
+  display: grid;
+  grid-template-columns: minmax(0, 0.88fr) minmax(560px, 1.12fr);
+  gap: clamp(38px, 5vw, 76px);
+  align-items: start;
+}
+.review-intro {
+  position: sticky;
+  top: 112px;
+}
+.review-intro h1 {
+  max-width: 700px;
+  margin-bottom: 20px;
+  font-size: var(--text-display-md);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-display);
+}
+.review-lead {
+  max-width: 520px;
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.review-image {
+  position: relative;
+  aspect-ratio: 2.12 / 1;
+  margin-top: 20px;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+.review-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(0deg, rgba(4, 6, 4, 0.72), transparent 58%);
+}
+.review-promises {
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--line);
+}
+.review-promises li {
+  padding: 18px 0;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 11px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+.review-promises svg {
+  margin-top: 2px;
+  color: var(--accent);
+}
+.review-promises strong {
+  color: var(--text);
+}
+
+@media (max-width: 1000px) {
+  /* One column: the form comes right after the heading, and the photo and promises follow it, so a
+     phone reaches the first field without scrolling past them. */
+  .review-layout {
+    grid-template-columns: 1fr;
+    row-gap: 28px;
+  }
+  .review-intro {
+    display: contents;
+  }
+  .review-intro-heading {
+    order: 1;
+  }
+  .review-form,
+  .review-success {
+    order: 2;
+  }
+  .review-intro-details {
+    order: 3;
+  }
+  .review-image {
+    max-width: 760px;
+    aspect-ratio: 16 / 9;
+    margin-top: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  .review-intro h1 {
+    font-size: clamp(2.8rem, 13vw, 3.4rem);
+  }
+}

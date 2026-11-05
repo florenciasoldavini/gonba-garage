@@ -8,6 +8,7 @@ import {
   mercadoLibreEnv,
   misconfiguredFeatures,
   requireMercadoLibreEnv,
+  reviewEnv,
   siteEnv,
 } from '@/lib/env';
 import { IntegrationFailure } from '@/lib/integrations/mercado-libre/failures';
@@ -28,6 +29,7 @@ const variables = [
   'ALERTS_PUBLIC_URL',
   'ALERTS_SIGNING_SECRET',
   'ALERTS_TEST_RECIPIENT',
+  'REVIEWS_NOTIFICATION_EMAIL',
   'CRON_SECRET',
   'SITE_INDEXING_ENABLED',
   'ARGAUTOS_API_KEY',
@@ -186,5 +188,34 @@ describe('misconfigured features', () => {
   it('flags alert emails set up without the database', () => {
     stub({ ...alertEmail, DATABASE_URL: undefined });
     assert.deepEqual(misconfiguredFeatures(), [{ feature: 'alert_email', variables: ['DATABASE_URL'] }]);
+  });
+});
+
+describe('the review notification address', () => {
+  const complete = {
+    RESEND_API_KEY: secret,
+    ALERTS_EMAIL_FROM: 'Gonba <alertas@example.test>',
+    ALERTS_PUBLIC_URL: 'https://example.test',
+    ALERTS_SIGNING_SECRET: secret,
+  };
+
+  it('is read trimmed, and unset means nobody is told', () => {
+    vi.stubEnv('REVIEWS_NOTIFICATION_EMAIL', ' avisos@example.test ');
+    assert.equal(reviewEnv.notificationEmail(), 'avisos@example.test');
+    vi.stubEnv('REVIEWS_NOTIFICATION_EMAIL', '');
+    assert.equal(reviewEnv.notificationEmail(), undefined);
+  });
+
+  it('is reported when the emails it depends on cannot be sent', () => {
+    vi.stubEnv('REVIEWS_NOTIFICATION_EMAIL', 'avisos@example.test');
+    assert.deepEqual(
+      misconfiguredFeatures().find(({ feature }) => feature === 'review_email')?.variables,
+      Object.keys(complete),
+    );
+    stub(complete);
+    assert.equal(
+      misconfiguredFeatures().some(({ feature }) => feature === 'review_email'),
+      false,
+    );
   });
 });

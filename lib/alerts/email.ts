@@ -98,6 +98,41 @@ export function buildConfirmationEmail(input: ConfirmationEmail) {
   return { from: alertEmailEnv.from() ?? '', to: [input.email], subject, html, text, attachments: [logoAttachment] };
 }
 
+export type ReviewNotificationEmail = {
+  to: string;
+  rating: number;
+  comment: string;
+  displayName: string;
+  deal: string;
+  canAppearOnHome: boolean;
+  removalUrl: string;
+};
+
+/** Everything but the removal link was typed by whoever filled in the public form. */
+export function buildReviewNotificationEmail(input: ReviewNotificationEmail) {
+  const subject = `Nueva opinión de ${input.displayName} (${input.rating} de 5)`;
+  const detail = input.canAppearOnHome
+    ? 'Ya quedó guardada y, por tener 4 estrellas o más, puede aparecer en la home.'
+    : 'Quedó guardada y, por tener menos de 4 estrellas, no se muestra en el sitio.';
+  const stars = '★'.repeat(input.rating) + '☆'.repeat(5 - input.rating);
+  const footer = 'Si está todo bien, no hace falta que hagas nada.';
+  const text =
+    `GONBA'S GARAGE\n\n${subject}\n\n${detail}\n\n${input.rating} de 5\n${input.comment}\n` +
+    `${input.displayName} · ${input.deal}\n\nRetirar esta opinión: ${input.removalUrl}\n\n${footer}`;
+  const html = shell(
+    subject,
+    '<h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">Hay una opinión nueva</h1>' +
+      `<p style="font-size:16px;line-height:1.7">${escape(detail)}</p>` +
+      '<div style="padding:20px;background:#f4f5f0">' +
+      `<p style="margin:0 0 10px;font-size:18px;letter-spacing:2px">${stars}</p>` +
+      `<p style="margin:0 0 16px;font-size:15px;line-height:1.6">${escape(input.comment)}</p>` +
+      `<p style="margin:0;font-size:14px;color:#4a5145"><strong style="color:#171a16">${escape(input.displayName)}</strong>` +
+      ` · ${escape(input.deal)}</p></div>${button(input.removalUrl, 'Retirar esta opinión')}` +
+      `<p style="font-size:14px;line-height:1.6;color:#4a5145">${escape(footer)}</p>`,
+  );
+  return { from: alertEmailEnv.from() ?? '', to: [input.to], subject, html, text, attachments: [logoAttachment] };
+}
+
 export type SearchMatchVehicle = {
   slug: string;
   title: string;

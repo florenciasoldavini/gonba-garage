@@ -126,7 +126,11 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
           inventory
             .from('.inventory-section .eyebrow', { x: -34, autoAlpha: 0, duration: 0.58 })
             .from('#inventory-title', { x: -64, autoAlpha: 0, duration: 0.86 }, '<0.08')
-            .from('.section-heading-copy > *', { x: 38, autoAlpha: 0, stagger: 0.12, duration: 0.68 }, '<0.14')
+            .from(
+              '.inventory-section .section-heading-copy > *',
+              { x: 38, autoAlpha: 0, stagger: 0.12, duration: 0.68 },
+              '<0.14',
+            )
             .fromTo(
               inventoryCards,
               {
@@ -192,6 +196,20 @@ export function HomeGsapMotion({ children }: { children: ReactNode }) {
             .from('.trust-copy > *', { x: -48, autoAlpha: 0, stagger: 0.1, duration: 0.68 })
             .from('.trust-metrics > div', { x: 68, autoAlpha: 0, stagger: 0.13, duration: 0.72 }, '<0.12')
             .from('.trust-metrics strong', { yPercent: 70, autoAlpha: 0, stagger: 0.13, duration: 0.58 }, '<0.16');
+
+          // The section is left out until there are enough reviews: an empty selection would warn.
+          if (root.current?.querySelector('.reviews-section')) {
+            reveal('.reviews-section', 'top 72%')
+              .from('.reviews-section .eyebrow', { x: -34, autoAlpha: 0, duration: 0.58 })
+              .from('#reviews-title', { x: -64, autoAlpha: 0, duration: 0.86 }, '<0.08')
+              .from('.reviews-section .section-heading-copy > *', { x: 38, autoAlpha: 0, duration: 0.68 }, '<0.14')
+              .from(
+                // Only the cards in view. Side by side they fade in place: the list clips anything that moves.
+                '.review-card:nth-child(-n + 3)',
+                { y: desktop ? 0 : 54, autoAlpha: 0, stagger: 0.13, duration: 0.75 },
+                '<0.12',
+              );
+          }
 
           const faq = reveal('.faq-section', 'top 72%');
 

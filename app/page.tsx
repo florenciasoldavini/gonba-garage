@@ -15,7 +15,9 @@ import { Eyebrow } from '@/components/ui/eyebrow';
 import { SkeletonImage } from '@/components/ui/skeleton-image';
 import { HomeGsapMotion } from '@/app/_components/home-gsap-motion';
 import { FaqAccordion } from '@/app/_components/faq-accordion';
+import { HomeReviews } from '@/app/_components/home-reviews';
 import { listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
+import { readHomeReviews } from '@/lib/reviews/cache';
 import type { Vehicle } from '@/features/vehicles/domain/vehicle';
 import { VehicleGrid } from '@/components/vehicles/vehicle-grid';
 import './page.css';
@@ -36,6 +38,11 @@ export default async function Home() {
   // Rendered per request, outside the failure handler, so a failed read is never stored as the
   // page. The vehicles come from the catalog cache, which the sync worker expires.
   await connection();
+  // The section is only a bonus: when the reviews can't be read, the page goes on without it.
+  const reviewsRead = readHomeReviews().catch(() => {
+    console.error('home_reviews_unavailable');
+    return [];
+  });
   let vehicles: Vehicle[] = [];
   let inventoryUnavailable = false;
   try {
@@ -43,6 +50,7 @@ export default async function Home() {
   } catch {
     inventoryUnavailable = true;
   }
+  const reviews = await reviewsRead;
   return (
     <HomeGsapMotion>
       <SiteHeader />
@@ -210,6 +218,8 @@ export default async function Home() {
             </div>
           </div>
         </section>
+
+        {reviews.length > 0 ? <HomeReviews reviews={reviews} /> : null}
 
         <section className="section-shell faq-section" id="preguntas" aria-labelledby="faq-title">
           <div className="faq-intro">

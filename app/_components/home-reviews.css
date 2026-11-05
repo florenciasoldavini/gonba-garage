@@ -1,0 +1,200 @@
+.reviews-section {
+  padding-top: clamp(100px, 12vw, 180px);
+}
+/* The list scrolls; the rail around it fades the side that hides more reviews and puts an arrow over
+   that fade, as on the car page's thumbnails. */
+.reviews-rail {
+  position: relative;
+}
+.reviews-rail::before,
+.reviews-rail::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  width: 72px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--duration-default) ease;
+}
+.reviews-rail::before {
+  left: 0;
+  background: linear-gradient(270deg, transparent, rgba(8, 10, 9, 0.86) 62%, var(--background));
+}
+.reviews-rail::after {
+  right: 0;
+  background: linear-gradient(90deg, transparent, rgba(8, 10, 9, 0.86) 62%, var(--background));
+}
+.reviews-rail[data-more-before]::before,
+.reviews-rail[data-more-after]::after {
+  opacity: 1;
+}
+.reviews-rail-arrow {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  color: #dfe1dc;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(5, 7, 5, 0.82);
+  backdrop-filter: blur(15px);
+  cursor: pointer;
+  transition:
+    color var(--duration-default) ease,
+    background var(--duration-default) ease,
+    border-color var(--duration-default) ease;
+}
+.reviews-rail-arrow:hover {
+  color: var(--background);
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.reviews-rail-arrow-prev {
+  left: 6px;
+}
+.reviews-rail-arrow-next {
+  right: 6px;
+}
+.reviews-list {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  /* Each stop leaves a slice of the card before it, so the left fade and arrow also sit over a slice
+     instead of a card's text. */
+  scroll-padding-left: 3.5%;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.reviews-list::-webkit-scrollbar {
+  display: none;
+}
+.reviews-list:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+/* A slice of the fourth card shows, under the fade, so the row reads as "more". Three cards grow to fill it. */
+.review-card {
+  flex: 1 0 calc((100% - 42px) / 3.2);
+  min-width: 0;
+  min-height: 300px;
+  scroll-snap-align: start;
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  border-radius: var(--radius);
+}
+.review-card-stars {
+  display: flex;
+  gap: var(--space-1);
+  color: var(--color-border-control);
+}
+.review-card-stars .review-star-filled {
+  color: var(--accent);
+  fill: currentColor;
+}
+.review-card > p {
+  flex: 1;
+  margin: 0;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.review-card-meta {
+  padding-top: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+.review-card-meta > div {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.review-card strong {
+  font-size: 0.9375rem;
+  letter-spacing: -0.01em;
+}
+.review-card-meta span,
+.review-card time {
+  font: 600 var(--text-label) var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.review-card-meta span {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.review-card time {
+  flex: 0 0 auto;
+  color: var(--color-text-tertiary);
+}
+
+/* The site's text link, on a button. */
+.reviews-section .reviews-more {
+  display: none;
+}
+
+@media (max-width: 1000px) {
+  .reviews-list {
+    display: grid;
+    overflow: visible;
+  }
+  .reviews-list:not([data-expanded]) > .review-card:nth-child(n + 4) {
+    display: none;
+  }
+  .review-card {
+    min-height: 0;
+  }
+  .reviews-section .reviews-more {
+    position: relative;
+    margin-top: var(--space-6);
+    padding: 0 0 5px;
+    display: inline-flex;
+    color: var(--text);
+    border: 0;
+    border-bottom: 1px solid var(--accent);
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  /* A 44px tap target around a line of text. */
+  .reviews-more::after {
+    content: '';
+    position: absolute;
+    inset: -12px 0;
+  }
+  .reviews-section .reviews-more:hover svg {
+    transform: translateY(3px);
+  }
+}
+
+@media (max-width: 700px) {
+  /* The one gap between sections on phones (page.css). */
+  .reviews-section {
+    padding-top: var(--space-16);
+    scroll-margin-top: var(--space-8);
+  }
+  .reviews-list {
+    gap: 10px;
+  }
+  .review-card {
+    padding: 22px;
+    gap: 18px;
+  }
+  .review-card > p {
+    font-size: 1rem;
+  }
+}

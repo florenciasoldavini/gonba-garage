@@ -16,7 +16,7 @@ export const metadata: Metadata = createPageMetadata({
   path,
 });
 
-// Every statement here must match the code: lib/alerts, app/vender and the PostHog setup.
+// Every statement here must match the code: lib/alerts, lib/reviews, app/vender and the PostHog setup.
 export default function PrivacyPage() {
   const whatsapp = (
     <a href={getWhatsAppUrl(WHATSAPP_PRIVACY_MESSAGE)} target="_blank" rel="noreferrer">
@@ -56,11 +56,21 @@ export default function PrivacyPage() {
           La alerta se activa recién cuando la confirmás desde el enlace que te enviamos por email. Hasta entonces no
           recibís avisos.
         </p>
+        <h3>Opiniones</h3>
+        <p>
+          Si dejás una opinión, guardamos si compraste o vendiste un auto, tu puntuación, tu comentario, tu nombre con
+          la inicial del apellido, el auto si lo indicás y la fecha. El nombre completo que escribís solo se usa para
+          armar esa versión corta: no lo guardamos. No te pedimos email ni teléfono.
+        </p>
+        <p>
+          Con tu autorización, mostramos en el sitio una selección de las opiniones que recibimos. Cada opinión nos
+          llega también por email, con su contenido, para poder retirarla si hace falta.
+        </p>
         <h3>Prevención de abuso</h3>
         <p>
-          Para limitar los envíos repetidos del formulario de alertas, guardamos una versión irreversible (hash) de tu
-          dirección IP y de tu email, nunca la IP ni el email en sí. Ese registro solo se usa durante un máximo de 24
-          horas y después se borra periódicamente.
+          Para limitar los envíos repetidos de los formularios de alertas y de opiniones, guardamos una versión
+          irreversible (hash) de tu dirección IP y, en las alertas, de tu email, nunca la IP ni el email en sí. Ese
+          registro solo se usa durante un máximo de 24 horas y después se borra periódicamente.
         </p>
         <h3>Formulario «Vendé tu auto»</h3>
         <p>
@@ -88,8 +98,8 @@ export default function PrivacyPage() {
         </p>
         <p>
           Podemos activar grabaciones de sesión para detectar problemas de uso. En ese caso, lo que escribís en los
-          campos se oculta y los formularios de alertas y de tasación quedan excluidos de la grabación. Podés borrar o
-          bloquear las cookies y el almacenamiento local desde la configuración de tu navegador.
+          campos se oculta y los formularios de alertas, de tasación y de opiniones quedan excluidos de la grabación.
+          Podés borrar o bloquear las cookies y el almacenamiento local desde la configuración de tu navegador.
         </p>
       </section>
 
@@ -105,10 +115,10 @@ export default function PrivacyPage() {
             navegador.
           </li>
           <li>
-            <strong>Neon</strong>: base de datos donde guardamos las alertas.
+            <strong>Neon</strong>: base de datos donde guardamos las alertas y las opiniones.
           </li>
           <li>
-            <strong>Resend</strong>: envía los emails de confirmación y de alertas.
+            <strong>Resend</strong>: envía los emails de confirmación y de alertas, y el aviso de cada opinión nueva.
           </li>
           <li>
             <strong>PostHog</strong>: estadísticas de uso.
@@ -131,6 +141,10 @@ export default function PrivacyPage() {
           <li>
             <strong>Alertas</strong>: mientras estén activas. Si cancelás una alerta o no la confirmás, dejamos de
             escribirte y conservamos su registro como constancia hasta que nos pidas eliminarlo.
+          </li>
+          <li>
+            <strong>Opiniones</strong>: mientras se muestren o las necesitemos para mejorar la atención, o hasta que nos
+            pidas retirarlas.
           </li>
           <li>
             <strong>Prevención de abuso</strong>: se usa hasta 24 horas y se borra periódicamente.

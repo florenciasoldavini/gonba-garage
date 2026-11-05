@@ -66,6 +66,9 @@ type AnalyticsEventProperties = {
   valuation_step_completed: { step: number };
   /** Make and model are empty when typed by hand rather than picked from the catalog: free text stays out. */
   valuation_sent_to_whatsapp: { make: string; model: string; total_steps: number; year: number };
+  /** The name, comment and car stay out: they are free text. */
+  review_submitted: { rating: number; transaction_type: 'bought' | 'sold' };
+  review_failed: Record<string, never>;
 };
 
 /** An event as plain data, so a server component can hand it to a client link. */
