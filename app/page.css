@@ -372,11 +372,18 @@
 }
 
 .trust-section {
+  position: relative;
   padding-block: clamp(80px, 10vw, 150px);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: clamp(50px, 8vw, 130px);
   align-items: center;
+}
+/* Shorter than the viewport, so the nav link lands on its middle to center it below the header. */
+.trust-anchor {
+  position: absolute;
+  top: 50%;
+  scroll-margin-top: calc((100vh + var(--header-offset) + var(--header-height)) / 2);
 }
 .trust-copy > p:last-child {
   max-width: 600px;
@@ -474,6 +481,10 @@
   .faq-section {
     grid-template-columns: 1fr;
   }
+  .trust-anchor {
+    top: 0;
+    scroll-margin-top: 0;
+  }
   .faq-intro {
     position: static;
   }
@@ -533,7 +544,17 @@
   .trust-metrics div {
     align-items: center;
   }
+  /* One gap between sections. It no longer clears the sticky header by itself, so nav links land lower. */
+  .inventory-section,
+  .services-section,
   .faq-section {
-    padding-top: 100px;
+    padding-block: var(--space-16);
+    scroll-margin-top: var(--space-8);
+  }
+  .trust-section {
+    padding-block: 0;
+  }
+  .trust-anchor {
+    scroll-margin-top: calc(var(--space-16) + var(--space-8));
   }
 }

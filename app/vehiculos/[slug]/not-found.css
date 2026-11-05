@@ -90,6 +90,12 @@
 }
 
 @media (max-width: 700px) {
+  .missing-vehicle-screen {
+    margin-bottom: 0;
+  }
+  .missing-vehicle-page .inventory-section {
+    padding-bottom: 0;
+  }
   .missing-vehicle {
     min-height: 0;
     margin-top: 12px;

@@ -185,7 +185,8 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="section-shell trust-section" id="nosotros" aria-labelledby="trust-title">
+        <section className="section-shell trust-section" aria-labelledby="trust-title">
+          <span className="trust-anchor" id="nosotros" />
           <div className="trust-copy">
             <Eyebrow>La diferencia Gonba&apos;s Garage</Eyebrow>
             <h2 id="trust-title">No se trata de vender cualquier auto.</h2>

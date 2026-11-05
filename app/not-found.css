@@ -150,6 +150,9 @@
 }
 
 @media (max-width: 700px) {
+  .route-missing-screen {
+    margin-bottom: 0;
+  }
   .route-missing {
     min-height: calc(100svh - 100px);
     margin-top: 12px;

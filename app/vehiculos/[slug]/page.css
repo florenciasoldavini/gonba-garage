@@ -639,7 +639,11 @@
     font-size: var(--text-caption);
   }
   .detail-similar {
-    padding-top: 72px;
+    padding-top: var(--space-16);
+    scroll-margin-top: var(--space-8);
+  }
+  .detail-confidence + .detail-similar {
+    padding-bottom: var(--space-16);
   }
   .detail-similar > .text-link {
     grid-row: 3;
@@ -701,7 +705,8 @@
     color: var(--muted);
   }
   .detail-overview {
-    padding-block: 100px;
+    padding-block: var(--space-16);
+    scroll-margin-top: var(--space-8);
     gap: 58px;
   }
   .detail-highlights {
@@ -711,6 +716,6 @@
     padding-right: 0;
   }
   .detail-confidence {
-    padding-block: 0 90px;
+    padding-block: 0 var(--space-16);
   }
 }
