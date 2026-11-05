@@ -544,7 +544,17 @@
   .trust-metrics div {
     align-items: center;
   }
+  /* One gap between sections. It no longer clears the sticky header by itself, so nav links land lower. */
+  .inventory-section,
+  .services-section,
   .faq-section {
-    padding-top: 100px;
+    padding-block: var(--space-16);
+    scroll-margin-top: var(--space-8);
+  }
+  .trust-section {
+    padding-block: 0;
+  }
+  .trust-anchor {
+    scroll-margin-top: calc(var(--space-16) + var(--space-8));
   }
 }

@@ -11,3 +11,9 @@
 .alert-result {
   width: min(100%, 820px);
 }
+
+@media (max-width: 700px) {
+  .alert-result-layout {
+    padding-bottom: 0;
+  }
+}

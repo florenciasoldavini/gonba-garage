@@ -41,7 +41,7 @@
 
 @media (max-width: 700px) {
   .catalog-layout {
-    padding-top: 24px;
+    padding-block: 24px var(--space-16);
   }
   .catalog-filters-desktop {
     display: none;
@@ -51,6 +51,7 @@
   }
   .catalog-contact {
     min-height: 440px;
+    margin-bottom: 0;
     grid-template-columns: 1fr;
     align-content: space-between;
     gap: 44px;
