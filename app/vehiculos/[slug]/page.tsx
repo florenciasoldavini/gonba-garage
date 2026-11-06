@@ -24,7 +24,6 @@ import { formatVehicleMileage, formatVehiclePrice } from '@/features/vehicles/pr
 import { unbreakableVersionSegments } from '@/features/vehicles/presentation/listing-cleanup';
 import { publicVehicleAttributes } from '@/features/vehicles/presentation/public-attributes';
 import { VehicleSpecificationGroups } from './_components/vehicle-specification-groups';
-import { CatalogUnavailable } from '../_components/catalog-unavailable';
 import { getVehicleStatusPresentation } from '@/features/vehicles/presentation/status';
 import { pickSimilarVehicles } from '@/features/vehicles/domain/similar-vehicles';
 import { VEHICLE_PHOTO_PLACEHOLDER, type Vehicle } from '@/features/vehicles/domain/vehicle';
@@ -57,12 +56,7 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: VehicleDetailPageProps): Promise<Metadata> {
   const { slug } = await params;
-  let vehicle;
-  try {
-    vehicle = await findCatalogVehicle(slug);
-  } catch {
-    return { title: "Catálogo no disponible | Gonba's Garage", robots: { index: false, follow: false } };
-  }
+  const vehicle = await findCatalogVehicle(slug);
 
   if (!vehicle) {
     return { title: "Vehículo no encontrado | Gonba's Garage" };
@@ -94,13 +88,8 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   // The main photo comes straight from Mercado Libre, a separate origin (vehicle-photo-viewer.tsx).
   preconnect('https://http2.mlstatic.com');
   const { slug } = await params;
-  let publication;
-  try {
-    publication = await findCatalogPublication(slug);
-  } catch {
-    // A backend failure is not a missing vehicle: keep notFound() for real 404s only.
-    return <CatalogUnavailable title="No pudimos cargar esta publicación." />;
-  }
+  // A backend failure is not a missing vehicle: it reaches ../error.tsx as a 500, and notFound() stays for real 404s.
+  const publication = await findCatalogPublication(slug);
 
   // The slug is fixed at the first sync. Older or edited slugs for the same publication redirect.
   if (!publication) notFound();

@@ -260,10 +260,14 @@ canonical URL. Paused and closed publications keep their page with the lifecycle
 `updatedAt` is the last real content or availability change recorded by the sync, never a
 provider-side touch or the sync time.
 
-When the catalog backend fails, a vehicle detail page shows a "Catálogo no disponible" message with
-`noindex, nofollow` metadata instead of a server error. Only a genuinely missing vehicle returns
-`notFound()` and a real 404; the metadata check asserts that missing slugs, with and without a
-publication ID, still return 404, and that a non-canonical slug redirects.
+When the catalog backend fails, after one retry, `/vehiculos` and every vehicle page answer a real
+500 with the "Catálogo no disponible" message of `app/vehiculos/error.tsx`, and `/sitemap.xml` fails
+too. Search engines retry a 500 and keep what they know, while a 200 with `noindex` would drop a car
+that still exists, and a sitemap without its cars would read as if they were gone. These routes must
+keep reading the catalog before the response starts: behind a `<Suspense>` or a `loading.tsx`, the
+200 is already sent. Only a genuinely missing vehicle returns `notFound()` and a real 404; the
+metadata check asserts that missing slugs, with and without a publication ID, still return 404, and
+that a non-canonical slug redirects.
 
 Unexpected failures render `app/error.tsx`, or `app/global-error.tsx` when the root layout fails.
 Both emit `noindex, nofollow` themselves, because error boundaries cannot export metadata.

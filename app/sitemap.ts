@@ -14,8 +14,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const siteUrl = getSiteUrl();
   const entry = (path: string, lastModified?: string) => ({ url: new URL(path, siteUrl).toString(), lastModified });
 
-  // Reserved and sold cars stay out. A failed read lists the fixed pages only, and the next crawl gets the cars.
-  const vehicles = (await listCatalogVehicles().catch(() => [])).filter(({ status }) => status === 'active');
+  // Reserved and sold cars stay out. A failed read fails the sitemap, so crawlers keep their last good copy.
+  const vehicles = (await listCatalogVehicles()).filter(({ status }) => status === 'active');
   // The home page and the catalog change when a listed car does. There is no such date without cars.
   const catalogUpdatedAt = vehicles
     .map(({ updatedAt }) => updatedAt)
