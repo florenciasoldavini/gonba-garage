@@ -15,7 +15,7 @@ export const metadata: Metadata = createPageMetadata({
   description: "Compartí los datos de tu vehículo y solicitá una estimación de valor a Gonba's Garage.",
   path: '/vender',
   image: '/social/vender.jpg',
-  imageAlt: "BMW blanco con la patente de Gonba's Garage",
+  imageAlt: "Interior de un Mercedes-Benz en Gonba's Garage",
 });
 
 // Rendered widths from page.css: the shell's width on phones, at most 760px in one column, then the
