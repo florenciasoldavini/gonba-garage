@@ -38,12 +38,17 @@
   transform: rotate(-3deg);
 }
 
+.hero-media .cover-image {
+  object-position: 50% 30%;
+}
+
 .hero:hover .cover-image {
   transform: scale(1.015);
 }
 
 .hero-overlay {
   background:
+    linear-gradient(180deg, rgba(4, 5, 4, 0.42), transparent 24%),
     linear-gradient(90deg, rgba(4, 5, 4, 0.93) 0%, rgba(4, 5, 4, 0.55) 48%, rgba(4, 5, 4, 0.12) 77%),
     linear-gradient(0deg, rgba(5, 7, 5, 0.85), transparent 55%);
 }
@@ -280,6 +285,9 @@
   position: relative;
   min-height: 600px;
 }
+.sell-media .cover-image {
+  object-position: 50% 60%;
+}
 .sell-content {
   padding: clamp(40px, 6vw, 90px);
   display: flex;
@@ -498,7 +506,9 @@
     align-items: flex-end;
   }
   .hero-overlay {
-    background: linear-gradient(0deg, rgba(4, 5, 4, 0.96) 8%, rgba(4, 5, 4, 0.45) 72%, rgba(4, 5, 4, 0.12));
+    background:
+      linear-gradient(180deg, rgba(4, 5, 4, 0.5), transparent 18%),
+      linear-gradient(0deg, rgba(4, 5, 4, 0.96) 8%, rgba(4, 5, 4, 0.62) 66%, rgba(4, 5, 4, 0.34));
   }
   .hero-content {
     width: 100%;

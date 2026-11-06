@@ -14,6 +14,8 @@ export const metadata: Metadata = createPageMetadata({
   title: "Vendé tu auto | Gonba's Garage",
   description: "Compartí los datos de tu vehículo y solicitá una estimación de valor a Gonba's Garage.",
   path: '/vender',
+  image: '/social/vender.jpg',
+  imageAlt: "BMW blanco con la patente de Gonba's Garage",
 });
 
 // Rendered widths from page.css: the shell's width on phones, at most 760px in one column, then the
@@ -41,8 +43,8 @@ export default function SellVehiclePage() {
             <div className="valuation-intro-details">
               <div className="valuation-image glass-panel">
                 <SkeletonImage
-                  src="/garage-classic.jpg"
-                  alt="Auto clásico estacionado frente a un garage"
+                  src="/vender-car.jpg"
+                  alt="BMW blanco exhibido en Gonba's Garage"
                   fill
                   sizes={VALUATION_IMAGE_SIZES}
                   className="cover-image"

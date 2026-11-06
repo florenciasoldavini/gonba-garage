@@ -1,5 +1,34 @@
 import assert from 'node:assert/strict';
 
+// Pages with their own share card; every other generic page uses the branded default.
+const pageSocialImages = {
+  '/vehiculos': '/social/vehiculos.jpg',
+  '/vender': '/social/vender.jpg',
+  '/opinar': '/social/opinar.jpg',
+};
+
+// WhatsApp publishes no limit, but previews are reported to disappear above about 300 KB.
+const maxSocialCardBytes = 300 * 1024;
+
+function jpegDimensions(bytes) {
+  let offset = 2;
+  while (offset + 9 < bytes.length) {
+    const marker = bytes[offset + 1];
+    if (marker >= 0xc0 && marker <= 0xc3) {
+      return { height: bytes.readUInt16BE(offset + 5), width: bytes.readUInt16BE(offset + 7) };
+    }
+    offset += 2 + bytes.readUInt16BE(offset + 2);
+  }
+  throw new Error('No JPEG size marker found');
+}
+
+function assertSocialCardBytes(bytes, path) {
+  const { width, height } = jpegDimensions(bytes);
+  assert.equal(width, 1200, `${path} social card should be 1200px wide`);
+  assert.equal(height, 630, `${path} social card should be 630px tall`);
+  assert.ok(bytes.length <= maxSocialCardBytes, `${path} social card should stay under 300 KB, got ${bytes.length}`);
+}
+
 const targetOrigin = new URL(process.argv[2] || 'http://localhost:3100');
 const indexingEnabled = process.env.SITE_INDEXING_ENABLED === 'true';
 // Run with the same environment as the server. Alerts are offered only where alert emails can be
@@ -326,17 +355,16 @@ for (const route of routes) {
   const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
 
   if (!route.path.startsWith('/vehiculos/')) {
-    assert.equal(imagePath, '/gonba-garage-social-preview.png', `${route.path} should use the branded default card`);
+    assert.equal(
+      imagePath,
+      pageSocialImages[route.path] ?? '/social/home.jpg',
+      `${route.path} should use its own card or the branded default`,
+    );
   }
 
   {
-    assert.equal(
-      imageResponse.headers.get('content-type'),
-      'image/png',
-      `${route.path} generated social card should be PNG`,
-    );
-    assert.equal(imageBytes.readUInt32BE(16), 1200, `${route.path} social card should be 1200px wide`);
-    assert.equal(imageBytes.readUInt32BE(20), 630, `${route.path} social card should be 630px tall`);
+    assert.equal(imageResponse.headers.get('content-type'), 'image/jpeg', `${route.path} social card should be JPEG`);
+    assertSocialCardBytes(imageBytes, route.path);
   }
 
   results.push({
@@ -571,8 +599,7 @@ for (const path of unlistedVehiclePaths) {
   const image = await fetch(new URL(new URL(metadata.openGraph.image).pathname, targetOrigin));
   assert.equal(image.status, 200, `${fixture.path} social card`);
   const imageBytes = Buffer.from(await image.arrayBuffer());
-  assert.equal(imageBytes.readUInt32BE(16), 1200);
-  assert.equal(imageBytes.readUInt32BE(20), 630);
+  assertSocialCardBytes(imageBytes, fixture.path);
 }
 
 // The legal pages are public and indexable once indexing is enabled, linked from every footer and

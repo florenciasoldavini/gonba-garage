@@ -160,7 +160,12 @@ export function InnerPageMotion({ children, className, id, variant }: InnerPageM
                 { clipPath: 'inset(0% 0 0% 0)', duration: 1.05, ease: 'power3.inOut' },
                 0.68,
               )
-              .from('.valuation-image .cover-image', { scale: 1.09, duration: 1.35, ease: 'power2.out' }, 0.7)
+              .fromTo(
+                '.valuation-image .cover-image',
+                { scale: 1.09 },
+                { scale: 1, duration: 1.35, ease: 'power2.out' },
+                0.7,
+              )
               .from('.valuation-promises li', { x: -30, autoAlpha: 0, stagger: 0.1, duration: 0.52 }, 0.88)
               .from('.valuation-promises svg', { scale: 0.45, autoAlpha: 0, stagger: 0.1, duration: 0.35 }, 1.02)
               .from(

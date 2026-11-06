@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const SITE_NAME = "Gonba's Garage";
-export const DEFAULT_SOCIAL_IMAGE = '/gonba-garage-social-preview.png';
+export const DEFAULT_SOCIAL_IMAGE = '/social/home.jpg';
 
 type PageMetadataOptions = {
   title: string;

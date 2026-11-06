@@ -1,3 +1,9 @@
+/* Reveals start elements off to the side, past the page edge on narrower screens. `clip` rather than `hidden`
+   so this stays out of the way of the sticky header and FAQ intro. */
+.home-gsap {
+  overflow-x: clip;
+}
+
 .home-gsap .hero-media,
 .home-gsap .hero-content,
 .home-gsap .hero-facts,

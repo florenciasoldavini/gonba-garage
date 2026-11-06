@@ -16,6 +16,8 @@ export const metadata: Metadata = {
     title: "Contanos tu experiencia | Gonba's Garage",
     description: "Dejá tu opinión sobre cómo fue comprar o vender tu auto con Gonba's Garage.",
     path: '/opinar',
+    image: '/social/opinar.jpg',
+    imageAlt: "Autos en el showroom de Gonba's Garage",
   }),
   robots: { index: false, follow: false },
 };
@@ -42,8 +44,8 @@ export default function ReviewPage() {
             <div className="review-intro-details">
               <div className="review-image glass-panel">
                 <SkeletonImage
-                  src="/garage-classic.jpg"
-                  alt="Auto clásico estacionado frente a un garage"
+                  src="/opinar-car.jpg"
+                  alt="Toyota blanca y Mercedes-Benz gris en el showroom de Gonba's Garage"
                   fill
                   sizes={REVIEW_IMAGE_SIZES}
                   className="cover-image"
