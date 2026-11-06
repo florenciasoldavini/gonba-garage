@@ -15,8 +15,9 @@ check when applicable.
   Components must not own SEO metadata.
 - Search metadata and social metadata describe the same page. Open Graph and Twitter/X titles,
   descriptions, URLs, images, and image alt text must remain aligned.
-- The default social card is 1200×630. Vehicle pages use a distinct generated 1200×630 PNG at
-  `/og/vehiculos/[slug]`; generic pages use the branded default image.
+- The default social card is 1200×630. Vehicle pages use a distinct generated 1200×630 JPEG at
+  `/og/vehiculos/[slug]`; `/vehiculos`, `/vender` and `/opinar` have their own card in `public/social/`,
+  and every other generic page uses the branded default, `public/social/home.jpg`.
 - Structured data must contain only facts that are visible on the page or confirmed business facts.
   Never add ratings, reviews, inventory claims, addresses, opening hours, or availability merely to
   make a rich result look more complete.
@@ -66,6 +67,10 @@ Do not add `keywords` metadata: it is not part of this project's SEO strategy.
 ## Open Graph and share-card rules
 
 - Keep social images at 1200×630 and ensure the response has a valid image content type.
+- Keep social images as JPEG under 300 KB. WhatsApp publishes no limit, but previews are reported to
+  disappear above about that size, and a photo card as PNG runs near 1 MB.
+- `ImageResponse` leaves WebP photos out without an error, so the vehicle card uses the JPEG of the
+  Mercado Libre photo. It only reads `ttf`, `otf` or `woff`, so it uses static Geist cuts from `app/fonts/`.
 - Use one share-card URL per vehicle slug so different vehicles do not collapse into the same social
   preview cache entry.
 - Include the vehicle identity, year/version, price, location, and lifecycle label only when those

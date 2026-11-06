@@ -25,9 +25,9 @@ const nextConfig: NextConfig = {
     imageSizes: [32, 48, 64, 96, 128, 256, 384, 512],
     remotePatterns: [{ protocol: 'https', hostname: 'http2.mlstatic.com' }],
   },
-  // The vehicle social card and Apple icon read local images from disk; ship them with the function.
+  // The vehicle social card and Apple icon read local files from disk; ship them with the function.
   outputFileTracingIncludes: {
-    '/og/vehiculos/*': ['./public/*.{jpg,jpeg}', './public/brand/gonba-garage-logo-mark.png'],
+    '/og/vehiculos/*': ['./public/*.{jpg,jpeg}', './public/brand/gonba-garage-logo-mark.png', './app/fonts/*.woff'],
     '/apple-icon': ['./public/brand/gonba-garage-apple-icon.png'],
   },
   async headers() {

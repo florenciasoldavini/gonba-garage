@@ -23,6 +23,8 @@ export const metadata: Metadata = {
     description:
       "Explorá el inventario de autos usados seleccionados de Gonba's Garage. Filtrá por marca, transmisión, tipo y precio.",
     path: '/vehiculos',
+    image: '/social/vehiculos.jpg',
+    imageAlt: "Autos usados exhibidos en el showroom de Gonba's Garage",
   }),
   robots: { index: false, follow: false },
 };

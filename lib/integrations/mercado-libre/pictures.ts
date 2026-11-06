@@ -33,3 +33,17 @@ export function mercadoLibreWebpUrl(value: string): string | null {
   }
   return null;
 }
+
+/** The JPEG of a full-size (F) WebP, for the social card: ImageResponse leaves WebP photos out. Null for any other URL. */
+export function mercadoLibreJpegUrl(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (url.hostname === 'http2.mlstatic.com' && /^\/D_(?:NQ_NP_)?[\w-]+-F\.webp$/i.test(url.pathname)) {
+      url.pathname = url.pathname.replace(/\.webp$/i, '.jpg');
+      return url.toString();
+    }
+  } catch {
+    // Local fallback images are relative paths.
+  }
+  return null;
+}
