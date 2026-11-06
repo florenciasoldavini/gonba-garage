@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     description: "Dejá tu opinión sobre cómo fue comprar o vender tu auto con Gonba's Garage.",
     path: '/opinar',
     image: '/social/opinar.jpg',
-    imageAlt: "Toyota blanca y Toyota negra en Gonba's Garage",
+    imageAlt: "BMW blanco y Mercedes-Benz negro en Gonba's Garage",
   }),
   robots: { index: false, follow: false },
 };
