@@ -58,7 +58,7 @@ export default async function Home() {
       <main>
         <section className="hero section-shell" aria-labelledby="hero-title">
           <div className="hero-media" aria-hidden="true">
-            <SkeletonImage src="/showroom-car.jpg" alt="" fill loading="eager" sizes="100vw" className="cover-image" />
+            <SkeletonImage src="/hero-interior.jpg" alt="" fill loading="eager" sizes="100vw" className="cover-image" />
           </div>
           <div className="hero-overlay" />
           <div className="hero-ignition-light" aria-hidden="true" />
@@ -124,8 +124,8 @@ export default async function Home() {
         <section className="section-shell sell-section" id="vender" aria-labelledby="sell-title">
           <div className="sell-media">
             <SkeletonImage
-              src="/garage-classic.jpg"
-              alt="Auto estacionado frente a un garage"
+              src="/sell-showroom.jpg"
+              alt="Toyota negra y BMW blanco exhibidos en Gonba's Garage"
               fill
               sizes={SELL_IMAGE_SIZES}
               className="cover-image"
@@ -199,8 +199,8 @@ export default async function Home() {
             <Eyebrow>La diferencia Gonba&apos;s Garage</Eyebrow>
             <h2 id="trust-title">No se trata de vender cualquier auto.</h2>
             <p>
-              Soy Gonzalo Barreiro y los autos me apasionan desde chico. En 2020 empecé a venderlos y hoy somos un
-              equipo en {BUSINESS_AREA_LABEL}, con más de 300 autos vendidos.
+              Soy Gonzalo Barreiro, y desde chico me apasionan los autos. En 2020 empecé mi negocio de compra y venta, y
+              hoy somos un equipo en {BUSINESS_AREA_LABEL}, con más de 300 autos vendidos.
             </p>
           </div>
           <div className="trust-metrics glass-panel">

@@ -32,6 +32,9 @@
   overflow: hidden;
   border-radius: 18px;
 }
+.valuation-image .cover-image {
+  object-position: 50% 60%;
+}
 .valuation-image::after {
   content: '';
   position: absolute;

@@ -33,6 +33,9 @@
   overflow: hidden;
   border-radius: var(--radius);
 }
+.review-image .cover-image {
+  object-position: 72% 55%;
+}
 .review-image::after {
   content: '';
   position: absolute;
