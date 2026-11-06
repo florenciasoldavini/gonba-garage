@@ -168,10 +168,9 @@ other slug ending in the same listing ID gets a permanent redirect. Paused and c
 their page, labeled reserved or sold, with links to similar available cars instead of a 404.
 ([SEO guidelines: inventory lifecycle](docs/seo-and-social-metadata.md#inventory-lifecycle-and-indexing))
 
-**Search indexing as a deliberate launch gate.** `SITE_INDEXING_ENABLED` defaults to `false`. On
-top of that, a catalog hold in code keeps `/vehiculos`, car pages and the sitemap out of search
-results until the final version ships, so the sitemap is empty on purpose for now. Open Graph and
-share cards keep working in the meantime.
+**Search indexing as a deliberate gate.** `SITE_INDEXING_ENABLED` defaults to `false`, which keeps
+local and preview deployments out of search results with an empty sitemap, and only production turns
+it on. Open Graph and share cards work either way.
 ([indexing gates](docs/seo-and-social-metadata.md#indexing-gates-and-permanent-domain-policy))
 
 **No demo vehicles, anywhere.** Every environment shows the real catalog. Local development reads

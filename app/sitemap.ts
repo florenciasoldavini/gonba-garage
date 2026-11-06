@@ -1,7 +1,33 @@
 import type { MetadataRoute } from 'next';
 
-// Indexing stays off until the final version of the site, so the sitemap lists nothing yet, whatever
-// SITE_INDEXING_ENABLED says. Filling it is part of the indexing launch (docs/seo-and-social-metadata.md).
-export default function sitemap(): MetadataRoute.Sitemap {
-  return [];
+import { LEGAL_PAGES } from '@/constants/legal';
+import { listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
+import { isSiteIndexingEnabled } from '@/lib/site-indexing';
+import { getSiteUrl } from '@/lib/site-url';
+
+// Rendered per request, like the catalog: the list follows the sync, and a build never needs the database.
+export const dynamic = 'force-dynamic';
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if (!isSiteIndexingEnabled()) return [];
+
+  const siteUrl = getSiteUrl();
+  const entry = (path: string, lastModified?: string) => ({ url: new URL(path, siteUrl).toString(), lastModified });
+
+  // Reserved and sold cars stay out. A failed read lists the fixed pages only, and the next crawl gets the cars.
+  const vehicles = (await listCatalogVehicles().catch(() => [])).filter(({ status }) => status === 'active');
+  // The home page and the catalog change when a listed car does. There is no such date without cars.
+  const catalogUpdatedAt = vehicles
+    .map(({ updatedAt }) => updatedAt)
+    .sort()
+    .at(-1);
+
+  return [
+    entry('/', catalogUpdatedAt),
+    entry('/vehiculos', catalogUpdatedAt),
+    entry('/vender'),
+    entry(LEGAL_PAGES.privacy.path, LEGAL_PAGES.privacy.updatedAt),
+    entry(LEGAL_PAGES.terms.path, LEGAL_PAGES.terms.updatedAt),
+    ...vehicles.map(({ slug, updatedAt }) => entry(`/vehiculos/${slug}`, updatedAt)),
+  ];
 }

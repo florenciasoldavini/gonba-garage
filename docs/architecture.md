@@ -28,7 +28,7 @@ price, description, and contact action must remain usable without WebGL or clien
   `lib/catalog/store.ts`, or the deployed backend's copy when `MERCADO_LIBRE_BACKEND_URL` is set
   (local development). There is no demo catalog: every environment shows the real Mercado Libre
   inventory, and the codebase ships no placeholder vehicles. Pages and the share-image route read
-  inventory only through this module. The sitemap is deliberately empty until the indexing launch
+  inventory only through this module, and the sitemap lists the active cars from it
   (`docs/seo-and-social-metadata.md`). The price alert signup is described under the sync section.
 
 The experimental work should happen at the edge of the interface, not in the data or routing
@@ -282,8 +282,7 @@ real assets and a measurable user benefit exist. Such a scene must:
 - One stable URL per active or sold vehicle.
 - Unique title, description, canonical URL, and social metadata per vehicle.
 - `Vehicle`/`Product`, `LocalBusiness`, and breadcrumb structured data where valid.
-- Sitemap deliberately empty until the indexing launch; from then on, generated from the public
-  pages and active inventory.
+- Sitemap generated from the public pages and active inventory.
 - Sold vehicles remain useful when possible; removed URLs return an intentional status.
 - Spanish semantic HTML is rendered on the server before enhancement.
 

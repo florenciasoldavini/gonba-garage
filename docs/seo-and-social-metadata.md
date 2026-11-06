@@ -37,7 +37,7 @@ check when applicable.
 | Vehicle Product/Offer/Breadcrumb JSON-LD                      | `app/vehiculos/[slug]/page.tsx`                                                                                                          |
 | Dynamic vehicle share cards                                   | `app/og/vehiculos/[slug]/route.ts`                                                                                                       |
 | Crawler rules                                                 | `app/robots.ts`                                                                                                                          |
-| Discoverable URLs and freshness                               | `app/sitemap.ts` (empty until the indexing launch)                                                                                       |
+| Discoverable URLs and freshness                               | `app/sitemap.ts`                                                                                                                         |
 | Favicon, Apple icon, and manifest                             | `public/favicon.svg`, `app/apple-icon.tsx`, and `app/manifest.ts` (GG icons in `public/brand/`; the round logo with the car is not used) |
 | Brand logo files (header, footer, share cards, dealer `logo`) | `public/brand/`                                                                                                                          |
 | End-to-end metadata contract                                  | `scripts/check-social-metadata.mjs`                                                                                                      |
@@ -137,16 +137,14 @@ measured from `updatedAt`, and as sold afterwards. A closed publication always s
 | `paused`, past the window   | Vendido    | Kept, not listed                           | `SoldOut`          |
 | `closed` or `sold`          | Vendido    | Kept, not listed                           | `SoldOut`          |
 
-Every car page is `noindex, nofollow` and the sitemap is empty until the final version of the site
-(see the catalog indexing hold below). The policy to restore at the indexing launch: active cars are
-indexable and in the sitemap; reserved and sold pages are `noindex, follow` and stay out of it.
+Active cars are indexable and in the sitemap. Reserved and sold pages are `noindex, follow` and stay
+out of it. Both follow the site-wide gate below, so with it off every car page is `noindex, nofollow`.
 
 Reserved and sold pages never imply availability: no contact-to-buy action or comparison. They keep
 the published price as a visible reference (so the Offer stays truthful), offer an email alert, and
 link to up to three similar available cars. Those links give the page enduring
-value, so it stays reachable rather than returning 404. Once indexing launches it must stay out of
-search results, because the seller often relists the same car under a new publication, which would
-otherwise compete with it.
+value, so it stays reachable rather than returning 404. It stays out of search results, because the
+seller often relists the same car under a new publication, which would otherwise compete with it.
 Their description states the status instead of inviting an availability query, and the share card
 omits a sold car's price because it is no longer current. Never redirect every removed vehicle to the
 homepage.
@@ -163,7 +161,7 @@ content or availability update, not the build time.
 ## Indexing gates and permanent-domain policy
 
 The site never ships demo or placeholder vehicles. Every environment shows the real Mercado Libre
-catalog (see «Catalog rendering»). Two separate gates keep it out of search results.
+catalog (see «Catalog rendering»). One gate keeps a deployment out of search results.
 
 **Site-wide gate.** The safe default is:
 
@@ -171,19 +169,22 @@ catalog (see «Catalog rendering»). Two separate gates keep it out of search re
 SITE_INDEXING_ENABLED=false
 ```
 
-With indexing disabled (local, preview and today's production deployments), every page emits
-`noindex, nofollow`, the sitemap is empty, and `robots.txt` omits the sitemap and host.
-`robots.txt` still allows page crawling so crawlers can read the `noindex` directive; blocking the
-entire site in `robots.txt` would prevent that.
+With indexing disabled (local and preview deployments), every page emits `noindex, nofollow`, the
+sitemap is empty, and `robots.txt` omits the sitemap and host. `robots.txt` still allows page crawling
+so crawlers can read the `noindex` directive; blocking the entire site in `robots.txt` would prevent
+that.
 
-**Catalog indexing hold.** Until the final version of the site, `/vehiculos` and every
-`/vehiculos/[slug]` page are `noindex, nofollow` and `app/sitemap.ts` returns no URLs, whatever
-`SITE_INDEXING_ENABLED` says. With `SITE_INDEXING_ENABLED=true` only the home page, `/vender`,
-`/privacidad` and `/terminos` become indexable, and `robots.txt` advertises the still-empty sitemap.
-Lifting the hold is a code change that belongs to the indexing launch: drop the forced robots in
-`app/vehiculos/page.tsx` and `app/vehiculos/[slug]/page.tsx` (keeping `noindex, follow` for reserved
-and sold cars), list the public pages and active cars from `listCatalogVehicles()` in
-`app/sitemap.ts` with `updatedAt` as `lastModified`, and update `scripts/check-social-metadata.mjs`.
+Production runs with it enabled, on the permanent domain:
+
+```bash
+NEXT_PUBLIC_SITE_URL=https://gonbagarage.com.ar
+SITE_INDEXING_ENABLED=true
+```
+
+The home page, `/vehiculos`, active cars, `/vender`, `/privacidad` and `/terminos` are then indexable
+and listed in the sitemap, which `app/sitemap.ts` builds per request from `listCatalogVehicles()`.
+A car's `lastModified` is its `updatedAt`; the home page and the catalog use the most recent one
+among the listed cars, and `/vender` has none, because no real date exists for it.
 
 **Review form.** `/opinar` is the link sent to customers after a sale or purchase. It is `noindex,
 nofollow` in every mode, stays out of the sitemap and is linked from nowhere on the site, but keeps
@@ -192,18 +193,12 @@ full share metadata so the link previews in WhatsApp.
 The social image route reads the same vehicle source as the detail page. The protected Vercel API
 uses `no-store` and `noindex`, requires server-side credentials and is excluded from the sitemap.
 
-Do not enable indexing merely because a custom domain has been connected. Follow the
-[custom-domain launch checklist](custom-domain-launch-checklist.md). Production indexing requires
-the final version of the site, working advertised forms, the permanent canonical domain, lifting the
-catalog indexing hold, and:
+`gonba-garage.vercel.app` redirects permanently to the matching path on the permanent domain
+(`next.config.ts`), except `/api` and `/_next`: the Mercado Libre callback and webhook and links in
+alert emails already sent still use it.
 
-```bash
-NEXT_PUBLIC_SITE_URL=https://<permanent-domain>
-SITE_INDEXING_ENABLED=true
-```
-
-Redeploy and verify the production HTML, `robots.txt`, and sitemap before submitting the sitemap to
-Search Console.
+After changing either variable, redeploy and verify the production HTML, `robots.txt`, and sitemap.
+The [custom-domain launch checklist](custom-domain-launch-checklist.md) records the launch.
 
 ## Checklist for adding or changing a route
 
@@ -240,8 +235,8 @@ npm run test:metadata -- http://localhost:3100
 
 Then rebuild and repeat the metadata test with `SITE_INDEXING_ENABLED=true` set for the build, the
 server and the test. Confirm that disabled indexing uses `noindex` everywhere and an empty sitemap,
-while enabled indexing makes the home page, `/vender` and the legal pages indexable and advertises the
-sitemap, and the catalog hold keeps the catalog, car pages and sitemap as they were.
+while enabled indexing makes the home page, the catalog, active cars, `/vender` and the legal pages
+indexable, lists them in the sitemap and advertises it.
 
 Reserved and sold pages are listed nowhere, so the check covers them only when their slugs are passed
 in, comma-separated: `METADATA_UNLISTED_VEHICLES=<slug>,<slug> npm run test:metadata -- <origin>`.
@@ -304,9 +299,9 @@ unchanged.
 
 `/privacidad` (privacy policy under Ley 25.326) and `/terminos` (terms of use) are static public
 pages built with `createPageMetadata()`, the branded default card and the environment-wide indexing
-gate. They are indexable once indexing is enabled. When the sitemap is filled at the indexing launch,
-list them with `lastModified` taken from `LEGAL_PAGES` in `constants/legal.ts`, the same date each
-page shows. Change that date with every revision. The owner's name, CUIT and location live in the same file. Every footer links both
+gate. They are indexable once indexing is enabled. The sitemap lists them with `lastModified` taken
+from `LEGAL_PAGES` in `constants/legal.ts`, the same date each page shows. Change that date with
+every revision. The owner's name, CUIT and location live in the same file. Every footer links both
 pages, and both alert forms link the privacy policy next to the email field.
 
 The privacy policy describes what the code actually does. Update it in the same change whenever

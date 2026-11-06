@@ -14,9 +14,11 @@ NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
 NEXT_PUBLIC_POSTHOG_SESSION_REPLAY=false
 ```
 
-Analytics remains disabled when `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` is empty. Keep the token out of
-local development unless intentionally testing analytics, and avoid configuring it on disposable
-preview deployments so they do not pollute production data.
+Analytics remains disabled when `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` is empty. It also only starts on
+the hostname of `NEXT_PUBLIC_SITE_URL`, so the `gonba-garage.vercel.app` alias and deployment URLs
+never send events even when the token is set. Keep the token out of local development unless
+intentionally testing analytics; testing locally works because `.env.example` points the site URL at
+`localhost`.
 
 `instrumentation-client.ts` loads `posthog-js` only after the page's `load` event, once the browser
 is idle, so the SDK never competes with hydration. The first `$pageview` is sent then. Send events
@@ -32,8 +34,10 @@ price-alert and review forms are explicitly excluded from autocapture.
 
 No analytics event may include a name, email address, phone number, free-text notes, uploaded photo,
 or full search query. Vehicle slugs and catalog attributes are permitted. The catalog keeps its search
-text in the URL (`?q=`), so `instrumentation-client.ts` masks that parameter in every URL PostHog sends,
-along with ad click IDs such as `gclid`. `utm_*` parameters are kept.
+text in the URL (`?q=`), so `lib/analytics/privacy.ts` removes that parameter from every URL PostHog
+records (`$current_url`, `$referrer`, their session and initial copies), and `instrumentation-client.ts`
+masks it in heatmap URLs, along with ad click IDs such as `gclid`. `utm_*` parameters are kept. Any new
+URL parameter that can carry free text must be added there.
 
 The privacy policy at `/privacidad` describes this collection, including the anonymous cookie and
 optional session replay. Update it whenever events, replay settings or the analytics provider change.
@@ -88,21 +92,15 @@ owns those facts rather than from browser clicks.
 
 ## Google Search Console setup
 
-The application exposes `/sitemap.xml` and `/robots.txt`. `robots.txt` (and the sitemap, once it is
-filled at the indexing launch) uses `NEXT_PUBLIC_SITE_URL`, so replace the local value with the
-canonical production origin before launch. Until then,
-`SITE_INDEXING_ENABLED=false` keeps every page out of search results and serves an empty sitemap.
-The catalog, car pages and sitemap also stay out of search results until the final version of the
-site, even with indexing enabled.
+The application exposes `/sitemap.xml` and `/robots.txt`. Both use `NEXT_PUBLIC_SITE_URL`.
+`SITE_INDEXING_ENABLED=false` keeps a deployment out of search results and serves an empty sitemap;
+production runs with it enabled.
 
-After the final domain is connected:
+With the production domain connected:
 
-1. Lift the catalog indexing hold ([SEO guidelines](seo-and-social-metadata.md#indexing-gates-and-permanent-domain-policy))
-   and connect all production forms.
-2. Set `SITE_INDEXING_ENABLED=true` and redeploy.
-3. Add a Domain property in Google Search Console and verify it with the DNS record supplied by Google.
-4. Submit `https://<production-domain>/sitemap.xml`.
-5. Confirm that the homepage, inventory page, and several vehicle detail pages are indexed.
+1. Add a Domain property in Google Search Console and verify it with the DNS record supplied by Google.
+2. Submit `https://<production-domain>/sitemap.xml`.
+3. Confirm that the homepage, inventory page, and several vehicle detail pages are indexed.
 
 The complete Vercel, DNS, callback, SEO, analytics, and public-link migration sequence is in the
 [custom-domain launch checklist](custom-domain-launch-checklist.md).
