@@ -125,11 +125,10 @@ export default async function VehicleDetailPage({ params }: VehicleDetailPagePro
   const titleEyebrow =
     [bodyType, vehicle.fuel].filter(fact => fact && fact !== 'Sin especificar').join(' · ') || vehicle.make;
   const formattedPrice = formatVehiclePrice(vehicle.price, vehicle.currency);
-  // The seller has several cars of the same model, so every message names the exact publication.
+  // The seller has several cars of the same model, so every message identifies the exact publication.
   const vehicleReference = [vehicle.make, vehicle.model, vehicle.version, vehicle.year].filter(Boolean).join(' ');
-  const vehicleContactHref = getWhatsAppUrl(
-    `Hola, quiero consultar por el ${vehicleReference}, publicado a ${formattedPrice}. ${vehicleUrl}`,
-  );
+  // The link and its preview already carry the car's details.
+  const vehicleContactHref = getWhatsAppUrl(`Hola, quiero consultar por este vehículo. ${vehicleUrl}`);
   // Alerts are offered only where their emails can be sent (production, not previews).
   const alertsEnabled = alertEmailsConfigured();
 
