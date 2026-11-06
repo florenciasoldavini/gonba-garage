@@ -30,6 +30,18 @@ const nextConfig: NextConfig = {
     '/og/vehiculos/*': ['./public/*.{jpg,jpeg}', './public/brand/gonba-garage-logo-mark.png', './app/fonts/*.woff'],
     '/apple-icon': ['./public/brand/gonba-garage-apple-icon.png'],
   },
+  async redirects() {
+    return [
+      {
+        // The Vercel hostname stays reachable for /api: the Mercado Libre callback and webhook and links
+        // in alert emails already sent use it. /_next stays too, for pages already open there.
+        source: '/:path((?!api(?:/|$)|_next(?:/|$)).*)',
+        has: [{ type: 'host', value: 'gonba-garage.vercel.app' }],
+        destination: 'https://gonbagarage.com.ar/:path',
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

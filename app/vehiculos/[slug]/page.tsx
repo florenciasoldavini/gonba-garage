@@ -32,6 +32,7 @@ import { ApproximateUsdPrice } from '../_components/approximate-usd-price';
 import { InventoryAlert, type InventoryAlertCriteria } from '../_components/inventory-alert';
 import { createPageMetadata } from '@/lib/metadata';
 import { getMepQuote } from '@/lib/integrations/mep-quote';
+import { isSiteIndexingEnabled } from '@/lib/site-indexing';
 import { getSiteUrl } from '@/lib/site-url';
 import { ORGANIZATION_SCHEMA_ID } from '@/lib/structured-data';
 import type { AnalyticsEvent } from '@/lib/analytics/client';
@@ -82,9 +83,11 @@ export async function generateMetadata({ params }: VehicleDetailPageProps): Prom
     imageAlt: `${vehicle.make} ${vehicle.model} ${vehicle.version}, ${vehicle.year}`,
   });
 
-  // Car pages stay out of search results until the final version of the site, whatever
-  // SITE_INDEXING_ENABLED says (docs/seo-and-social-metadata.md).
-  return { ...metadata, robots: { index: false, follow: false } };
+  if (status.isAvailable) return metadata;
+
+  // The seller often relists a car under a new publication, which this page must not compete with.
+  // Its links to similar cars stay followable once the site is indexable.
+  return { ...metadata, robots: { index: false, follow: isSiteIndexingEnabled() } };
 }
 
 export default async function VehicleDetailPage({ params }: VehicleDetailPageProps) {

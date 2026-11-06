@@ -102,17 +102,16 @@ const unlistedVehiclePaths = (process.env.METADATA_UNLISTED_VEHICLES ?? '')
   .filter(Boolean)
   .map(slug => `/vehiculos/${slug}`);
 
-// The catalog and car pages stay noindex until the final version of the site, even with
-// SITE_INDEXING_ENABLED=true. Car titles are checked against the page's own structured data.
+// Car titles are checked against the page's own structured data.
 const routes = [
   { path: '/', title: "Gonba's Garage | Autos usados seleccionados", indexable: true },
-  { path: '/vehiculos', title: "Vehículos disponibles | Gonba's Garage", indexable: false },
+  { path: '/vehiculos', title: "Vehículos disponibles | Gonba's Garage", indexable: true },
   { path: '/vender', title: "Vendé tu auto | Gonba's Garage", indexable: true },
   // Reached only through the link sent to customers, so it never becomes indexable.
   { path: '/opinar', title: "Contanos tu experiencia | Gonba's Garage", indexable: false },
   { path: '/privacidad', title: "Política de privacidad | Gonba's Garage", indexable: true },
   { path: '/terminos', title: "Términos y condiciones | Gonba's Garage", indexable: true },
-  ...listedVehiclePaths.slice(0, 3).map(path => ({ path, title: null, indexable: false })),
+  ...listedVehiclePaths.slice(0, 3).map(path => ({ path, title: null, indexable: true })),
 ];
 
 function decodeHtml(value) {
@@ -334,10 +333,10 @@ for (const route of routes) {
     assert.match(metadata.robots || '', /index/, `${route.path} should be indexable`);
     assert.doesNotMatch(metadata.robots || '', /noindex/, `${route.path} should not emit noindex`);
   } else {
-    const reason = indexingEnabled ? 'until the final version of the site' : 'while indexing is disabled';
+    const reason = indexingEnabled ? 'in every mode' : 'while indexing is disabled';
     assert.match(metadata.robots || '', /noindex/, `${route.path} should emit noindex ${reason}`);
     assert.match(metadata.robots || '', /nofollow/, `${route.path} should emit nofollow ${reason}`);
-    // The catalog and car pages replace the site robots, so they carry no googlebot tag of their own.
+    // A page that replaces the site robots, like /opinar, carries no googlebot tag of its own.
     if (route.indexable || metadata.googleBot) {
       assert.match(metadata.googleBot || '', /noindex/, `${route.path} should give Googlebot noindex`);
     }
@@ -438,11 +437,26 @@ const appleIconBytes = Buffer.from(await appleIconResponse.arrayBuffer());
 assert.equal(appleIconBytes.readUInt32BE(16), 180, 'Apple touch icon should be 180px wide');
 assert.equal(appleIconBytes.readUInt32BE(20), 180, 'Apple touch icon should be 180px tall');
 
-// The sitemap stays empty until the final version of the site, even with indexing enabled.
-assert.doesNotMatch(sitemapText, /<url>/, 'The sitemap should stay empty');
 if (indexingEnabled) {
   assert.match(robotsText, /Sitemap:/, 'Indexable mode should advertise the sitemap');
+  const sitemapEntries = new Map(
+    [...sitemapText.matchAll(/<url>([\s\S]*?)<\/url>/g)].map(([, entry]) => [
+      new URL(entry.match(/<loc>([^<]+)<\/loc>/)[1]).pathname,
+      entry.match(/<lastmod>([^<]+)<\/lastmod>/)?.[1],
+    ]),
+  );
+  const sitemapPaths = [...routes.filter(route => route.indexable).map(route => route.path), ...listedVehiclePaths];
+  for (const path of sitemapPaths) {
+    assert.ok(sitemapEntries.has(path), `The sitemap should list ${path}`);
+  }
+  assert.equal(sitemapEntries.size, new Set(sitemapPaths).size, 'The sitemap should list nothing else');
+  // Freshness is a real change in the car, never the time of the request.
+  for (const path of listedVehiclePaths) {
+    const lastModified = Date.parse(sitemapEntries.get(path));
+    assert.ok(lastModified < Date.now() - 60_000, `${path} should have a real last modification date`);
+  }
 } else {
+  assert.doesNotMatch(sitemapText, /<url>/, 'The sitemap should stay empty while indexing is disabled');
   assert.doesNotMatch(robotsText, /Sitemap:/, 'Disabled indexing should not advertise the sitemap');
 }
 
@@ -568,7 +582,11 @@ for (const path of unlistedVehiclePaths) {
   assert.equal(metadata.twitter.description, metadata.description);
   assert.equal(new URL(metadata.canonical).pathname, fixture.path, `${fixture.path} keeps its canonical`);
   assert.match(metadata.robots || '', /noindex/, `${fixture.path} stays out of search results`);
-  assert.match(metadata.robots || '', /nofollow/, `${fixture.path} stays nofollow until the final version of the site`);
+  if (indexingEnabled) {
+    assert.doesNotMatch(metadata.robots || '', /nofollow/, `${fixture.path} lets crawlers follow its similar cars`);
+  } else {
+    assert.match(metadata.robots || '', /nofollow/, `${fixture.path} stays nofollow while indexing is disabled`);
+  }
   assert.doesNotMatch(
     html,
     /Consultar por este auto|comparar=|Ver publicación en Mercado Libre/,

@@ -15,19 +15,14 @@ import { InventoryCatalog } from './_components/inventory-catalog';
 import { InventoryCatalogFromSearchParams } from './_components/inventory-catalog-from-search-params';
 import './page.css';
 
-// The catalog stays out of search results until the final version of the site, whatever
-// SITE_INDEXING_ENABLED says (docs/seo-and-social-metadata.md).
-export const metadata: Metadata = {
-  ...createPageMetadata({
-    title: "Vehículos disponibles | Gonba's Garage",
-    description:
-      "Explorá el inventario de autos usados seleccionados de Gonba's Garage. Filtrá por marca, transmisión, tipo y precio.",
-    path: '/vehiculos',
-    image: '/social/vehiculos.jpg',
-    imageAlt: "Autos usados exhibidos en el showroom de Gonba's Garage",
-  }),
-  robots: { index: false, follow: false },
-};
+export const metadata: Metadata = createPageMetadata({
+  title: "Vehículos disponibles | Gonba's Garage",
+  description:
+    "Explorá el inventario de autos usados seleccionados de Gonba's Garage. Filtrá por marca, transmisión, tipo y precio.",
+  path: '/vehiculos',
+  image: '/social/vehiculos.jpg',
+  imageAlt: "Autos usados exhibidos en el showroom de Gonba's Garage",
+});
 
 export default async function VehiclesPage() {
   // Rendered per request, outside the failure handler, so a failed read is never stored as the

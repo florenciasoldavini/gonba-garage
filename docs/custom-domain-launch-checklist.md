@@ -4,12 +4,11 @@ Use this checklist when Gonba's Garage receives its final production domain. Rep
 `https://<custom-domain>` below with the chosen canonical origin, including `www` if that is the
 preferred public hostname.
 
-> **Indexing release gate:** the site intentionally defaults to `SITE_INDEXING_ENABLED=false`, and
-> the catalog, car pages and sitemap stay out of search results until the final version of the site
-> even when it is `true`. Connecting the permanent URL is not enough by itself. Lift the catalog
-> indexing hold in code ([SEO guidelines](seo-and-social-metadata.md#indexing-gates-and-permanent-domain-policy)),
-> set the final `NEXT_PUBLIC_SITE_URL`, change `SITE_INDEXING_ENABLED=true` in Production, then
-> redeploy and verify both values before submitting the sitemap.
+> **Indexing release gate:** the site defaults to `SITE_INDEXING_ENABLED=false`. Production turned it
+> on when the final version launched, on 2026-11-06
+> ([SEO guidelines](seo-and-social-metadata.md#indexing-gates-and-permanent-domain-policy)). If the
+> domain ever changes again, set the new `NEXT_PUBLIC_SITE_URL`, redeploy and verify it before
+> submitting the sitemap.
 
 ## Current setup
 
@@ -17,9 +16,9 @@ preferred public hostname.
   redirects permanently to it, and production pages already use it as their canonical URL.
 - Hosting: Vercel
 - Canonical URL source: `NEXT_PUBLIC_SITE_URL`
-- Temporary hostname: `https://gonba-garage.vercel.app` still serves the site without a redirect
-  and is still the fallback in `lib/site-url.ts`.
-- Indexing: still off (`robots.txt` advertises no sitemap), as intended until the final launch.
+- Temporary hostname: `https://gonba-garage.vercel.app` redirects permanently to the matching path
+  on the custom domain, except `/api` and `/_next`, which still answer there.
+- Indexing: on in Production since 2026-11-06.
 - Search Console: temporary URL-prefix property for the Vercel URL; not yet reviewed for the new
   domain.
 - Analytics: the existing PostHog project named **Gonba's Garage**
@@ -43,9 +42,9 @@ it, but either direction is supported. Use one convention consistently.
 - [ ] If nameservers are moved to Vercel, copy every existing email and verification record first,
       including MX, SPF, DKIM, DMARC, and third-party TXT records.
 - [ ] Wait for Vercel to report a valid configuration and provision the TLS certificate.
-- [ ] Decide how the temporary `gonba-garage.vercel.app` hostname should behave. Prefer a permanent
-      redirect to the matching path on the custom domain. If Vercel cannot redirect that generated
-      hostname, keep it out of public links and rely on the custom-domain canonicals.
+- [x] Decide how the temporary `gonba-garage.vercel.app` hostname should behave. It redirects
+      permanently to the matching path on the custom domain (`next.config.ts`), except `/api` and
+      `/_next`. The Mercado Libre callback and webhook must move before `/api` can redirect too.
 
 Reference: [Vercel custom-domain setup](https://vercel.com/docs/domains/set-up-custom-domain) and
 [Vercel domain redirects](https://vercel.com/docs/domains/working-with-domains/deploying-and-redirecting).
@@ -53,15 +52,15 @@ Reference: [Vercel custom-domain setup](https://vercel.com/docs/domains/set-up-c
 ## 2. Update the repository and Vercel environment
 
 - [ ] Set `NEXT_PUBLIC_SITE_URL=https://<custom-domain>` in the Vercel **Production** environment.
-- [ ] Lift the catalog indexing hold in code so `/vehiculos`, active car pages and the sitemap can be
+- [x] Lift the catalog indexing hold in code so `/vehiculos`, active car pages and the sitemap can be
       indexed ([SEO guidelines](seo-and-social-metadata.md#indexing-gates-and-permanent-domain-policy)).
-- [ ] Set `SITE_INDEXING_ENABLED=true` in **Production** only after the final site, forms, domain,
+- [x] Set `SITE_INDEXING_ENABLED=true` in **Production** only after the final site, forms, domain,
       and business details are ready to be indexed. Keep it `false` locally and on previews.
 - [ ] Set the same value for **Preview** only if previews should deliberately publish canonical and
       share URLs pointing to production. Otherwise, keep previews protected from indexing.
 - [ ] Redeploy after changing the variable; existing deployments do not receive a new value
       retroactively.
-- [ ] Replace the fallback `https://gonba-garage.vercel.app` in `lib/site-url.ts` with the final
+- [x] Replace the fallback `https://gonba-garage.vercel.app` in `lib/site-url.ts` with the final
       canonical origin.
 - [ ] Keep `.env.example` generic. For local development, use
       `NEXT_PUBLIC_SITE_URL=http://localhost:3000` unless testing production URLs intentionally.
