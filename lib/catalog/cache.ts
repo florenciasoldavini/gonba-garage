@@ -6,7 +6,7 @@ import { findCatalogPublication, listActiveCatalogVehicles } from './store';
  * Page reads of the catalog copy, cached across requests and instances (on Vercel, the Runtime
  * Cache). The copy changes only when the sync worker writes it, so the worker expires the entries
  * of a publication right after a write that changed what pages show (expireCatalogPublication).
- * A failed read throws and is never stored.
+ * A failed read is tried once more, then throws and is never stored.
  */
 
 /** Every cached catalog read, to purge them all at once (`vercel cache invalidate --tag catalog`). */
@@ -28,15 +28,27 @@ const deployment = process.env.VERCEL_DEPLOYMENT_ID ?? '';
  */
 const BACKSTOP_SECONDS = 24 * 60 * 60;
 
+const RETRY_DELAY_MS = 200;
+
+/** A dropped database connection is usually gone a moment later, so it never reaches the visitor. */
+export async function retryOnce<T>(read: () => Promise<T>) {
+  try {
+    return await read();
+  } catch {
+    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+    return read();
+  }
+}
+
 export const readActiveCatalogVehicles = unstable_cache(
-  () => listActiveCatalogVehicles(),
+  () => retryOnce(listActiveCatalogVehicles),
   ['catalog-active-vehicles', deployment],
   { tags: [CATALOG_TAG, ACTIVE_VEHICLES_TAG], revalidate: BACKSTOP_SECONDS },
 );
 
 /** A missing publication is cached too (null): storing it later expires the entry. */
 export function readCatalogPublication(id: string) {
-  return unstable_cache(() => findCatalogPublication(id), ['catalog-publication', deployment, id], {
+  return unstable_cache(() => retryOnce(() => findCatalogPublication(id)), ['catalog-publication', deployment, id], {
     tags: [CATALOG_TAG, publicationTag(id)],
     revalidate: BACKSTOP_SECONDS,
   })();

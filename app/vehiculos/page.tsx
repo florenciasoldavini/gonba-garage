@@ -10,7 +10,6 @@ import { listCatalogVehicles } from '@/lib/integrations/mercado-libre/catalog';
 import { createPageMetadata } from '@/lib/metadata';
 import { getMepQuote } from '@/lib/integrations/mep-quote';
 import { CatalogHeroCount, CatalogResultCountProvider } from './_components/catalog-result-count';
-import { CatalogUnavailable } from './_components/catalog-unavailable';
 import { InventoryCatalog } from './_components/inventory-catalog';
 import { InventoryCatalogFromSearchParams } from './_components/inventory-catalog-from-search-params';
 import './page.css';
@@ -25,16 +24,11 @@ export const metadata: Metadata = createPageMetadata({
 });
 
 export default async function VehiclesPage() {
-  // Rendered per request, outside the failure handler, so a failed read is never stored as the
-  // page. The vehicles come from the catalog cache, which the sync worker expires.
+  // Rendered per request, so a failed read is never stored as the page: it reaches error.tsx as a
+  // 500. The vehicles come from the catalog cache, which the sync worker expires.
   await connection();
-  let vehicles;
   const quotePromise = getMepQuote();
-  try {
-    vehicles = await listCatalogVehicles();
-  } catch {
-    return <CatalogUnavailable title="No pudimos cargar el catálogo." />;
-  }
+  const vehicles = await listCatalogVehicles();
   const quote = await quotePromise;
   const alertsEnabled = alertEmailsConfigured();
   return (
