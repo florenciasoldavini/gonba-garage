@@ -26,7 +26,8 @@ function storage() {
         typeof record.encryptedRefreshToken !== 'string' ||
         (record.refreshStartedAt !== null && !Number.isFinite(record.refreshStartedAt)) ||
         (record.encryptedAccessToken !== undefined && typeof record.encryptedAccessToken !== 'string') ||
-        (record.accessTokenExpiresAt !== undefined && !Number.isFinite(record.accessTokenExpiresAt))
+        (record.accessTokenExpiresAt !== undefined && !Number.isFinite(record.accessTokenExpiresAt)) ||
+        (record.refreshRetryAfter !== undefined && !Number.isFinite(record.refreshRetryAfter))
       ) {
         throw new Error('Invalid credential record');
       }
@@ -56,21 +57,40 @@ export async function readConnectionDiagnostics() {
     .catch(error => {
       throw safeFailure(error, 'credential_read');
     });
-  if (!existing) return { state: 'not_connected', lastFailure: null };
-  const { refreshStartedAt, lastFailure } = existing.record;
+  if (!existing) return { state: 'not_connected' as const, lastFailure: null };
+  const { refreshStartedAt, refreshRetryAfter } = existing.record;
   const lockAgeSeconds =
     refreshStartedAt === null ? null : Math.max(0, Math.floor((Date.now() - refreshStartedAt) / 1000));
+  const incidentId =
+    typeof existing.record.refreshIncidentId === 'string' && /^[a-f0-9-]{36}$/.test(existing.record.refreshIncidentId)
+      ? existing.record.refreshIncidentId
+      : null;
+  const lastFailure = readSafeIncident(existing.record.lastFailure);
+  // A renewal that recorded its failure while holding the lock stays locked: no need to wait two minutes.
+  const failedRenewal = lockAgeSeconds !== null && !!incidentId && lastFailure?.incidentId === incidentId;
+  const retryAfter =
+    lockAgeSeconds === null && typeof refreshRetryAfter === 'number' && refreshRetryAfter > Date.now()
+      ? refreshRetryAfter
+      : null;
+  const state =
+    lockAgeSeconds === null
+      ? retryAfter
+        ? ('retrying' as const)
+        : ('connected' as const)
+      : lockAgeSeconds < 120 && !failedRenewal
+        ? ('renewing' as const)
+        : ('reauthorization_required' as const);
   return {
-    state: lockAgeSeconds === null ? 'connected' : lockAgeSeconds < 120 ? 'renewing' : 'reauthorization_required',
+    state,
+    reauthorizationRequired: state === 'reauthorization_required',
+    // A failed renewal that did not consume the token: the next one is tried after this time.
+    retryAfter: retryAfter === null ? null : new Date(retryAfter).toISOString(),
     // An unlocked record is present, but this read-only check does not prove provider acceptance.
     providerVerified: false,
     refreshStartedAt: refreshStartedAt === null ? null : new Date(refreshStartedAt).toISOString(),
     lockAgeSeconds,
-    incidentId:
-      typeof existing.record.refreshIncidentId === 'string' && /^[a-f0-9-]{36}$/.test(existing.record.refreshIncidentId)
-        ? existing.record.refreshIncidentId
-        : null,
-    lastFailure: readSafeIncident(lastFailure),
+    incidentId,
+    lastFailure,
   };
 }
 

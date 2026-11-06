@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { cronAuthorized, alertEmailsConfigured, privateHeaders } from '@/lib/alerts/config';
 import { isDatabaseConfigured } from '@/lib/database';
 import { runInventoryAlertWorkSafely } from '@/lib/alerts/inventory-delivery';
+import { checkIntegrationHealthSafely, reportSyncCompleted } from '@/lib/integrations/mercado-libre/health-alerts';
 import { reconcileCatalog, runCatalogSyncWork } from '@/lib/integrations/mercado-libre/inventory-sync';
 import { reportIntegrationFailure } from '@/lib/integrations/mercado-libre/failures';
 
@@ -9,8 +10,9 @@ export const runtime = 'nodejs';
 export const maxDuration = 300;
 
 /**
- * Scheduled reconciliation: queues missed or stale items, then drains the queue. Cars it finds
- * newly available are matched against search alerts right away, with the time left.
+ * Scheduled reconciliation: queues missed or stale items, then drains the queue. Then, whatever the
+ * outcome, the owner is emailed if the integration needs attention. Cars it finds newly available
+ * are matched against search alerts right away, with the time left.
  */
 export async function GET(request: Request) {
   if (!cronAuthorized(request)) return NextResponse.json({ ok: false }, { status: 401, headers: privateHeaders });
@@ -19,10 +21,13 @@ export async function GET(request: Request) {
   try {
     const reconciliation = await reconcileCatalog();
     const processed = await runCatalogSyncWork();
+    await checkIntegrationHealthSafely();
+    await reportSyncCompleted();
     if (alertEmailsConfigured()) await runInventoryAlertWorkSafely({ budgetMs: deadline - Date.now() });
     return NextResponse.json({ ok: true, reconciliation, processed }, { headers: privateHeaders });
   } catch (error) {
     const incident = reportIntegrationFailure(error, 'catalog_sync');
+    await checkIntegrationHealthSafely();
     return NextResponse.json({ ok: false, incidentId: incident.incidentId }, { status: 503, headers: privateHeaders });
   }
 }

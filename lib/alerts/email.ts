@@ -133,6 +133,58 @@ export function buildReviewNotificationEmail(input: ReviewNotificationEmail) {
   return { from: alertEmailEnv.from() ?? '', to: [input.to], subject, html, text, attachments: [logoAttachment] };
 }
 
+export type IntegrationAlertSection = {
+  title: string;
+  status: string;
+  lines: string[];
+  action?: { label: string; url: string };
+};
+export type IntegrationAlertEmail = {
+  to: string[];
+  subject: string;
+  intro: string;
+  sections: IntegrationAlertSection[];
+};
+
+/**
+ * Mercado Libre integration health, for the site owner only. Every line is built from fixed text,
+ * counts, dates and allowlisted failure codes (lib/integrations/mercado-libre/health-alerts.ts).
+ */
+export function buildIntegrationAlertEmail(input: IntegrationAlertEmail) {
+  const text = [
+    "GONBA'S GARAGE",
+    input.subject,
+    input.intro,
+    ...input.sections.map(section =>
+      [
+        `${section.status}: ${section.title}`,
+        ...section.lines,
+        ...(section.action ? [`${section.action.label}: ${section.action.url}`] : []),
+      ].join('\n'),
+    ),
+  ].join('\n\n');
+  const card = (section: IntegrationAlertSection) =>
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:0 0 16px;border:1px solid #dfe3d6;border-radius:8px"><tr><td style="padding:20px">' +
+    `<p style="margin:0 0 8px;font-size:12px;font-weight:bold;letter-spacing:1px;text-transform:uppercase;color:#4a5145">${escape(section.status)}</p>` +
+    `<p style="margin:0 0 12px;font-size:19px;font-weight:bold;line-height:1.3">${escape(section.title)}</p>` +
+    section.lines.map(line => `<p style="margin:0 0 8px;font-size:15px;line-height:1.6">${escape(line)}</p>`).join('') +
+    (section.action ? button(section.action.url, escape(section.action.label)) : '') +
+    '</td></tr></table>';
+  const html = shell(
+    input.subject,
+    `<h1 style="margin:0 0 20px;font-size:26px;line-height:1.25">${escape(input.subject)}</h1>` +
+      `<p style="font-size:16px;line-height:1.7;margin:0 0 24px">${escape(input.intro)}</p>${input.sections.map(card).join('')}`,
+  );
+  return {
+    from: alertEmailEnv.from() ?? '',
+    to: input.to,
+    subject: input.subject,
+    html,
+    text,
+    attachments: [logoAttachment],
+  };
+}
+
 export type SearchMatchVehicle = {
   slug: string;
   title: string;

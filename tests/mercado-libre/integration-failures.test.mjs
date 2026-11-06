@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createServer } from 'node:net';
 import { describe, it, vi } from 'vitest';
 import {
   providerFailure,
@@ -55,6 +56,48 @@ describe('safe failure reports', () => {
     assert.equal(JSON.stringify(upstream.incident).includes(secret), false);
     const arbitrary = await providerFailure(Response.json({ error: secret }, { status: 500 }), 'catalog_query');
     assert.equal(arbitrary.incident.providerCode, undefined);
+  });
+
+  // Only errors of the connection phase prove that a request was never sent.
+  describe('requests that never left', () => {
+    const failed = code => Object.assign(new Error(secret), { code });
+    const fetchFailed = cause => new TypeError('fetch failed', { cause });
+    const code = error => safeFailure(error, 'token_refresh').incident.code;
+
+    it.each(['ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'EHOSTUNREACH', 'ENETUNREACH', 'UND_ERR_CONNECT_TIMEOUT'])(
+      'recognizes %s',
+      name => assert.equal(code(fetchFailed(failed(name))), 'connection_failed'),
+    );
+    it.each(['ECONNRESET', 'EPIPE', 'UND_ERR_SOCKET', 'ETIMEDOUT', ''])('treats "%s" as possibly sent', name =>
+      assert.equal(code(fetchFailed(failed(name))), 'network_error'),
+    );
+    it('needs every address of a host to have failed', () => {
+      assert.equal(
+        code(fetchFailed(new AggregateError([failed('ECONNREFUSED'), failed('ENETUNREACH')]))),
+        'connection_failed',
+      );
+      assert.equal(
+        code(fetchFailed(new AggregateError([failed('ECONNREFUSED'), failed('ECONNRESET')]))),
+        'network_error',
+      );
+    });
+    it('recognizes real errors from Node fetch, and persists them', async () => {
+      const closedPort = await new Promise(resolve => {
+        const server = createServer().listen(0, '127.0.0.1', () => {
+          const { port } = server.address();
+          server.close(() => resolve(port));
+        });
+      });
+      for (const url of [`http://127.0.0.1:${closedPort}/oauth/token`, 'https://gonba-garage.invalid/oauth/token']) {
+        const error = await fetch(url, { method: 'POST', signal: AbortSignal.timeout(10_000) }).then(
+          () => assert.fail(url),
+          thrown => thrown,
+        );
+        const { incident } = safeFailure(error, 'token_refresh');
+        assert.equal(incident.code, 'connection_failed', url);
+        assert.equal(readSafeIncident(incident).code, 'connection_failed', 'The code survives being stored');
+      }
+    });
   });
 
   it('classifies timeouts, network errors and storage statuses', () => {
@@ -170,7 +213,12 @@ describe('renewal diagnostics', () => {
     record.accessTokenExpiresAt = Date.now() + 60_000;
     blob.record = record;
     const connection = await readConnectionDiagnostics();
-    assert.ok(['renewing', 'reauthorization_required'].includes(connection.state));
+    assert.equal(
+      connection.state,
+      'reauthorization_required',
+      'A renewal that recorded its failure needs reauthorization',
+    );
+    assert.equal(connection.reauthorizationRequired, true);
     assert.equal(connection.lastFailure.stage, 'credential_save');
     assert.equal(connection.providerVerified, false);
     assert.equal(JSON.stringify(connection).includes('cipher:'), false);
@@ -180,5 +228,25 @@ describe('renewal diagnostics', () => {
       false,
       'Diagnostics never expose the shared access token',
     );
+  });
+
+  it('tells a renewal in progress, an interrupted one and a released one apart', async () => {
+    vi.stubEnv('MERCADO_LIBRE_SELLER_ID', '123');
+    const base = { version: 1, encryptedRefreshToken: 'cipher:token' };
+    blob.record = {
+      ...base,
+      refreshStartedAt: Date.now() - 1_000,
+      refreshIncidentId: '00000000-0000-4000-8000-000000000009',
+    };
+    assert.equal((await readConnectionDiagnostics()).state, 'renewing');
+    blob.record = { ...blob.record, refreshStartedAt: Date.now() - 121_000 };
+    assert.equal((await readConnectionDiagnostics()).state, 'reauthorization_required', 'Interrupted stays locked');
+    blob.record = { ...base, refreshStartedAt: null, refreshRetryAfter: Date.now() + 60_000 };
+    const retrying = await readConnectionDiagnostics();
+    assert.equal(retrying.state, 'retrying');
+    assert.equal(retrying.reauthorizationRequired, false);
+    assert.ok(Date.parse(retrying.retryAfter) > Date.now());
+    blob.record = { ...blob.record, refreshRetryAfter: Date.now() - 1 };
+    assert.equal((await readConnectionDiagnostics()).state, 'connected');
   });
 });

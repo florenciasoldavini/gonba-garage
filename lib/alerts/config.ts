@@ -1,6 +1,7 @@
 import 'server-only';
 import { timingSafeEqual } from 'node:crypto';
-import { alertEmailEnv, cronEnv, databaseEnv } from '@/lib/env';
+import { emailPattern } from '@/lib/email-address';
+import { alertEmailEnv, cronEnv, databaseEnv, integrationAlertEnv } from '@/lib/env';
 
 export function alertOrigin() {
   const origin = alertEmailEnv.publicOrigin();
@@ -30,6 +31,16 @@ export function alertEmailsConfigured() {
   } catch {
     return false;
   }
+}
+
+/**
+ * The owner addresses that receive Mercado Libre integration health emails, or none when they
+ * cannot be sent: they also need the database, the Resend key and the sender. Independent of the
+ * customer alert configuration above.
+ */
+export function integrationAlertRecipients() {
+  if (!databaseEnv.url() || !alertEmailEnv.resendApiKey() || !alertEmailEnv.from()) return [];
+  return integrationAlertEnv.emails().filter(email => emailPattern.test(email));
 }
 
 export function cronAuthorized(request: Request) {
