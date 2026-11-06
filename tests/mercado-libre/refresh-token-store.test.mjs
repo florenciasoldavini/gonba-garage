@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { describe, it } from 'vitest';
+import { describe, it, vi } from 'vitest';
+import { failure, IntegrationFailure, providerFailure } from '@/lib/integrations/mercado-libre/failures';
 import { createRefreshTokenStore } from '@/lib/integrations/mercado-libre/refresh-token-store';
 
 // Each step continues from the stored record the previous one left, like the instances of a
@@ -157,5 +158,130 @@ describe('refresh-token store', () => {
       }),
     );
     assert.equal(value.encryptedRefreshToken, 'encrypted:reauthorized');
+  });
+
+  // A renewal that provably did not consume the token releases its lock: the request never reached
+  // Mercado Libre, or Mercado Libre answered 429 or 5xx. Anything ambiguous or definite stays locked.
+  describe('released renewals', () => {
+    const reconnect = async token => {
+      value.refreshStartedAt = Date.now() - 121_000;
+      await store.authorize(token);
+    };
+    const logs = () => {
+      const entries = [];
+      const record = message => entries.push(JSON.parse(message));
+      vi.spyOn(console, 'error').mockImplementation(record);
+      vi.spyOn(console, 'warn').mockImplementation(record);
+      return name => entries.filter(entry => entry.event === name);
+    };
+    const reset = code => new TypeError('fetch failed', { cause: Object.assign(new Error('socket'), { code }) });
+
+    it.each([
+      ['a connection that was never made', () => reset('ECONNREFUSED'), 'connection_failed'],
+      ['a 429', () => providerFailure(Response.json({}, { status: 429 }), 'token_refresh'), 'http_error'],
+      ['a 503', () => providerFailure(new Response('down', { status: 503 }), 'token_refresh'), 'http_error'],
+    ])('unlocks the same token after %s', async (label, error, code) => {
+      const events = logs();
+      await reconnect('kept');
+      await assert.rejects(
+        store.accessToken(async () => {
+          throw await error();
+        }),
+        thrown => thrown.incident.code === code,
+      );
+      assert.equal(value.refreshStartedAt, null, 'The unconsumed token is unlocked');
+      assert.equal(value.encryptedRefreshToken, 'encrypted:kept', 'The same refresh token is kept');
+      assert.equal(value.lastFailure.code, code, 'The failure is recorded');
+      assert.ok(value.refreshRetryAfter > Date.now(), 'Renewals pause briefly');
+      assert.equal(events('mercado_libre_refresh_released').length, 1);
+    });
+
+    it('reports the failure during the pause, without calling Mercado Libre or writing', async () => {
+      const paused = revision;
+      await assert.rejects(
+        instance().accessToken(mustNotRun),
+        thrown => thrown instanceof IntegrationFailure && thrown.incident.incidentId === value.lastFailure.incidentId,
+      );
+      assert.equal(revision, paused);
+    });
+
+    it('renews the same token normally after the pause', async () => {
+      value.refreshRetryAfter = Date.now() - 1;
+      const renewed = await instance().accessToken(async (token, save) => {
+        assert.equal(token, 'kept', 'The released token is the one renewed');
+        const next = access('recovered');
+        await save('rotated-after-release', next);
+        return next;
+      });
+      assert.equal(renewed.value, 'recovered');
+      assert.equal(value.refreshRetryAfter, undefined);
+    });
+
+    it.each([
+      ['our own timeout', () => new DOMException('aborted', 'TimeoutError')],
+      ['a dropped connection', () => reset('ECONNRESET')],
+      [
+        'invalid_grant',
+        () => failure('token_refresh', 'http_error', { httpStatus: 400, providerCode: 'invalid_grant' }),
+      ],
+      ['an unreadable token response', () => failure('token_response', 'invalid_response')],
+      ['a 5xx on a later stage', () => failure('credential_save', 'http_error', { httpStatus: 503 })],
+    ])('keeps the lock after %s, and reports it', async (label, error) => {
+      const events = logs();
+      await reconnect('kept');
+      await assert.rejects(
+        store.accessToken(async () => {
+          throw error();
+        }),
+      );
+      assert.notEqual(value.refreshStartedAt, null);
+      assert.equal(value.refreshRetryAfter, undefined);
+      assert.equal(events('mercado_libre_reauthorization_required').length, 1);
+    });
+
+    it('keeps the lock when a token was saved before the failure', async () => {
+      await reconnect('kept');
+      await assert.rejects(
+        store.accessToken(async (_token, save) => {
+          await save('rotated', access('fresh'));
+          throw failure('token_refresh', 'http_error', { httpStatus: 503 });
+        }),
+      );
+      assert.equal(value.encryptedRefreshToken, 'encrypted:rotated', 'The saved rotation is never undone');
+      assert.equal(value.refreshRetryAfter, undefined);
+    });
+
+    it('repeats the event on every blocked request, without tokens', async () => {
+      await reconnect('kept');
+      await assert.rejects(
+        store.accessToken(async () => {
+          throw failure('token_response', 'invalid_response');
+        }),
+      );
+      const events = logs();
+      await assert.rejects(instance().accessToken(mustNotRun));
+      const [stuck] = events('mercado_libre_reauthorization_required');
+      assert.equal(stuck.lastFailure.stage, 'token_response');
+      assert.equal(typeof stuck.lockAgeSeconds, 'number');
+      assert.equal(JSON.stringify(stuck).includes('encrypted:'), false);
+    });
+
+    it('stays locked when unlocking itself fails', async () => {
+      logs();
+      await reconnect('kept');
+      const { write } = storage;
+      storage.write = async (next, etag) => {
+        if (next.refreshRetryAfter) throw new Error('Blob unavailable');
+        return write(next, etag);
+      };
+      await assert.rejects(
+        store.accessToken(async () => {
+          throw reset('ECONNREFUSED');
+        }),
+      );
+      storage.write = write;
+      assert.notEqual(value.refreshStartedAt, null);
+      assert.equal(value.lastFailure.code, 'connection_failed');
+    });
   });
 });

@@ -58,7 +58,7 @@ Route handlers (`robots.txt` disallows `/api/`; the private ones send `no-store`
 | `/api/mercado-libre/connect`                               | GET       | Catalog API key (Basic or Bearer) | Starts OAuth with PKCE                                                           |
 | `/api/mercado-libre/callback`                              | GET       | OAuth state and PKCE cookies      | Exchanges the code, checks the seller, stores the encrypted token                |
 | `/api/mercado-libre/webhook`                               | POST      | Seller and application ID check   | Queues the item for sync and price alerts                                        |
-| `/api/mercado-libre/sync`                                  | GET       | `CRON_SECRET`                     | Daily reconciliation, then drains the queue                                      |
+| `/api/mercado-libre/sync`                                  | GET       | `CRON_SECRET`                     | Daily reconciliation, then drains the queue and checks integration health        |
 | `/api/mercado-libre/catalog`                               | GET       | Catalog API key                   | Synced copy for local development servers                                        |
 | `/api/mercado-libre/diagnostics`                           | GET       | Catalog API key                   | Publication diagnostics; `?connection=1` credential state; `?sync=1` sync health |
 | `/api/price-alerts`                                        | POST      | Same-site JSON, rate limits       | Price alert signup                                                               |
@@ -67,7 +67,7 @@ Route handlers (`robots.txt` disallows `/api/`; the private ones send `no-store`
 | `/api/reviews/remove`                                      | GET, POST | Signed token                      | GET shows a form; POST deletes the review                                        |
 | `/api/alerts/confirm`                                      | GET, POST | Signed, expiring token            | GET shows a page that posts itself; POST confirms                                |
 | `/api/price-alerts/cancel`, `/api/inventory-alerts/cancel` | GET, POST | Signed token                      | GET shows a form; POST cancels (RFC 8058 one-click)                              |
-| `/api/alerts/daily`                                        | GET       | `CRON_SECRET`                     | Daily price review and pending alert email                                       |
+| `/api/alerts/daily`                                        | GET       | `CRON_SECRET`                     | Integration health check, daily price review and pending alert email             |
 | `/api/vehicle-catalog`                                     | GET       | Public, CDN-cached                | Arg Autos makes, models and versions for `/vender`                               |
 
 ## Mercado Libre sync
@@ -126,7 +126,9 @@ read makes the item due again; writes require the item's current job lease, so a
 expired cannot overwrite a newer read; failed reads back off exponentially up to an hour and are given
 up after eight attempts with the error kept for diagnostics; a single-row lease allows one
 reconciliation at a time. `GET /api/mercado-libre/diagnostics?sync=1` reports the last reconciliation,
-queue backlog (`jobs.deferred` counts jobs from unlisted addresses) and row counts.
+queue backlog (`jobs.deferred` counts jobs from unlisted addresses) and row counts. Both daily crons
+email the owner when the credential needs reauthorization or the sync is failing, stale or backed
+up (`INTEGRATION_ALERT_EMAIL`; see `docs/mercado-libre-connection-diagnostics.md`, "Owner notifications").
 
 Row validation: every query result is checked by a row parser (`lib/database-rows.ts`, with the
 table parsers in `lib/catalog/rows.ts` and `lib/alerts/rows.ts`) before it becomes a domain type.

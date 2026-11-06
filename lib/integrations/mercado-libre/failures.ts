@@ -18,6 +18,7 @@ const codes = [
   'operation_failed',
   'timeout',
   'network_error',
+  'connection_failed',
   'http_error',
   'invalid_response',
   'missing_configuration',
@@ -72,6 +73,31 @@ export function failure(
   });
 }
 
+/**
+ * Errors of the connection phase (DNS, refused or unreachable, Node's own connect timeout): the
+ * request was never sent. Anything later, including our own request timeout, is ambiguous.
+ */
+const unsentCodes = new Set([
+  'ENOTFOUND',
+  'EAI_AGAIN',
+  'ECONNREFUSED',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'UND_ERR_CONNECT_TIMEOUT',
+]);
+const errorCode = (value: unknown) => (value && typeof value === 'object' && 'code' in value ? String(value.code) : '');
+
+function neverSent(error: TypeError) {
+  const cause = error.cause;
+  if (unsentCodes.has(errorCode(cause))) return true;
+  // Trying several addresses of one host reports every attempt.
+  return (
+    cause instanceof AggregateError &&
+    cause.errors.length > 0 &&
+    cause.errors.every(attempt => unsentCodes.has(errorCode(attempt)))
+  );
+}
+
 /** Never copy raw messages, causes, request URLs, response bodies or headers into diagnostics. */
 export function safeFailure(error: unknown, stage: FailureStage, incidentId?: string): IntegrationFailure {
   if (error instanceof IntegrationFailure) {
@@ -90,7 +116,9 @@ export function safeFailure(error: unknown, stage: FailureStage, incidentId?: st
     name === 'AbortError' || name === 'TimeoutError'
       ? 'timeout'
       : error instanceof TypeError && isProviderRequest
-        ? 'network_error'
+        ? neverSent(error)
+          ? 'connection_failed'
+          : 'network_error'
         : 'operation_failed';
   const status =
     error && typeof error === 'object'

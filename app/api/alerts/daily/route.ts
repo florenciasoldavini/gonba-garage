@@ -2,12 +2,18 @@ import { NextResponse } from 'next/server';
 import { alertEmailsConfigured, cronAuthorized, privateHeaders } from '@/lib/alerts/config';
 import { runInventoryAlertWork } from '@/lib/alerts/inventory-delivery';
 import { enqueueDailyPriceReview, runPriceAlertWork } from '@/lib/alerts/price-delivery';
+import { checkIntegrationHealthSafely } from '@/lib/integrations/mercado-libre/health-alerts';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
-/** Daily price review, plus any search-alert matching and emails still due. Needs the alert email configuration. */
+/**
+ * Daily price review, plus any search-alert matching and emails still due. Needs the alert email
+ * configuration. First, a second daily look at the Mercado Libre integration, three hours after the
+ * sync cron, which also notices a sync run that never finished (it has its own configuration).
+ */
 export async function GET(request: Request) {
   if (!cronAuthorized(request)) return NextResponse.json({ ok: false }, { status: 401, headers: privateHeaders });
+  await checkIntegrationHealthSafely();
   if (!alertEmailsConfigured()) return NextResponse.json({ ok: true, enabled: false }, { headers: privateHeaders });
   // Side by side, each within its own time budget, so one failing does not hold back the other.
   const results = await Promise.allSettled([

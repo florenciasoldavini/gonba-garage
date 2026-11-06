@@ -87,6 +87,18 @@ export const reviewEnv = {
   notificationEmail: () => trimmed('REVIEWS_NOTIFICATION_EMAIL'),
 };
 
+/** Who is told when the Mercado Libre integration needs a person (lib/integrations/mercado-libre/health-alerts.ts). */
+export const integrationAlertEnv = {
+  /** Owner addresses, comma-separated. Empty when unset. */
+  emails: () =>
+    (process.env.INTEGRATION_ALERT_EMAIL ?? '')
+      .split(',')
+      .map(email => email.trim())
+      .filter(Boolean),
+  /** An external monitor's URL, called when the daily sync completes. It notices a cron that stops firing. */
+  heartbeatUrl: () => trimmed('INTEGRATION_HEARTBEAT_URL'),
+};
+
 /** The Vercel crons: daily alerts and the Mercado Libre catalog reconciliation. */
 export const cronEnv = {
   secret: () => longSecret(exact('CRON_SECRET')),
@@ -163,6 +175,15 @@ export function misconfiguredFeatures() {
         ALERTS_EMAIL_FROM: !!alertEmailEnv.from(),
         ALERTS_PUBLIC_URL: !!alertEmailEnv.publicOrigin(),
         ALERTS_SIGNING_SECRET: !!alertEmailEnv.signingSecret(),
+      },
+    },
+    {
+      feature: 'integration_alert',
+      trigger: ['INTEGRATION_ALERT_EMAIL'],
+      usable: {
+        DATABASE_URL: !!databaseEnv.url(),
+        RESEND_API_KEY: !!alertEmailEnv.resendApiKey(),
+        ALERTS_EMAIL_FROM: !!alertEmailEnv.from(),
       },
     },
     { feature: 'cron', trigger: ['CRON_SECRET'], usable: { CRON_SECRET: !!cronEnv.secret() } },

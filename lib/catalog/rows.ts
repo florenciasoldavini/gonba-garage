@@ -187,6 +187,7 @@ export function parseJobHealth(row: Row) {
     retrying: integer(row.retrying, 'retrying'),
     deferred: integer(row.deferred, 'deferred'),
     abandoned: integer(row.abandoned, 'abandoned'),
+    abandonedLastDay: integer(row.abandoned_last_day, 'abandoned_last_day'),
     oldestPendingAt: iso(row.oldest_pending_at, 'oldest_pending_at'),
   };
 }
@@ -197,5 +198,6 @@ export function parsePublicationHealth(row: Row) {
     status: oneOf(STATUSES, row.status, 'status'),
     count: integer(row.count, 'count'),
     lastSyncedAt: timestamp(row.last_synced_at, 'last_synced_at').toISOString(),
+    oldestSyncedAt: timestamp(row.oldest_synced_at, 'oldest_synced_at').toISOString(),
   };
 }

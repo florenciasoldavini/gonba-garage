@@ -322,9 +322,11 @@ export async function readSyncHealth() {
         count(*) FILTER (WHERE revision > processed_revision AND attempts > 0)::int AS retrying,
         count(*) FILTER (WHERE revision > processed_revision AND deferred)::int AS deferred,
         min(updated_at) FILTER (WHERE revision > processed_revision) AS oldest_pending_at,
-        count(*) FILTER (WHERE revision <= processed_revision AND last_error IS NOT NULL)::int AS abandoned
+        count(*) FILTER (WHERE revision <= processed_revision AND last_error IS NOT NULL)::int AS abandoned,
+        count(*) FILTER (WHERE revision <= processed_revision AND last_error IS NOT NULL
+          AND updated_at > now() - interval '1 day')::int AS abandoned_last_day
       FROM public.catalog_sync_jobs`,
-    sql`SELECT status, count(*)::int AS count, max(synced_at) AS last_synced_at
+    sql`SELECT status, count(*)::int AS count, max(synced_at) AS last_synced_at, min(synced_at) AS oldest_synced_at
       FROM public.catalog_publications GROUP BY status`,
   ]);
   const groups = publications.map(row => parseRow('catalog_publications', row, parsePublicationHealth));
@@ -336,5 +338,13 @@ export async function readSyncHealth() {
       (latest, group) => (!latest || group.lastSyncedAt > latest ? group.lastSyncedAt : latest),
       null,
     ),
+    // Active and paused rows are read again daily (closed and sold ones are not), so this shows how
+    // out of date the oldest page that still offers a car can be.
+    oldestOpenSyncedAt: groups
+      .filter(({ status }) => status === 'active' || status === 'paused')
+      .reduce<string | null>(
+        (oldest, group) => (!oldest || group.oldestSyncedAt < oldest ? group.oldestSyncedAt : oldest),
+        null,
+      ),
   };
 }
