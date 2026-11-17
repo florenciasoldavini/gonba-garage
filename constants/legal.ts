@@ -14,6 +14,6 @@ export const LEGAL_BUSINESS_HOURS_TEXT = new Intl.ListFormat('es').format(
 
 /** `updatedAt` is shown on each page and is its sitemap freshness: change it with every revision. */
 export const LEGAL_PAGES = {
-  privacy: { path: '/privacidad', updatedAt: '2026-11-05' },
+  privacy: { path: '/privacidad', updatedAt: '2026-11-17' },
   terms: { path: '/terminos', updatedAt: '2026-11-05' },
 } as const;
