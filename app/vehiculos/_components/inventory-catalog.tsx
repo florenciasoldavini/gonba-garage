@@ -246,7 +246,8 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
   usePublishCatalogResultCount(activeFilterCount > 0 ? filteredVehicles.length : null);
 
   useEffect(() => {
-    if (activeFilterCount === 0) return;
+    const isDefaultView = activeFilterCount === 0 && filters.sort === 'featured';
+    if (isDefaultView && lastAnalyticsPayloadRef.current === '') return;
 
     const { bodyType, fuel, make, maxMileage, maxPrice, minMileage, minPrice, query, sort, transmission } = filters;
     const properties = {
