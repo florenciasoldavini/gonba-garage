@@ -165,6 +165,23 @@ export function InventoryCatalog({ vehicles, quote, alertsEnabled, searchParams 
     return () => observer.disconnect();
   }, []);
 
+  // A filter changed from the sticky panel far down the page can shorten it below where the visitor was,
+  // and the browser then leaves them at the footer with the results out of sight. When the results begin
+  // above the viewport, bring their start back into view. On phones the filters sit in a sheet over the
+  // page, so this waits until it closes. The jump is instant: the height change also triggers the
+  // ScrollTrigger refresh above, which puts the scroll back where it was and would cancel a smooth scroll
+  // that had not started moving yet.
+  const shownVehicleKeyRef = useRef(filteredVehicleKey);
+  useEffect(() => {
+    const results = resultsRef.current;
+    if (isMobileFiltersOpen || !results || shownVehicleKeyRef.current === filteredVehicleKey) return;
+    shownVehicleKeyRef.current = filteredVehicleKey;
+
+    if (results.getBoundingClientRect().top < parseFloat(getComputedStyle(results).scrollMarginTop)) {
+      results.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }
+  }, [filteredVehicleKey, isMobileFiltersOpen]);
+
   useGSAP(
     () => {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
