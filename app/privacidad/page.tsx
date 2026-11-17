@@ -97,9 +97,10 @@ export default function PrivacyPage() {
           estadísticas con tu nombre, tu email ni tu teléfono.
         </p>
         <p>
-          Podemos activar grabaciones de sesión para detectar problemas de uso. En ese caso, lo que escribís en los
-          campos se oculta y los formularios de alertas, de tasación y de opiniones quedan excluidos de la grabación.
-          Podés borrar o bloquear las cookies y el almacenamiento local desde la configuración de tu navegador.
+          También grabamos las sesiones para detectar problemas de uso: cómo te movés por las páginas y dónde hacés
+          clic. Lo que escribís en los campos se oculta, y los formularios de alertas, de tasación y de opiniones, junto
+          con el mensaje de WhatsApp que arma la tasación, quedan excluidos de la grabación. Podés borrar o bloquear las
+          cookies y el almacenamiento local desde la configuración de tu navegador.
         </p>
       </section>
 

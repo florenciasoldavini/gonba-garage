@@ -17,8 +17,9 @@ export function ValuationSuccess({ whatsAppUrl, onReset }: ValuationSuccessProps
   const root = useRef<HTMLElement>(null);
   useStatusMotion(root);
 
+  // The WhatsApp link carries the visitor's name and notes, so PostHog never records or autocaptures this panel.
   return (
-    <section className="valuation-success status-panel glass-panel" aria-live="polite" ref={root}>
+    <section className="valuation-success status-panel glass-panel ph-no-capture" aria-live="polite" ref={root}>
       <Eyebrow>Mensaje preparado</Eyebrow>
       <h2>Seguimos la charla por WhatsApp.</h2>
       <p>Abrimos WhatsApp con los datos de tu auto. Si todavía no lo enviaste, revisalo y tocá enviar.</p>

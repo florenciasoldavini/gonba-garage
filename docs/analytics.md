@@ -28,9 +28,13 @@ right after the first `$pageview`, timestamped when sent. An event fired by a vi
 before the SDK has loaded is lost, as is that page's `$pageview`. Surveys are disabled (`disable_surveys`), so PostHog doesn't fetch
 its survey script.
 
-Session replay is disabled independently by default. Before enabling it, verify the project-level
-privacy settings and inspect test recordings. Inputs are masked by the SDK, and the valuation,
-price-alert and review forms are explicitly excluded from autocapture.
+Session replay is disabled independently by default. Production has had it enabled since 2026-11-17
+(`NEXT_PUBLIC_POSTHOG_SESSION_REPLAY=true` in Vercel plus recording turned on in the PostHog project),
+and `/privacidad` says so. Inputs are masked by the SDK, and text inside `[data-private]` is masked.
+Any element that shows personal data, including in attributes such as a prefilled WhatsApp `href`,
+must carry the `ph-no-capture` class: PostHog then leaves it out of recordings (rrweb `blockClass`)
+and of autocapture. The valuation, price-alert, inventory-alert and review forms and the valuation
+success panel carry it.
 
 No analytics event may include a name, email address, phone number, free-text notes, uploaded photo,
 or full search query. Vehicle slugs and catalog attributes are permitted. The catalog keeps its search
