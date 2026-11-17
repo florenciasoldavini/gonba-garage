@@ -191,12 +191,18 @@ for (const route of routes) {
     canonicalOrigin = new URL(metadata.canonical).origin;
 
     const siteGraph = jsonLd.flatMap(entry => entry['@graph'] || []);
-    assert.ok(
-      siteGraph.some(entry => entry['@type'] === 'WebSite'),
-      'Home should describe the website',
-    );
+    const website = siteGraph.find(entry => entry['@type'] === 'WebSite');
+    assert.ok(website, 'Home should describe the website');
     const dealer = siteGraph.find(entry => entry['@type'] === 'AutoDealer');
     assert.ok(dealer, 'Home should describe the business');
+    // People search for the brand without the apostrophe, so both entities list those spellings.
+    for (const entity of [website, dealer]) {
+      assert.deepEqual(
+        entity.alternateName,
+        ['Gonba Garage', 'Gonbas Garage'],
+        `${entity['@type']} should list the brand spellings without the apostrophe`,
+      );
+    }
     // The dealer is located by locality only and receives visits by appointment, so the graph must
     // never publish a street address or opening hours that would read as walk-in hours.
     assert.deepEqual(dealer.address, {

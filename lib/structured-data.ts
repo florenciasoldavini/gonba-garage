@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { BUSINESS_AREA, INSTAGRAM_URL, WHATSAPP_NUMBER } from '@/constants/contact';
-import { SITE_NAME } from '@/lib/metadata';
+import { SITE_ALTERNATE_NAMES, SITE_NAME } from '@/lib/metadata';
 import { getSiteUrl } from '@/lib/site-url';
 
 export const ORGANIZATION_SCHEMA_ID = '#organization';
@@ -19,6 +19,7 @@ export function getSiteStructuredData() {
         '@id': new URL(WEBSITE_SCHEMA_ID, siteUrl).toString(),
         url: homeUrl,
         name: SITE_NAME,
+        alternateName: SITE_ALTERNATE_NAMES,
         inLanguage: 'es-AR',
         publisher: { '@id': new URL(ORGANIZATION_SCHEMA_ID, siteUrl).toString() },
       },
@@ -27,6 +28,7 @@ export function getSiteStructuredData() {
         '@id': new URL(ORGANIZATION_SCHEMA_ID, siteUrl).toString(),
         url: homeUrl,
         name: SITE_NAME,
+        alternateName: SITE_ALTERNATE_NAMES,
         description: 'Compra y venta de autos usados seleccionados con atención personalizada.',
         logo: new URL('/brand/gonba-garage-icon-512.png', siteUrl).toString(),
         telephone: `+${WHATSAPP_NUMBER}`,

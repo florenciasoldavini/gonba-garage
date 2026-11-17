@@ -92,7 +92,10 @@ cache behavior rather than creating arbitrary versioned URLs.
 
 ## Structured-data rules
 
-The root layout publishes a `WebSite` and `AutoDealer` graph. Vehicle detail pages publish:
+The root layout publishes a `WebSite` and `AutoDealer` graph. Both carry `alternateName` with
+"Gonba Garage" and "Gonbas Garage" (`SITE_ALTERNATE_NAMES` in `lib/metadata.ts`): people search for
+the brand without the apostrophe, and in November 2026 the site did not reach the first page of
+Google for "gonba garage". The visible name stays "Gonba's Garage". Vehicle detail pages publish:
 
 - a combined `Product` and `Vehicle` entity, whose `image` is left out when the publication has no
   photo (the placeholder is not a photo of the car);
