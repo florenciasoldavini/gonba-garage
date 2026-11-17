@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 
 export const SITE_NAME = "Gonba's Garage";
+// Spellings people search for without the apostrophe. Structured data lists them so search engines
+// tie those queries to the brand.
+export const SITE_ALTERNATE_NAMES = ['Gonba Garage', 'Gonbas Garage'];
 export const DEFAULT_SOCIAL_IMAGE = '/social/home.jpg';
 
 type PageMetadataOptions = {
